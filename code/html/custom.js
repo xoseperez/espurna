@@ -2707,6 +2707,12 @@ function processData(data) {
             return;
         }
 
+        if ("cmd" === key) {
+            CmdOutput.push(value["result"]);
+            CmdOutput.follow();
+            return;
+        }
+
         // TODO: squash into a single message, needs a reworked debug buffering
         if ("log" === key) {
             send("{}");

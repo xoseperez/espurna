@@ -33,38 +33,37 @@ Updated to use WiFiServer and support reverse connections by Niek van der Maas <
 
 #include <ESPAsyncTCP.h>
 
-struct AsyncBufferedClient {
-    public:
-        constexpr static size_t BuffersMax =
-#if (TCP_MSS == 1460)
-            2ul;
-#else
-            5ul;
-#endif
+struct AsyncBufferedClient : public Print {
+public:
+    AsyncBufferedClient() = delete;
+    explicit AsyncBufferedClient(AsyncClient* client);
 
-        using buffer_t = std::vector<uint8_t>;
+    bool connected();
+    size_t available();
 
-        explicit AsyncBufferedClient(AsyncClient* client);
+    bool connect(const char *host, uint16_t port);
+    void close(bool now = false);
 
-        size_t write(char c);
-        size_t write(const char* data, size_t size=0);
+    size_t write(uint8_t) override;
+    size_t write(const uint8_t* data, size_t size) override;
 
-        void flush();
-        size_t available();
+    void flush() override;
 
-        bool connect(const char *host, uint16_t port);
-        void close(bool now = false);
-        bool connected();
+private:
+    static constexpr size_t buffersMax() {
+        return (TCP_MSS == 1460) ? 2 : 5;
+    }
 
-    private:
-        void _addBuffer();
+    using Buffer = std::vector<uint8_t>;
 
-        static void _trySend(AsyncBufferedClient* client);
-        static void _s_onAck(void* client_ptr, AsyncClient*, size_t, uint32_t);
-        static void _s_onPoll(void* client_ptr, AsyncClient* client);
+    void _addBuffer();
 
-        std::unique_ptr<AsyncClient> _client;
-        std::list<buffer_t> _buffers;
+    static void _trySend(AsyncBufferedClient* client);
+    static void _s_onAck(void* client_ptr, AsyncClient*, size_t, uint32_t);
+    static void _s_onPoll(void* client_ptr, AsyncClient* client);
+
+    std::unique_ptr<AsyncClient> _client;
+    std::list<Buffer> _buffers;
 };
 
 using TTelnetServer = AsyncServer;
@@ -231,19 +230,22 @@ void AsyncBufferedClient::_addBuffer() {
     _buffers.back().reserve(TCP_MSS);
 }
 
-size_t AsyncBufferedClient::write(const char* data, size_t size) {
-
-    if (_buffers.size() > AsyncBufferedClient::BuffersMax) return 0;
+size_t AsyncBufferedClient::write(const uint8_t* data, size_t size) {
+    if (_buffers.size() > AsyncBufferedClient::buffersMax()) {
+        return 0;
+    }
 
     // TODO: just waiting for onPoll is insufficient, we need to push data asap
     size_t written = 0;
     if (_buffers.empty()) {
-        written = _client->add(data, size);
-        if (written == size) return size;
+        written = _client->add(reinterpret_cast<const char*>(data), size);
+        if (written == size) {
+            return size;
+        }
     }
 
     const size_t full_size = size;
-    char* data_ptr = const_cast<char*>(data + written);
+    auto* data_ptr = const_cast<uint8_t*>(data + written);
     size -= written;
 
     while (size) {
@@ -262,12 +264,10 @@ size_t AsyncBufferedClient::write(const char* data, size_t size) {
     }
 
     return full_size;
-
 }
 
-size_t AsyncBufferedClient::write(char c) {
-    char _c[1] {c};
-    return write(_c, 1);
+size_t AsyncBufferedClient::write(uint8_t c) {
+    return write(&c, 1);
 }
 
 void AsyncBufferedClient::flush() {
@@ -294,14 +294,18 @@ bool AsyncBufferedClient::connected() {
 
 #endif // TELNET_SERVER == TELNET_SERVER_WIFISERVER
 
-size_t _telnetWrite(unsigned char clientId, const char *data, size_t len) {
-    if (_telnetClients[clientId] && _telnetClients[clientId]->connected()) {
-        return _telnetClients[clientId]->write(data, len);
+size_t _telnetWrite(unsigned char clientId, const uint8_t* data, size_t len) {
+    auto& client = _telnetClients[clientId];
+    if (client && client->connected()) {
+        const auto result = client->write(data, len);
+        client->flush();
+        return result;
     }
+
     return 0;
 }
 
-size_t _telnetWrite(const char *data, size_t len) {
+size_t _telnetWrite(const uint8_t* data, size_t length) {
     unsigned char count = 0;
     for (unsigned char i = 0; i < TELNET_MAX_CLIENTS; i++) {
         // Do not send broadcast messages to unauthenticated clients
@@ -309,17 +313,33 @@ size_t _telnetWrite(const char *data, size_t len) {
             continue;
         }
 
-        if (_telnetWrite(i, data, len)) ++count;
+        if (_telnetWrite(i, data, length)) {
+            ++count;
+        }
     }
+
     return count;
 }
 
-size_t _telnetWrite(const char *data) {
-    return _telnetWrite(data, strlen(data));
+size_t _telnetWrite(uint8_t c) {
+    return _telnetWrite(&c, 1);
 }
 
-size_t _telnetWrite(unsigned char clientId, const char * message) {
-    return _telnetWrite(clientId, message, strlen(message));
+size_t _telnetWrite(unsigned char clientId, const char* message, size_t length) {
+    return _telnetWrite(clientId, reinterpret_cast<const uint8_t*>(message), length);
+}
+
+size_t _telnetWrite(unsigned char clientId, espurna::StringView message) {
+    return _telnetWrite(clientId, message.c_str(), message.length());
+}
+
+size_t _telnetWrite(espurna::StringView message) {
+    size_t out = 0;
+    for (size_t id = 0; id < std::size(_telnetClients); ++id) {
+        out += _telnetWrite(id, message);
+    }
+
+    return out;
 }
 
 void _telnetData(unsigned char clientId, char * data, size_t len) {
@@ -350,6 +370,7 @@ void _telnetData(unsigned char clientId, char * data, size_t len) {
         String password = getAdminPass();
         if (strncmp(data, password.c_str(), password.length()) == 0) {
             DEBUG_MSG_P(PSTR("[TELNET] Client #%d authenticated\n"), clientId);
+
             _telnetWrite(clientId, "Password correct, welcome!\n");
             _telnetClientsAuth[clientId] = true;
         } else {
@@ -358,33 +379,35 @@ void _telnetData(unsigned char clientId, char * data, size_t len) {
         return;
     }
 
-    // Inject command
-    #if TERMINAL_SUPPORT
-        terminalInject(reinterpret_cast<const char*>(data), len);
-    #endif
+#if TERMINAL_SUPPORT
+    String cmd;
+    cmd.concat(data, len);
+
+    schedule_function([cmd, clientId]() {
+        espurna::terminal::api_find_and_call(cmd, *_telnetClients[clientId]);
+    });
+#endif
 }
 
-void _telnetNotifyConnected(unsigned char i) {
-
-    DEBUG_MSG_P(PSTR("[TELNET] Client #%u connected\n"), i);
+void _telnetNotifyConnected(unsigned char id) {
+    DEBUG_MSG_P(PSTR("[TELNET] Client #%u connected\n"), id);
 
     if (!isEspurnaCore()) {
-        _telnetClientsAuth[i] = !_telnetAuth;
+        _telnetClientsAuth[id] = !_telnetAuth;
         if (_telnetAuth) {
             if (getAdminPass().length()) {
-                _telnetWrite(i, "Password: ");
+                _telnetWrite(id, "Password: ");
             } else {
-                _telnetClientsAuth[i] = true;
+                _telnetClientsAuth[id] = true;
             }
         }
     } else {
-        _telnetClientsAuth[i] = true;
+        _telnetClientsAuth[id] = true;
     }
 
 #if DEBUG_SUPPORT
-    crashResetReason(terminalDefaultStream());
+    crashResetReason(*_telnetClients[id]);
 #endif
-
 }
 
 #if TELNET_SERVER == TELNET_SERVER_WIFISERVER
@@ -515,19 +538,22 @@ bool telnetConnected() {
 #if DEBUG_TELNET_SUPPORT
 
 bool telnetDebugSend(const char* prefix, const char* data) {
-    if (!telnetConnected()) return false;
+    if (!telnetConnected()) {
+        return false;
+    }
+
     bool result = false;
     if (prefix && (prefix[0] != '\0')) {
-        result = _telnetWrite(prefix) > 0;
+        result = _telnetWrite(espurna::StringView(prefix)) > 0;
     }
+
     return (_telnetWrite(data) > 0) || result;
 }
 
 #endif // DEBUG_TELNET_SUPPORT
 
-unsigned char telnetWrite(unsigned char ch) {
-    const char data[1] { static_cast<char>(ch) };
-    return _telnetWrite(data, 1);
+unsigned char telnetWrite(uint8_t c) {
+    return _telnetWrite(c);
 }
 
 void _telnetConfigure() {
@@ -537,7 +563,7 @@ void _telnetConfigure() {
 void telnetSetup() {
 
     #if TELNET_SERVER == TELNET_SERVER_WIFISERVER
-        _telnet_data_buffer.reserve(terminalCapacity());
+        _telnet_data_buffer.reserve(256);
         _telnetServer.setNoDelay(true);
         _telnetServer.begin();
         espurnaRegisterLoop(_telnetLoop);

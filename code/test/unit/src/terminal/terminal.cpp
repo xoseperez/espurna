@@ -2,265 +2,407 @@
 #include <Arduino.h>
 #include <StreamString.h>
 
+#include <libs/PrintString.h>
 #include <terminal_commands.h>
 
-// TODO: should we just use std::function at this point?
-//       we don't actually benefit from having basic ptr functions in handler
-//       test would be simplified too, we would no longer need to have static vars
+namespace espurna {
 
-// Got the idea from the Embedis test suite, set up a proxy for StreamString
-// Real terminal processing happens with ringbuffer'ed stream
-struct IOStreamString : public Stream {
-    StreamString in;
-    StreamString out;
+// no special cases for flash strings
+bool StringView::compare(espurna::StringView other) const {
+    return _ptr == other._ptr
+        || (_len == other._len && (0 == __builtin_memcmp(_ptr, other._ptr, _len)));
+}
 
-    size_t write(uint8_t ch) final override {
-        return in.write(ch);
+namespace terminal {
+namespace test {
+namespace {
+
+// Default 'print nothing' case
+struct BlackHole : public Print {
+    size_t write(uint8_t) override {
+        return 0;
     }
 
-    int read() final override {
-        return out.read();
-    }
-
-    int available() final override {
-        return out.available();
-    }
-
-    int peek() final override {
-        return out.peek();
-    }
-
-    void flush() final override {
-        out.flush();
+    size_t write(const uint8_t*, size_t) override {
+        return 0;
     }
 };
 
+BlackHole DefaultOutput;
+
 // We need to make sure that our changes to split_args actually worked
-
 void test_hex_codes() {
-
     static bool abc_done = false;
 
-    terminal::Terminal::addCommand(F("abc"), [](::terminal::CommandContext&& ctx) {
+    add(F("abc"), [](CommandContext&& ctx) {
         TEST_ASSERT_EQUAL(2, ctx.argv.size());
         TEST_ASSERT_EQUAL_STRING("abc", ctx.argv[0].c_str());
         TEST_ASSERT_EQUAL_STRING("abc", ctx.argv[1].c_str());
         abc_done = true;
     });
 
-    IOStreamString str;
-    str.out += String("abc \"\x61\x62\x63\"\r\n");
+    const char input[] = "abc \"\x61\x62\x63\"\r\n";
 
-    terminal::Terminal handler(str);
+    const auto result = parse_line(input);
+    TEST_ASSERT_EQUAL(parser::Error::Ok, result.error);
+    TEST_ASSERT_EQUAL(2, result.argv.size());
+    TEST_ASSERT_EQUAL_STRING("abc", result.argv[0].c_str());
+    TEST_ASSERT_EQUAL_STRING("abc", result.argv[1].c_str());
 
-    TEST_ASSERT_EQUAL(
-        terminal::Terminal::Result::Command,
-        handler.processLine()
-    );
+    const auto call = find_and_call(result, DefaultOutput);
+    TEST_ASSERT(call);
     TEST_ASSERT(abc_done);
+}
+
+// Ensure parsing function does not cause nearby strings to be included
+void test_parse_overlap() {
+    const char input[] =
+        "three\r\n"
+        "two\r\n"
+        "one\r\n";
+
+    const auto* ptr = &input[0];
+    const auto* end = &input[__builtin_strlen(input)];
+
+    {
+        const auto eol = std::find(ptr, end, '\n');
+        const auto result = parse_line(StringView(ptr, std::next(eol)));
+        TEST_ASSERT_EQUAL(parser::Error::Ok, result.error);
+        TEST_ASSERT(std::next(eol) != end);
+        ptr = std::next(eol);
+
+        TEST_ASSERT_EQUAL(1, result.argv.size());
+        TEST_ASSERT_EQUAL_STRING("three", result.argv[0].c_str());
+    }
+
+    {
+        const auto eol = std::find(ptr, end, '\n');
+        const auto result = parse_line(StringView(ptr, std::next(eol)));
+        TEST_ASSERT_EQUAL(parser::Error::Ok, result.error);
+        TEST_ASSERT(std::next(eol) != end);
+        ptr = std::next(eol);
+
+        TEST_ASSERT_EQUAL(1, result.argv.size());
+        TEST_ASSERT_EQUAL_STRING("two", result.argv[0].c_str());
+    }
+
+    {
+        const auto eol = std::find(ptr, end, '\n');
+        const auto result = parse_line(StringView(ptr, std::next(eol)));
+        TEST_ASSERT_EQUAL(parser::Error::Ok, result.error);
+        TEST_ASSERT(std::next(eol) == end);
+        TEST_ASSERT_EQUAL(1, result.argv.size());
+        TEST_ASSERT_EQUAL_STRING("one", result.argv[0].c_str());
+    }
 }
 
 // Ensure that we can register multiple commands (at least 3, might want to test much more in the future?)
 // Ensure that registered commands can be called and they are called in order
-
 void test_multiple_commands() {
-
-    // set up counter to be chained between commands
+    // make sure commands execute in sequence
     static int command_calls = 0;
 
-    terminal::Terminal::addCommand(F("test1"), [](::terminal::CommandContext&& ctx) {
-        TEST_ASSERT_EQUAL_MESSAGE(1, ctx.argv.size(), "Command without args should have argc == 1");
+    add(F("test1"), [](CommandContext&& ctx) {
+        TEST_ASSERT_EQUAL_STRING("test1", ctx.argv[0].c_str());
+        TEST_ASSERT_EQUAL(1, ctx.argv.size());
         TEST_ASSERT_EQUAL(0, command_calls);
-        command_calls = 1;
+        ++command_calls;
     });
-    terminal::Terminal::addCommand(F("test2"), [](::terminal::CommandContext&& ctx) {
-        TEST_ASSERT_EQUAL_MESSAGE(1, ctx.argv.size(), "Command without args should have argc == 1");
+
+    add(F("test2"), [](CommandContext&& ctx) {
+        TEST_ASSERT_EQUAL_STRING("test2", ctx.argv[0].c_str());
+        TEST_ASSERT_EQUAL(1, ctx.argv.size());
         TEST_ASSERT_EQUAL(1, command_calls);
-        command_calls = 2;
+        ++command_calls;
     });
-    terminal::Terminal::addCommand(F("test3"), [](::terminal::CommandContext&& ctx) {
-        TEST_ASSERT_EQUAL_MESSAGE(1, ctx.argv.size(), "Command without args should have argc == 1");
+
+    add(F("test3"), [](CommandContext&& ctx) {
+        TEST_ASSERT_EQUAL_STRING("test3", ctx.argv[0].c_str());
+        TEST_ASSERT_EQUAL(1, ctx.argv.size());
         TEST_ASSERT_EQUAL(2, command_calls);
-        command_calls = 3;
+        ++command_calls;
     });
 
-    IOStreamString str;
-    str.out += String("test1\r\ntest2\r\ntest3\r\n");
-
-    terminal::Terminal handler(str);
-
-    // each processing step only executes a single command
-    static int process_counter = 0;
-
-    handler.process([](terminal::Terminal::Result result) -> bool {
-        if (process_counter == 3) {
-            TEST_ASSERT_EQUAL(result, terminal::Terminal::Result::NoInput);
-            return false;
-        } else {
-            TEST_ASSERT_EQUAL(result, terminal::Terminal::Result::Command);
-            ++process_counter;
-            return true;
-        }
-        TEST_FAIL_MESSAGE("Should not be reached");
-        return false;
-    });
+    const char input[] = "test1\r\ntest2\r\ntest3\r\n";
+    TEST_ASSERT(api_find_and_call(input, DefaultOutput));
     TEST_ASSERT_EQUAL(3, command_calls);
-    TEST_ASSERT_EQUAL(3, process_counter);
-
 }
 
 void test_command() {
-
     static int counter = 0;
 
-    terminal::Terminal::addCommand(F("test.command"), [](::terminal::CommandContext&& ctx) {
-        TEST_ASSERT_EQUAL_MESSAGE(1, ctx.argv.size(), "Command without args should have argc == 1");
+    add(F("test.command"), [](CommandContext&& ctx) {
+        TEST_ASSERT_EQUAL_MESSAGE(1, ctx.argv.size(),
+            "Command without args should have argc == 1");
         ++counter;
     });
 
-    IOStreamString str;
-    terminal::Terminal handler(str);
+    const char crlf[] = "test.command\r\n";
+    TEST_ASSERT(find_and_call(crlf, DefaultOutput));
+    TEST_ASSERT_EQUAL_MESSAGE(1, counter,
+        "`test.command` cannot be called more than one time");
 
-    TEST_ASSERT_EQUAL_MESSAGE(
-        terminal::Terminal::Result::NoInput, handler.processLine(),
-        "We have not read anything yet"
-    );
+    TEST_ASSERT(find_and_call(crlf, DefaultOutput));
+    TEST_ASSERT_EQUAL_MESSAGE(2, counter,
+        "`test.command` cannot be called more than two times");
 
-    str.out += String("test.command\r\n");
-    TEST_ASSERT_EQUAL(terminal::Terminal::Result::Command, handler.processLine());
-    TEST_ASSERT_EQUAL_MESSAGE(1, counter, "At this time `test.command` was called just once");
-
-    str.out += String("test.command");
-    TEST_ASSERT_EQUAL(terminal::Terminal::Result::Pending, handler.processLine());
-    TEST_ASSERT_EQUAL_MESSAGE(1, counter, "We are waiting for either \\r\\n or \\n, handler still has data buffered");
-
-    str.out += String("\r\n");
-    TEST_ASSERT_EQUAL(terminal::Terminal::Result::Command, handler.processLine());
-    TEST_ASSERT_EQUAL_MESSAGE(2, counter, "We should call `test.command` the second time");
-
-    str.out += String("test.command\n");
-    TEST_ASSERT_EQUAL(terminal::Terminal::Result::Command, handler.processLine());
-    TEST_ASSERT_EQUAL_MESSAGE(3, counter, "We should call `test.command` the third time, with just LF");
-
+    const char lf[] = "test.command\n";
+    TEST_ASSERT(find_and_call(lf, DefaultOutput));
+    TEST_ASSERT_EQUAL_MESSAGE(3, counter,
+        "`test.command` cannot be called more than three times");
 }
 
 // Ensure that we can properly handle arguments
-
 void test_command_args() {
-
     static bool waiting = false;
 
-    terminal::Terminal::addCommand(F("test.command.arg1"), [](::terminal::CommandContext&& ctx) {
+    add(F("test.command.arg1"), [](CommandContext&& ctx) {
         TEST_ASSERT_EQUAL(2, ctx.argv.size());
         waiting = false;
     });
 
-    terminal::Terminal::addCommand(F("test.command.arg1_empty"), [](::terminal::CommandContext&& ctx) {
+    add(F("test.command.arg1_empty"), [](CommandContext&& ctx) {
         TEST_ASSERT_EQUAL(2, ctx.argv.size());
         TEST_ASSERT(!ctx.argv[1].length());
         waiting = false;
     });
 
-    IOStreamString str;
-    terminal::Terminal handler(str);
-
     waiting = true;
-    str.out += String("test.command.arg1 test\r\n");
-    TEST_ASSERT_EQUAL(terminal::Terminal::Result::Command, handler.processLine());
+
+    PrintString out(64);
+    const char empty[] = "test.command.arg1_empty \"\"\r\n";
+    const auto result = find_and_call(empty, out);
+    printf("%s\n", out.c_str());
+    TEST_ASSERT(result);
     TEST_ASSERT(!waiting);
 
     waiting = true;
-    str.out += String("test.command.arg1_empty \"\"\r\n");
-    TEST_ASSERT_EQUAL(terminal::Terminal::Result::Command, handler.processLine());
+
+    const char one_arg[] = "test.command.arg1 test\r\n";
+    TEST_ASSERT(find_and_call(one_arg, DefaultOutput));
     TEST_ASSERT(!waiting);
-
 }
 
-// Ensure that we return error when nothing was handled, but we kept feeding the processLine() with data
+// both \r\n and \n are valid line separators
+void test_new_line() {
+    {
+        const auto result = parse_line("test.new.line\r\n");
+        TEST_ASSERT_EQUAL(1, result.argv.size());
+        TEST_ASSERT_EQUAL_STRING("test.new.line", result.argv[0].c_str());
+    }
 
-void test_buffer() {
+    {
+        const auto result = parse_line("test.new.line\n");
+        TEST_ASSERT_EQUAL(1, result.argv.size());
+        TEST_ASSERT_EQUAL_STRING("test.new.line", result.argv[0].c_str());
+    }
 
-    IOStreamString str;
-    str.out += String("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\r\n");
-
-    terminal::Terminal handler(str, str.out.available() - 8);
-    TEST_ASSERT_EQUAL(terminal::Terminal::Result::BufferOverflow, handler.processLine());
-
+    {
+        const auto result = parse_line("test.new.line\r");
+        TEST_ASSERT_EQUAL_STRING("UnexpectedLineEnd",
+            parser::error(result.error).c_str());
+        TEST_ASSERT_EQUAL(0, result.argv.size());
+    }
 }
 
-// sdssplitargs returns nullptr when quotes are not terminated and empty char for an empty string. we treat it all the same
-
+// various parser errors related to quoting
 void test_quotes() {
+    {
+        const auto result = parse_line("test.quotes \"quote that does not\"feel right");
+        TEST_ASSERT_EQUAL_STRING("NoSpaceAfterQuote",
+            parser::error(result.error).c_str());
+        TEST_ASSERT_EQUAL(0, result.argv.size());
+    }
 
-    terminal::Terminal::addCommand(F("test.quotes"), [](::terminal::CommandContext&& ctx) {
-        for (auto& arg : ctx.argv) {
-            TEST_MESSAGE(arg.c_str());
-        }
-        TEST_FAIL_MESSAGE("`test.quotes` should not be called");
-    });
+    {
+        const auto result = parse_line("test.quotes \"quote that does not line break\"");
+        TEST_ASSERT_EQUAL_STRING("NoSpaceAfterQuote",
+            parser::error(result.error).c_str());
+        TEST_ASSERT_EQUAL(0, result.argv.size());
+    }
 
-    IOStreamString str;
-    terminal::Terminal handler(str);
+    {
+        const auto result = parse_line("test.quotes \"quote without a pair\r\n");
+        TEST_ASSERT_EQUAL_STRING("UnterminatedQuote",
+            parser::error(result.error).c_str());
+        TEST_ASSERT_EQUAL(0, result.argv.size());
+    }
 
-    str.out += String("test.quotes \"quote without a pair\r\n");
-    TEST_ASSERT_EQUAL(terminal::Terminal::Result::NoInput, handler.processLine());
+    {
+        const auto result = parse_line("test.quotes 'quote without a pair\r\n");
+        TEST_ASSERT_EQUAL_STRING("UnterminatedQuote",
+            parser::error(result.error).c_str());
+        TEST_ASSERT_EQUAL(0, result.argv.size());
+    }
 
-    str.out += String("test.quotes 'quote without a pair\r\n");
-    TEST_ASSERT_EQUAL(terminal::Terminal::Result::NoInput, handler.processLine());
-    TEST_ASSERT_EQUAL(terminal::Terminal::Result::NoInput, handler.processLine());
+    {
+        const auto result = parse_line("test.quotes ''\r\n");
+        TEST_ASSERT_EQUAL(2, result.argv.size());
+    }
 
+    {
+        const auto result = parse_line("test.quotes \"\"\r\n");
+        TEST_ASSERT_EQUAL(2, result.argv.size());
+    }
 }
 
-// we specify that commands lowercase == UPPERCASE, both with hashed values and with equality functions
-// (internal note: we use std::unordered_map at this time)
-
+// we specify that commands lowercase == UPPERCASE
+// last registered one should be called, we don't check for duplicates at this time
 void test_case_insensitive() {
-
-    terminal::Terminal::addCommand(F("test.lowercase1"), [](::terminal::CommandContext&&) {
+    add(F("test.lowercase1"), [](CommandContext&&) {
         TEST_FAIL_MESSAGE("`test.lowercase1` was registered first, but there's another function by the same name. This should not be called");
     });
-    terminal::Terminal::addCommand(F("TEST.LOWERCASE1"), [](::terminal::CommandContext&&) {
+
+    add(F("TEST.LOWERCASE1"), [](CommandContext&&) {
         __asm__ volatile ("nop");
     });
 
-    IOStreamString str;
-    terminal::Terminal handler(str);
-
-    str.out += String("TeSt.lOwErCaSe1\r\n");
-    TEST_ASSERT_EQUAL(terminal::Terminal::Result::Command, handler.processLine());
-
+    const char input[] = "TeSt.lOwErCaSe1\r\n";
+    TEST_ASSERT(find_and_call(input, DefaultOutput));
 }
 
 // We can use command ctx.output to send something back into the stream
-
 void test_output() {
-
-    terminal::Terminal::addCommand(F("test.output"), [](::terminal::CommandContext&& ctx) {
-        if (ctx.argv.size() != 2) return;
-        ctx.output.print(ctx.argv[1]);
+    add(F("test.output"), [](CommandContext&& ctx) {
+        if (ctx.argv.size() == 2) {
+            ctx.output.print(ctx.argv[1]);
+        }
     });
 
-    IOStreamString str;
-    terminal::Terminal handler(str);
+    const char input[] = "test.output test1234567890\r\n";
 
-    char match[] = "test1234567890";
-    str.out += String("test.output ") + String(match) + String("\r\n");
-    TEST_ASSERT_EQUAL(terminal::Terminal::Result::Command, handler.processLine());
-    TEST_ASSERT_EQUAL_STRING(match, str.in.c_str());
+    PrintString output(64);
+    TEST_ASSERT(find_and_call(input, output));
 
+    const char match[] = "test1234567890";
+    TEST_ASSERT_EQUAL_STRING(match, output.c_str());
 }
+
+// un-buffered view returning multiple times until strings are exhausted
+void test_line_view() {
+    const char input[] = "one\r\ntwo\r\nthree\r\n";
+    LineView view(input);
+
+    const auto one = view.line();
+    TEST_ASSERT_EQUAL_STRING("one\r\n",
+        one.toString().c_str());
+
+    const auto two = view.line();
+    TEST_ASSERT_EQUAL_STRING("two\r\n",
+        two.toString().c_str());
+
+    const auto three = view.line();
+    TEST_ASSERT_EQUAL_STRING("three\r\n",
+        three.toString().c_str());
+
+    TEST_ASSERT_EQUAL(0, view.line().length());
+}
+
+// Ensure that we keep buffering when input is incomplete
+void test_line_buffer() {
+    const char input[] =
+        "aaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaa"
+        "aaaaaaaaaaaaaaaaa";
+
+    LineBuffer<256> buffer;
+    buffer.append(input);
+
+    TEST_ASSERT_EQUAL(buffer.size(), __builtin_strlen(input));
+    TEST_ASSERT_EQUAL(0, buffer.line().line.length());
+
+    buffer.append("\r\n");
+    TEST_ASSERT_EQUAL(__builtin_strlen(input) + 2,
+        buffer.line().line.length());
+}
+
+// Ensure that when buffer overflows, we set 'overflow' flags
+// on both the buffer and the returned 'line' result
+void test_line_buffer_overflow() {
+    using Buffer = LineBuffer<16>;
+    static_assert(Buffer::capacity() == 16, "");
+
+    Buffer buffer;
+    TEST_ASSERT(buffer.size() == 0);
+    TEST_ASSERT(!buffer.overflow());
+
+    // verify our expansion works, buffer needs to overflow
+    std::array<char, (Buffer::capacity() * 2) + 2> data;
+    std::fill(std::begin(data), std::end(data), 'd');
+    data.back() = '\n';
+
+    buffer.append(data.data(), data.size());
+    TEST_ASSERT(buffer.overflow());
+
+    const auto result = buffer.line();
+    TEST_ASSERT(result.overflow);
+
+    TEST_ASSERT(buffer.size() == 0);
+    TEST_ASSERT(!buffer.overflow());
+
+    // TODO: can't compare string_view directly, not null terminated
+    const auto line = result.line.toString();
+    TEST_ASSERT_EQUAL_STRING("d\n", line.c_str());
+    TEST_ASSERT(line.length() > 0);
+}
+
+// When input has multiple 'new-line' characters, generated result only has one line at a time
+void test_line_buffer_multiple() {
+    LineBuffer<64> buffer;
+
+    constexpr auto First = StringView("first\n");
+    buffer.append(First);
+
+    constexpr auto Second = StringView("second\n");
+    buffer.append(Second);
+
+    TEST_ASSERT_EQUAL(First.length() + Second.length(),
+            buffer.size());
+    TEST_ASSERT(!buffer.overflow());
+
+    // both entries remain in the buffer and are available
+    // if we don't touch the buffer via another append().
+    // (in theory, could also add refcount... right now seems like an overkill)
+
+    const auto first = buffer.line();
+    TEST_ASSERT(buffer.size() > 0);
+    TEST_ASSERT_EQUAL(First.length(),
+            first.line.length());
+    TEST_ASSERT(First == first.line);
+
+    // second entry resets everything
+    const auto second = buffer.line();
+    TEST_ASSERT_EQUAL(0, buffer.size());
+    TEST_ASSERT_EQUAL(Second.length(),
+            second.line.length());
+    TEST_ASSERT(Second == second.line);
+}
+
+} // namespace
+} // namespace test
+} // namespace terminal
+} // namespace espurna
 
 // When adding test functions, don't forget to add RUN_TEST(...) in the main()
 
 int main(int, char**) {
     UNITY_BEGIN();
+
+    using namespace espurna::terminal::test;
     RUN_TEST(test_command);
     RUN_TEST(test_command_args);
+    RUN_TEST(test_parse_overlap);
     RUN_TEST(test_multiple_commands);
     RUN_TEST(test_hex_codes);
-    RUN_TEST(test_buffer);
     RUN_TEST(test_quotes);
     RUN_TEST(test_case_insensitive);
     RUN_TEST(test_output);
+    RUN_TEST(test_new_line);
+    RUN_TEST(test_line_view);
+    RUN_TEST(test_line_buffer);
+    RUN_TEST(test_line_buffer_overflow);
+    RUN_TEST(test_line_buffer_multiple);
+
     return UNITY_END();
 }

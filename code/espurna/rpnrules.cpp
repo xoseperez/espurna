@@ -1034,19 +1034,6 @@ void init(rpn_context&) {
 } // namespace sensor
 #endif // SENSOR_SUPPORT
 
-#if TERMINAL_SUPPORT
-namespace terminal {
-
-void init(rpn_context& context) {
-    rpn_operator_set(context, "showstack", 0, [](rpn_context& ctxt) -> rpn_error {
-        rpnrules::terminal::showStack(::terminalDefaultStream());
-        return 0;
-    });
-}
-
-} // namespace terminal
-#endif
-
 #if DEBUG_SUPPORT
 namespace debug {
 
@@ -1222,9 +1209,6 @@ void init(rpn_context& context) {
 #endif
 #if SENSOR_SUPPORT
     sensor::init(context);
-#endif
-#if TERMINAL_SUPPORT
-    terminal::init(context);
 #endif
 }
 

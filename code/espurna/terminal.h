@@ -12,24 +12,21 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <cstddef>
 
+#include "types.h"
 #include "terminal_parsing.h"
 #include "terminal_commands.h"
 
-void terminalOK();
-void terminalError(const String& error);
+// XXX hijack original global namespace
+namespace terminal {
 
-void terminalOK(Print&);
-void terminalError(Print&, const String& error);
+using namespace espurna::terminal;
 
-void terminalOK(const terminal::CommandContext&);
-void terminalError(const terminal::CommandContext&, const String&);
+} // namespace terminal
 
-void terminalRegisterCommand(const __FlashStringHelper* name, terminal::Terminal::CommandFunc func);
+void terminalOK(const espurna::terminal::CommandContext&);
+void terminalError(const espurna::terminal::CommandContext&, const String&);
 
-size_t terminalCapacity();
-void terminalInject(const char* data, size_t len);
-void terminalInject(char ch);
-Stream& terminalDefaultStream();
+void terminalRegisterCommand(const __FlashStringHelper* name, espurna::terminal::CommandFunc func);
 
-void terminalSetup();
 void terminalWebApiSetup();
+void terminalSetup();

@@ -191,8 +191,18 @@
 #define TERMINAL_SUPPORT         1              // Enable terminal commands (0.97Kb)
 #endif
 
-#ifndef TERMINAL_SHARED_BUFFER_SIZE
-#define TERMINAL_SHARED_BUFFER_SIZE     128     // Maximum size for command line, shared by the WebUI, Telnet and Serial
+#ifndef TERMINAL_SERIAL_SUPPORT
+#define TERMINAL_SERIAL_SUPPORT  1              // Enable terminal over UART
+#endif
+
+#ifndef TERMINAL_SERIAL_PORT
+#define TERMINAL_SERIAL_PORT     Serial         // Use specific 'global' Arduino HardwareSerial object
+                                                // (UART0 by default)
+#endif
+
+#ifndef TERMINAL_SERIAL_BUFFER_SIZE
+#define TERMINAL_SERIAL_BUFFER_SIZE     128     // Maximum size for command line received from serial input
+                                                // (defaults to the size of the peripheral RX buffer)
 #endif
 
 #ifndef TERMINAL_MQTT_SUPPORT

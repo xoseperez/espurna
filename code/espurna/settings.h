@@ -271,21 +271,21 @@ bool hasSetting(const String& key);
 bool hasSetting(const __FlashStringHelper* key);
 bool hasSetting(const espurna::settings::Key& key);
 
-void settingsDump(const ::terminal::CommandContext&,
+void settingsDump(const espurna::terminal::CommandContext&,
     const espurna::settings::query::Setting* begin,
     const espurna::settings::query::Setting* end);
 
 template <typename T>
-void settingsDump(const ::terminal::CommandContext& ctx, const T& settings) {
+void settingsDump(const espurna::terminal::CommandContext& ctx, const T& settings) {
     settingsDump(ctx, std::begin(settings), std::end(settings));
 }
 
-void settingsDump(const ::terminal::CommandContext&,
+void settingsDump(const espurna::terminal::CommandContext&,
     const espurna::settings::query::IndexedSetting* begin,
     const espurna::settings::query::IndexedSetting* end, size_t index);
 
 template <typename T>
-void settingsDump(const ::terminal::CommandContext& ctx, const T& settings, size_t index) {
+void settingsDump(const espurna::terminal::CommandContext& ctx, const T& settings, size_t index) {
     settingsDump(ctx, std::begin(settings), std::end(settings), index);
 }
 
