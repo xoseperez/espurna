@@ -30,6 +30,9 @@ set(COMMON_FLAGS
 
 set(ESPURNA_PATH ${CMAKE_SOURCE_DIR}/../../../ CACHE PATH "ESPurna source code repo root")
 
+# Make sure to generate compile_commands.json
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # PIO does not really make it easy to install packages outside of the 'platform' context,
 # so sharing these between a normal builder might not be an option. (...big TODO though)
 # for right now, just fetch these as raw repos. plus, there's no need for any extra params
