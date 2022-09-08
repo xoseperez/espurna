@@ -20,6 +20,17 @@ enum class GpioType : int {
 };
 
 namespace espurna {
+namespace gpio {
+
+struct Origin {
+    const char* base;
+    uint8_t pin;
+    bool lock;
+    SourceLocation location;
+};
+
+} // namespace gpio
+
 namespace settings {
 namespace internal {
 
@@ -45,6 +56,7 @@ GpioBase* gpioBase(GpioType);
 BasePinPtr gpioRegister(GpioBase& base, unsigned char gpio);
 BasePinPtr gpioRegister(unsigned char gpio);
 
+void gpioLockOrigin(espurna::gpio::Origin);
 void gpioSetup();
 
 inline size_t gpioPins(const GpioBase& base) {
@@ -63,30 +75,47 @@ inline bool gpioValid(unsigned char gpio) {
     return gpioValid(hardwareGpio(), gpio);
 }
 
-inline bool gpioLock(GpioBase& base, unsigned char gpio, bool value) {
-    if (base.valid(gpio)) {
-        bool old = base.lock(gpio);
-        base.lock(gpio, value);
+inline bool gpioLock(GpioBase& base, unsigned char pin, bool value,
+        espurna::SourceLocation source_location = espurna::make_source_location())
+{
+    if (base.valid(pin)) {
+        gpioLockOrigin(espurna::gpio::Origin{
+            .base = base.id(),
+            .pin = pin,
+            .lock = value,
+            .location = source_location
+        });
+
+        bool old = base.lock(pin);
+        base.lock(pin, value);
         return (value != old);
     }
 
     return false;
 }
 
-inline bool gpioLock(GpioBase& base, unsigned char gpio) {
-    return gpioLock(base, gpio, true);
+inline bool gpioLock(GpioBase& base, unsigned char gpio,
+        espurna::SourceLocation source_location = espurna::make_source_location())
+{
+    return gpioLock(base, gpio, true, source_location);
 }
 
-inline bool gpioLock(unsigned char gpio) {
-    return gpioLock(hardwareGpio(), gpio);
+inline bool gpioLock(unsigned char gpio,
+        espurna::SourceLocation source_location = espurna::make_source_location())
+{
+    return gpioLock(hardwareGpio(), gpio, source_location);
 }
 
-inline bool gpioUnlock(GpioBase& base, unsigned char gpio) {
-    return gpioLock(base, gpio, false);
+inline bool gpioUnlock(GpioBase& base, unsigned char gpio,
+        espurna::SourceLocation source_location = espurna::make_source_location())
+{
+    return gpioLock(base, gpio, false, source_location);
 }
 
-inline bool gpioUnlock(unsigned char gpio) {
-    return gpioUnlock(hardwareGpio(), gpio);
+inline bool gpioUnlock(unsigned char gpio,
+        espurna::SourceLocation source_location = espurna::make_source_location())
+{
+    return gpioUnlock(hardwareGpio(), gpio, source_location);
 }
 
 inline bool gpioLocked(const GpioBase& base, unsigned char gpio) {

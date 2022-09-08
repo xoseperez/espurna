@@ -15,6 +15,25 @@ extern "C" int memcmp_P(const void*, const void*, size_t);
 
 namespace espurna {
 
+// aka `std::source_location`
+struct SourceLocation {
+    int line;
+    const char* file;
+    const char* func;
+};
+
+inline SourceLocation make_source_location(
+        int line = __builtin_LINE(),
+        const char* file = __builtin_FILE(),
+        const char* func = __builtin_FUNCTION())
+{
+    return SourceLocation{
+        .line = line,
+        .file = file,
+        .func = func
+    };
+}
+
 // disallow re-locking, tracking external `bool`
 struct ReentryLock {
     ReentryLock() = delete;

@@ -13,6 +13,9 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include <cstdint>
 #include <memory>
 
+#if __cplusplus > 201103L
+inline
+#endif
 constexpr unsigned char GPIO_NONE { 0x99 };
 
 class BasePin {

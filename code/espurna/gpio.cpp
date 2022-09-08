@@ -19,8 +19,9 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "ws.h"
 
 namespace espurna {
-namespace peripherals {
 namespace {
+
+namespace peripherals {
 
 // TODO: `struct Register { ... }` with additional size params?
 // e.g. GPIO IN / OUT register is techically u16, and we don't detect writing past the allowed 'mask'
@@ -46,8 +47,6 @@ void reg_apply(uintptr_t address, T&& func) {
     static_assert(!std::is_integral<T>::value, "");
     reg_write(address, func(reg_read(address)));
 }
-
-} // namespace
 
 // At the time of writing this...
 // Current version of Arduino Core uses NONOS, plus a set of "AVR-Style" macros
@@ -97,8 +96,6 @@ static constexpr uintptr_t Data3 { AddressBase + 0xc };
 
 using Data = std::array<uint32_t, 4>;
 
-namespace {
-
 inline Data data() {
     return {{
         reg_read(Data0),
@@ -108,7 +105,6 @@ inline Data data() {
     }};
 }
 
-} // namespace
 } // namespace efuse
 
 namespace rtc {
@@ -127,8 +123,6 @@ static constexpr uint32_t FunctionSelectMask { (1 << 6) | (1 << 1) | 1 };
 
 // no other pin allows pulldown
 static constexpr uint32_t Pulldown { (1 << 3) };
-
-namespace {
 
 inline bool gpio16_get() __attribute__((always_inline));
 bool gpio16_get() {
@@ -188,7 +182,6 @@ void gpio16_mode(int8_t mode) {
         });
 }
 
-} // namespace
 } // namespace rtc
 
 namespace pin {
@@ -243,8 +236,6 @@ static constexpr uint32_t WakeupEnabled { (1 << 10) }; // ^ should set this bit 
 
 static constexpr uint32_t InterruptMask { (1 << 9) | (1 << 8) | (1 << 7) };
 static constexpr uint32_t ControlMask { WakeupEnabled | InterruptMask | Driver | Source };
-
-namespace {
 
 // ref. PERIPHS_IO_MUX_...
 constexpr uintptr_t ioMuxOffset(uint8_t pin) {
@@ -407,14 +398,15 @@ void mode(uint8_t pin, uint8_t mode) {
     }
 }
 
-} // namespace
 } // namespace pin
 } // namespace peripherals
+} // namespace
 
 namespace gpio {
+namespace {
+
 namespace settings {
 namespace options {
-namespace {
 
 using espurna::settings::options::Enumeration;
 
@@ -433,7 +425,6 @@ static constexpr Enumeration<GpioType> GpioTypeOptions[] PROGMEM {
     {GpioType::None, None},
 };
 
-} // namespace
 } // namespace options
 } // namespace settings
 
@@ -562,7 +553,6 @@ private:
 
 #if WEB_SUPPORT
 namespace web {
-namespace {
 
 void onVisible(JsonObject& root) {
     JsonObject& config = root.createNestedObject(F("gpioConfig"));
@@ -598,13 +588,35 @@ void setup() {
         .onVisible(onVisible);
 }
 
-} // namespace
 } // namespace web
 #endif
 
+namespace origin {
+namespace internal {
+
+std::forward_list<Origin> origins;
+
+} // namespace internal
+
+void add(Origin origin) {
+    internal::origins.emplace_front(origin);
+}
+
+} // namespace origin
+
 #if TERMINAL_SUPPORT
 namespace terminal {
-namespace {
+
+void gpio_list_origins(::terminal::CommandContext&& ctx) {
+    for (const auto& origin : origin::internal::origins) {
+        ctx.output.printf_P(PSTR("%c %s GPIO%hhu\t%d:%s:%s\n"),
+            origin.lock ? '*' : ' ',
+            origin.base, origin.pin,
+            origin.location.line,
+            origin.location.file,
+            origin.location.func);
+    }
+}
 
 void gpio_read_write(::terminal::CommandContext&& ctx) {
     const int pin = (ctx.argv.size() >= 2)
@@ -712,15 +724,16 @@ void reg_write(::terminal::CommandContext&& ctx) {
 }
 
 void setup() {
+    terminalRegisterCommand(F("GPIO.LOCKS"), gpio_list_origins);
     terminalRegisterCommand(F("GPIO"), gpio_read_write);
     terminalRegisterCommand(F("REG.READ"), reg_read);
     terminalRegisterCommand(F("REG.WRITE"), reg_write);
 }
 
-}
 } // namespace terminal
 #endif
 
+} // namespace
 } // namespace gpio
 
 namespace settings {
@@ -811,6 +824,10 @@ void gpioSetup() {
 #endif
 }
 
+void gpioLockOrigin(espurna::gpio::Origin origin) {
+    espurna::gpio::origin::add(origin);
+}
+
 extern "C" {
 
 // All of these have __attribute__((weak)) in the Core files. While the original intent
@@ -867,4 +884,4 @@ void resetPins() {
     }
 }
 
-}
+} // extern "C"
