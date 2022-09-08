@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 #### Debug
 - Don't treat static PROGMEM and generic C-strings differently ([b167d616](https://github.com/xoseperez/espurna/commit/b167d61615f65b618999d8ed727851a236867b8a), [d9662bd6](https://github.com/xoseperez/espurna/commit/d9662bd66ae9f902707f393a607a07ba713e1199))
 - Off-by-one error when formatting to allocated buffer ([efcb863c](https://github.com/xoseperez/espurna/commit/efcb863ca271d3afa2e9accd990bb6adaa3f9652))
+- Incomplete debug log and terminal command output for large outputs. ([9b92144ab](https://github.com/xoseperez/espurna/commit/9b92144ab9e9abfdb8d0ebc32a3f049959299559))
 #### Domoticz
 - Add workaround for pressure sensors ([#2215](https://github.com/xoseperez/espurna/issues/2215))
 - Do not put floats into nvalue ([#2230](https://github.com/xoseperez/espurna/issues/2230))
@@ -74,6 +75,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Rework stability counter ([474f0e93](https://github.com/xoseperez/espurna/commit/474f0e93693387f2c85fa28d5df7e0c80716c85a))
 - Refactor build configurations ([f9211634](https://github.com/xoseperez/espurna/commit/f92116341e141be50f946682404e2d0514fd11f3))
 - Clean-up helper classes & functions ([ec220b7d](https://github.com/xoseperez/espurna/commit/ec220b7dd1f3b26e81138cec55beec8e37ab35f9))
+- Remove HWDT exception in RTCMEM, repeated hardware watchdog trigger will eventually trigger SAFE MODE ([59c4246c](https://github.com/xoseperez/espurna/commit/59c4246c6898f4c5698c458ce9762305b43aecde), [7659a634](https://github.com/xoseperez/espurna/commit/7659a63441a7fafff30a274caad65db44de7983a))
 #### TUYA
 - Send lights channel value directly ([012c3818](https://github.com/xoseperez/espurna/commit/012c3818a59cd46cc89e2affc5ddcdea427a17c1))
 - Always run the discovery ([2a08ccb2](https://github.com/xoseperez/espurna/commit/2a08ccb2113f8be4495a58aa7b95331591ebcd0b))
@@ -95,6 +97,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 #### Debug
 - Optionally preserve boot log in RAM ([#2109](https://github.com/xoseperez/espurna/issues/2109))
 - Log modes, allow to disable debug messages on boot ([#2116](https://github.com/xoseperez/espurna/issues/2116))
+- Updated stack decoder script ([a6df38e8](https://github.com/xoseperez/espurna/commit/a6df38e8077c24564c587d2ed8ef871395e47cfe))
 #### Hardware
 - KingArt WiFi Curtain Switch ([#2063](https://github.com/xoseperez/espurna/issues/2063), thanks to **[@AlbertWeterings](https://github.com/AlbertWeterings)**)
 - Add support for Kogan Smarter Home Plug With Energy Meter ([#2086](https://github.com/xoseperez/espurna/issues/2086), thanks to **[@aureq](https://github.com/aureq)**)
@@ -135,6 +138,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Reworked module to support both simple and raw protocol at the same time ([aad70881](https://github.com/xoseperez/espurna/commit/aad70881b2e006d6c9b8d2a1544d633a511d7974))
 - Support terminal commands execution when receiving IR code or changing relay state ([aad70881](https://github.com/xoseperez/espurna/commit/aad70881b2e006d6c9b8d2a1544d633a511d7974))
 - More runtime configuration options ([308da556](https://github.com/xoseperez/espurna/commit/308da5563a3d701f0fc84662b93c3b5aa2c71995))
+#### Lights
+- Arduino Core (`analogWrite()`) PWM provider (optional, configured at build-time) ([b0da3e8c](https://github.com/xoseperez/espurna/commit/b0da3e8c7f13e7edc7a092873466e8cd49d83e54), [2365d08b](https://github.com/xoseperez/espurna/commit/2365d08b88bcb810b2c2be3c47eacfee99184fc6))
+- `NOTIFY` terminal command ([cc16c367](https://github.com/xoseperez/espurna/commit/cc16c36736d5de1280c9946a927d8466690292e5))
 #### MQTT
 - Handle received payload as terminal input (by default, `<root topic>/cmd`) ([#2247](https://github.com/xoseperez/espurna/issues/2247))
 - Publish data with `MQTT.SEND <TOPIC> <PAYLOAD>` terminal command ([#2478](https://github.com/xoseperez/espurna/issues/2478), thanks to **[@pbek](https://github.com/pbek)**)
@@ -182,7 +188,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Detect Tasmota magic numbers when booting, and do a preventive factory reset ([#2370](https://github.com/xoseperez/espurna/issues/2370))
 #### Terminal
 - Show pretty uptime string with `NTP_SUPPORT=1` ([#2137](https://github.com/xoseperez/espurna/issues/2137))
-- Change command-line parser ([#2245](https://github.com/xoseperez/espurna/issues/2245), [#2247](https://github.com/xoseperez/espurna/issues/2247))
+- Change command-line parser ([ef202109](https://github.com/xoseperez/espurna/commit/ef202109e7e09779d44970e065b71f3cb49660b3) for latest version; ref. [#2245](https://github.com/xoseperez/espurna/issues/2245) and [#2247](https://github.com/xoseperez/espurna/issues/2247) for previous implementation)
+- Do not share terminal output. Calling some command(s) in WebUI will no longer stream them to Serial; consistent with the output of API calls. ([ef202109](https://github.com/xoseperez/espurna/commit/ef202109e7e09779d44970e065b71f3cb49660b3))
 #### Thingspeak
 - Configure Thingspeak URL at runtime ([#2124](https://github.com/xoseperez/espurna/issues/2124), thanks to **[@sametflo](https://github.com/sametflo)**)
 - Refactor deprecated WiFiClientSecure ([#2140](https://github.com/xoseperez/espurna/issues/2140), [#2144](https://github.com/xoseperez/espurna/issues/2144))
@@ -244,7 +251,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
     - espurna-base to espurna-core-webui
 - Consistent shared libs location with CI and local install, prefer $repo/code/libraries ([f18f128e](https://github.com/xoseperez/espurna/commit/f18f128e4bb718f448ca460cdb0e39545187d7fe), [5ccc70e4](https://github.com/xoseperez/espurna/commit/5ccc70e42e2a3f7410b629d433b301275a149296))
 - Pin libraries versions as \<owner\>/\<name\> to fix possible issues with Trusted Package Registry ([a9220ec2b](https://github.com/xoseperez/espurna/commit/a9220ec2b27224b2da79880945f6f58450ba53e8))
-- Add `pio run -e $env -t build-and-copy`, more configuration options for the version string ([4c33cacf](https://github.com/xoseperez/espurna/commit/4c33cacfdbe4c51ff52ffb9f530006dfa7037a6b))
+- Add `pio run -e $env -t build-and-copy`, more configuration options for the version string ([6f122f5e](https://github.com/xoseperez/espurna/commit/6f122f5ecb2af5bb0af0cbdedbe1166f1b92262d), [4c33cacf](https://github.com/xoseperez/espurna/commit/4c33cacfdbe4c51ff52ffb9f530006dfa7037a6b))
+- Add `pio run -e $env -t .pio/build/$env/firmware.bin.gz` build target ([038f1ffe](https://github.com/xoseperez/espurna/commit/038f1ffec3f61e86fa212450fd2f5ab22823b124))
 #### RPN Rules
 - Set MQTT variables just before running the rules ([32b864c5](https://github.com/xoseperez/espurna/commit/32b864c56394016666b716c1623aaf9c85432ed3), [658ce105](https://github.com/xoseperez/espurna/commit/658ce1056e3f11832bce3457c91c0c325c24f509))
 - Magnitude variables may not end in number when there's only one of that type ([5fcac5d2](https://github.com/xoseperez/espurna/commit/5fcac5d27f713ca4a84da3dc8f0b4d10c25c3050))
