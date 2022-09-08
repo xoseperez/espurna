@@ -149,7 +149,11 @@ struct Result {
         return _error == Error::Ok;
     }
 
-    CommandLine commandLine() {
+    Error error() const {
+        return _error;
+    }
+
+    CommandLine get() {
         auto out = CommandLine{
             .argv = std::move(_argv),
             .error = _error };
@@ -185,7 +189,7 @@ private:
         AfterQuote,
     };
 
-    // disallow re-entry with a custom lock handler
+    // disallow re-entry, help out our parsing func
     struct Lock {
         Lock() = delete;
 
@@ -224,47 +228,59 @@ private:
         bool& _handle;
     };
 
-    // intermediate storage for
+    // our storage for
     // - ARGV resulting list
     // - text buffer or (interim) text span / range
     // - escaped character (since we don't look ahead when iterating)
     struct Values {
-        Argv argv;
+        struct Span {
+            const char* begin { nullptr };
+            const char* end { nullptr };
+        };
+
+        Span span;
         String chunk;
-        const char* span_begin { nullptr };
-        const char* span_end { nullptr };
         char byte_lhs { 0 };
+
+        Argv argv;
+
+        void append_span(const char* ptr) {
+            if (!span.begin) {
+                span.begin = ptr;
+            }
+
+            span.end = !span.end
+                ? std::next(span.begin)
+                : std::next(ptr);
+        }
+
+        void push_span() {
+            if (span.begin && span.end) {
+                StringView view(span.begin, span.end);
+                chunk.concat(view.c_str(), view.length());
+                span = Values::Span{};
+            }
+        }
+
+        void append_chunk(char c) {
+            push_span();
+            chunk.concat(&c, 1);
+        }
+
+        void append_byte_lhs(char c) {
+            byte_lhs = c;
+        }
+
+        void append_byte_rhs(char c) {
+            append_chunk(hex_digit_to_value(byte_lhs, c));
+        }
+
+        void push_chunk() {
+            push_span();
+            argv.push_back(chunk);
+            chunk = "";
+        }
     };
-
-    static void append_span(Values& values, const char* ptr) {
-        if (!values.span_begin) {
-            values.span_begin = ptr;
-        }
-
-        values.span_end = !values.span_end
-            ? std::next(values.span_begin)
-            : std::next(ptr);
-    }
-
-    static void push_span(Values& values) {
-        if (values.span_begin && values.span_end) {
-            StringView span(values.span_begin, values.span_end);
-            values.chunk.concat(span.c_str(), span.length());
-            values.span_begin = nullptr;
-            values.span_end = nullptr;
-        }
-    }
-
-    static void append_chunk(Values& values, char c) {
-        push_span(values);
-        values.chunk.concat(&c, 1);
-    }
-
-    static void push_chunk(Values& values) {
-        push_span(values);
-        values.argv.push_back(values.chunk);
-        values.chunk = "";
-    }
 
     bool _parsing { false };
 };
@@ -308,7 +324,7 @@ text:
             switch (*it) {
             case ' ':
             case '\t':
-                push_chunk(values);
+                values.push_chunk();
                 state = State::Initial;
                 break;
             case '"':
@@ -321,12 +337,12 @@ text:
                 state = State::CarriageReturnAfterText;
                 break;
             case '\n':
-                push_chunk(values);
+                values.push_chunk();
                 state = State::Done;
                 break;
             default:
                 if (is_printable(*it)) {
-                    append_span(values, it);
+                    values.append_span(it);
                 } else {
                     result = Error::UnescapedText;
                     goto out;
@@ -346,7 +362,7 @@ text:
 
         case State::CarriageReturnAfterText:
             if ((*it) == '\n') {
-                push_chunk(values);
+                values.push_chunk();
                 state = State::Done;
             } else {
                 result = Error::UnexpectedLineEnd;
@@ -375,7 +391,7 @@ text:
                 state = State::EscapedByteLhs;
                 break;
             default:
-                append_chunk(values, unescape_char(*it));
+                values.append_chunk(unescape_char(*it));
                 break;
             }
             break;
@@ -383,7 +399,7 @@ text:
 
         case State::EscapedByteLhs:
             if (is_hex_digit(*it)) {
-                values.byte_lhs = *it;
+                values.append_byte_lhs(*it);
                 state = State::EscapedByteRhs;
             } else {
                 result = Error::InvalidEscape;
@@ -393,7 +409,7 @@ text:
 
         case State::EscapedByteRhs:
             if (is_hex_digit(*it)) {
-                append_chunk(values, hex_digit_to_value(values.byte_lhs, *it));
+                values.append_byte_rhs(*it);
                 state = State::DoubleQuote;
             } else {
                 result = Error::InvalidEscape;
@@ -415,7 +431,7 @@ text:
                 break;
             default:
                 if (is_printable(*it)) {
-                    append_span(values, it);
+                    values.append_span(it);
                 } else {
                     result = Error::UnescapedText;
                     goto out;
@@ -443,11 +459,11 @@ text:
                 break;
             case ' ':
             case '\t':
-                push_chunk(values);
+                values.push_chunk();
                 state = State::Initial;
                 break;
             case '\n':
-                push_chunk(values);
+                values.push_chunk();
                 state = State::Done;
                 break;
             default:
@@ -470,7 +486,7 @@ text:
                 break;
             default:
                 if (is_printable(*it)) {
-                    append_span(values, it);
+                    values.append_span(it);
                 } else {
                     result = Error::UnescapedText;
                     goto out;
@@ -489,7 +505,7 @@ out:
 
     // whenever line ends before we are done parsing, make sure
     // result contains a valid error condition (same as in the switch above)
-    if (!result) {
+    if (result.error() == Error::Uninitialized) {
         switch (state) {
         case State::Done:
             break;
@@ -521,7 +537,7 @@ out:
 
 CommandLine parse_line(StringView line) {
     static Parser parser;
-    return parser(line).commandLine();
+    return parser(line).get();
 }
 
 } // namespace
