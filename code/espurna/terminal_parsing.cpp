@@ -189,45 +189,6 @@ private:
         AfterQuote,
     };
 
-    // disallow re-entry, help out our parsing func
-    struct Lock {
-        Lock() = delete;
-
-        Lock(const Lock&) = delete;
-        Lock& operator=(const Lock&) = delete;
-
-        Lock(Lock&&) = default;
-        Lock& operator=(Lock&&) = delete;
-
-        Lock(bool& handle) :
-            _initialized(!handle),
-            _handle(handle)
-        {}
-
-        ~Lock() {
-            unlock();
-        }
-
-        bool initialized() const {
-            return _initialized;
-        }
-
-        void lock() {
-            if (initialized()) {
-                _handle = true;
-            }
-        }
-
-        void unlock() {
-            if (initialized()) {
-                _handle = false;
-            }
-        }
-    private:
-        bool _initialized;
-        bool& _handle;
-    };
-
     // our storage for
     // - ARGV resulting list
     // - text buffer or (interim) text span / range
@@ -291,7 +252,7 @@ Result Parser::operator()(StringView line) {
 
     State state { State::Initial };
 
-    Lock lock(_parsing);
+    ReentryLock lock(_parsing);
     if (!lock.initialized()) {
         result = Error::Busy;
         goto out;

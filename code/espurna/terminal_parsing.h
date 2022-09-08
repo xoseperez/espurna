@@ -90,7 +90,7 @@ struct LineBuffer {
         _cursor = 0;
         _size = 0;
     }
-    
+
     static constexpr size_t capacity() {
         return Capacity;
     }
@@ -102,7 +102,7 @@ struct LineBuffer {
     bool overflow() const {
         return _overflow;
     }
-    
+
     void append(const char* data, size_t length) {
         // adjust pointer and length when they immediatelly cause overflow
         auto output = &_storage[_size];
@@ -177,10 +177,77 @@ private:
     uintptr_t _cursor { 0 };
 };
 
+// Type wrapper that flushes output on finding '\n'.
+// Inherit from `String` to allow us to manage internal buffer directly.
+// (and also seamlessly behave like a usual `String`, we import most of its methods)
+template <typename T>
+class PrintLine final : public Print, public String {
+private:
+    static_assert(!std::is_reference<T>::value, "");
+
+    using String::wbuffer;
+    using String::buffer;
+    using String::setLen;
+
+public:
+    using String::begin;
+    using String::end;
+    using String::reserve;
+    using String::c_str;
+    using String::length;
+
+    PrintLine() = default;
+    ~PrintLine() {
+        send();
+    }
+
+    template <typename... Args>
+    PrintLine(Args&&... args) :
+        _output(std::forward<Args>(args)...)
+    {}
+
+    T& output() {
+        return _output;
+    }
+
+    void flush() override {
+        if (end() != std::find(begin(), end(), '\n')) {
+            send();
+            setLen(0);
+            *wbuffer() = '\0';
+        }
+    }
+
+    size_t write(const uint8_t* data, size_t size) override {
+        if (!_lock && size && data && *data != '\0') {
+            ReentryLock lock(_lock);
+
+            concat(reinterpret_cast<const char*>(data), size);
+            flush();
+
+            return size;
+        }
+
+        return 0;
+    }
+
+    size_t write(uint8_t ch) override {
+        return write(&ch, 1);
+    }
+
+private:
+    void send() {
+        _output(buffer());
+    }
+
+    T _output;
+    bool _lock { false };
+};
+
 // Generic command line parser
-// - split each arg from the input line and put them into the argv array
-// - argc is expected to be equal to the argv.size()
-// - there should be no parser errors attached other than Ok
+// - `argv` array contains copies or every 'split' string found in the source line
+//   (usual `argc` is expected to be equal to the `argv.size()`)
+// - `error` set to any parser errors encountered, or `Ok` when everything is fine
 CommandLine parse_line(StringView line);
 
 } // namespace terminal

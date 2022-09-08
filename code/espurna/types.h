@@ -15,6 +15,46 @@ extern "C" int memcmp_P(const void*, const void*, size_t);
 
 namespace espurna {
 
+// disallow re-locking, tracking external `bool`
+struct ReentryLock {
+    ReentryLock() = delete;
+
+    ReentryLock(const ReentryLock&) = delete;
+    ReentryLock& operator=(const ReentryLock&) = delete;
+
+    ReentryLock(ReentryLock&&) = default;
+    ReentryLock& operator=(ReentryLock&&) = delete;
+
+    ReentryLock(bool& handle) :
+        _initialized(!handle),
+        _handle(handle)
+    {}
+
+    ~ReentryLock() {
+        unlock();
+    }
+
+    bool initialized() const {
+        return _initialized;
+    }
+
+    void lock() {
+        if (initialized()) {
+            _handle = true;
+        }
+    }
+
+    void unlock() {
+        if (initialized()) {
+            _handle = false;
+        }
+    }
+private:
+    bool _initialized;
+    bool& _handle;
+};
+
+
 struct StringView {
     StringView() = delete;
     ~StringView() = default;

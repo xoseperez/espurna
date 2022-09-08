@@ -2707,24 +2707,16 @@ function processData(data) {
             return;
         }
 
-        if ("cmd" === key) {
-            CmdOutput.push(value["result"]);
-            CmdOutput.follow();
-            return;
-        }
-
-        // TODO: squash into a single message, needs a reworked debug buffering
         if ("log" === key) {
             send("{}");
 
-            let msg = value["msg"];
-            let pre = value["pre"];
+            const messages = value["msg"];
+            if (messages === undefined) {
+                return;
+            }
 
-            for (let i = 0; i < msg.length; ++i) {
-                if (pre[i]) {
-                    CmdOutput.push(pre[i]);
-                }
-                CmdOutput.push(msg[i]);
+            for (let msg of messages) {
+                CmdOutput.push(msg);
             }
 
             CmdOutput.follow();
@@ -3000,7 +2992,7 @@ function main() {
                 event.target.elements.cmd.value = "";
 
                 CmdOutput.pushAndFollow(line);
-                sendAction("cmd", {line});
+                sendAction("cmd", {"line": `${line}\n`});
             });
         } else {
             form.addEventListener("submit", (event) => {

@@ -524,20 +524,25 @@ void setup() {
             if (!t.startsWith(MQTT_TOPIC_CMD)) return;
             if (!strlen(payload)) return;
 
-            String cmd(payload);
-            if (!cmd.endsWith("\r\n") && !cmd.endsWith("\n")) {
-                cmd += '\n';
+            auto line = String(payload);
+            if (!line.endsWith("\r\n") && !line.endsWith("\n")) {
+                line += '\n';
             }
 
             // TODO: unlike http handler, we have only one output stream
             //       and **must** have a fixed-size output buffer
             //       (wishlist: MQTT client does some magic and we don't buffer twice)
+            // TODO: or, at least, make it growable on-demand and cap at MSS?
+            // TODO: PrintLine<...> instead of one giant blob?
+
+            auto cmd = std::make_shared<String>(std::move(line));
+
             schedule_function([cmd]() {
                 PrintString out(TCP_MSS);
-                api_find_and_call(cmd, out);
+                api_find_and_call(*cmd, out);
 
-                static const auto topic = mqttTopic(MQTT_TOPIC_CMD, false);
                 if (out.length()) {
+                    static const auto topic = mqttTopic(MQTT_TOPIC_CMD, false);
                     mqttSendRaw(topic.c_str(), out.c_str(), false);
                 }
             });
@@ -554,35 +559,122 @@ void setup() {
 #if WEB_SUPPORT
 namespace web {
 
+struct Output {
+    static constexpr auto Timeout = espurna::duration::Seconds(2);
+    static constexpr auto Wait = espurna::duration::Milliseconds(100);
+    static constexpr int Limit { 8 };
+
+    Output() = delete;
+    Output(const Output&) = default;
+    Output(Output&&) = default;
+
+    explicit Output(uint32_t id) :
+        _id(id)
+    {}
+
+    ~Output() {
+        send();
+    }
+
+    void operator()(const char* line) {
+        if (wsConnected(_id)) {
+            if ((_count > Limit) && !send()) {
+                return;
+            }
+
+            ++_count;
+            _output += line;
+        }
+    }
+
+    void clear() {
+        _output = String();
+        _count = 0;
+    }
+
+    bool send() {
+        if (!_count || !_output.length()) {
+            clear();
+            return false;
+        }
+
+        if (!wsConnected(_id)) {
+            clear();
+            return false;
+        }
+
+        using Clock = time::CoreClock;
+
+        auto start = Clock::now();
+        bool ready { false };
+
+        while (Clock::now() - start < Timeout) {
+            auto info = wsClientInfo(_id);
+            if (!info.connected) {
+                clear();
+                return false;
+            }
+
+            if (!info.stalled) {
+                ready = true;
+                break;
+            }
+
+            time::blockingDelay(Wait);
+        }
+
+        if (ready) {
+            DynamicJsonBuffer buffer((2 * JSON_OBJECT_SIZE(1)) + JSON_ARRAY_SIZE(1));
+
+            JsonObject& root = buffer.createObject();
+            JsonObject& log = root.createNestedObject("log");
+
+            JsonArray& msg = log.createNestedArray("msg");
+            msg.add(_output.c_str());
+
+            wsSend(root);
+            clear();
+
+            return true;
+        }
+
+        clear();
+        return false;
+    }
+
+private:
+    String _output;
+    uint32_t _id { 0 };
+    int _count { 0 };
+};
+
+constexpr espurna::duration::Seconds Output::Timeout;
+constexpr espurna::duration::Milliseconds Output::Wait;
+
 void onVisible(JsonObject& root) {
     wsPayloadModule(root, PSTR("cmd"));
 }
 
 void onAction(uint32_t client_id, const char* action, JsonObject& data) {
-    if (strncmp_P(action, PSTR("cmd"), 3) != 0) {
+    alignas(4) static constexpr char Cmd[] PROGMEM = "cmd";
+    if (strncmp_P(action, &Cmd[0], __builtin_strlen(Cmd)) != 0) {
         return;
     }
 
-    alignas(4) static constexpr char Key[] PROGMEM = "line";
-    if (!data.containsKey(FPSTR(Key)) || !data[FPSTR(Key)].is<String>()) {
+    alignas(4) static constexpr char Line[] PROGMEM = "line";
+    if (!data.containsKey(FPSTR(Line)) || !data[FPSTR(Line)].is<String>()) {
         return;
     }
 
-    const auto cmd = data[FPSTR(Key)].as<String>();
-    if (!cmd.length()) {
+    const auto cmd = std::make_shared<String>(
+        data[FPSTR(Line)].as<String>());
+    if (!cmd->length()) {
         return;
     }
 
     schedule_function([cmd, client_id]() {
-        // XXX: ???
-        PrintString out(256);
-        api_find_and_call(cmd, out);
-
-        wsPost(client_id,
-            [out](JsonObject& root) {
-                auto& cmd = root.createNestedObject(FPSTR("cmd"));
-                cmd[FPSTR("result")] = static_cast<const String&>(out);
-            });
+        PrintLine<Output> out(client_id);
+        api_find_and_call(*cmd, out);
     });
 }
 
@@ -624,19 +716,21 @@ void setup() {
         [](ApiRequest& api) {
             // TODO: since HTTP spec allows query string to contain repeating keys, allow iteration
             // over every received 'line' to provide a way to call multiple commands at once
-            auto cmd = api.param(F("line"));
-            if (!cmd.length()) {
+            auto line = api.param(F("line"));
+            if (!line.length()) {
                 return false;
             }
 
-            if (!cmd.endsWith("\r\n") && !cmd.endsWith("\n")) {
-                cmd += '\n';
+            if (!line.endsWith("\r\n") && !line.endsWith("\n")) {
+                line += '\n';
             }
+
+            auto cmd = std::make_shared<String>(std::move(line));
 
             api.handle([&](AsyncWebServerRequest* request) {
                 AsyncWebPrint::scheduleFromRequest(request,
                     [cmd](Print& out) {
-                        api_find_and_call(cmd, out);
+                        api_find_and_call(*cmd, out);
                     });
             });
 
@@ -656,25 +750,27 @@ void setup() {
             return true;
         }
 
-        auto* cmd_param = request->getParam("line", (request->method() == HTTP_PUT));
-        if (!cmd_param) {
+        auto* line_param = request->getParam("line", (request->method() == HTTP_PUT));
+        if (!line_param) {
             request->send(500);
             return true;
         }
 
-        auto cmd = cmd_param->value();
-        if (!cmd.length()) {
+        auto line = line_param->value();
+        if (!line.length()) {
             request->send(500);
             return true;
         }
 
-        if (!cmd.endsWith("\r\n") && !cmd.endsWith("\n")) {
-            cmd += '\n';
+        if (!line.endsWith("\r\n") && !line.endsWith("\n")) {
+            line += '\n';
         }
+
+        auto cmd = std::make_shared<String>(std::move(line));
 
         AsyncWebPrint::scheduleFromRequest(request,
             [cmd](Print& out) {
-                api_find_and_call(cmd, out);
+                api_find_and_call(*cmd, out);
             });
 
         return true;

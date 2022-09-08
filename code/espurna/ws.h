@@ -105,6 +105,13 @@ void wsSend(const char* data);
 // Check if any or specific client_id is connected
 // Server will try to set unique ID for each client
 
+struct WsClientInfo {
+    bool connected;
+    bool stalled;
+};
+
+WsClientInfo wsClientInfo(uint32_t client_id);
+
 bool wsConnected();
 bool wsConnected(uint32_t client_id);
 

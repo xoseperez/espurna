@@ -377,40 +377,75 @@ bool _wsAuth(AsyncWebSocketClient* client) {
 
 namespace {
 
-constexpr size_t WsDebugMessagesMax = 8;
-WsDebug _ws_debug(WsDebugMessagesMax);
+struct WsDebug {
+    static constexpr int Limit { 8 };
+
+    WsDebug() = default;
+    WsDebug(const WsDebug&) = delete;
+    WsDebug(WsDebug&&) = delete;
+
+    void clear() {
+        _buffer = String();
+        _count = 0;
+    }
+
+    void operator()(const char* prefix, const char* message) {
+        if (wsConnected()) {
+            if ((_count > Limit) && !send()) {
+                return;
+            }
+
+            auto pre_len = strlen(prefix);
+            auto msg_len = strlen(message);
+            _buffer.reserve(_buffer.length() + pre_len + msg_len);
+            _buffer.concat(prefix, pre_len);
+            _buffer.concat(message, msg_len);
+
+            ++_count;
+        }
+    }
+
+    bool send(bool connected) {
+        if (!connected && (_count || _buffer.length())) {
+            clear();
+            return false;
+        }
+
+        // ref: http://arduinojson.org/v5/assistant/ for pre-allocation math
+        if (_count && connected) {
+            DynamicJsonBuffer buffer((2 * JSON_OBJECT_SIZE(1)) + JSON_ARRAY_SIZE(1));
+
+            JsonObject& root = buffer.createObject();
+            JsonObject& log = root.createNestedObject("log");
+
+            JsonArray& msg = log.createNestedArray("msg");
+            msg.add(_buffer.c_str());
+
+            wsSend(root);
+            clear();
+
+            return true;
+        }
+
+        return false;
+    }
+
+    bool send() {
+        return send(wsConnected());
+    }
+
+private:
+    String _buffer;
+    int _count { 0 };
+};
+
+WsDebug _ws_debug;
 
 } // namespace
 
-void WsDebug::send(bool connected) {
-    if (!connected && _flush) {
-        clear();
-        return;
-    }
-
-    if (!_flush) return;
-    // ref: http://arduinojson.org/v5/assistant/
-    // {"log": {"msg":[...],"pre":[...]}}
-    DynamicJsonBuffer jsonBuffer(2*JSON_ARRAY_SIZE(_messages.size()) + JSON_OBJECT_SIZE(1) + JSON_OBJECT_SIZE(2));
-
-    JsonObject& root = jsonBuffer.createObject();
-    JsonObject& log = root.createNestedObject("log");
-
-    JsonArray& msg_array = log.createNestedArray("msg");
-    JsonArray& pre_array = log.createNestedArray("pre");
-
-    for (auto& msg : _messages) {
-        pre_array.add(msg.first.c_str());
-        msg_array.add(msg.second.c_str());
-    }
-
-    wsSend(root);
-    clear();
-}
-
 bool wsDebugSend(const char* prefix, const char* message) {
     if ((wifiConnected() || wifiApStations()) && wsConnected()) {
-        _ws_debug.add(prefix, message);
+        _ws_debug(prefix, message);
         return true;
     }
 
@@ -760,6 +795,16 @@ void _wsLoop() {
 // -----------------------------------------------------------------------------
 // Public API
 // -----------------------------------------------------------------------------
+
+WsClientInfo wsClientInfo(uint32_t client_id) {
+    auto* client = _ws.client(client_id);
+
+    WsClientInfo out;
+    out.connected = (client != nullptr);
+    out.stalled = out.connected && client->queueIsFull();
+
+    return out;
+}
 
 bool wsConnected() {
     return (_ws.count() > 0);
