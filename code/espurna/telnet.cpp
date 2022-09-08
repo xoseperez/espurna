@@ -48,6 +48,9 @@ public:
     size_t write(const uint8_t* data, size_t size) override;
 
     void flush() override;
+    size_t writeable() const {
+        return _buffers.empty() && (_client->space() > 0);
+    }
 
 private:
     static constexpr size_t buffersMax() {
@@ -57,13 +60,44 @@ private:
     using Buffer = std::vector<uint8_t>;
 
     void _addBuffer();
+    void _trySend();
 
-    static void _trySend(AsyncBufferedClient* client);
     static void _s_onAck(void* client_ptr, AsyncClient*, size_t, uint32_t);
     static void _s_onPoll(void* client_ptr, AsyncClient* client);
 
     std::unique_ptr<AsyncClient> _client;
     std::list<Buffer> _buffers;
+};
+
+// *really* flush, need for terminal output b/c basic Print just bails on timeout
+struct ExhaustingPrint : public Print {
+    ExhaustingPrint() = delete;
+    explicit ExhaustingPrint(AsyncBufferedClient* client) :
+        _client(client)
+    {}
+
+    size_t write(uint8_t c) override {
+        flush();
+        return _client->write(c);
+    }
+
+    size_t write(const uint8_t* ptr, size_t length) override {
+        flush();
+        return _client->write(ptr, length);
+    }
+
+    // ... but, we still dont want to block forever, wait for 3sec
+    // but make it wake up every 10ms to try to flush things
+    void flush() override {
+        while (_client->connected() && !_client->writeable()) {
+            _client->flush();
+            espurna::time::blockingDelay(
+                espurna::duration::Milliseconds(10));
+        }
+    }
+
+private:
+    AsyncBufferedClient* _client;
 };
 
 using TTelnetServer = AsyncServer;
@@ -204,12 +238,12 @@ AsyncBufferedClient::AsyncBufferedClient(AsyncClient* client) : _client(client) 
     _client->onPoll(_s_onPoll, this);
 }
 
-void AsyncBufferedClient::_trySend(AsyncBufferedClient* client) {
-    while (!client->_buffers.empty()) {
-        auto& chunk = client->_buffers.front();
-        if (client->_client->space() >= chunk.size()) {
-            client->_client->write((const char*)chunk.data(), chunk.size());
-            client->_buffers.pop_front();
+void AsyncBufferedClient::_trySend() {
+    while (!_buffers.empty()) {
+        auto& chunk = _buffers.front();
+        if (_client->space() >= chunk.size()) {
+            _client->write((const char*)chunk.data(), chunk.size());
+            _buffers.pop_front();
             continue;
         }
         return;
@@ -217,11 +251,11 @@ void AsyncBufferedClient::_trySend(AsyncBufferedClient* client) {
 }
 
 void AsyncBufferedClient::_s_onAck(void* client_ptr, AsyncClient*, size_t, uint32_t) {
-    _trySend(reinterpret_cast<AsyncBufferedClient*>(client_ptr));
+    reinterpret_cast<AsyncBufferedClient*>(client_ptr)->_trySend();
 }
 
 void AsyncBufferedClient::_s_onPoll(void* client_ptr, AsyncClient*) {
-    _trySend(reinterpret_cast<AsyncBufferedClient*>(client_ptr));
+    reinterpret_cast<AsyncBufferedClient*>(client_ptr)->_trySend();
 }
 
 void AsyncBufferedClient::_addBuffer() {
@@ -272,6 +306,7 @@ size_t AsyncBufferedClient::write(uint8_t c) {
 
 void AsyncBufferedClient::flush() {
     _client->send();
+    _trySend();
 }
 
 size_t AsyncBufferedClient::available() {
@@ -384,7 +419,15 @@ void _telnetData(unsigned char clientId, char * data, size_t len) {
     cmd.concat(data, len);
 
     schedule_function([cmd, clientId]() {
-        espurna::terminal::api_find_and_call(cmd, *_telnetClients[clientId]);
+        auto& client = _telnetClients[clientId];
+        if (client && client->connected()) {
+#if TELNET_SERVER == TELNET_SERVER_ASYNC
+            ExhaustingPrint print(client.get());
+#else
+            Print& print = *_telnetClients[clientId];
+#endif
+            espurna::terminal::api_find_and_call(cmd, print);
+        }
     });
 #endif
 }
