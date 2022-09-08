@@ -29,9 +29,6 @@ String error(Error value) {
     case Error::Busy:
         out = PSTR("Busy");
         break;
-    case Error::UnescapedText:
-        out = PSTR("UnescapedText");
-        break;
     case Error::UnterminatedQuote:
         out = PSTR("UnterminatedQuote");
         break;
@@ -100,16 +97,6 @@ char hex_digit_to_byte(char c) {
 
 char hex_digit_to_value(char lhs, char rhs) {
     return (hex_digit_to_byte(lhs) << 4) | hex_digit_to_byte(rhs);
-}
-
-// printable ASCII character set
-bool is_printable(char c) {
-    switch (c) {
-    case ' '...'~':
-        return true;
-    }
-
-    return false;
 }
 
 // allowed 'special' input characters
@@ -302,12 +289,7 @@ text:
                 state = State::Done;
                 break;
             default:
-                if (is_printable(*it)) {
-                    values.append_span(it);
-                } else {
-                    result = Error::UnescapedText;
-                    goto out;
-                }
+                values.append_span(it);
                 break;
             }
             break;
@@ -391,12 +373,7 @@ text:
                 state = State::AfterQuote;
                 break;
             default:
-                if (is_printable(*it)) {
-                    values.append_span(it);
-                } else {
-                    result = Error::UnescapedText;
-                    goto out;
-                }
+                values.append_span(it);
                 break;
             }
             break;
@@ -446,12 +423,7 @@ text:
                 state = State::EscapedText;
                 break;
             default:
-                if (is_printable(*it)) {
-                    values.append_span(it);
-                } else {
-                    result = Error::UnescapedText;
-                    goto out;
-                }
+                values.append_span(it);
                 break;
             }
             break;

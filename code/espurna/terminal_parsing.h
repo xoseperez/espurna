@@ -31,7 +31,6 @@ enum class Error {
     UnterminatedQuote, // parsing stopped without terminating a quoted entry
     NoSpaceAfterQuote, // parsing stopped since there was no space after quote
     InvalidEscape,     // escaped text was invalid
-    UnescapedText,     // unprintable text intput was not escaped
     UnexpectedLineEnd, // unexpected \r encounteted in the input
 };
 
