@@ -582,21 +582,6 @@ void configure() {
         DEBUG_PORT.setDebugOutput(settings::sdkDebug());
     }
 
-    // Make sure other modules are aware of used GPIOs
-    // TODO: external port config, without using Arduino globals, will fix this diagnostics mess...
-#if DEBUG_SERIAL_SUPPORT
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored  "-Wpragmas"
-#pragma GCC diagnostic ignored  "-Wtautological-compare"
-    if (&(DEBUG_PORT) == &Serial) {
-        gpioLock(1);
-        gpioLock(3);
-    } else if (&(DEBUG_PORT) == &Serial1) {
-        gpioLock(2);
-    }
-#pragma GCC diagnostic pop
-#endif
-
 #if DEBUG_LOG_BUFFER_SUPPORT
     if (settings::buffer()) {
         debug::buffer::enable(settings::bufferSize());
