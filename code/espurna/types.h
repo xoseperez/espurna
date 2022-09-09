@@ -22,7 +22,7 @@ struct SourceLocation {
     const char* func;
 };
 
-inline SourceLocation make_source_location(
+inline constexpr SourceLocation make_source_location(
         int line = __builtin_LINE(),
         const char* file = __builtin_FILE(),
         const char* func = __builtin_FUNCTION())
