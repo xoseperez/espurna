@@ -265,11 +265,11 @@ Here is the list of supported hardware. For more information please refer to the
 ||||
 |---|---|---|
 |![BlitzWolf BW-SHP6](images/devices/blitzwolf-bw-shp6.jpg)|![BlitzWolf BW-SHP2](images/devices/blitzwolf-bw-shp2.jpg)|![BlitzWolf BW-SHP5](images/devices/blitzwolf-bw-shp5.jpg)|
-|**Blitzwolf BW-SHP6**|**Blitzwolf BW-SHP2<br />(also by Coosa, Gosund, HomeCube, Teckin)**|**Blitzwolf BW-SHP5**|
+|**Blitzwolf BW-SHP6**|**[Blitzwolf BW-SHP2](https://github.com/xoseperez/espurna/wiki/Hardware-BLITZWOLF-BW-SHP2)**<br />(also by Coosa, Gosund, HomeCube, Teckin)|**Blitzwolf BW-SHP5**|
 |![Power meters based on V9261F](images/devices/generic-v9261f.jpg)|![Itead Sonoff POW](images/devices/itead-sonoff-pow.jpg)|![Itead Sonoff POW](images/devices/itead-sonoff-pow-r2.jpg)|
-|**Power meters based on V9261F**|**Itead Sonoff POW**|**Itead Sonoff POW R2**|
+|**[Power meters based on V9261F](https://github.com/xoseperez/espurna/wiki/Hardware-Generic-V9261F)**|**[Itead Sonoff POW](https://github.com/xoseperez/espurna/wiki/Hardware-Itead-Sonoff-POW)**|**[Itead Sonoff POW R2](https://github.com/xoseperez/espurna/wiki/Hardware-Itead-Sonoff-POW-R2)**|
 |![Itead Sonoff S31](images/devices/itead-sonoff-s31.jpg)|![Smartlife Mini Smart Socket](images/devices/smartlife-mini-smart-socket.jpg)|![Teckin SP20](images/devices/teckin-sp20.jpg)|
-|**Itead Sonoff S31**|**Smartlife (NETVIP) Mini Smart Socket**|**Teckin SP20**|
+|**[Itead Sonoff S31](https://github.com/xoseperez/espurna/wiki/Hardware-Itead-Sonoff-S31)**|**Smartlife (NETVIP) Mini Smart Socket**|**Teckin SP20**|
 |![Digoo NX SP202](images/devices/digoo-nx-sp202.jpg)|![Vanzavanzu Smart WiFi Plug Mini](images/devices/vanzavanzu-smart-wifi-plug-mini.jpg)|![Hykker Smart Home Power Plug](images/devices/hykker-smart-home-power-plug.jpg)|
 |**Digoo NX SP202**|**Vanzavanzu Smart WiFi Plug Mini**|**Hykker Smart Home Power Plug**|
 
@@ -278,15 +278,15 @@ Here is the list of supported hardware. For more information please refer to the
 ||||
 |---|---|---|
 |![Itead Sonoff Basic](images/devices/itead-sonoff-basic.jpg)|![Itead Sonoff Dual/Dual R2](images/devices/itead-sonoff-dual.jpg)|![Itead Sonoff TH10/TH16](images/devices/itead-sonoff-th.jpg)|
-|**Itead Sonoff Basic (including R2 and R3)**|**Itead Sonoff Dual/Dual R2**|**Itead Sonoff TH10/TH16**|
+|**[Itead Sonoff Basic (including R2 and R3)](https://github.com/xoseperez/espurna/wiki/Hardware-Itead-Sonoff-Basic)**|**[Itead Sonoff Dual/Dual R2](https://github.com/xoseperez/espurna/wiki/Hardware-Itead-Sonoff-Dual)**|**[Itead Sonoff TH10/TH16](https://github.com/xoseperez/espurna/wiki/Hardware-Itead-Sonoff-TH)**|
 |![Electrodragon WiFi IOT](images/devices/electrodragon-wifi-iot.jpg)|![OpenEnergyMonitor WiFi MQTT Relay / Thermostat](images/devices/openenergymonitor-mqtt-relay.jpg)||
-|**Electrodragon WiFi IOT**|**OpenEnergyMonitor WiFi MQTT Relay / Thermostat**||
+|**[Electrodragon WiFi IOT](https://github.com/xoseperez/espurna/wiki/Hardware-Electrodragon-ESP-Relay-Board)**|**[OpenEnergyMonitor WiFi MQTT Relay / Thermostat](https://github.com/xoseperez/espurna/wiki/Hardware-OpenEnergyMonitor-Wifi-MQTT-Relay)**||
 |![Itead Sonoff 4CH](images/devices/itead-sonoff-4ch.jpg)|![Itead Sonoff 4CH Pro](images/devices/itead-sonoff-4ch-pro.jpg)||
-|**Itead Sonoff 4CH**|**Itead Sonoff 4CH Pro**||
+|**[Itead Sonoff 4CH](https://github.com/xoseperez/espurna/wiki/Hardware-Itead-Sonoff-4CH)**|**[Itead Sonoff 4CH Pro](https://github.com/xoseperez/espurna/wiki/Hardware-Itead-Sonoff-4CH-Pro---R2)**||
 |![Allterco Shelly 1 / 1PM](images/devices/allterco-shelly1.jpg)|![Allterco Shelly 2 / 2.5](images/devices/allterco-shelly2.jpg)|![Jan Goedeke Wifi Relay (NO/NC)](images/devices/jangoe-wifi-relay.jpg)|
-|**Alterco Shelly 1 / 1PM**|**Alterco Shelly 2 / 2.5**|**Jan Goedeke Wifi Relay (NO/NC)**|
+|**Alterco Shelly 1 / 1PM**|**Alterco Shelly 2 / 2.5**|**[Jan Goedeke Wifi Relay (NO/NC)](https://github.com/xoseperez/espurna/wiki/Hardware-Jan-Goedeke-Wifi-Relay-Board)**|
 |![EXS Wifi Relay v3.1](images/devices/exs-wifi-relay-v31.jpg)|![EXS Wifi Relay v5.0](images/devices/exs-wifi-relay-v50.jpg)|![Jorge García Wifi + Relays Board Kit](images/devices/jorgegarcia-wifi-relays.jpg)|
-|**EXS Wifi Relay v3.1**|**EXS Wifi Relay v5.0**|**Jorge García Wifi + Relays Board Kit**|
+|**[EXS Wifi Relay v3.1](https://github.com/xoseperez/espurna/wiki/Hardware-EXS-WiFi-Relay-v3.1)**|**EXS Wifi Relay v5.0**|**[Jorge García Wifi + Relays Board Kit](https://github.com/xoseperez/espurna/wiki/Hardware-Jorge-Garcia-Wifi-Relay-Board)**|
 |![Allnet ESP8266-UP-Relay](images/devices/allnet-esp8266-up-relay.jpg)|![Bruno Horta's OnOfre](images/devices/bh-onofre.jpg)|![Luani HVIO](images/devices/luani-hvio.jpg)|
 |**Allnet ESP8266-UP-Relay**|**Bruno Horta's OnOfre**|**Luani HVIO**|
 
@@ -296,28 +296,28 @@ Here is the list of supported hardware. For more information please refer to the
 ||||
 |---|---|---|
 |![Itead S20](images/devices/itead-s20.jpg)|![Itead S26](images/devices/itead-s26.jpg)|![Neo Coolcam NAS WR01W](images/devices/neo-coolcam-wifi.jpg)|
-|**Itead S20**|**Itead S26**|**Neo Coolcam NAS WR01W**|
+|**[Itead S20](https://github.com/xoseperez/espurna/wiki/Hardware-Itead-S20)**|**[Itead S26](https://github.com/xoseperez/espurna/wiki/Hardware-Itead-S26)**|**[Neo Coolcam NAS WR01W](https://github.com/xoseperez/espurna/wiki/Hardware-NEO-COOLCAM-NAS-WR01W)**|
 |![Maxcio W-US002S](images/devices/maxcio-w-us002s.jpg)|![HEYGO HY02](images/devices/heygo-hy02.jpg)|![YiDian XS-SSA05](images/devices/yidian-xs-ssa05.jpg)|
-|**Maxcio W-US002S**|**HEYGO HY02**|**YiDian XS-SSA05**|
+|**[Maxcio W-US002S](https://github.com/xoseperez/espurna/wiki/Hardware-Maxcio-W-US002S)**|**[HEYGO HY02](https://github.com/xoseperez/espurna/wiki/Hardware-HEYGO-HY02)**|**[YiDian XS-SSA05](https://github.com/xoseperez/espurna/wiki/Hardware-YiDian-XS-SSA05)**|
 |![WiOn 50055](images/devices/wion-50055.jpg)|![LINGAN SWA1](images/devices/lingan-swa1.jpg)|![HomeCube 16A](images/devices/homecube-16a.jpg)|
-|**WiOn 50055**|**LINGAN SWA1**|**HomeCube 16A**|
+|**[WiOn 50055](https://github.com/xoseperez/espurna/wiki/Hardware-WiOn-50055)**|**[LINGAN SWA1](https://github.com/xoseperez/espurna/wiki/Hardware-LINGAN-SWA1)**|**HomeCube 16A**|
 |![WorkChoice EcoPlug](images/devices/workchoice-ecoplug.jpg)|![Bestek MRJ1011](images/devices/bestek-mrj1011.jpg)|![Tonbux XS-SSA01](images/devices/tonbux-xs-ssa01.jpg)|
-|**WorkChoice EcoPlug**|**Bestek MRJ1011**|**Tonbux XS-SSA01**|
+|**[WorkChoice EcoPlug](https://github.com/xoseperez/espurna/wiki/Hardware-WorkChoice-EcoPlug)**|**[Bestek MRJ1011](https://github.com/xoseperez/espurna/wiki/Hardware-Bestek-MRJ1011)**|**Tonbux XS-SSA01**|
 |![Schuko Wifi Plug](images/devices/schuko-wifi-plug.jpg)|![Schuko Wifi Plug V2](images/devices/schuko-wifi-plug-v2.jpg)|![KMC 70011](images/devices/kmc-70011.jpg)|
-|**Schuko Wifi Plug**|**Schuko Wifi Plug V2**|**KMC 70011**|
+|**Schuko Wifi Plug**|**Schuko Wifi Plug V2**|**[KMC 70011](https://github.com/xoseperez/espurna/wiki/Hardware-KMC-70011)**|
 |![Xenon SM-PW702U](images/devices/xenon-sm-pw702u.jpg)|![Orvibo B25](images/devices/orvibo-b25.jpg)|![Oukitel P1](images/devices/oukitel-p1.jpg)|
-|**Xenon SM-PW702U**|**Orvibo B25**|**Oukitel P1**|
+|**[Xenon SM-PW702U](https://github.com/xoseperez/espurna/wiki/Hardware-Xenon-SM-PW-702U)**|**[Orvibo B25](https://github.com/xoseperez/espurna/wiki/Hardware-Orvibo-B25)**|**Oukitel P1**|
 |![Tonbux XS-SSA06](images/devices/tonbux-xs-ssa06.jpg)|![Litesun LA-WF3](images/devices/litesun-la-wf3.jpg)|![Maxcio W DE-004](images/devices/maxcio-w-de004.jpg)|
-|**Tonbux XS-SSA06**|**Litesun LA-WF3**|**Maxcio W DE-004**|
+|**[Tonbux XS-SSA06](https://github.com/xoseperez/espurna/wiki/Hardware-Tonbux-XS-SSA06)**|**Litesun LA-WF3**|**[Maxcio W DE-004](https://github.com/xoseperez/espurna/wiki/Hardware-Maxcio-W-DE004)**|
 |![Hama WiFi Steckdose](images/devices/hama-wifi-steckdose.jpg)|![GBLife RGBW Socket](images/devices/gblife-rgbw-socket.jpg)||
-|**Hama WiFi Steckdose**|**GBLife RGBW Socket**||
+|**[Hama WiFi Steckdose](https://github.com/xoseperez/espurna/wiki/Hardware-Hama-WiFi-Steckdose,-3.500W,-16A-(Article-Number-00176533))**|**GBLife RGBW Socket**||
 
 ### Wall switches
 
 ||||
 |---|---|---|
 |![Itead Sonoff Touch](images/devices/itead-sonoff-touch.jpg)|![Itead Sonoff T1](images/devices/itead-sonoff-t1.jpg)|![YJZK switch](images/devices/yjzk-2gang-switch.jpg)|
-|**Itead Sonoff Touch**|**Itead Sonoff T1**|**YJZK 1/2/3-gangs switch**|
+|**[Itead Sonoff Touch](https://github.com/xoseperez/espurna/wiki/Hardware-Itead-Sonoff-Touch)**|**[Itead Sonoff T1](https://github.com/xoseperez/espurna/wiki/Hardware-Itead-Sonoff-T1)**|**YJZK 1/2/3-gangs switch**|
 |![Gosund WS1 / KS-602S](images/devices/gosund-ws1.jpg)|||
 |**Gosund WS1 / KS-602S**|||
 
@@ -326,65 +326,64 @@ Here is the list of supported hardware. For more information please refer to the
 ||||
 |---|---|---|
 |![Tonbux PowerStrip02](images/devices/tonbux-powerstrip02.jpg)|![ForNorm ZLD-34EU](images/devices/fornorm-power-strip.jpg)|![Zhilde ZLD-EU55-W](images/devices/zhilde-zld-eu55-w.jpg)|
-|**Tonbux PowerStrip02**|**Fornorm Power Strip**|**Zhilde ZLD-EU55-W**|
+|**[Tonbux PowerStrip02](https://github.com/xoseperez/espurna/wiki/Hardware-Tonbux-Powerstrip02)**|**Fornorm Power Strip**|**Zhilde ZLD-EU55-W**|
 
 ### Smart lights
 
 ||||
 |---|---|---|
 |![Itead Slampher](images/devices/itead-slampher.jpg)|![Arilux E27](images/devices/arilux-e27.jpg)|![Itead Sonoff B1](images/devices/itead-sonoff-b1.jpg)|
-|**Itead Slampher**|**Arilux E27**|**Itead Sonoff B1**|
+|**[Itead Slampher](https://github.com/xoseperez/espurna/wiki/Hardware-Itead-Slampher)**|**[Arilux E27](https://github.com/xoseperez/espurna/wiki/Hardware-Arilux-E27)**|**[Itead Sonoff B1](https://github.com/xoseperez/espurna/wiki/Hardware-Itead-Sonoff-B1)**|
 |![AI-Thinker Wifi Light / Noduino OpenLight](images/devices/aithinker-ai-light.jpg)|![Authometion LYT8266](images/devices/authometion-lyt8266.jpg)|![AG-L4](images/devices/ag-l4.jpg)|
-|**AI-Thinker Wifi Light / Noduino OpenLight**|**Authometion LYT8266**|**AG-L4**|
+|**[AI-Thinker Wifi Light / Noduino OpenLight](https://github.com/xoseperez/espurna/wiki/Hardware-AI-Thinker-AI-Light)**|**Authometion LYT8266**|**AG-L4**|
 |![Lohas 9W](images/devices/lohas-9w.jpg)|![Xiaomi Smart Desk Lamp](images/devices/xiaomi-smart-desk-lamp.jpg)|![iWoole LED Table Lamp](images/devices/iwoole-led-table-lamp.jpg)|
-|**Lohas 9W**|**Xiaomi Smart Desk Lamp**|**iWoole LED Table Lamp**|
+|**Lohas 9W**|**Xiaomi Smart Desk Lamp**|**[iWoole LED Table Lamp](https://github.com/xoseperez/espurna/wiki/Hardware-IWOOLE_LED_TABLE_LAMP)**|
 |![Itead Sonoff LED](images/devices/itead-sonoff-led.jpg)|![Itead BN-SZ01](images/devices/itead-bn-sz01.jpg)|![Lombox LUX Nova 2](images/devices/lombex-lux-nova2.jpg)|
-|**Itead Sonoff LED**|**Itead BN-SZ01**|**Lombex LUX Nova 2 (white and color)**|
+|**[Itead Sonoff LED](https://github.com/xoseperez/espurna/wiki/Hardware-Itead-Sonoff-LED)**|**[Itead BN-SZ01](https://github.com/xoseperez/espurna/wiki/Hardware-Itead-BN-SZ01)**|**[Lombex LUX Nova 2 (white and color)](https://github.com/xoseperez/espurna/wiki/Hardware-Lombex-Lux-Nova)**|
 |![Arilux AL-LC01 (RGB)](images/devices/arilux-al-lc01.jpg)|![Arilux AL-LC02 (RGBW)](images/devices/arilux-al-lc02.jpg)|![Arilux AL-LC06 (RGBWWCW)](images/devices/arilux-al-lc06.jpg)|
-|**Arilux AL-LC01 (RGB)**|**Arilux AL-LC02 (RGBW)**|**Arilux AL-LC06 (RGBWWCW)**|
+|**Arilux AL-LC01 (RGB)**|**Arilux AL-LC02 (RGBW)**|**[Arilux AL-LC06 (RGBWWCW)](https://github.com/xoseperez/espurna/wiki/Hardware-Arilux-AL-LC06)**|
 |![Arilux AL-LC11 (RGBWWW) & RF](images/devices/arilux-al-lc11.jpg)|![MagicHome LED Controller (1.0 and 2.x)](images/devices/magichome-led-controller.jpg)|![Huacanxing H801/802](images/devices/huacanxing-h801.jpg)|
-|**Arilux AL-LC11 (RGBWWW) & RF**|**MagicHome LED Controller (1.0/2.x, also ZJ WFMN A/B11)**|**Huacanxing H801/802**|
+|**Arilux AL-LC11 (RGBWWW) & RF**|**[MagicHome LED Controller (1.0/2.x, also ZJ WFMN A/B11)](https://github.com/xoseperez/espurna/wiki/Hardware-Magic-Home-LED-Controller)**|**[Huacanxing H801/802](https://github.com/xoseperez/espurna/wiki/Hardware-Huacanxing-H80x)**|
 |![Muvit I/O MIOBULB001](images/devices/muvit-io-miobulb001.jpg)|
-|**Muvit I/O MIOBULB001**|
+|**[Muvit I/O MIOBULB001](https://github.com/xoseperez/espurna/wiki/Hardware-Muvit-IO-miobulb001)**|
 
 ### Radio links / gateways
 
 ||||
 |---|---|---|
 |![Tinkerman RFM69GW](images/devices/tinkerman-rfm69gw.jpg)|![Itead Sonoff RF Bridge](images/devices/itead-sonoff-rfbridge.jpg)|![Itead Sonoff RF](images/devices/itead-sonoff-rf.jpg)|
-|**Tinkerman RFM69GW**|**Itead Sonoff RF Bridge**|**Itead Sonoff RF**|
+|**Tinkerman RFM69GW**|**[Itead Sonoff RF Bridge](https://github.com/xoseperez/espurna/wiki/Hardware-Itead-Sonoff-RF-Bridge)**|**[Itead Sonoff RF](https://github.com/xoseperez/espurna/wiki/Hardware-Itead-Sonoff-RF)**|
 
 ### Other devices
 
 ||||
 |---|---|---|
 |![Tonbux Mosquito Killer](images/devices/tonbux-mosquito-killer.jpg)|![Itead Sonoff IFAN02](images/devices/itead-sonoff-ifan02.jpg)||
-|**Tonbux Mosquito Killer**|**Itead Sonoff IFAN02**|||
+|**[Tonbux Mosquito Killer](https://github.com/xoseperez/espurna/wiki/Hardware-Tonbux-Mosquito-Killer)**|**Itead Sonoff IFAN02**|||
 
 ### Custom & Development boards
 
 ||||
 |---|---|---|
 |![Tinkerman Espurna H](images/devices/tinkerman-espurna-h.jpg)||![NodeMCU](images/devices/nodemcu-lolin-v3.jpg)|
-|**Tinkerman ESPurna H**||**NodeMCU Lolin V3**|
+|**[Tinkerman ESPurna H](https://github.com/xoseperez/espurna/wiki/Hardware-Tinkerman-ESPurna-H)**||**[NodeMCU Lolin V3](https://github.com/xoseperez/espurna/wiki/Hardware-NodeMCU-Lolin)**|
 |![Itead Sonoff SV](images/devices/itead-sonoff-sv.jpg)|![Itead 1CH Inching](images/devices/itead-1ch-inching.jpg)|![Itead Motor Clockwise/Anticlockwise](images/devices/itead-motor.jpg)|
-|**Itead Sonoff SV**|**Itead 1CH Inching**|**Itead Motor Clockwise/Anticlockwise**|
+|**[Itead Sonoff SV](https://github.com/xoseperez/espurna/wiki/Hardware-Itead-SV)**|**[Itead 1CH Inching](https://github.com/xoseperez/espurna/wiki/Hardware-Itead-1CH)**|**[Itead Motor Clockwise/Anticlockwise](https://github.com/xoseperez/espurna/wiki/Hardware-Itead-Motor)**|
 |![ManCaveMade ESP-Live](images/devices/mancavemade-esp-live.jpg)|![Wemos D1 Mini Relay Shield](images/devices/wemos-d1-relayshield.jpg)|![Gizwits Witty Cloud](images/devices/witty-cloud.jpg)|
-|**ManCaveMade ESP-Live**|**Wemos D1 Mini Relay Shield**|**Gizwits Witty Cloud**|
+|**[ManCaveMade ESP-Live](https://github.com/xoseperez/espurna/wiki/Hardware-ManCaveMade-ESPLive)**|**[Wemos D1 Mini Relay Shield](https://github.com/xoseperez/espurna/wiki/Hardware-Wemos-D1-Mini-Relay-Shield)**|**[Gizwits Witty Cloud](https://github.com/xoseperez/espurna/wiki/Hardware-Witty-Cloud)**|
 |![IKE ESPike](images/devices/ike-espike.jpg)|![Pilotak ESP DIN](images/devices/pilotak-esp-din.jpg)|![Arniex Swifitch](images/devices/arniex-swifitch.jpg)|
-|**IKE ESPike**|**Pilotak ESP DIN**|**Arniex Swifitch**|
+|**[IKE ESPike](https://github.com/xoseperez/espurna/wiki/Hardware-IKE-ESPike)**|**Pilotak ESP DIN**|**[Arniex Swifitch](https://github.com/xoseperez/espurna/wiki/Hardware-Arniex-Swifitch)**|
 |![Heltec Touch Relay](images/devices/heltec-touch-relay.jpg)|![Generic Relay v4.0](images/devices/generic-relay-40.jpg)|![Generic RGBLed v1.0](images/devices/generic-rgbled-10.jpg)|
-|**Heltec Touch Relay**|**Generic Relay v4.0**|**Generic RGBLed v1.0**|
+|**[Heltec Touch Relay](https://github.com/xoseperez/espurna/wiki/Hardware-Heltec-Touch-Relay)**|**[Generic Relay v4.0](https://github.com/xoseperez/espurna/wiki/Hardware-Generic-Relay-v40)**|**[Generic RGBLed v1.0](https://github.com/xoseperez/espurna/wiki/Hardware-Generic-RGBLed-v10)**|
 |![Generic DHT11 v1.0](images/devices/generic-dht11-10.jpg)|![Generic DS18B20 v1.0](images/devices/generic-ds18b20-10.jpg)|![InterMitTech QuinLED 2.6](images/devices/intermittech-quinled-2.6.jpg)|
-|**Generic DHT11 v1.0**|**Generic DS18B20 v1.0**|**InterMitTech QuinLED 2.6**|
+|**[Generic DHT11 v1.0](https://github.com/xoseperez/espurna/wiki/Hardware-Generic-DHT11-v10)**|**[Generic DS18B20 v1.0](https://github.com/xoseperez/espurna/wiki/Hardware-Generic-DS18B20-v10)**|**[InterMitTech QuinLED 2.6](https://github.com/xoseperez/espurna/wiki/Hardware-QuinLED)**|
 |![Phyx ESP12 RGBW](images/devices/phyx-esp12-rgbw.jpg)|![RH Electronics Geiger Counter](images/devices/generic-geiger-diy.png)|![Green ESP Relay](images/devices/green-esp-relay.jpg)|
-|**Phyx ESP12 RGBW**|**RH Electronics Geiger Counter**|**Green ESP Relay**|
+|**Phyx ESP12 RGBW**|**[RH Electronics Geiger Counter](https://github.com/xoseperez/espurna/wiki/Geiger-Counter)**|**[Green ESP Relay](https://github.com/xoseperez/espurna/wiki/Hardware-Green-ESP8266-Relay)**|
 |![Foxel Lightfox Dual](images/devices/foxel-lightfox-dual.jpg)|||
 |**Foxel Lightfox Dual**|||
 
 
-**Other supported boards (beta):**
-KMC 4 Outlet, Gosund WS1, MakerFocus Intelligent Module LM33 for Lamps
+*for more, reference pages starting with **Hardware** at our [wiki](https://github.com/xoseperez/espurna/wiki)*
 
 ## License
 
