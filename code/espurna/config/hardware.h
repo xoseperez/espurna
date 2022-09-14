@@ -47,7 +47,7 @@
 // ESPurna Core
 // -----------------------------------------------------------------------------
 
-#elif defined(ESPURNA_CORE)
+#elif defined(ESPURNA_MINIMAL_ARDUINO_OTA)
 
     // This is a special device targeted to generate a light-weight binary image
     // meant to be able to do two-step-updates:
@@ -55,7 +55,7 @@
 
     // Info
     #define MANUFACTURER            "ESPURNA"
-    #define DEVICE                  "CORE"
+    #define DEVICE                  "MINIMAL_ARDUINO_OTA"
 
     // Disable non-core modules
     #define ALEXA_SUPPORT           0
@@ -88,14 +88,14 @@
     //#define TELNET_SUPPORT          0 // when only using espota.py
     //#define TERMINAL_SUPPORT        0 //
 
-#elif defined(ESPURNA_CORE_WEBUI)
+#elif defined(ESPURNA_MINIMAL_WEBUI)
 
     // This is a special device with no specific hardware
     // with the basics to easily upgrade it to a device-specific image
 
     // Info
     #define MANUFACTURER            "ESPURNA"
-    #define DEVICE                  "CORE_WEBUI"
+    #define DEVICE                  "MINIMAL_WEBUI"
 
     // Disable non-core modules
     #define ALEXA_SUPPORT           0

@@ -10,8 +10,8 @@ COMPATIBILITY BETWEEN 2.3.0 and latest versions
 
 // -----------------------------------------------------------------------------
 
-inline constexpr bool isEspurnaCore() {
-#if defined(ESPURNA_CORE) || defined(ESPURNA_CORE_WEBUI)
+inline constexpr bool isEspurnaMinimal() {
+#if defined(ESPURNA_MINIMAL_ARDUINO_OTA) || defined(ESPURNA_MINIMAL_WEBUI)
     return true;
 #else
     return false;

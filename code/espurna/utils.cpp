@@ -53,7 +53,7 @@ String getBoardName() {
 }
 
 void setBoardName() {
-    if (!isEspurnaCore()) {
+    if (!isEspurnaMinimal()) {
         setSetting("boardName", F(DEVICE_NAME));
     }
 }

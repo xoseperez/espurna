@@ -398,8 +398,9 @@ void _telnetData(unsigned char clientId, char * data, size_t len) {
         return;
     }
 
-    // Password prompt (disable on CORE variant)
-    const bool authenticated = isEspurnaCore() ? true : _telnetClientsAuth[clientId];
+    // Password prompt; disabled on minimal variants
+    const bool authenticated = isEspurnaMinimal()
+        ? true : _telnetClientsAuth[clientId];
 
     if (_telnetAuth && !authenticated) {
         String password = getAdminPass();
@@ -435,7 +436,13 @@ void _telnetData(unsigned char clientId, char * data, size_t len) {
 void _telnetNotifyConnected(unsigned char id) {
     DEBUG_MSG_P(PSTR("[TELNET] Client #%u connected\n"), id);
 
-    if (!isEspurnaCore()) {
+#if __cplusplus >= 201703L
+    if constexpr (isEspurnaMinimal()) {
+#else
+    if (isEspurnaMinimal()) {
+#endif
+        _telnetClientsAuth[id] = true;
+    } else {
         _telnetClientsAuth[id] = !_telnetAuth;
         if (_telnetAuth) {
             if (getAdminPass().length()) {
@@ -444,8 +451,6 @@ void _telnetNotifyConnected(unsigned char id) {
                 _telnetClientsAuth[id] = true;
             }
         }
-    } else {
-        _telnetClientsAuth[id] = true;
     }
 
 #if DEBUG_SUPPORT
@@ -466,7 +471,7 @@ void _telnetLoop() {
 
                 if (_telnetClients[i]->localIP() != WiFi.softAPIP()) {
                     // Telnet is always available for the ESPurna Core image
-                    const bool can_connect = isEspurnaCore() ? true : getSetting("telnetSTA", 1 == TELNET_STA);
+                    const bool can_connect = isEspurnaMinimal() ? true : getSetting("telnetSTA", 1 == TELNET_STA);
                     if (!can_connect) {
                         DEBUG_MSG_P(PSTR("[TELNET] Rejecting - Only local connections\n"));
                         _telnetDisconnect(i);
@@ -531,8 +536,8 @@ void _telnetSetupClient(unsigned char i, AsyncClient *client) {
 
 void _telnetNewClient(AsyncClient* client) {
     if (client->localIP() != WiFi.softAPIP()) {
-        // Telnet is always available for the ESPurna Core image
-        const bool can_connect = isEspurnaCore() ? true : getSetting("telnetSTA", 1 == TELNET_STA);
+        // Telnet is always available for the ESPurna minimal variants
+        const bool can_connect = isEspurnaMinimal() ? true : getSetting("telnetSTA", 1 == TELNET_STA);
 
         if (!can_connect) {
             DEBUG_MSG_P(PSTR("[TELNET] Rejecting - Only local connections\n"));
