@@ -247,8 +247,12 @@ void uptime(CommandContext&& ctx) {
 }
 
 void info(CommandContext&& ctx) {
-    ctx.output.printf_P(PSTR("%s %s built %s\n"), getAppName(), getVersion(), buildTime().c_str());
-    ctx.output.printf_P(PSTR("mcu: esp8266 chipid: %s freq: %hhumhz\n"), getFullChipId().c_str(), system_get_cpu_freq());
+    ctx.output.printf_P(PSTR("%s %s built %s\n"),
+            getAppName(), getVersion(), buildTime().c_str());
+    ctx.output.printf_P(PSTR("manufacturer: %s device: %s\n"),
+            getManufacturer(), getDevice());
+    ctx.output.printf_P(PSTR("mcu: esp8266 chipid: %s freq: %hhumhz\n"),
+            getFullChipId().c_str(), system_get_cpu_freq());
     ctx.output.printf_P(PSTR("sdk: %s core: %s\n"),
             ESP.getSdkVersion(), getCoreVersion().c_str());
     ctx.output.printf_P(PSTR("md5: %s\n"), ESP.getSketchMD5().c_str());
@@ -258,7 +262,10 @@ void info(CommandContext&& ctx) {
 #endif
 #if SYSTEM_CHECK_ENABLED
     ctx.output.printf_P(PSTR("system: %s boot counter: %u\n"),
-        systemCheck() ? PSTR("OK") : PSTR("UNSTABLE"), systemStabilityCounter());
+        systemCheck()
+            ? PSTR("OK")
+            : PSTR("UNSTABLE"),
+        systemStabilityCounter());
 #endif
 #if DEBUG_SUPPORT
     crashResetReason(ctx.output);

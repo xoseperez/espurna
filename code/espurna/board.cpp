@@ -471,13 +471,9 @@ void boardSetup() {
             getAppName(), getVersion(), buildTime().c_str());
     DEBUG_MSG_P(PSTR("[MAIN] %s\n"), getAppAuthor());
     DEBUG_MSG_P(PSTR("[MAIN] %s\n"), getAppWebsite());
+    DEBUG_MSG_P(PSTR("[MAIN] Device: %s_%s\n"),
+            getManufacturer(), getDevice());
     DEBUG_MSG_P(PSTR("[MAIN] CPU chip ID: %s frequency: %hhuMHz\n"),
             getFullChipId().c_str(), system_get_cpu_freq());
-    DEBUG_MSG_P(PSTR("[MAIN] SDK: %s Arduino Core: %s\n"),
-            ESP.getSdkVersion(), getCoreVersion().c_str());
-    DEBUG_MSG_P(PSTR("[MAIN] Support: %s\n"), getEspurnaModules());
-#if SENSOR_SUPPORT
-    DEBUG_MSG_P(PSTR("[MAIN] Sensors: %s\n"), getEspurnaSensors());
-#endif
 #endif
 }
