@@ -142,7 +142,7 @@ void onData(void* arg, AsyncClient* client, void* data, size_t len) {
 
             // Check header before anything is written to the flash
             if (!otaVerifyHeader((uint8_t *) ptr, len)) {
-                DEBUG_MSG_P(PSTR("[OTA] ERROR: No magic byte / invalid flash config"));
+                DEBUG_MSG_P(PSTR("[OTA] ERROR: No magic byte / invalid flash config\n"));
                 client->close(true);
                 ota_client->state = BasicHttpClient::State::End;
                 return;
