@@ -9,10 +9,6 @@
 // GENERAL
 //------------------------------------------------------------------------------
 
-#ifndef DEVICE_NAME
-#define DEVICE_NAME             MANUFACTURER "_" DEVICE     // Concatenate both to get a unique device name
-#endif
-
 // When defined, ADMIN_PASS must be 8..63 printable ASCII characters. See:
 // https://en.wikipedia.org/wiki/Wi-Fi_Protected_Access#Target_users_(authentication_key_distribution)
 // https://github.com/xoseperez/espurna/issues/1151

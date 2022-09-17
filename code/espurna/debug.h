@@ -22,6 +22,7 @@ bool debugLogBuffer();
 void debugWebSetup();
 void debugConfigure();
 void debugConfigureBoot();
+void debugShowBanner();
 void debugSetup();
 
 void debugSendRaw(const char* line, bool timestamp = false);

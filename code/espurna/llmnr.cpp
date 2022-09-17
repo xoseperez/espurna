@@ -15,7 +15,7 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "llmnr.h"
 
 void llmnrSetup() {
-    auto hostname = getHostname();
+    const auto hostname = systemHostname();
     LLMNR.begin(hostname.c_str());
     DEBUG_MSG_P(PSTR("[LLMNR] Configured for %s\n"), hostname.c_str());
 }

@@ -8,7 +8,6 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "espurna.h"
 
-#include "board.h"
 #include "ntp.h"
 
 #include <limits>
@@ -26,105 +25,6 @@ bool tryParseId(const char* p, TryParseIdFunc limit, size_t& out) {
     return true;
 }
 
-String getDescription() {
-    return getSetting("desc");
-}
-
-String getHostname() {
-    if (strlen(HOSTNAME) > 0) {
-        return getSetting("hostname", F(HOSTNAME));
-    }
-
-    return getSetting("hostname", getIdentifier());
-}
-
-void setDefaultHostname() {
-    if (!getSetting("hostname").length()) {
-        if (strlen(HOSTNAME) > 0) {
-            setSetting("hostname", F(HOSTNAME));
-        } else {
-            setSetting("hostname", getIdentifier());
-        }
-    }
-}
-
-String getBoardName() {
-    return getSetting("boardName", F(DEVICE_NAME));
-}
-
-void setBoardName() {
-    if (!isEspurnaMinimal()) {
-        setSetting("boardName", F(DEVICE_NAME));
-    }
-}
-
-String getAdminPass() {
-    static const String defaultValue(F(ADMIN_PASS));
-    return getSetting("adminPass", defaultValue);
-}
-
-const String& getCoreVersion() {
-    static String version;
-    if (!version.length()) {
-#ifdef ARDUINO_ESP8266_RELEASE
-        version = ESP.getCoreVersion();
-        if (version.equals("00000000")) {
-            version = String(ARDUINO_ESP8266_RELEASE);
-        }
-        version.replace("_", ".");
-#else
-#define _GET_COREVERSION_STR(X) #X
-#define GET_COREVERSION_STR(X) _GET_COREVERSION_STR(X)
-        version = GET_COREVERSION_STR(ARDUINO_ESP8266_GIT_DESC);
-#undef _GET_COREVERSION_STR
-#undef GET_COREVERSION_STR
-#endif
-    }
-    return version;
-}
-
-const String& getCoreRevision() {
-    static String revision;
-    if (!revision.length()) {
-#ifdef ARDUINO_ESP8266_GIT_VER
-        revision = String(ARDUINO_ESP8266_GIT_VER, 16);
-#else
-        revision = "(unspecified)";
-#endif
-    }
-    return revision;
-}
-
-const char* getVersion() {
-    static const char version[] = APP_VERSION;
-    return version;
-}
-
-const char* getAppName() {
-    static const char app[] = APP_NAME;
-    return app;
-}
-
-const char* getAppAuthor() {
-    static const char author[] = APP_AUTHOR;
-    return author;
-}
-
-const char* getAppWebsite() {
-    static const char website[] = APP_WEBSITE;
-    return website;
-}
-
-const char* getDevice() {
-    static const char device[] = DEVICE;
-    return device;
-}
-
-const char* getManufacturer() {
-    static const char manufacturer[] = MANUFACTURER;
-    return manufacturer;
-}
-
 String prettyDuration(espurna::duration::Seconds seconds) {
     time_t timestamp = static_cast<time_t>(seconds.count());
     tm spec;
@@ -136,31 +36,6 @@ String prettyDuration(espurna::duration::Seconds seconds) {
         spec.tm_min, spec.tm_sec);
 
     return String(buffer);
-}
-
-String getUptime() {
-#if NTP_SUPPORT
-    return prettyDuration(systemUptime());
-#else
-    return String(systemUptime().count(), 10);
-#endif
-}
-
-String buildTime() {
-#if NTP_SUPPORT
-    constexpr const time_t ts = __UNIX_TIMESTAMP__;
-    tm timestruct;
-    gmtime_r(&ts, &timestruct);
-    return ntpDateTime(&timestruct);
-#else
-    char buffer[32];
-    snprintf_P(
-        buffer, sizeof(buffer), PSTR("%04d-%02d-%02d %02d:%02d:%02d"),
-        __TIME_YEAR__, __TIME_MONTH__, __TIME_DAY__,
-        __TIME_HOUR__, __TIME_MINUTE__, __TIME_SECOND__
-    );
-    return String(buffer);
-#endif
 }
 
 // -----------------------------------------------------------------------------
@@ -482,30 +357,4 @@ size_t hexDecode(const char* in, size_t in_size, uint8_t* out, size_t out_size) 
 
     uint8_t* out_ptr { hexDecode(in, in + in_size, out, out + out_size) };
     return out_ptr - out;
-}
-
-const char* getFlashChipMode() {
-    static const char* mode { nullptr };
-    if (!mode) {
-        switch (ESP.getFlashChipMode()) {
-        case FM_QIO:
-            mode = "QIO";
-            break;
-        case FM_QOUT:
-            mode = "QOUT";
-            break;
-        case FM_DIO:
-            mode = "DIO";
-            break;
-        case FM_DOUT:
-            mode = "DOUT";
-            break;
-        case FM_UNKNOWN:
-        default:
-            mode = "UNKNOWN";
-            break;
-        }
-    }
-
-    return mode;
 }

@@ -23,7 +23,7 @@ Updated to use WiFiServer and support reverse connections by Niek van der Maas <
 #include <memory>
 #include <vector>
 
-#include "board.h"
+#include "build.h"
 #include "crash.h"
 #include "telnet.h"
 #include "terminal.h"
@@ -403,7 +403,7 @@ void _telnetData(unsigned char clientId, char * data, size_t len) {
         ? true : _telnetClientsAuth[clientId];
 
     if (_telnetAuth && !authenticated) {
-        String password = getAdminPass();
+        const auto password = systemPassword();
         if (strncmp(data, password.c_str(), password.length()) == 0) {
             DEBUG_MSG_P(PSTR("[TELNET] Client #%d authenticated\n"), clientId);
 
@@ -445,7 +445,7 @@ void _telnetNotifyConnected(unsigned char id) {
     } else {
         _telnetClientsAuth[id] = !_telnetAuth;
         if (_telnetAuth) {
-            if (getAdminPass().length()) {
+            if (systemPassword().length()) {
                 _telnetWrite(id, "Password: ");
             } else {
                 _telnetClientsAuth[id] = true;

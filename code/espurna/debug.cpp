@@ -14,7 +14,6 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "telnet.h"
 #include "web.h"
 #include "ntp.h"
-#include "utils.h"
 #include "ws.h"
 
 #include <limits>
@@ -476,7 +475,7 @@ void configure() {
     snprintf_P(
         internal::header, sizeof(internal::header),
         PSTR("<%u>1 - %.31s ESPurna - - - "), DEBUG_UDP_FAC_PRI,
-        getHostname().c_str());
+        systemHostname().c_str());
 }
 
 bool output(const char* message, size_t len) {
@@ -552,7 +551,7 @@ void onVisible(JsonObject& root) {
 
 bool status(espurna::heartbeat::Mask mask) {
     if (mask & espurna::heartbeat::Report::Uptime) {
-        debugSend(PSTR("[MAIN] Uptime: %s\n"), getUptime().c_str());
+        debugSend(PSTR("[MAIN] Uptime: %s\n"), prettyDuration(systemUptime()).c_str());
     }
 
     if (mask & espurna::heartbeat::Report::Freeheap) {
@@ -647,6 +646,29 @@ void debugWebSetup() {
         .onVisible(espurna::debug::web::onVisible);
 }
 #endif
+
+void debugShowBanner() {
+#if DEBUG_SERIAL_SUPPORT
+    if (espurna::debug::buffer::enabled()) {
+        return;
+    }
+
+    const auto app = buildApp();
+    DEBUG_MSG_P(PSTR("[MAIN] %s %s built %s\n"),
+            app.name.c_str(), app.version.c_str(),
+            app.build_time.c_str());
+
+    DEBUG_MSG_P(PSTR("[MAIN] %s\n"), app.author.c_str());
+    DEBUG_MSG_P(PSTR("[MAIN] %s\n"), app.website.c_str());
+
+    DEBUG_MSG_P(PSTR("[MAIN] CPU chip ID: %s frequency: %hhuMHz\n"),
+            systemChipId().c_str(), system_get_cpu_freq());
+
+    const auto device = systemDevice();
+    DEBUG_MSG_P(PSTR("[MAIN] Device: %s\n"),
+            device.c_str());
+#endif
+}
 
 void debugSetup() {
 #if DEBUG_SERIAL_SUPPORT

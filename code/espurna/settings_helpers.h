@@ -369,6 +369,13 @@ struct alignas(8) Setting {
         return _key == key;
     }
 
+    static const Setting* findFrom(const Setting* begin, const Setting* end, StringView key);
+
+    template <typename T>
+    static const Setting* findFrom(const T& settings, StringView key) {
+        return findFrom(std::begin(settings), std::end(settings), key);
+    }
+
     static String findValueFrom(const Setting* begin, const Setting* end, StringView key);
 
     template <typename T>

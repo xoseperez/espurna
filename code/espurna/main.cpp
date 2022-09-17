@@ -127,17 +127,15 @@ void setup() {
         terminalSetup();
     #endif
 
-    // Hostname & board name initialization
-    setDefaultHostname();
-    setBoardName();
-
-    boardSetup();
     wifiSetup();
     otaSetup();
 
     #if TELNET_SUPPORT
         telnetSetup();
     #endif
+
+    // Our app banner (usually, for uart)
+    debugShowBanner();
 
     // -------------------------------------------------------------------------
     // Check if system is stable

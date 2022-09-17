@@ -237,8 +237,8 @@ String getSetting(const espurna::settings::Key& key);
 String getSetting(const espurna::settings::Key& key, const char* defaultValue);
 String getSetting(const espurna::settings::Key& key, const __FlashStringHelper* defaultValue);
 String getSetting(const espurna::settings::Key& key, const String& defaultValue);
-String getSetting(const espurna::settings::Key& key, const String& defaultValue);
 String getSetting(const espurna::settings::Key& key, String&& defaultValue);
+String getSetting(const espurna::settings::Key& key, espurna::StringView defaultValue);
 
 template <typename T, typename = typename espurna::settings::traits::enable_if_not_arduino_string<T>::type>
 T getSetting(const espurna::settings::Key& key, T defaultValue) {

@@ -482,7 +482,7 @@ bool _wsCheckKey(const String& key, const JsonVariant& value) {
 #endif
 
     if (key == STRING_VIEW("adminPass")) {
-        const auto pass = getAdminPass();
+        const auto pass = systemPassword();
         return !pass.equalsConstantTime(value.as<String>());
     }
 
@@ -636,37 +636,49 @@ bool _wsOnKeyCheck(espurna::StringView key, const JsonVariant&) {
 void _wsOnConnected(JsonObject& root) {
     root[F("webMode")] = WEB_MODE_NORMAL;
 
-    root[F("app_name")] = getAppName();
-    root[F("app_version")] = getVersion();
-    root[F("app_build")] = buildTime();
-    root[F("device")] = getDevice();
-    root[F("manufacturer")] = getManufacturer();
-    root[F("chipid")] = getFullChipId().c_str();
+    const auto info = buildInfo();
+    root[F("sdk")] = info.sdk.base.c_str();
+    root[F("core")] = info.sdk.version.c_str();
+
+    // nb: flash strings are copied anyway, can't just use as a ptr.
+    // need to explicitly copy through our own ctor operator as `String`,
+    // we should not expect that the given view is actually a C-string
+    root[F("manufacturer")] =
+        String(info.hardware.manufacturer);
+    root[F("device")] =
+        String(info.hardware.device);
+
+    root[F("app_name")] =
+        String(info.app.name);
+    root[F("app_version")] =
+        String(info.app.version);
+    root[F("app_build")] = info.app.build_time.c_str();
+
+    root[F("hostname")] = systemHostname();
+    root[F("chipid")] = systemChipId().c_str();
+    root[F("desc")] = systemDescription();
+
     root[F("bssid")] = WiFi.BSSIDstr();
     root[F("channel")] = WiFi.channel();
-    root[F("hostname")] = getHostname();
-    root[F("desc")] = getDescription();
     root[F("network")] = wifiStaSsid();
     root[F("deviceip")] = wifiStaIp().toString();
     root[F("sketch_size")] = ESP.getSketchSize();
     root[F("free_size")] = ESP.getFreeSketchSpace();
-    root[F("sdk")] = ESP.getSdkVersion();
-    root[F("core")] = getCoreVersion();
 
     root[F("webPort")] = getSetting(F("webPort"), espurna::web::ws::build::port());
     root[F("wsAuth")] = getSetting(F("wsAuth"), espurna::web::ws::build::authentication());
 }
 
 void _wsConnected(uint32_t client_id) {
-
+    static const auto defaultPassword = String(systemDefaultPassword());
     const bool changePassword = (USE_PASSWORD && WEB_FORCE_PASS_CHANGE)
-        ? getAdminPass().equals(ADMIN_PASS)
+        ? systemPassword().equalsConstantTime(defaultPassword)
         : false;
 
     if (changePassword) {
         StaticJsonBuffer<JSON_OBJECT_SIZE(1)> jsonBuffer;
         JsonObject& root = jsonBuffer.createObject();
-        root["webMode"] = WEB_MODE_PASSWORD;
+        root[F("webMode")] = WEB_MODE_PASSWORD;
         wsSend(client_id, root);
         return;
     }
@@ -674,7 +686,6 @@ void _wsConnected(uint32_t client_id) {
     wsPostAll(client_id, _ws_callbacks.on_visible);
     wsPostSequence(client_id, _ws_callbacks.on_connected);
     wsPostSequence(client_id, _ws_callbacks.on_data);
-
 }
 
 void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len){

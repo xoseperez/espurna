@@ -1924,19 +1924,19 @@ wifi::ApMode mode() {
 }
 
 String defaultSsid() {
-    return getIdentifier();
+    return String(systemIdentifier());
 }
 
 String ssid() {
     return getSetting(FPSTR(keys::Ssid), build::hasSsid()
         ? build::ssid()
-        : getHostname());
+        : systemHostname());
 }
 
 String passphrase() {
     return getSetting(FPSTR(keys::Passphrase), build::hasPassphrase()
         ? build::passphrase()
-        : getAdminPass());
+        : systemPassword());
 }
 
 int8_t channel() {
@@ -2767,7 +2767,7 @@ void loop() {
 
     case State::Connect: {
         if (!wifi::sta::connecting()) {
-            if (!wifi::sta::connection::start(getHostname())) {
+            if (!wifi::sta::connection::start(systemHostname())) {
                 state = State::Timeout;
                 break;
             }

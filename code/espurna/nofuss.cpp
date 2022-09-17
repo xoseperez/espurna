@@ -59,19 +59,25 @@ void _nofussConfigure() {
         return;
     }
 
-    char device[256];
-    sprintf_P(device, PSTR("%s_%s"), getAppName(), getDevice());
-
-    auto timestamp = String(__UNIX_TIMESTAMP__);
     NoFUSSClient.setServer(nofussServer);
+
+    const auto info = buildInfo();
+    String device;
+    device += info.app.name;
+    device += '_';
+    device += info.hardware.device;
     NoFUSSClient.setDevice(device);
-    NoFUSSClient.setVersion(getVersion());
-    NoFUSSClient.setBuild(timestamp);
+
+    const auto version = String(info.app.version);
+    NoFUSSClient.setVersion(version);
+
+    const auto time = String(buildTime());
+    NoFUSSClient.setBuild(time);
 
     DEBUG_MSG_P(PSTR("[NOFUSS] Server: %s\n"), nofussServer.c_str());
-    DEBUG_MSG_P(PSTR("[NOFUSS] Device: %s\n"), device);
-    DEBUG_MSG_P(PSTR("[NOFUSS] Version: %s\n"), getVersion());
-    DEBUG_MSG_P(PSTR("[NOFUSS] Build: %s\n"), timestamp.c_str());
+    DEBUG_MSG_P(PSTR("[NOFUSS] Device: %s\n"), device.c_str());
+    DEBUG_MSG_P(PSTR("[NOFUSS] Version: %s\n"), version.c_str());
+    DEBUG_MSG_P(PSTR("[NOFUSS] Build: %s\n"), time.c_str());
 }
 
 // -----------------------------------------------------------------------------

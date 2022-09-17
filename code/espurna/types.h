@@ -180,6 +180,10 @@ inline bool operator==(StringView lhs, StringView rhs) {
     return lhs.compare(rhs);
 }
 
+inline bool operator!=(StringView lhs, StringView rhs) {
+    return !lhs.compare(rhs);
+}
+
 inline String operator+(String&& lhs, StringView rhs) {
     lhs.concat(rhs.c_str(), rhs.length());
     return lhs;

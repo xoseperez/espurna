@@ -26,8 +26,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "compat.h"
 
+#include "build.h"
 #include "types.h"
-#include "board.h"
 #include "debug.h"
 #include "gpio.h"
 #include "storage_eeprom.h"

@@ -12,7 +12,7 @@ Currently animation calculation, brightness calculation/transition and showing m
 Debug output shows timings. Overal timing should be not more that 3000 ms.
 
 MQTT control:
-Topic: DEVICE_NAME/garland/set
+Topic: $root/garland/set
 Message: {"command":"string", "enable":"string", "brightness":int, "speed":int, "animation":"string",
           "palette":"string"/int, "duration":int}
 All parameters are optional.

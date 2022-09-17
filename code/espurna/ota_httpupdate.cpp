@@ -38,9 +38,9 @@ namespace {
 #define _ota_client_trusted_root_ca _ssl_digicert_ev_root_ca
 #endif
 
-#endif // SECURE_CLIENT != SECURE_CLIENT_NONE
-
 } // namespace
+
+#endif // SECURE_CLIENT != SECURE_CLIENT_NONE
 
 // -----------------------------------------------------------------------------
 

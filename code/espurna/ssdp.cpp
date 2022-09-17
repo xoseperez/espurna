@@ -21,7 +21,7 @@ namespace {
 namespace settings {
 
 String name() {
-    return getSetting("ssdpName", getHostname());
+    return getSetting("ssdpName", systemHostname());
 }
 
 // needs to be in the response
@@ -34,11 +34,32 @@ String type() {
 String udn() {
     String out;
     out += F("38323636-4558-4dda-9188-cda0e6");
-    out += String(ESP.getChipId(), 16);
+    out += String(systemShortChipId());
     return out;
 }
 
 } // namespace settings
+
+String entry(const String& tag, const String& value) {
+    String out;
+    out.reserve((tag.length() * 2) + value.length() + 16);
+
+    out += '<';
+    out += tag;
+    out += '>';
+
+    out += value;
+
+    out += F("</");
+    out += tag;
+    out += '>';
+
+    return out;
+}
+
+String entry(const String& tag, espurna::StringView value) {
+    return entry(tag, String(value));
+}
 
 String response() {
     String out;
@@ -50,23 +71,6 @@ String response() {
                 "<major>1</major>"
                 "<minor>0</minor>"
              "</specVersion>");
-
-    auto entry = [](const String& tag, const String& value) -> String {
-        String out;
-        out.reserve((tag.length() * 2) + value.length() + 16); 
-
-        out += '<';
-        out += tag;
-        out += '>';
-
-        out += value;
-
-        out += F("</");
-        out += tag;
-        out += '>';
-
-        return out;
-    };
 
     // <URLBase>http://%s:%u/</URLBase>
     String base;
@@ -91,22 +95,24 @@ String response() {
     device += entry(F("presentationURL"), String('/'));
 
     // <serialNumber>%u</serialNumber>
-    device += entry(F("serialNumber"), String(ESP.getChipId(), 10));
+    device += entry(F("serialNumber"), systemShortChipId());
+
+    const auto app = buildApp();
 
     // <modelName>%s</modelName>
-    device += entry(F("modelName"), getAppName());
+    device += entry(F("modelName"), app.name);
 
     // <modelNumber>%s</modelNumber>
-    device += entry(F("modelNumber"), getVersion());
+    device += entry(F("modelNumber"), app.version);
 
     // <modelURL>%s</modelURL>
-    device += entry(F("modelURL"), getAppWebsite());
+    device += entry(F("modelURL"), app.website);
 
     // <manufacturer>%s</manufacturer>
-    device += entry(F("manufacturer"), getBoardName());
+    device += entry(F("manufacturer"), systemDevice());
 
     // <manufacturerURL>%s</manufacturerURL>
-    device += entry(F("manufacturerURL"), getAppWebsite());
+    device += entry(F("manufacturerURL"), app.website);
 
     // <UDN>uuid:38323636-4558-4dda-9188-cda0e6%06x</UDN>
     device += entry(F("UDN"), settings::udn());
@@ -127,10 +133,12 @@ void setup() {
 
     SSDP.setDeviceType(settings::type());
     SSDP.setSerialNumber(ESP.getChipId());
-    SSDP.setModelName(getAppName());
-    SSDP.setModelNumber(getVersion());
-    SSDP.setModelURL(getAppWebsite());
-    SSDP.setManufacturer(getBoardName());
+
+    const auto app = buildApp();
+    SSDP.setModelName(String(app.name));
+    SSDP.setModelNumber(String(app.version));
+    SSDP.setModelURL(String(app.website));
+    SSDP.setManufacturer(String(systemDevice()));
     SSDP.setURL("/");
 
     SSDP.setName(settings::name());

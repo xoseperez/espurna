@@ -8,6 +8,8 @@ Copyright (C) 2020-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 */
 
 #include "settings.h"
+#include "system.h"
+
 #include "config/version.h"
 
 #include <vector>
@@ -15,8 +17,9 @@ Copyright (C) 2020-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 
 namespace espurna {
 namespace settings {
-namespace schema {
 namespace {
+
+namespace schema {
 
 // Configuration version for the internal key-value storage
 // Represented as a 32bit int, updates every time things change
@@ -27,11 +30,9 @@ int version() {
     return getSetting(Key, Version);
 }
 
-} // namespace
 } // namespace schema
 
 namespace migrate {
-namespace {
 
 void deletePrefixes(query::StringViewIterator prefixes) {
     std::vector<String> to_purge;
@@ -54,8 +55,35 @@ int currentVersion() {
     return 0;
 }
 
-} // namespace
+void run(MigrateVersionCallback callback) {
+    static const auto current = currentVersion();
+    if (current) {
+        callback(current);
+    }
+}
+
+void run() {
+    setSetting(FPSTR(schema::Key), schema::Version);
+
+    if (currentVersion() < 4) {
+        delSetting(F("board"));
+    }
+
+    if (currentVersion() < 12) {
+        const auto hostname = systemHostname();
+        if (systemIdentifier() == hostname) {
+            delSetting(F("hostname"));
+        }
+
+        delSetting(F("boardName"));
+    }
+
+    saveSettings();
+}
+
 } // namespace migrate
+
+} // namespace
 } // namespace settings
 } // namespace espurna
 
@@ -68,23 +96,9 @@ int migrateVersion() {
 }
 
 void migrateVersion(MigrateVersionCallback callback) {
-    static const auto current = espurna::settings::migrate::currentVersion();
-    if (current) {
-        callback(current);
-    }
+    return espurna::settings::migrate::run(callback);
 }
 
 void migrate() {
-    using namespace espurna::settings::schema;
-    setSetting(FPSTR(Key), Version);
-
-    using namespace espurna::settings::migrate;
-    switch (currentVersion()) {
-    case 2:
-    case 3:
-    case 4:
-        delSetting(F("board"));
-        saveSettings();
-        break;
-    }
+    espurna::settings::migrate::run();
 }

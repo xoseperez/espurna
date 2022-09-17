@@ -237,7 +237,7 @@ namespace {
 
 bool _authenticateRequest(AsyncWebServerRequest* request) {
 #if USE_PASSWORD
-    return request->authenticate(WEB_USERNAME, getAdminPass().c_str());
+    return request->authenticate(WEB_USERNAME, systemPassword().c_str());
 #else
     return true;
 #endif
@@ -258,7 +258,7 @@ bool _isAPModeRequest(AsyncWebServerRequest* request) {
 
         const auto host = header->value();
 
-        const auto domain = getHostname() + '.';
+        const auto domain = systemHostname() + '.';
         const auto ip = wifiApIp().toString();
 
         if (!host.equals(ip) && !host.startsWith(domain)) {
@@ -290,7 +290,7 @@ bool _onAPModeRequest(AsyncWebServerRequest* request) {
 }
 
 void _webRequestAuth(AsyncWebServerRequest* request) {
-    request->requestAuthentication(getHostname().c_str(), true);
+    request->requestAuthentication(systemHostname().c_str(), true);
 }
 
 void _onReset(AsyncWebServerRequest *request) {
@@ -304,20 +304,25 @@ void _onReset(AsyncWebServerRequest *request) {
 }
 
 void _onDiscover(AsyncWebServerRequest *request) {
-    const String device = getBoardName();
-    const String hostname = getHostname();
+    const auto app = buildApp();
 
-    StaticJsonBuffer<JSON_OBJECT_SIZE(4)> jsonBuffer;
-    JsonObject &root = jsonBuffer.createObject();
-    root["app"] = getAppName();
-    root["version"] = getVersion();
-    root["device"] = device;
-    root["hostname"] = hostname.c_str();
+    char buffer[256];
+    int prefix_len = snprintf_P(buffer, sizeof(buffer),
+            PSTR("{\"hostname\":\"%s\","
+                "\"device\":\"%s\","
+                "\"app\":\"%s\","
+                "\"version\": \"%s\"}"),
+            systemHostname().c_str(),
+            systemDevice().c_str(),
+            app.name.c_str(),
+            app.version.c_str());
 
-    auto* response = request->beginResponseStream(F("application/json"), root.measureLength() + 1);
-    root.printTo(*response);
+    if (prefix_len <= 0) {
+        request->send(500);
+        return;
+    }
 
-    request->send(response);
+    request->send(200, F("application/json"), buffer);
 }
 
 void _onGetConfig(AsyncWebServerRequest *request) {
@@ -329,10 +334,12 @@ void _onGetConfig(AsyncWebServerRequest *request) {
     auto out = std::make_shared<String>();
     out->reserve(TCP_MSS);
 
+    const auto app = buildApp();
+
     char buffer[256];
     int prefix_len = snprintf_P(buffer, sizeof(buffer),
             PSTR("{\n\"app\": \"%s\",\n\"version\": \"%s\",\n\"backup\": \"1\""),
-            getAppName(), getVersion());
+            app.name.c_str(), app.version.c_str());
     if (prefix_len <= 0) {
         request->send(500);
         return;
@@ -350,8 +357,6 @@ void _onGetConfig(AsyncWebServerRequest *request) {
         }
     });
     *out += "\n}";
-
-    auto hostname = getHostname();
 
     AsyncWebServerResponse* response = request->beginChunkedResponse("application/json",
         [out](uint8_t* buffer, size_t maxLen, size_t index) -> size_t {
@@ -380,7 +385,7 @@ void _onGetConfig(AsyncWebServerRequest *request) {
 
     int written = snprintf_P(buffer, sizeof(buffer),
         PSTR("attachment; filename=\"%s %s backup.json\""),
-        hostname.c_str(), get_timestamp().c_str());
+        systemHostname().c_str(), get_timestamp().c_str());
 
     if (written > 0) {
         response->addHeader(F("Content-Disposition"), buffer);

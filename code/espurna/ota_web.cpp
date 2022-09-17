@@ -57,7 +57,7 @@ void setStatus(AsyncWebServerRequest *request, int code, const String& payload =
 
 void onUpgrade(AsyncWebServerRequest *request) {
     if (!webAuthenticate(request)) {
-        return request->requestAuthentication(getHostname().c_str());
+        return request->requestAuthentication(systemHostname().c_str());
     }
 
     if (request->_tempObject) {
@@ -69,7 +69,7 @@ void onUpgrade(AsyncWebServerRequest *request) {
 
 void onFile(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
     if (!webAuthenticate(request)) {
-        return request->requestAuthentication(getHostname().c_str());
+        return request->requestAuthentication(systemHostname().c_str());
     }
 
     // We set this after we are done with the request

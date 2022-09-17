@@ -52,7 +52,7 @@ struct RandomDevice {
     uint32_t operator()() const;
 };
 
-} // namespace random
+} // namespace system
 
 namespace duration {
 
@@ -334,5 +334,17 @@ void systemHeartbeat(espurna::heartbeat::Callback);
 bool systemHeartbeat();
 
 espurna::duration::Seconds systemUptime();
+
+espurna::StringView systemDevice();
+espurna::StringView systemIdentifier();
+
+espurna::StringView systemChipId();
+espurna::StringView systemShortChipId();
+
+espurna::StringView systemDefaultPassword();
+
+String systemPassword();
+String systemHostname();
+String systemDescription();
 
 void systemSetup();

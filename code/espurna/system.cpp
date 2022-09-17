@@ -42,9 +42,10 @@ extern "C" unsigned long adc_rand_noise;
 
 namespace espurna {
 namespace system {
+namespace {
+
 namespace settings {
 namespace options {
-namespace {
 
 alignas(4) static constexpr char None[] PROGMEM = "none";
 alignas(4) static constexpr char Once[] PROGMEM = "once";
@@ -56,10 +57,19 @@ static constexpr espurna::settings::options::Enumeration<heartbeat::Mode> Heartb
     {heartbeat::Mode::Repeat, Repeat},
 };
 
-} // namespace
 } // namespace options
+
+namespace keys {
+
+alignas(4) static constexpr char Hostname[] PROGMEM = "hostname";
+alignas(4) static constexpr char Description[] PROGMEM = "desc";
+alignas(4) static constexpr char Password[] PROGMEM = "adminPass";
+
+} // namespace keys
+
 } // namespace settings
 } // namespace
+} // namespace system
 
 namespace settings {
 namespace internal {
@@ -121,6 +131,111 @@ uint32_t RandomDevice::operator()() const {
     return adc_rand_noise ^ *(reinterpret_cast<volatile uint32_t*>(Address));
 }
 
+namespace {
+
+namespace internal {
+
+alignas(4) static constexpr char Hostname[] PROGMEM = HOSTNAME;
+alignas(4) static constexpr char Password[] PROGMEM = ADMIN_PASS;
+
+} // namespace internal
+
+StringView chip_id() {
+    const static String out = ([]() {
+        const uint32_t regs[3] {
+            READ_PERI_REG(0x3ff00050),
+            READ_PERI_REG(0x3ff00054),
+            READ_PERI_REG(0x3ff0005c)};
+
+        uint8_t mac[6] {
+            0xff,
+            0xff,
+            0xff,
+            static_cast<uint8_t>((regs[1] >> 8ul) & 0xfful),
+            static_cast<uint8_t>(regs[1] & 0xffu),
+            static_cast<uint8_t>((regs[0] >> 24ul) & 0xffu)};
+
+        if (mac[2] != 0) {
+            mac[0] = (regs[2] >> 16ul) & 0xffu;
+            mac[1] = (regs[2] >> 8ul) & 0xffu;
+            mac[2] = (regs[2] & 0xffu);
+        } else if (0 == ((regs[1] >> 16ul) & 0xff)) {
+            mac[0] = 0x18;
+            mac[1] = 0xfe;
+            mac[2] = 0x34;
+        } else if (1 == ((regs[1] >> 16ul) & 0xff)) {
+            mac[0] = 0xac;
+            mac[1] = 0xd0;
+            mac[2] = 0x74;
+        }
+
+        return hexEncode(mac);
+    })();
+
+    return out;
+}
+
+StringView short_chip_id() {
+    const auto full = chip_id();
+    return StringView(full.begin() + 6, full.end());
+}
+
+StringView device() {
+    const static String out = ([]() {
+        String out;
+
+        const auto hardware = buildHardware();
+        out.concat(hardware.manufacturer.c_str(),
+            hardware.manufacturer.length());
+        out += '_';
+        out.concat(hardware.device.c_str(),
+            hardware.device.length());
+
+        return out;
+    })();
+
+    return out;
+}
+
+StringView identifier() {
+    const static String out = ([]() {
+        String out;
+
+        const auto app = buildApp();
+        out.concat(app.name.c_str(), app.name.length());
+
+        out += '-';
+
+        const auto id = short_chip_id();
+        out.concat(id.c_str(), id.length());
+
+        return out;
+    })();
+
+    return out;
+}
+
+String description() {
+    return getSetting(settings::keys::Description);
+}
+
+String hostname() {
+    if (__builtin_strlen(internal::Hostname) > 0) {
+        return getSetting(settings::keys::Hostname, internal::Hostname);
+    }
+
+    return getSetting(settings::keys::Hostname, identifier());
+}
+
+StringView default_password() {
+    return internal::Password;
+}
+
+String password() {
+    return getSetting(settings::keys::Password, default_password());
+}
+
+} // namespace
 } // namespace system
 
 namespace time {
@@ -436,6 +551,75 @@ bool check() {
 
 } // namespace stability
 #endif
+
+void pre() {
+    // Some magic to allow seamless Tasmota OTA upgrades
+    // - inject dummy data sequence that is expected to hold current version info
+    // - purge settings, since we don't want accidentaly reading something as a kv
+    // - sometimes we cannot boot b/c of certain SDK params, purge last 16KiB
+    {
+        // ref. `SetOption78 1` in Tasmota
+        // - https://tasmota.github.io/docs/Commands/#setoptions (> SetOption78   Version check on Tasmota upgrade)
+        // - https://github.com/esphome/esphome/blob/0e59243b83913fc724d0229514a84b6ea14717cc/esphome/core/esphal.cpp#L275-L287 (the original idea from esphome)
+        // - https://github.com/arendst/Tasmota/blob/217addc2bb2cf46e7633c93e87954b245cb96556/tasmota/settings.ino#L218-L262 (specific checks, which succeed when finding 0xffffffff as version)
+        // - https://github.com/arendst/Tasmota/blob/0dfa38df89c8f2a1e582d53d79243881645be0b8/tasmota/i18n.h#L780-L782 (constants)
+        volatile uint32_t magic[] __attribute__((unused)) {
+            0x5aa55aa5,
+            0xffffffff,
+            0xa55aa55a,
+        };
+
+        // ref. https://github.com/arendst/Tasmota/blob/217addc2bb2cf46e7633c93e87954b245cb96556/tasmota/settings.ino#L24
+        // We will certainly find these when rebooting from Tasmota. Purge SDK as well, since we may experience WDT after starting up the softAP
+        auto* rtcmem = reinterpret_cast<volatile uint32_t*>(RTCMEM_ADDR);
+        if ((0xA55A == rtcmem[64]) && (0xA55A == rtcmem[68])) {
+            DEBUG_MSG_P(PSTR("[MAIN] TASMOTA OTA, resetting...\n"));
+            rtcmem[64] = rtcmem[68] = 0;
+            customResetReason(CustomResetReason::Factory);
+            resetSettings();
+            eraseSDKConfig();
+            __builtin_trap();
+            // can't return!
+        }
+
+        // TODO: also check for things throughout the flash sector, somehow?
+    }
+
+    // Workaround for SDK changes between 1.5.3 and 2.2.x or possible
+    // flash corruption happening to the 'default' WiFi config
+#if SYSTEM_CHECK_ENABLED
+    if (!stability::check()) {
+        const uint32_t Address { ESP.getFlashChipSize() - (FLASH_SECTOR_SIZE * 3) };
+
+        static constexpr size_t PageSize { 256 };
+#ifdef FLASH_PAGE_SIZE
+        static_assert(FLASH_PAGE_SIZE == PageSize, "");
+#endif
+        static constexpr auto Alignment = alignof(uint32_t);
+        alignas(Alignment) std::array<uint8_t, PageSize> page;
+
+        if (ESP.flashRead(Address, reinterpret_cast<uint32_t*>(page.data()), page.size())) {
+            constexpr uint32_t ConfigOffset { 0xb0 };
+
+            // In case flash was already erased at some point, but we are still here
+            alignas(Alignment) const std::array<uint8_t, 8> Empty { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
+            if (std::memcpy(&page[ConfigOffset], &Empty[0], Empty.size()) != 0) {
+                return;
+            }
+
+            // 0x00B0:  0A 00 00 00 45 53 50 2D XX XX XX XX XX XX 00 00     ESP-XXXXXX
+            alignas(Alignment) const std::array<uint8_t, 8> Reference { 0xa0, 0x00, 0x00, 0x00, 0x45, 0x53, 0x50, 0x2d };
+            if (std::memcmp(&page[ConfigOffset], &Reference[0], Reference.size()) != 0) {
+                DEBUG_MSG_P(PSTR("[MAIN] Invalid SDK config at 0x%08X, resetting...\n"), Address + ConfigOffset);
+                customResetReason(CustomResetReason::Factory);
+                systemForceStable();
+                forceEraseSDKConfig();
+                // can't return!
+            }
+        }
+    }
+#endif
+}
 
 } // namespace boot
 
@@ -856,6 +1040,8 @@ void loop() {
 }
 
 void setup() {
+    boot::pre();
+
     boot::hardware();
     boot::customReason();
 
@@ -994,6 +1180,38 @@ void systemScheduleHeartbeat() {
 
 espurna::duration::Seconds systemUptime() {
     return espurna::uptime();
+}
+
+espurna::StringView systemDevice() {
+    return espurna::system::device();
+}
+
+espurna::StringView systemIdentifier() {
+    return espurna::system::identifier();
+}
+
+espurna::StringView systemChipId() {
+    return espurna::system::chip_id();
+}
+
+espurna::StringView systemShortChipId() {
+    return espurna::system::short_chip_id();
+}
+
+espurna::StringView systemDefaultPassword() {
+    return espurna::system::default_password();
+}
+
+String systemPassword() {
+    return espurna::system::password();
+}
+
+String systemHostname() {
+    return espurna::system::hostname();
+}
+
+String systemDescription() {
+    return espurna::system::description();
 }
 
 void systemSetup() {

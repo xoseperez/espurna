@@ -242,24 +242,36 @@ void heap(CommandContext&& ctx) {
 }
 
 void uptime(CommandContext&& ctx) {
-    ctx.output.printf_P(PSTR("uptime %s\n"), getUptime().c_str());
+    ctx.output.printf_P(PSTR("uptime %s\n"),
+        prettyDuration(systemUptime()).c_str());
     terminalOK(ctx);
 }
 
 void info(CommandContext&& ctx) {
+    const auto app = buildApp();
     ctx.output.printf_P(PSTR("%s %s built %s\n"),
-            getAppName(), getVersion(), buildTime().c_str());
-    ctx.output.printf_P(PSTR("manufacturer: %s device: %s\n"),
-            getManufacturer(), getDevice());
+            app.name.c_str(), app.version.c_str(), app.build_time.c_str());
+
+    ctx.output.printf_P(PSTR("device: %s\n"),
+            systemDevice().c_str());
     ctx.output.printf_P(PSTR("mcu: esp8266 chipid: %s freq: %hhumhz\n"),
-            getFullChipId().c_str(), system_get_cpu_freq());
+            systemChipId().c_str(), system_get_cpu_freq());
+
+    const auto sdk = buildSdk();
     ctx.output.printf_P(PSTR("sdk: %s core: %s\n"),
-            ESP.getSdkVersion(), getCoreVersion().c_str());
+            sdk.base.c_str(), sdk.version.c_str());
     ctx.output.printf_P(PSTR("md5: %s\n"), ESP.getSketchMD5().c_str());
-    ctx.output.printf_P(PSTR("support: %s\n"), getEspurnaModules());
+
+    const auto modules = buildModules();
+    ctx.output.printf_P(PSTR("support: %.*s\n"),
+        modules.length(), modules.c_str());
+
 #if SENSOR_SUPPORT
-    ctx.output.printf_P(PSTR("sensors: %s\n"), getEspurnaSensors());
+    const auto sensors = sensorList();
+    ctx.output.printf_P(PSTR("sensors: %.*s\n"),
+        sensors.length(), sensors.c_str());
 #endif
+
 #if SYSTEM_CHECK_ENABLED
     ctx.output.printf_P(PSTR("system: %s boot counter: %u\n"),
         systemCheck()
@@ -267,9 +279,11 @@ void info(CommandContext&& ctx) {
             : PSTR("UNSTABLE"),
         systemStabilityCounter());
 #endif
+
 #if DEBUG_SUPPORT
     crashResetReason(ctx.output);
 #endif
+
     terminalOK(ctx);
 }
 
@@ -370,10 +384,31 @@ private:
     uint32_t _sectors;
 };
 
+StringView flash_chip_mode() {
+    static const String out = ([]() -> String {
+        switch (ESP.getFlashChipMode()) {
+        case FM_DIO:
+            return PSTR("DIO");
+        case FM_DOUT:
+            return PSTR("DOUT");
+        case FM_QIO:
+            return PSTR("QIO");
+        case FM_QOUT:
+            return PSTR("QOUT");
+        case FM_UNKNOWN:
+            break;
+        }
+
+        return PSTR("UNKNOWN");
+    })();
+
+    return out;
+}
+
 void storage(CommandContext&& ctx) {
     ctx.output.printf_P(PSTR("flash chip ID: 0x%06X\n"), ESP.getFlashChipId());
     ctx.output.printf_P(PSTR("speed: %u\n"), ESP.getFlashChipSpeed());
-    ctx.output.printf_P(PSTR("mode: %s\n"), getFlashChipMode());
+    ctx.output.printf_P(PSTR("mode: %s\n"), flash_chip_mode().c_str());
 
     ctx.output.printf_P(PSTR("size: %u (SPI), %u (SDK)\n"),
         ESP.getFlashChipRealSize(), ESP.getFlashChipSize());

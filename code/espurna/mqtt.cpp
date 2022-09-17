@@ -323,7 +323,7 @@ KeepAlive keepalive() {
 }
 
 String clientId() {
-    return getSetting(keys::ClientId, getIdentifier());
+    return getSetting(keys::ClientId, systemIdentifier());
 }
 
 String topicWill() {
@@ -697,10 +697,13 @@ bool _mqttConnectSyncClient(bool secure = false) {
 
 #endif // (MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT) || (MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT)
 
-String _mqttPlaceholders(String&& text) {
-    text.replace("{hostname}", getHostname());
-    text.replace("{magnitude}", "#");
-    text.replace("{mac}", getFullChipId());
+String _mqttPlaceholders(String text) {
+    static const String mac = String(systemChipId());
+    text.replace(F("{mac}"), mac);
+
+    text.replace(F("{hostname}"), systemHostname());
+    text.replace(F("{magnitude}"), F("#"));
+
     return text;
 }
 
@@ -1033,22 +1036,23 @@ bool _mqttHeartbeat(espurna::heartbeat::Mask mask) {
     if (mask & espurna::heartbeat::Report::Interval)
         mqttSend(MQTT_TOPIC_INTERVAL, String(_mqtt_heartbeat_interval.count()).c_str());
 
+    const auto app = buildApp();
     if (mask & espurna::heartbeat::Report::App)
-        mqttSend(MQTT_TOPIC_APP, getAppName());
+        mqttSend(MQTT_TOPIC_APP, String(app.name).c_str());
 
     if (mask & espurna::heartbeat::Report::Version)
-        mqttSend(MQTT_TOPIC_VERSION, getVersion());
+        mqttSend(MQTT_TOPIC_VERSION, String(app.version).c_str());
 
     if (mask & espurna::heartbeat::Report::Board)
-        mqttSend(MQTT_TOPIC_BOARD, getBoardName().c_str());
+        mqttSend(MQTT_TOPIC_BOARD, systemDevice().c_str());
 
     if (mask & espurna::heartbeat::Report::Hostname)
-        mqttSend(MQTT_TOPIC_HOSTNAME, getHostname().c_str());
+        mqttSend(MQTT_TOPIC_HOSTNAME, systemHostname().c_str());
 
     if (mask & espurna::heartbeat::Report::Description) {
-        auto desc = getDescription();
-        if (desc.length()) {
-            mqttSend(MQTT_TOPIC_DESCRIPTION, desc.c_str());
+        const auto value = systemDescription();
+        if (value.length()) {
+            mqttSend(MQTT_TOPIC_DESCRIPTION, value.c_str());
         }
     }
 
@@ -1076,7 +1080,7 @@ bool _mqttHeartbeat(espurna::heartbeat::Mask mask) {
 #endif
 
     if (mask & espurna::heartbeat::Report::Freeheap) {
-        auto stats = systemHeapStats();
+        const auto stats = systemHeapStats();
         mqttSend(MQTT_TOPIC_FREEHEAP, String(stats.available).c_str());
     }
 
@@ -1413,7 +1417,7 @@ void mqttFlush() {
     root[MQTT_TOPIC_MAC] = WiFi.macAddress();
 #endif
 #if MQTT_ENQUEUE_HOSTNAME
-    root[MQTT_TOPIC_HOSTNAME] = getHostname();
+    root[MQTT_TOPIC_HOSTNAME] = systemHostname();
 #endif
 #if MQTT_ENQUEUE_IP
     root[MQTT_TOPIC_IP] = wifiStaIp().toString();

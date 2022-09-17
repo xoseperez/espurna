@@ -26,7 +26,7 @@ namespace {
 void configure() {
     ArduinoOTA.setPort(OTA_PORT);
 #if USE_PASSWORD
-    ArduinoOTA.setPassword(getAdminPass().c_str());
+    ArduinoOTA.setPassword(systemPassword().c_str());
 #endif
     ArduinoOTA.begin(false);
 }

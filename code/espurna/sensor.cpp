@@ -1137,6 +1137,148 @@ bool realTimeValues() {
 
 } // namespace
 } // namespace settings
+
+alignas(4) static constexpr char List[] PROGMEM =
+#if ADE7953_SUPPORT
+    "ADE7953 "
+#endif
+#if AM2320_SUPPORT
+    "AM2320_I2C "
+#endif
+#if ANALOG_SUPPORT
+    "ANALOG "
+#endif
+#if BH1750_SUPPORT
+    "BH1750 "
+#endif
+#if BMP180_SUPPORT
+    "BMP180 "
+#endif
+#if BMX280_SUPPORT
+    "BMX280 "
+#endif
+#if BME680_SUPPORT
+    "BME680 "
+#endif
+#if CSE7766_SUPPORT
+    "CSE7766 "
+#endif
+#if DALLAS_SUPPORT
+    "DALLAS "
+#endif
+#if DHT_SUPPORT
+    "DHTXX "
+#endif
+#if DIGITAL_SUPPORT
+    "DIGITAL "
+#endif
+#if ECH1560_SUPPORT
+    "ECH1560 "
+#endif
+#if EMON_ADC121_SUPPORT
+    "EMON_ADC121 "
+#endif
+#if EMON_ADS1X15_SUPPORT
+    "EMON_ADX1X15 "
+#endif
+#if EMON_ANALOG_SUPPORT
+    "EMON_ANALOG "
+#endif
+#if EVENTS_SUPPORT
+    "EVENTS "
+#endif
+#if GEIGER_SUPPORT
+    "GEIGER "
+#endif
+#if GUVAS12SD_SUPPORT
+    "GUVAS12SD "
+#endif
+#if HDC1080_SUPPORT
+    "HDC1080 "
+#endif
+#if HLW8012_SUPPORT
+    "HLW8012 "
+#endif
+#if INA219_SUPPORT
+    "INA219 "
+#endif
+#if LDR_SUPPORT
+    "LDR "
+#endif
+#if MAX6675_SUPPORT
+    "MAX6675 "
+#endif
+#if MHZ19_SUPPORT
+    "MHZ19 "
+#endif
+#if MICS2710_SUPPORT
+    "MICS2710 "
+#endif
+#if MICS5525_SUPPORT
+    "MICS5525 "
+#endif
+#if NTC_SUPPORT
+    "NTC "
+#endif
+#if PM1006_SUPPORT
+    "PM1006 "
+#endif
+#if PMSX003_SUPPORT
+    "PMSX003 "
+#endif
+#if PULSEMETER_SUPPORT
+    "PULSEMETER "
+#endif
+#if PZEM004T_SUPPORT
+    "PZEM004T "
+#endif
+#if PZEM004TV30_SUPPORT
+    "PZEM004TV30 "
+#endif
+#if SDS011_SUPPORT
+    "SDS011 "
+#endif
+#if SENSEAIR_SUPPORT
+    "SENSEAIR "
+#endif
+#if SHT3X_I2C_SUPPORT
+    "SHT3X_I2C "
+#endif
+#if SI7021_SUPPORT
+    "SI7021 "
+#endif
+#if SM300D2_SUPPORT
+    "SM300D2 "
+#endif
+#if SONAR_SUPPORT
+    "SONAR "
+#endif
+#if T6613_SUPPORT
+    "T6613 "
+#endif
+#if TMP3X_SUPPORT
+    "TMP3X "
+#endif
+#if V9261F_SUPPORT
+    "V9261F "
+#endif
+#if VEML6075_SUPPORT
+    "VEML6075 "
+#endif
+#if VL53L1X_SUPPORT
+    "VL53L1X "
+#endif
+#if EZOPH_SUPPORT
+    "EZOPH "
+#endif
+#if DUMMY_SENSOR_SUPPORT
+    "DUMMY "
+#endif
+#if SI1145_SUPPORT
+    "SI1145 "
+#endif
+    "";
+
 } // namespace sensor
 
 namespace settings {
@@ -4040,6 +4182,10 @@ espurna::sensor::Info magnitudeInfo(unsigned char index) {
         .units = Unit::None,
         .decimals = 0,
     };
+}
+
+espurna::StringView sensorList() {
+    return espurna::sensor::List;
 }
 
 void sensorSetup() {

@@ -437,7 +437,14 @@ bool onKeyCheck(espurna::StringView key, const JsonVariant&) {
 }
 
 void onVisible(JsonObject& root) {
-    if (haveRelaysOrSensors()) {
+    bool module { false };
+#if RELAY_SUPPORT
+    module = module || (relayCount() > 0);
+#endif
+#if SENSOR_SUPPORT
+    module = module || (magnitudeCount() > 0);
+#endif
+    if (module) {
         wsPayloadModule(root, Prefix);
     }
 }

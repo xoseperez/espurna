@@ -41,14 +41,22 @@ static kvs_type kv_store(
 
 namespace query {
 
+const Setting* Setting::findFrom(const Setting* begin, const Setting* end, StringView key) {
+    for (auto it = begin; it != end; ++it) {
+        if ((*it) == key) {
+            return it;
+        }
+    }
+
+    return end;
+}
+
 String Setting::findValueFrom(const Setting* begin, const Setting* end, StringView key) {
     String out;
 
-    for (auto it = begin; it != end; ++it) {
-        if ((*it) == key) {
-            out = (*it).value();
-            break;
-        }
+    const auto value = findFrom(begin, end, key);
+    if (value != end) {
+        out = (*value).value();
     }
 
     return out;
@@ -552,6 +560,15 @@ String getSetting(const espurna::settings::Key& key, String&& defaultValue) {
     return std::move(defaultValue);
 }
 
+String getSetting(const espurna::settings::Key& key, espurna::StringView defaultValue) {
+    auto result = espurna::settings::get(key.value());
+    if (result) {
+        return std::move(result).get();
+    }
+
+    return String(defaultValue);
+}
+
 bool delSetting(const String& key) {
     return espurna::settings::del(key);
 }
@@ -605,32 +622,42 @@ void resetSettings() {
 // -----------------------------------------------------------------------------
 
 bool settingsRestoreJson(JsonObject& data) {
-
     // Note: we try to match what /config generates, expect {"app":"ESPURNA",...}
-    const char* app = data["app"];
-    if (!app || strcmp(app, getAppName()) != 0) {
-        DEBUG_MSG_P(PSTR("[SETTING] Wrong or missing 'app' key\n"));
+    const auto& app = data[F("app")];
+    if (!app.success() || !app.is<const char*>()) {
+        DEBUG_MSG_P(PSTR("[SETTING] Missing 'app' key\n"));
+        return false;
+    }
+
+    const auto* data_app = app.as<const char*>();
+    const auto build_app = buildApp().name;
+    if (build_app != data_app) {
+        DEBUG_MSG_P(PSTR("[SETTING] Invalid 'app' key\n"));
         return false;
     }
 
     // .../config will add this key, but it is optional
-    if (data["backup"].as<bool>()) {
+    if (data[F("backup")].as<bool>()) {
         resetSettings();
     }
 
     // These three are just metadata, no need to actually store them
     for (auto element : data) {
-        if (strcmp(element.key, "app") == 0) continue;
-        if (strcmp(element.key, "version") == 0) continue;
-        if (strcmp(element.key, "backup") == 0) continue;
-        setSetting(element.key, element.value.as<char*>());
+        auto key = String(element.key);
+        if (key.startsWith(F("app"))
+            || key.startsWith(F("version"))
+            || key.startsWith(F("backup")))
+        {
+            continue;
+        }
+
+        setSetting(std::move(key), String(element.value.as<String>()));
     }
 
     saveSettings();
 
     DEBUG_MSG_P(PSTR("[SETTINGS] Settings restored successfully\n"));
     return true;
-
 }
 
 bool settingsRestoreJson(char* json_string, size_t json_buffer_size) {

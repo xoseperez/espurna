@@ -260,7 +260,8 @@ void send(WiFiClient& client, const URL& url, const String& data) {
     http.begin(client, url.host, url.port, url.path,
         url.protocol.equals(F("https")));
 
-    http.addHeader(F("User-Agent"), getAppName());
+    const auto app = buildApp();
+    http.addHeader(F("User-Agent"), String(app.name));
     http.addHeader(F("Content-Type"), F("application/x-www-form-urlencoded"));
 
     const auto response = http.POST(data);
@@ -449,8 +450,10 @@ private:
             headers += F(" HTTP/1.1");
             headers += F("\r\n");
 
+            const auto app = buildApp();
+
             append(F("Host"), _address.host);
-            append(F("User-Agent"), getAppName());
+            append(F("User-Agent"), String(app.name));
             append(F("Connection"), F("close"));
             append(F("Content-Type"), F("application/x-www-form-urlencoded"));
             append(F("Content-Length"), String(_data.length(), 10));
@@ -676,13 +679,22 @@ void loop() {
 namespace web {
 namespace {
 
+alignas(4) static constexpr char Prefix[] PROGMEM = "tspk";
+
 bool onKeyCheck(StringView key, const JsonVariant&) {
-    return espurna::settings::query::samePrefix(key, STRING_VIEW("tspk"));
+    return espurna::settings::query::samePrefix(key, Prefix);
 }
 
 void onVisible(JsonObject& root) {
-    if (haveRelaysOrSensors()) {
-        wsPayloadModule(root, PSTR("tspk"));
+    bool module { false };
+#if RELAY_SUPPORT
+    module = module || (relayCount() > 0);
+#endif
+#if SENSOR_SUPPORT
+    module = module || (magnitudeCount() > 0);
+#endif
+    if (module) {
+        wsPayloadModule(root, Prefix);
     }
 }
 
@@ -698,7 +710,7 @@ void onConnected(JsonObject& root) {
     }
 
 #if SENSOR_SUPPORT
-    sensorWebSocketMagnitudes(root, PSTR("tspk"), [](JsonArray& out, size_t index) {
+    sensorWebSocketMagnitudes(root, Prefix, [](JsonArray& out, size_t index) {
         out.add(settings::magnitude(index));
     });
 #endif

@@ -12,29 +12,7 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "system.h"
 
-void setDefaultHostname();
-void setBoardName();
-
-const String& getCoreVersion();
-const String& getCoreRevision();
-
-const char* getFlashChipMode();
-const char* getVersion();
-const char* getAppName();
-const char* getAppAuthor();
-const char* getAppWebsite();
-const char* getDevice();
-const char* getManufacturer();
-
-String getDescription();
-String getHostname();
-String getAdminPass();
-String getBoardName();
-String buildTime();
-bool haveRelaysOrSensors();
-
 String prettyDuration(espurna::duration::Seconds);
-String getUptime();
 
 bool sslCheckFingerPrint(const char * fingerprint);
 bool sslFingerPrintArray(const char * fingerprint, unsigned char * bytearray);

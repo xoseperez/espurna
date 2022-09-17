@@ -26,12 +26,16 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include <forward_list>
 #include <memory>
 
+namespace espurna {
 namespace homeassistant {
 namespace {
+
 namespace build {
 
-const __FlashStringHelper* prefix() {
-    return F(HOMEASSISTANT_PREFIX);
+alignas(4) static constexpr char Prefix[] PROGMEM = HOMEASSISTANT_PREFIX;
+
+constexpr StringView prefix() {
+    return Prefix;
 }
 
 constexpr bool enabled() {
@@ -45,17 +49,24 @@ constexpr bool retain() {
 } // namespace build
 
 namespace settings {
+namespace keys {
+
+alignas(4) static constexpr char Prefix[] PROGMEM = "haPrefix";
+alignas(4) static constexpr char Enabled[] PROGMEM = "haEnabled";
+alignas(4) static constexpr char Retain[] PROGMEM = "haRetain";
+
+} // namespace keys
 
 String prefix() {
-    return getSetting("haPrefix", build::prefix());
+    return getSetting(keys::Prefix, build::prefix());
 }
 
 bool enabled() {
-    return getSetting("haEnabled", build::enabled());
+    return getSetting(keys::Enabled, build::enabled());
 }
 
 bool retain() {
-    return getSetting("haRetain", build::retain());
+    return getSetting(keys::Retain, build::retain());
 }
 
 } // namespace settings
@@ -63,19 +74,17 @@ bool retain() {
 // Output is supposed to be used as both part of the MQTT config topic and the `uniq_id` field
 // TODO: manage UTF8 strings? in case we somehow receive `desc`, like it was done originally
 
-String normalize_ascii(String input, bool lower) {
-    String output(std::move(input));
-
-    for (auto ptr = output.begin(); ptr != output.end(); ++ptr) {
+String normalize_ascii(String value, bool lower) {
+    for (auto ptr = value.begin(); ptr != value.end(); ++ptr) {
         switch (*ptr) {
         case '\0':
-            goto return_output;
+            goto done;
         case '0' ... '9':
         case 'a' ... 'z':
             break;
         case 'A' ... 'Z':
             if (lower) {
-                *ptr += 32;
+                *ptr = (*ptr + 32);
             }
             break;
         default:
@@ -84,50 +93,100 @@ String normalize_ascii(String input, bool lower) {
         }
     }
 
-return_output:
-    return output;
+done:
+    return value;
+}
+
+String normalize_ascii(StringView value, bool lower) {
+    return normalize_ascii(String(value), lower);
 }
 
 // Common data used across the discovery payloads.
 // ref. https://developers.home-assistant.io/docs/entity_registry_index/
 
+// 'runtime' strings, may be changed in settings
+struct ConfigStrings {
+    String name;
+    String identifier;
+    String prefix;
+};
+
+ConfigStrings make_config_strings() {
+    return ConfigStrings{
+        .name = normalize_ascii(systemHostname(), false),
+        .identifier = normalize_ascii(systemIdentifier(), true),
+        .prefix = settings::prefix(),
+    };
+}
+
+// 'build-time' strings, always the same for current build
+struct BuildStrings {
+    String version;
+    String manufacturer;
+    String device;
+};
+
+BuildStrings make_build_strings() {
+    BuildStrings out;
+
+    const auto app = buildApp();
+    out.version = String(app.version);
+
+    const auto hardware = buildHardware();
+    out.manufacturer = String(hardware.manufacturer);
+    out.device = String(hardware.device);
+
+    return out;
+}
+
 class Device {
 public:
-    static constexpr size_t BufferSize { JSON_ARRAY_SIZE(1) + JSON_OBJECT_SIZE(1) + JSON_OBJECT_SIZE(5) };
+    // XXX: take care when adding / removing keys and values below
+    // - `const char*` is copied by pointer value, persistent pointers make sure
+    //   it is valid for the duration of this objects lifetime
+    // - `F(...)` aka `__FlashStringHelpe` **will take more space**
+    //   it is **copied inside of the buffer**, and will take `strlen()` bytes
+    // - allocating more objects **will silently corrupt** buffer region
+    //   while there are *some* checks, current version is going to break
+    static constexpr size_t BufferSize { JSON_ARRAY_SIZE(1) + JSON_OBJECT_SIZE(6) };
 
     using Buffer = StaticJsonBuffer<BufferSize>;
     using BufferPtr = std::unique_ptr<Buffer>;
 
     Device() = delete;
+
     Device(const Device&) = delete;
+    Device& operator=(const Device&) = delete;
 
-    Device(Device&&) = default;
+    Device(Device&&) = delete;
+    Device& operator=(Device&&) = delete;
 
-    template <typename... Args>
-    Device(Args&&... args) :
-        _strings(make_strings(std::forward<Args>(args)...)),
+    Device(ConfigStrings config, BuildStrings build) :
+        _config(std::make_unique<ConfigStrings>(std::move(config))),
+        _build(std::make_unique<BuildStrings>(std::move(build))),
         _buffer(std::make_unique<Buffer>()),
         _root(_buffer->createObject())
     {
-        JsonArray& ids = _root.createNestedArray("ids");
-        ids.add(_strings->identifier.c_str());
+        _root["name"] = _config->name.c_str();
 
-        _root["name"] = _strings->name.c_str();
-        _root["sw"] = _strings->version;
-        _root["mf"] = _strings->manufacturer;
-        _root["mdl"] = _strings->device;
+        auto& ids = _root.createNestedArray("ids");
+        ids.add(_config->identifier.c_str());
+
+        _root["sw"] = _build->version.c_str();
+        _root["mf"] = _build->manufacturer.c_str();
+        _root["mdl"] = _build->device.c_str();
     }
 
     const String& name() const {
-        return _strings->name;
+        return _config->name;
     }
 
     const String& prefix() const {
-        return _strings->prefix;
+        return _config->prefix;
     }
 
     const String& identifier() const {
-        return _strings->identifier;
+        return _config->identifier;
     }
 
     JsonObject& root() {
@@ -135,30 +194,12 @@ public:
     }
 
 private:
-    struct Strings {
-        String prefix;
-        String name;
-        String identifier;
-        const char* version;
-        const char* manufacturer;
-        const char* device;
-    };
+    using ConfigStringsPtr = std::unique_ptr<ConfigStrings>;
+    ConfigStringsPtr _config;
 
-    using StringsPtr = std::unique_ptr<Strings>;
+    using BuildStringsPtr = std::unique_ptr<BuildStrings>;
+    BuildStringsPtr _build;
 
-    StringsPtr make_strings(String prefix, String name, String identifier, const char* version, const char* manufacturer, const char* device) {
-        return std::make_unique<Strings>(
-            Strings{
-                std::move(prefix),
-                normalize_ascii(std::move(name), false),
-                normalize_ascii(std::move(identifier), true),
-                version,
-                manufacturer,
-                device
-            });
-    }
-
-    StringsPtr _strings;
     BufferPtr _buffer;
     JsonObject& _root;
 };
@@ -169,7 +210,7 @@ using JsonBufferPtr = std::unique_ptr<DynamicJsonBuffer>;
 class Context {
 public:
     Context() = delete;
-    Context(DevicePtr&& device, size_t capacity) :
+    Context(DevicePtr device, size_t capacity) :
         _device(std::move(device)),
         _capacity(capacity)
     {}
@@ -221,19 +262,6 @@ private:
     JsonBufferPtr _json { nullptr };
     size_t _capacity { 0ul };
 };
-
-Context makeContext() {
-    auto device = std::make_unique<Device>(
-        settings::prefix(),
-        getHostname(),
-        getIdentifier(),
-        getVersion(),
-        getManufacturer(),
-        getDevice()
-    );
-
-    return Context(std::move(device), 2048ul);
-}
 
 String quote(String&& value) {
     if (value.equalsIgnoreCase("y")
@@ -516,26 +544,26 @@ bool heartbeat(espurna::heartbeat::Mask mask) {
         JsonObject& root = buffer.createObject();
 
         auto state = lightState();
-        root["state"] = state ? "ON" : "OFF";
+        root[F("state")] = state ? "ON" : "OFF";
 
         if (state) {
-            root["brightness"] = lightBrightness();
+            root[F("brightness")] = lightBrightness();
 
             if (lightUseCCT()) {
-                root["white_value"] = lightColdWhite();
+                root[F("white_value")] = lightColdWhite();
             }
 
             if (lightColor()) {
                 auto& color = root.createNestedObject("color");
                 if (lightUseRGB()) {
                     auto rgb = lightRgb();
-                    color["r"] = rgb.red();
-                    color["g"] = rgb.green();
-                    color["b"] = rgb.blue();
+                    color[F("r")] = rgb.red();
+                    color[F("g")] = rgb.green();
+                    color[F("b")] = rgb.blue();
                 } else {
                     auto hsv = lightHsv();
-                    color["h"] = hsv.hue();
-                    color["s"] = hsv.saturation();
+                    color[F("h")] = hsv.hue();
+                    color[F("s")] = hsv.saturation();
                 }
             }
         }
@@ -551,7 +579,7 @@ bool heartbeat(espurna::heartbeat::Mask mask) {
 }
 
 void publishLightJson() {
-    heartbeat(static_cast<espurna::heartbeat::Mask>(espurna::heartbeat::Report::Light));
+    heartbeat(static_cast<heartbeat::Mask>(heartbeat::Report::Light));
 }
 
 void receiveLightJson(char* payload) {
@@ -561,11 +589,11 @@ void receiveLightJson(char* payload) {
         return;
     }
 
-    if (!root.containsKey("state")) {
+    if (!root.containsKey(F("state"))) {
         return;
     }
 
-    auto state = root["state"].as<String>();
+    const auto state = root[F("state")].as<String>();
     if (state == F("ON")) {
         lightState(true);
     } else if (state == F("OFF")) {
@@ -575,40 +603,40 @@ void receiveLightJson(char* payload) {
     }
 
     auto transition = lightTransitionTime();
-    if (root.containsKey("transition")) {
+    if (root.containsKey(F("transition"))) {
         using LocalUnit = decltype(lightTransitionTime());
         using RemoteUnit = std::chrono::duration<float>;
-        auto seconds = RemoteUnit(root["transition"].as<float>());
+        auto seconds = RemoteUnit(root[F("transition")].as<float>());
 
         if (seconds.count() > 0.0f) {
             transition = std::chrono::duration_cast<LocalUnit>(seconds);
         }
     }
 
-    if (root.containsKey("color_temp")) {
+    if (root.containsKey(F("color_temp"))) {
         lightMireds(root["color_temp"].as<long>());
     }
 
-    if (root.containsKey("brightness")) {
-        lightBrightness(root["brightness"].as<long>());
+    if (root.containsKey(F("brightness"))) {
+        lightBrightness(root[F("brightness")].as<long>());
     }
 
-    if (lightHasColor() && root.containsKey("color")) {
-        JsonObject& color = root["color"];
+    if (lightHasColor() && root.containsKey(F("color"))) {
+        JsonObject& color = root[F("color")];
         if (lightUseRGB()) {
             lightRgb({
-                color["r"].as<long>(),
-                color["g"].as<long>(),
-                color["b"].as<long>()});
+                color[F("r")].as<long>(),
+                color[F("g")].as<long>(),
+                color[F("b")].as<long>()});
         } else {
             lightHs(
-                color["h"].as<long>(),
-                color["s"].as<long>());
+                color[F("h")].as<long>(),
+                color[F("s")].as<long>());
         }
     }
 
-    if (lightUseCCT() && root.containsKey("white_value")) {
-        lightColdWhite(root["white_value"].as<long>());
+    if (lightUseCCT() && root.containsKey(F("white_value"))) {
+        lightColdWhite(root[F("white_value")].as<long>());
     }
 
     lightUpdate({transition, lightTransitionStep()});
@@ -716,9 +744,18 @@ private:
 
 #endif
 
+DevicePtr make_device_ptr() {
+    return std::make_unique<Device>(
+        make_config_strings(),
+        make_build_strings());
+}
+
+Context make_context() {
+    return Context(make_device_ptr(), 2048);
+}
+
 // Reworked discovery class. Try to send and wait for MQTT QoS 1 publish ACK to continue.
 // Topic and message are generated on demand and most of JSON payload is cached for re-use to save RAM.
-
 class DiscoveryTask {
 public:
     using Entity = std::unique_ptr<Discovery>;
@@ -728,8 +765,17 @@ public:
     static constexpr espurna::duration::Milliseconds WaitLong { 1000 };
     static constexpr int Retries { 5 };
 
-    DiscoveryTask(bool enabled) :
-        _enabled(enabled)
+    DiscoveryTask() = delete;
+
+    DiscoveryTask(const DiscoveryTask&) = delete;
+    DiscoveryTask& operator=(const DiscoveryTask&) = delete;
+
+    DiscoveryTask(DiscoveryTask&&) = delete;
+    DiscoveryTask& operator=(DiscoveryTask&&) = delete;
+
+    DiscoveryTask(Context ctx, bool enabled) :
+        _enabled(enabled),
+        _ctx(std::move(ctx))
     {}
 
     void add(Entity&& entity) {
@@ -798,10 +844,10 @@ public:
 
 private:
     bool _enabled { false };
-
     int _retry { Retries };
-    Context _ctx { makeContext() };
+
     Entities _entities;
+    Context _ctx;
 };
 
 constexpr espurna::duration::Milliseconds DiscoveryTask::WaitShort;
@@ -910,7 +956,8 @@ void publishDiscovery() {
         return;
     }
 
-    auto task = std::make_shared<DiscoveryTask>(internal::enabled);
+    auto task = std::make_shared<DiscoveryTask>(
+        make_context(), internal::enabled);
 
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
     task->add<LightDiscovery>();
@@ -974,25 +1021,55 @@ namespace web {
 
 #if WEB_SUPPORT
 
+alignas(4) static constexpr char Prefix[] PROGMEM = "ha";
+
 void onVisible(JsonObject& root) {
-    wsPayloadModule(root, PSTR("ha"));
+    wsPayloadModule(root, Prefix);
 }
 
 void onConnected(JsonObject& root) {
-    root["haPrefix"] = settings::prefix();
-    root["haEnabled"] = settings::enabled();
-    root["haRetain"] = settings::retain();
+    root[FPSTR(settings::keys::Prefix)] = settings::prefix();
+    root[FPSTR(settings::keys::Enabled)] = settings::enabled();
+    root[FPSTR(settings::keys::Retain)] = settings::retain();
 }
 
 bool onKeyCheck(espurna::StringView key, const JsonVariant& value) {
-    return espurna::settings::query::samePrefix(key, STRING_VIEW("ha"));
+    return espurna::settings::query::samePrefix(key, Prefix);
 }
 
 #endif
 
 } // namespace web
+
+void setup() {
+#if WEB_SUPPORT
+    wsRegister()
+        .onVisible(web::onVisible)
+        .onConnected(web::onConnected)
+        .onKeyCheck(web::onKeyCheck);
+#endif
+
+#if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+    lightOnReport(publishLightJson);
+    mqttHeartbeat(heartbeat);
+#endif
+    mqttRegister(mqttCallback);
+
+#if TERMINAL_SUPPORT
+    terminalRegisterCommand(F("HA.SEND"), [](::terminal::CommandContext&& ctx) {
+        internal::state = internal::State::Pending;
+        publishDiscovery();
+        terminalOK(ctx);
+    });
+#endif
+
+    espurnaRegisterReload(configure);
+    configure();
+}
+
 } // namespace
 } // namespace homeassistant
+} // namespace espurna
 
 // This module no longer implements .yaml generation, since we can't:
 // - use unique_id in the device config
@@ -1001,29 +1078,7 @@ bool onKeyCheck(espurna::StringView key, const JsonVariant& value) {
 //   (yet? needs reworked configuration section or making functions read settings directly)
 
 void haSetup() {
-#if WEB_SUPPORT
-    wsRegister()
-        .onVisible(homeassistant::web::onVisible)
-        .onConnected(homeassistant::web::onConnected)
-        .onKeyCheck(homeassistant::web::onKeyCheck);
-#endif
-
-#if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-    lightOnReport(homeassistant::publishLightJson);
-    mqttHeartbeat(homeassistant::heartbeat);
-#endif
-    mqttRegister(homeassistant::mqttCallback);
-
-#if TERMINAL_SUPPORT
-    terminalRegisterCommand(F("HA.SEND"), [](::terminal::CommandContext&& ctx) {
-        homeassistant::internal::state = homeassistant::internal::State::Pending;
-        homeassistant::publishDiscovery();
-        terminalOK(ctx);
-    });
-#endif
-
-    espurnaRegisterReload(homeassistant::configure);
-    homeassistant::configure();
+    espurna::homeassistant::setup();
 }
 
 #endif // HOMEASSISTANT_SUPPORT
