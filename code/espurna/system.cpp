@@ -235,6 +235,33 @@ String password() {
     return getSetting(settings::keys::Password, default_password());
 }
 
+namespace settings {
+namespace query {
+
+static constexpr std::array<espurna::settings::query::Setting, 3> Settings PROGMEM {{
+     {keys::Description, system::description},
+     {keys::Hostname, system::hostname},
+     {keys::Password, system::password},
+}};
+
+bool checkExact(StringView key) {
+    return espurna::settings::query::Setting::findFrom(Settings, key) != Settings.end();
+}
+
+String findValueFrom(StringView key) {
+    return espurna::settings::query::Setting::findValueFrom(Settings, key);
+}
+
+void setup() {
+    settingsRegisterQueryHandler({
+        .check = checkExact,
+        .get = findValueFrom,
+    });
+}
+
+} // namespace query
+} // namespace settings
+
 } // namespace
 } // namespace system
 
@@ -1052,6 +1079,8 @@ void setup() {
 #if WEB_SUPPORT
     web::init();
 #endif
+
+    system::settings::query::setup();
 
     espurnaRegisterLoop(loop);
     heartbeat::init();
