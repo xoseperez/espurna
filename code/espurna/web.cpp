@@ -14,12 +14,6 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <functional>
 #include <memory>
 
-#include "ntp.h"
-#include "settings.h"
-#include "system.h"
-#include "utils.h"
-#include "web.h"
-
 #include <Schedule.h>
 #include <Print.h>
 #include <Hash.h>
@@ -28,6 +22,14 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <ArduinoJson.h>
 #include <ESPAsyncWebServer.h>
 #include <AsyncJson.h>
+
+#include "ntp.h"
+#include "settings.h"
+#include "system.h"
+#include "utils.h"
+#include "web.h"
+
+#include "web_utils.h"
 
 #if WEB_EMBEDDED
 
@@ -304,25 +306,22 @@ void _onReset(AsyncWebServerRequest *request) {
 }
 
 void _onDiscover(AsyncWebServerRequest *request) {
+    StaticJsonBuffer<JSON_OBJECT_SIZE(5) + 128> buffer;
+    JsonObject& root = buffer.createObject();
+
+    root["hostname"] = systemHostname();
+    root["device"] = systemDevice();
+
     const auto app = buildApp();
+    root["app"] = app.name;
+    root["version"] = app.version;
 
-    char buffer[256];
-    int prefix_len = snprintf_P(buffer, sizeof(buffer),
-            PSTR("{\"hostname\":\"%s\","
-                "\"device\":\"%s\","
-                "\"app\":\"%s\","
-                "\"version\": \"%s\"}"),
-            systemHostname().c_str(),
-            systemDevice().c_str(),
-            app.name.c_str(),
-            app.version.c_str());
+    auto* response = request->beginResponseStream(
+        F("application/json"), root.measureLength());
+    response->setCode(200);
+    root.printTo(*response);
 
-    if (prefix_len <= 0) {
-        request->send(500);
-        return;
-    }
-
-    request->send(200, F("application/json"), buffer);
+    request->send(response);
 }
 
 void _onGetConfig(AsyncWebServerRequest *request) {
@@ -358,7 +357,8 @@ void _onGetConfig(AsyncWebServerRequest *request) {
     });
     *out += "\n}";
 
-    AsyncWebServerResponse* response = request->beginChunkedResponse("application/json",
+    AsyncWebServerResponse* response = request->beginChunkedResponse(
+        F("application/json"),
         [out](uint8_t* buffer, size_t maxLen, size_t index) -> size_t {
             auto len = out->length();
             if (index == len) {
