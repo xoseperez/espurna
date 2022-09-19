@@ -329,6 +329,31 @@ void keys(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
+void gc(::terminal::CommandContext&& ctx) {
+    const auto keys = settings::sorted_keys();
+
+    using KeyRefs = std::vector<const String*>;
+    KeyRefs broken;
+
+    for (const auto& key : keys) {
+        for (auto it = key.begin(); it != key.end(); ++it) {
+            if (!isascii(*it)) {
+                broken.push_back(&key);
+                break;
+            }
+        }
+    }
+
+    size_t count = 0;
+    for (const auto* key : broken) {
+        settings::del(*key);
+        ++count;
+    }
+
+    ctx.output.printf_P("deleted %zu keys\n", count);
+    terminalOK(ctx);
+}
+
 void del(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() < 2) {
         terminalError(ctx, F("del <key> [<key>...]"));
@@ -407,6 +432,7 @@ void save(::terminal::CommandContext&& ctx) {
 void setup() {
     terminalRegisterCommand(F("CONFIG"), commands::config);
     terminalRegisterCommand(F("KEYS"), commands::keys);
+    terminalRegisterCommand(F("GC"), commands::gc);
 
     terminalRegisterCommand(F("DEL"), commands::del);
     terminalRegisterCommand(F("SET"), commands::set);
