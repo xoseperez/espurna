@@ -92,7 +92,10 @@ def addresses_addr2line(addr2line, elf, addresses):
         for line in proc.stdout.readlines():
             if "??:0" in line:
                 continue
-            yield line.strip()
+            elif "inlined by" in line:
+                yield f" {line.strip()}"
+            else:
+                yield line.strip()
 
 
 def decode_lines(format_addresses, elf, lines):
