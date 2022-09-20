@@ -161,7 +161,7 @@ struct StringView {
         return toString();
     }
 
-    bool compare(StringView other) const;
+    bool equals(StringView other) const;
 
 private:
     static bool inFlash(const char* ptr) {
@@ -177,11 +177,11 @@ private:
 };
 
 inline bool operator==(StringView lhs, StringView rhs) {
-    return lhs.compare(rhs);
+    return lhs.equals(rhs);
 }
 
 inline bool operator!=(StringView lhs, StringView rhs) {
-    return !lhs.compare(rhs);
+    return !lhs.equals(rhs);
 }
 
 inline String operator+(String&& lhs, StringView rhs) {

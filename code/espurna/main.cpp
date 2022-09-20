@@ -308,15 +308,17 @@ void setup() {
 
 } // namespace
 
-bool StringView::compare(StringView other) const {
+bool StringView::equals(StringView other) const {
     if (other._len == _len) {
-        if (inFlash(_ptr)) {
+        if (inFlash(_ptr) && inFlash(other._ptr)) {
+            return _ptr == other._ptr;
+        } else if (inFlash(_ptr)) {
             return memcmp_P(other._ptr, _ptr, _len) == 0;
         } else if (inFlash(other._ptr)) {
             return memcmp_P(_ptr, other._ptr, _len) == 0;
         }
 
-        return __builtin_memcmp(_ptr, other._ptr, _len);
+        return __builtin_memcmp(_ptr, other._ptr, _len) == 0;
     }
 
     return false;

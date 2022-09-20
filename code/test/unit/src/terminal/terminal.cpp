@@ -8,7 +8,7 @@
 namespace espurna {
 
 // no special cases for flash strings
-bool StringView::compare(espurna::StringView other) const {
+bool StringView::equals(espurna::StringView other) const {
     return _ptr == other._ptr
         || (_len == other._len && (0 == __builtin_memcmp(_ptr, other._ptr, _len)));
 }
