@@ -130,12 +130,14 @@ void setup() {
     wifiSetup();
     otaSetup();
 
+    // Our app banner (usually, for uart)
+    #if DEBUG_SUPPORT
+        debugShowBanner();
+    #endif
+
     #if TELNET_SUPPORT
         telnetSetup();
     #endif
-
-    // Our app banner (usually, for uart)
-    debugShowBanner();
 
     // -------------------------------------------------------------------------
     // Check if system is stable
