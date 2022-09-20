@@ -266,7 +266,7 @@ uint8_t opmode() {
 }
 
 void ensure_opmode(uint8_t mode) {
-    auto is_set = [&]() {
+    const auto is_set = [&]() {
         return (opmode() == mode);
     };
 
@@ -276,10 +276,13 @@ void ensure_opmode(uint8_t mode) {
 
     if (!is_set()) {
         wifi_set_opmode_current(mode);
+
         espurna::time::blockingDelay(
-                espurna::duration::Seconds(1),
-                espurna::duration::Milliseconds(10),
-                is_set);
+            espurna::duration::Seconds(1),
+            espurna::duration::Milliseconds(10),
+            [&]() {
+                return !is_set();
+            });
 
         if (!is_set()) {
             abort();

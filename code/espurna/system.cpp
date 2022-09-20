@@ -306,13 +306,13 @@ namespace time {
 // plus, another helper when there are no external blocking checker
 
 bool tryDelay(CoreClock::time_point start, CoreClock::duration timeout, CoreClock::duration interval) {
-    auto expired = CoreClock::now() - start;
-    if (expired >= timeout) {
-        return true;
+    auto elapsed = CoreClock::now() - start;
+    if (elapsed < timeout) {
+        delay(std::min((timeout - elapsed), interval));
+        return false;
     }
 
-    delay(std::min((timeout - expired), interval));
-    return false;
+    return true;
 }
 
 void blockingDelay(CoreClock::duration timeout, CoreClock::duration interval) {
