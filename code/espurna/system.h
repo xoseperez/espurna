@@ -344,6 +344,8 @@ espurna::StringView systemShortChipId();
 espurna::StringView systemDefaultPassword();
 
 String systemPassword();
+bool systemPasswordEquals(espurna::StringView);
+
 String systemHostname();
 String systemDescription();
 

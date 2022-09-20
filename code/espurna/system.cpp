@@ -235,6 +235,41 @@ String password() {
     return getSetting(settings::keys::Password, default_password());
 }
 
+// something rudimentary, just to avoid comparing these strings directly
+// ref. `CRYPTO`, `cst_time`, `ct` aka constant time operations.
+// might really be useless for us, though, since output can happen
+// at almost random times when dealing with LWIP stack and networking requests
+#if 0
+namespace internal {
+
+using Hash = std::array<uint8_t, 16>;
+
+Hash md5_hash(StringView data) {
+    Hash out;
+
+    MD5Builder builder;
+    builder.begin();
+    builder.add(reinterpret_cast<const uint8_t*>(data.c_str()), data.length());
+    builder.calculate();
+    builder.getBytes(out.data());
+
+    return out;
+}
+
+} // namespace internal
+
+bool password_equals(StringView other) {
+    const auto password = system::password();
+    return internal::md5_hash(other)
+        == internal::md5_hash(password);
+}
+#endif
+
+bool password_equals(StringView other) {
+    const auto password = system::password();
+    return other == password;
+}
+
 namespace settings {
 namespace query {
 
@@ -1233,6 +1268,10 @@ espurna::StringView systemDefaultPassword() {
 
 String systemPassword() {
     return espurna::system::password();
+}
+
+bool systemPasswordEquals(espurna::StringView other) {
+    return espurna::system::password_equals(other);
 }
 
 String systemHostname() {

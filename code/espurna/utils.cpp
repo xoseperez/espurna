@@ -118,6 +118,18 @@ bool almostEqual(double lhs, double rhs) {
     return almostEqual(lhs, rhs, 3);
 }
 
+espurna::StringView stripNewline(espurna::StringView value) {
+    if ((value.length() >= 2)
+     && (*(value.end() - 1) == '\n')
+     && (*(value.end() - 2) == '\r')) {
+        value = espurna::StringView(value.begin(), value.end() - 2);
+    } else if ((value.length() >= 1) && (*(value.end() - 1) == '\n')) {
+        value = espurna::StringView(value.begin(), value.end() - 1);
+    }
+
+    return value;
+}
+
 bool isNumber(const char* begin, const char* end) {
     bool dot { false };
     bool digit { false };

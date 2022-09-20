@@ -52,3 +52,5 @@ size_t hexDecode(const char* in, size_t in_size, uint8_t* out, size_t out_size);
 
 using TryParseIdFunc = size_t(*)();
 bool tryParseId(const char* ptr, TryParseIdFunc limit, size_t& out);
+
+espurna::StringView stripNewline(espurna::StringView);

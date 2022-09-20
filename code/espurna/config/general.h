@@ -163,15 +163,6 @@
 #define TELNET_MAX_CLIENTS      1               // Max number of concurrent telnet clients
 #endif
 
-#ifndef TELNET_SERVER
-#define TELNET_SERVER           TELNET_SERVER_ASYNC // Can be either TELNET_SERVER_ASYNC (using ESPAsyncTCP) or TELNET_SERVER_WIFISERVER (using WiFiServer)
-#endif
-
-#ifndef TELNET_SERVER_ASYNC_BUFFERED
-#define TELNET_SERVER_ASYNC_BUFFERED         1  // Enable buffered output for telnet server (+1Kb)
-                                                // Helps to avoid lost data with lwip2 TCP_MSS=536 option
-#endif
-
 // Enable this flag to add support for reverse telnet (+800 bytes)
 // This is useful to telnet to a device behind a NAT or firewall
 // To use this feature, start a listen server on a publicly reachable host with e.g. "ncat -vlp <port>" and use the MQTT reverse telnet command to connect
@@ -958,7 +949,7 @@
 // When using MQTT_LIBRARY_PUBSUBCLIENT or MQTT_LIBRARY_ARDUINOMQTT, you will have to disable every module that uses ESPAsyncTCP:
 // ALEXA_SUPPORT=0, INFLUXDB_SUPPORT=0, TELNET_SUPPORT=0, THINGSPEAK_SUPPORT=0, DEBUG_TELNET_SUPPORT=0 and WEB_SUPPORT=0
 // Or, use "sync" versions instead (note that not every module has this option):
-// THINGSPEAK_USE_ASYNC=0, TELNET_SERVER=TELNET_SERVER_WIFISERVER
+// THINGSPEAK_USE_ASYNC=0, etc.
 //
 // See SECURE_CLIENT_CHECK for all possible connection verification options.
 //
