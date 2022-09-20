@@ -943,14 +943,8 @@
 //
 // Current version of MQTT_LIBRARY_ASYNCMQTTCLIENT only supports SECURE_CLIENT_AXTLS
 //
-// It is recommended to use WEB_SUPPORT=0 with either SECURE_CLIENT option, as there are miscellaneous problems when using them simultaneously
-// (although, things might've improved, and I'd encourage to check whether this is true or not)
-//
-// When using MQTT_LIBRARY_PUBSUBCLIENT or MQTT_LIBRARY_ARDUINOMQTT, you will have to disable every module that uses ESPAsyncTCP:
-// ALEXA_SUPPORT=0, INFLUXDB_SUPPORT=0, TELNET_SUPPORT=0, THINGSPEAK_SUPPORT=0, DEBUG_TELNET_SUPPORT=0 and WEB_SUPPORT=0
-// Or, use "sync" versions instead (note that not every module has this option):
-// THINGSPEAK_USE_ASYNC=0, etc.
-//
+// It is recommended to use as little modules as possible with SECURE_CLIENT option, as it requires a large amount
+// of pre-allocated RAM. Even in MFLN mode, it will still require at least 16KiB to prepare input buffer.
 // See SECURE_CLIENT_CHECK for all possible connection verification options.
 //
 // The simpliest way to verify SSL connection is to use fingerprinting.
@@ -1016,6 +1010,8 @@
 
 #ifndef MQTT_QOS
 #define MQTT_QOS                    0               // MQTT QoS value for all messages
+                                                    // ! Neither MQTT library supports QoS > 0 properly at this time.
+                                                    // ! PUB ACKs checks, re-publishing, etc. is missing
 #endif
 
 #ifndef MQTT_KEEPALIVE
