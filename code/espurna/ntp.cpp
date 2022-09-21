@@ -32,8 +32,6 @@ static_assert(
     "lwip must be configured with SNTP_SERVER_DNS"
 );
 
-#include "config/buildtime.h"
-
 #include "ntp.h"
 #include "ntp_timelib.h"
 #include "utils.h"
@@ -49,10 +47,6 @@ T randomizeDuration(T base, T offset) {
 }
 
 namespace build {
-
-// not strictly necessary, but allow ::time() to return something else than 0
-// (but, still report as 'not synced' to the outside APIs related to time)
-static constexpr time_t InitialTimestamp { __UNIX_TIMESTAMP__ };
 
 // per the lwip recommendations, we delay the actual sntp app start
 // by default, this is expected to be `LWIP_RAND % 5000` (aka [0...5) seconds)
@@ -814,10 +808,6 @@ void setup() {
     internal::update_interval = settings::randomUpdateInterval();
     DEBUG_MSG_P(PSTR("[NTP] Startup delay: %u (s), Update interval: %u (s)\n"),
         internal::start_delay.count(), internal::update_interval.count());
-
-    // start up with some reasonable timestamp already available
-    // (notice that this may not be in UTC, if the machine used to build this has a local timezone set)
-    setTimestamp(build::InitialTimestamp);
 
     // will be called every time after ntp syncs AND loop() finishes
     settimeofday_cb(onSystemTimeSynced);

@@ -41,8 +41,7 @@ struct Info {
 } // namespace build
 } // namespace espruna
 
-time_t buildTime();
-
+espurna::StringView buildTime();
 espurna::build::Info buildInfo();
 
 espurna::build::Sdk buildSdk();

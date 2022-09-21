@@ -244,8 +244,153 @@ alignas(4) static constexpr char Name[] PROGMEM = APP_NAME;
 alignas(4) static constexpr char Version[] PROGMEM = APP_VERSION;
 alignas(4) static constexpr char Author[] PROGMEM = APP_AUTHOR;
 alignas(4) static constexpr char Website[] PROGMEM = APP_WEBSITE;
+alignas(4) static constexpr char BuildTime[] PROGMEM = __TIMESTAMP__;
 
 } // namespace internal
+
+// ref. https://gcc.gnu.org/onlinedocs/cpp/Common-Predefined-Macros.html
+// > __TIMESTAMP__
+// > This macro expands to a string constant that describes the date and time of the last modification of the current source file.
+// > The string constant contains abbreviated day of the week, month, day of the month, time in hh:mm:ss form, year and looks like
+// > "Sun Sep 16 01:03:52 1973". If the day of the month is less than 10, it is padded with a space on the left.
+// >
+// > If GCC cannot determine the current date, it will emit a warning message (once per compilation) and __TIMESTAMP__ will expand to
+// > "??? ??? ?? ??:??:?? ????".
+namespace time {
+
+// "Thu Jan  1 03:00:00 1970"
+//  ^^^
+constexpr StringView raw_weekday() {
+    return StringView(&internal::BuildTime[0], &internal::BuildTime[3]);
+}
+static_assert(raw_weekday().length() == 3, "");
+
+// "Thu Jan  1 03:00:00 1970"
+//      ^^^
+constexpr StringView raw_month() {
+    return StringView(&internal::BuildTime[4], &internal::BuildTime[7]);
+}
+static_assert(raw_month().length() == 3, "");
+
+// "Thu Jan  1 03:00:00 1970"
+//          ^^ (with space, or without)
+constexpr StringView raw_day() {
+    return (internal::BuildTime[8] == ' ')
+        ? StringView(&internal::BuildTime[9], &internal::BuildTime[10])
+        : StringView(&internal::BuildTime[8], &internal::BuildTime[10]);
+}
+static_assert(raw_day().length() < 3, "");
+
+// "Thu Jan  1 03:00:00 1970"
+//             ^^
+constexpr StringView raw_hour() {
+    return StringView(&internal::BuildTime[11], &internal::BuildTime[13]);
+}
+static_assert(raw_hour().length() == 2, "");
+
+// "Thu Jan  1 03:00:00 1970"
+//                ^^
+constexpr StringView raw_minute() {
+    return StringView(&internal::BuildTime[14], &internal::BuildTime[16]);
+}
+static_assert(raw_minute().length() == 2, "");
+
+// "Thu Jan  1 03:00:00 1970"
+//                   ^^
+constexpr StringView raw_second() {
+    return StringView(&internal::BuildTime[17], &internal::BuildTime[19]);
+}
+static_assert(raw_second().length() == 2, "");
+
+// "Thu Jan  1 03:00:00 1970"
+//                      ^^^^
+constexpr StringView raw_year() {
+    return StringView(&internal::BuildTime[20], &internal::BuildTime[24]);
+}
+static_assert(raw_year().length() == 4, "");
+
+#define STRING_EQUALS(EXPECTED, ACTUAL)\
+    (__builtin_memcmp((ACTUAL).c_str(), (EXPECTED), (ACTUAL).length()) == 0)
+
+constexpr int from_raw_weekday(StringView weekday) {
+    return STRING_EQUALS("Sun", weekday) ? 1 :
+        STRING_EQUALS("Mon", weekday) ? 2 :
+        STRING_EQUALS("Tue", weekday) ? 3 :
+        STRING_EQUALS("Wed", weekday) ? 4 :
+        STRING_EQUALS("Thu", weekday) ? 5 :
+        STRING_EQUALS("Fri", weekday) ? 6 :
+        STRING_EQUALS("Sat", weekday) ? 7 : 0;
+}
+
+constexpr int weekday() {
+    return from_raw_weekday(raw_weekday());
+}
+
+constexpr int from_raw_month(StringView month) {
+    return STRING_EQUALS("Jan", month) ? 1 :
+        STRING_EQUALS("Feb", month) ? 2 :
+        STRING_EQUALS("Mar", month) ? 3 :
+        STRING_EQUALS("Apr", month) ? 4 :
+        STRING_EQUALS("May", month) ? 5 :
+        STRING_EQUALS("Jun", month) ? 6 :
+        STRING_EQUALS("Jul", month) ? 7 :
+        STRING_EQUALS("Aug", month) ? 8 :
+        STRING_EQUALS("Sep", month) ? 9 :
+        STRING_EQUALS("Oct", month) ? 10 :
+        STRING_EQUALS("Nov", month) ? 11 :
+        STRING_EQUALS("Dec", month) ? 12 : 0;
+}
+#undef STRING_EQUALS
+
+constexpr int month() {
+    return from_raw_month(raw_month());
+}
+
+constexpr int from_one_digit(char value) {
+    return ((value >= '0') && (value <= '9'))
+        ? (value - '0')
+        : 0;
+}
+
+constexpr int from_two_digits(StringView value) {
+    return (from_one_digit(value.c_str()[0]) * 10)
+         + from_one_digit(value.c_str()[1]);
+}
+
+constexpr int from_raw_day(StringView day) {
+    return (day.length() == 2)
+        ? from_two_digits(day)
+        : from_one_digit(*day.c_str());
+}
+
+constexpr int day() {
+    return from_raw_day(raw_day());
+}
+
+constexpr int hour() {
+    return from_two_digits(raw_hour());
+}
+
+constexpr int minute() {
+    return from_two_digits(raw_minute());
+}
+
+constexpr int second() {
+    return from_two_digits(raw_second());
+}
+
+constexpr int from_raw_year(StringView year) {
+    return (from_one_digit(year.c_str()[0]) * 1000)
+         + (from_one_digit(year.c_str()[1]) * 100)
+         + (from_one_digit(year.c_str()[2]) * 10)
+         + from_one_digit(year.c_str()[3]);
+}
+
+constexpr int year() {
+    return from_raw_year(raw_year());
+}
+
+} // namespace time
 
 constexpr StringView modules() {
     return internal::Modules;
@@ -267,47 +412,34 @@ constexpr StringView website() {
     return internal::Website;
 }
 
-constexpr time_t time() {
-    return __UNIX_TIMESTAMP__;
-}
+StringView build_time() {
+    // 1234-56-78 01:02:03
+    static char out[20] = {0};
 
-StringView time_string() {
-    static const String out = ([]() -> String {
-        char buf[32];
+    if (out[0] == '\0') {
+        // workaround for gcc4.8, explicitly mark as constexpr
+        // otherwise, we will read progmem'ed string at runtime
+        // (double-check the asm when changing anything here)
+        constexpr int year = time::year();
+        constexpr int month = time::month();
+        constexpr int day = time::day();
+        constexpr int hour = time::hour();
+        constexpr int minute = time::minute();
+        constexpr int second = time::second();
+        snprintf_P(out, sizeof(out),
+            PSTR("%4d-%02d-%02d %02d:%02d:%02d"),
+            year, month, day,
+            hour, minute, second);
+    }
 
-#if NTP_SUPPORT
-        const time_t ts = time();
-        tm now;
-
-        gmtime_r(&ts, &now);
-        now.tm_year += 1900;
-        now.tm_mon += 1;
-#else
-        constexpr tm now {
-            .tm_year = __TIME_YEAR__,
-            .tm_mon = __TIME_MONTH__,
-            .tm_mday = __TIME_DAY__,
-            .tm_hour = __TIME_HOUR__,
-            .tm_min = __TIME_MINUTE__,
-            .tm_sec = __TIME_SECOND__,
-        };
-#endif
-        snprintf_P(buf, sizeof(buf),
-            PSTR("%04d-%02d-%02d %02d:%02d:%02d"),
-            now.tm_year, now.tm_mon, now.tm_mday,
-            now.tm_hour, now.tm_min, now.tm_sec);
-
-        return buf;
-    })();
-    
-    return out;
+    return StringView(out, sizeof(out) - 1);
 }
 
 App get() {
     return App{
         .name = name(),
         .version = version(),
-        .build_time = time_string(),
+        .build_time = build_time(),
         .author = author(),
         .website = website(),
     };
@@ -327,8 +459,8 @@ Info info() {
 } // namespace build
 } // namespace espurna
 
-time_t buildTime() {
-    return espurna::build::app::time();
+espurna::StringView buildTime() {
+    return espurna::build::app::build_time();
 }
 
 espurna::build::Sdk buildSdk() {

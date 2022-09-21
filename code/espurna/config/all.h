@@ -30,7 +30,6 @@
 #include "custom.h"
 #endif
 
-#include "buildtime.h"
 #include "version.h"
 #include "types.h"
 #include "arduino.h"

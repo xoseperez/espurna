@@ -63,9 +63,9 @@ void _nofussConfigure() {
 
     const auto info = buildInfo();
     String device;
-    device += info.app.name;
+    device += String(info.app.name);
     device += '_';
-    device += info.hardware.device;
+    device += String(info.hardware.device);
     NoFUSSClient.setDevice(device);
 
     const auto version = String(info.app.version);
