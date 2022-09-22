@@ -268,7 +268,7 @@ void setup() {
         schSetup();
     #endif
     #if UART_MQTT_SUPPORT
-        uartmqttSetup();
+        uartMqttSetup();
     #endif
     #ifdef FOXEL_LIGHTFOX_DUAL
         lightfoxSetup();

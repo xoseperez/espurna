@@ -888,34 +888,58 @@
 // -----------------------------------------------------------------------------
 
 #ifndef UART_MQTT_SUPPORT
-#define UART_MQTT_SUPPORT           0           // No support by default
-#endif
-
-#ifndef UART_MQTT_USE_SOFT
-#define UART_MQTT_USE_SOFT          0           // Use SoftwareSerial
-#endif
-
-#ifndef UART_MQTT_HW_PORT
-#define UART_MQTT_HW_PORT           Serial      // Hardware serial port (if UART_MQTT_USE_SOFT == 0)
-#endif
-
-#ifndef UART_MQTT_RX_PIN
-#define UART_MQTT_RX_PIN            4           // RX PIN (if UART_MQTT_USE_SOFT == 1)
-#endif
-
-#ifndef UART_MQTT_TX_PIN
-#define UART_MQTT_TX_PIN            5           // TX PIN (if UART_MQTT_USE_SOFT == 1)
+#define UART_MQTT_SUPPORT           0           // Not enabled by default
 #endif
 
 #ifndef UART_MQTT_BAUDRATE
-#define UART_MQTT_BAUDRATE          115200      // Serial speed
+#define UART_MQTT_BAUDRATE          115200
 #endif
 
-#ifndef UART_MQTT_TERMINATION
-#define UART_MQTT_TERMINATION      '\n'         // Termination character
+#ifndef UART_MQTT_CONFIG
+#define UART_MQTT_CONFIG            SERIAL_8N1 // Arduino-specific serial configuration
+                                               // 8bit, no parity bit, stop 1bit by default
+                                               // (note that software serial config is prefixed with SW)
 #endif
 
-#define UART_MQTT_BUFFER_SIZE       100         // UART buffer size
+#ifndef UART_MQTT_SOFTWARE_SERIAL
+#define UART_MQTT_SOFTWARE_SERIAL   0          // Enable when hardware port needs to be replaced by a software one
+                                               // (*not recommended* for full-duplex communication, it is possible
+                                               // to lose data due to timing constraints)
+                                               // Depends on TX and RX setting below and *will* use hardware
+                                               // port when using known pins like 1 and 3, or 13 and 15
+#endif
+
+#ifndef UART_MQTT_TX_PIN
+#define UART_MQTT_TX_PIN            1
+#endif
+
+#ifndef UART_MQTT_RX_PIN
+#define UART_MQTT_RX_PIN            3
+#endif
+
+#ifndef UART_MQTT_BUFFER_SIZE
+#define UART_MQTT_BUFFER_SIZE       128         // Buffen up to N bytes when reading.
+                                                // If buffer fills up before we are able to send, old data gets discarded
+#endif
+
+#ifndef UART_MQTT_TERMINATE_OUT
+#define UART_MQTT_TERMINATE_OUT     '\n'        // Write this byte after every received payload
+                                                // Set to `\0` to disable
+#endif
+
+#ifndef UART_MQTT_TERMINATE_IN
+#define UART_MQTT_TERMINATE_IN      '\n'        // Read and buffer serial until this byte is found
+                                                // Set to `\0` to disable; instead, data will be sent periodically (as soon as it is read)
+#endif
+
+#ifndef UART_MQTT_ENCODE
+#define UART_MQTT_ENCODE            0           // Data read from serial will be sent as HEX strings
+                                                // (e.g. for binary protocols; 2char per 1byte)
+#endif
+
+#ifndef UART_MQTT_DECODE
+#define UART_MQTT_DECODE            0           // MQTT payload received will be converted from HEX before writing to serial
+#endif
 
 // -----------------------------------------------------------------------------
 // MQTT
