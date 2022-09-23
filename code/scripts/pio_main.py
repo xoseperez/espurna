@@ -44,8 +44,8 @@ projenv.ProcessUnFlags("-w")
 remove_float_support(env)
 ldscripts_inject_libpath(env)
 
-# two-step update hint when using 1MB boards
-if not CI:
+# compressed and two-step update hint when using 1MB boards
+if not CI and env.get("UPLOAD_PROTOCOL") == "espota":
     env.AddPostAction(
         "${BUILD_DIR}/${PROGNAME}.bin",
         env.VerboseAction(check_binsize, "Checking maximum upload size $TARGET"),

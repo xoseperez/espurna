@@ -85,7 +85,11 @@ def print_size_warning():
         "File is too large for OTA! Here you can find instructions on how to flash it:"
     )
     print_warning(
-        "https://github.com/xoseperez/espurna/wiki/TwoStepUpdates",
+        "* https://github.com/xoseperez/espurna/wiki/OTA#compressed-ota",
+        color=Color.LIGHT_CYAN,
+    )
+    print_warning(
+        "* https://github.com/xoseperez/espurna/wiki/TwoStepUpdates",
         color=Color.LIGHT_CYAN,
     )
     print_filler("*", color=Color.LIGHT_YELLOW, err=True)
