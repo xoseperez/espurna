@@ -253,6 +253,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Pin libraries versions as \<owner\>/\<name\> to fix possible issues with Trusted Package Registry ([a9220ec2b](https://github.com/xoseperez/espurna/commit/a9220ec2b27224b2da79880945f6f58450ba53e8))
 - Add `pio run -e $env -t build-and-copy`, more configuration options for the version string ([6f122f5e](https://github.com/xoseperez/espurna/commit/6f122f5ecb2af5bb0af0cbdedbe1166f1b92262d), [4c33cacf](https://github.com/xoseperez/espurna/commit/4c33cacfdbe4c51ff52ffb9f530006dfa7037a6b))
 - Add `pio run -e $env -t .pio/build/$env/firmware.bin.gz` build target ([038f1ffe](https://github.com/xoseperez/espurna/commit/038f1ffec3f61e86fa212450fd2f5ab22823b124))
+- Renamed espurna-core to espurna-minimal ([5bc55cd1](https://github.com/xoseperez/espurna/commit/5bc55cd1a5bf60b27aa2c338cd2fd715eb755815))
 #### RPN Rules
 - Set MQTT variables just before running the rules ([32b864c5](https://github.com/xoseperez/espurna/commit/32b864c56394016666b716c1623aaf9c85432ed3), [658ce105](https://github.com/xoseperez/espurna/commit/658ce1056e3f11832bce3457c91c0c325c24f509))
 - Magnitude variables may not end in number when there's only one of that type ([5fcac5d2](https://github.com/xoseperez/espurna/commit/5fcac5d27f713ca4a84da3dc8f0b4d10c25c3050))
@@ -270,6 +271,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Use 64bit microseconds time source for uptime, no need to count overflows manually ([1ca98880](https://github.com/xoseperez/espurna/commit/1ca98880d64db0865d02f009002bc22e32ae5076))
 - Update load average and system stability check intervals to use seconds instead of milliseconds ([1ca98880](https://github.com/xoseperez/espurna/commit/1ca98880d64db0865d02f009002bc22e32ae5076))
 - Update websocket client timeout and update message configuration to use seconds instead of milliseconds ([135c7b80](https://github.com/xoseperez/espurna/commit/135c7b80acbfd28136146f08188d81262afd795c))
+- Unauthenticated telnet session no longer receives debug messages ([79ef68b4](https://github.com/xoseperez/espurna/commit/79ef68b4355fa71c3261046ba135a52f15bc0df9))
+- `__UNIX_TIMESTAMP__` removed; build time remains `__TIMESTAMP__` and as YYYY-MM-DD HH:MM:SS string ([a8fe3e46](https://github.com/xoseperez/espurna/commit/a8fe3e466490f3f6bdda992d74a7f47ffa71e8c9))
 #### Terminal
 - Rework boot info and terminal commands ([7ea73554](https://github.com/xoseperez/espurna/commit/7ea735548bcd41742fac32e8733b2084c4c334cd))
 #### WebUI
