@@ -98,14 +98,20 @@ void _nofussLoop() {
 }
 
 #if TERMINAL_SUPPORT
+alignas(4) static constexpr char NofussCommand[] PROGMEM = "NOFUSS";
 
-void _nofussInitCommands() {
-    terminalRegisterCommand(F("NOFUSS"), [](::terminal::CommandContext&& ctx) {
-        terminalOK(ctx);
-        nofussRun();
-    });
+static void _nofussCommand(::terminal::CommandContext&& ctx) {
+    terminalOK(ctx);
+    nofussRun();
 }
 
+static constexpr ::terminal::Command NofussCommands[] PROGMEM {
+    {NofussCommand, _nofussCommand},
+};
+
+void _nofussCommandsSetup() {
+    espurna::terminal::add(NofussCommands);
+}
 #endif // TERMINAL_SUPPORT
 
 void nofussSetup() {
@@ -180,7 +186,7 @@ void nofussSetup() {
     #endif
 
     #if TERMINAL_SUPPORT
-        _nofussInitCommands();
+        _nofussCommandsSetup();
     #endif
 
     // Main callbacks

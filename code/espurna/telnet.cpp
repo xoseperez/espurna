@@ -852,39 +852,50 @@ bool connect(Address address) {
 
 #if TERMINAL_SUPPORT
 namespace terminal {
+namespace commands {
+
+alignas(4) static constexpr char Reverse[] PROGMEM = "TELNET.REVERSE";
+
+void reverse(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() != 3) {
+        terminalError(ctx, F("TELNET.REVERSE <HOST> <PORT>"));
+        return;
+    }
+
+    const auto ip = networkGetHostByName(ctx.argv[1]);
+    if (!ip.isSet()) {
+        terminalError(ctx, F("Host not found"));
+        return;
+    }
+
+    const auto convert_port = espurna::settings::internal::convert<uint16_t>;
+    auto port = convert_port(ctx.argv[2]);
+    if (!port) {
+        terminalError(ctx, F("Invalid port"));
+        return;
+    }
+
+    const auto address = Address{
+        .ip = ip,
+        .port = port,
+    };
+
+    if (connect(address)) {
+        terminalOK(ctx);
+        return;
+    }
+
+    terminalError(ctx, F("Unable to connect"));
+}
+
+static constexpr ::terminal::Command List[] PROGMEM {
+    {Reverse, commands::reverse},
+};
+
+} // namespace commands
 
 void setup() {
-    terminalRegisterCommand(F("TELNET.REVERSE"), [](::terminal::CommandContext&& ctx) {
-        if (ctx.argv.size() != 3) {
-            terminalError(ctx, F("TELNET.REVERSE <HOST> <PORT>"));
-            return;
-        }
-
-        const auto ip = networkGetHostByName(ctx.argv[1]);
-        if (!ip.isSet()) {
-            terminalError(ctx, F("Host not found"));
-            return;
-        }
-
-        const auto convert_port = espurna::settings::internal::convert<uint16_t>;
-        auto port = convert_port(ctx.argv[2]);
-        if (!port) {
-            terminalError(ctx, F("Invalid port"));
-            return;
-        }
-
-        const auto address = Address{
-            .ip = ip,
-            .port = port,
-        };
-
-        if (connect(address)) {
-            terminalOK(ctx);
-            return;
-        }
-
-        terminalError(ctx, F("Unable to connect"));
-    });
+    espurna::terminal::add(commands::List);
 }
 
 } // namespace terminal

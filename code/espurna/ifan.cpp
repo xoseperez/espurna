@@ -284,6 +284,35 @@ private:
     const Config& _config;
 };
 
+#if TERMINAL_SUPPORT
+namespace terminal {
+
+alignas(4) static constexpr char Speed[] PROGMEM = "SPEED";
+
+void speed(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() == 2) {
+        updateSpeedFromPayload(ctx.argv[1]);
+    }
+
+    ctx.output.printf_P(PSTR("%s %s\n"),
+        (config.speed != FanSpeed::Off)
+            ? PSTR("speed")
+            : PSTR("fan is"),
+        speedToPayload(config.speed).c_str());
+    terminalOK(ctx);
+}
+
+static constexpr ::terminal::Command Commands[] PROGMEM {
+    {Speed, speed},
+};
+
+void setup() {
+    espurna::terminal::add(Commands);
+}
+
+} // namespace terminal
+#endif
+
 void setup() {
 
     config.state_pins = setupStatePins();
@@ -322,16 +351,7 @@ void setup() {
 #endif
 
 #if TERMINAL_SUPPORT
-    terminalRegisterCommand(F("SPEED"), [](::terminal::CommandContext&& ctx) {
-        if (ctx.argv.size() == 2) {
-            updateSpeedFromPayload(ctx.argv[1]);
-        }
-
-        ctx.output.printf_P(PSTR("%s %s\n"),
-            (config.speed != FanSpeed::Off) ? "speed" : "fan is",
-            speedToPayload(config.speed).c_str());
-        terminalOK(ctx);
-    });
+    terminal::setup();
 #endif
 
 }

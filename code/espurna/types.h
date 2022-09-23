@@ -189,6 +189,11 @@ inline String operator+(String&& lhs, StringView rhs) {
     return lhs;
 }
 
+inline String operator+=(String& lhs, StringView rhs) {
+    lhs.concat(rhs.c_str(), rhs.length());
+    return lhs;
+}
+
 #define STRING_VIEW(X) ({\
         alignas(4) static constexpr char __pstr__[] PROGMEM = (X);\
         ::espurna::StringView{__pstr__};\

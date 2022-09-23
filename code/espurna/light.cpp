@@ -2443,7 +2443,6 @@ void _lightWebSocketOnAction(uint32_t client_id, const char* action, JsonObject&
 #endif
 
 #if TERMINAL_SUPPORT
-
 namespace {
 
 // TODO: at this point we have 3 different state save / restoration
@@ -2494,171 +2493,205 @@ void _lightNotificationInit(size_t channel) {
     lightState(true);
 }
 
-void _lightInitCommands() {
+alignas(4) static constexpr char LightCommandNotify[] PROGMEM = "NOTIFY";
 
-    terminalRegisterCommand(F("NOTIFY"), [](::terminal::CommandContext&& ctx) {
-        static constexpr auto NotifyTransition = LightTransition{
-            .time = espurna::duration::Seconds(1),
-            .step = espurna::duration::Milliseconds(50),
-        };
+static void _lightCommandNotify(::terminal::CommandContext&& ctx) {
+    static constexpr auto NotifyTransition = LightTransition{
+        .time = espurna::duration::Seconds(1),
+        .step = espurna::duration::Milliseconds(50),
+    };
 
-        if ((ctx.argv.size() < 2) || (ctx.argv.size() > 5)) {
-            terminalError(ctx, F("NOTIFY <CHANNEL> [<REPEATS>] [<TIME>] [<STEP>]")); 
+    if ((ctx.argv.size() < 2) || (ctx.argv.size() > 5)) {
+        terminalError(ctx, F("NOTIFY <CHANNEL> [<REPEATS>] [<TIME>] [<STEP>]")); 
+        return;
+    }
+
+    size_t channel;
+    if (!_lightTryParseChannel(ctx.argv[1].c_str(), channel)) {
+        terminalError(ctx, F("Invalid channel ID"));
+        return;
+    }
+
+    using Duration = espurna::duration::Milliseconds;
+    const auto time_convert = espurna::settings::internal::convert<Duration>;
+
+    constexpr auto DefaultNotification = LightTransition {
+        .time = Duration(500),
+        .step = Duration(25),
+    };
+
+    const auto notification = (ctx.argv.size() >= 4)
+        ? LightTransition{
+            .time = time_convert(ctx.argv[2]),
+            .step = time_convert(ctx.argv[3])}
+        : DefaultNotification;
+
+    constexpr size_t DefaultRepeats { 3 };
+
+    const auto repeats_convert = espurna::settings::internal::convert<size_t>;
+    const auto repeats = (ctx.argv.size() >= 5)
+        ? repeats_convert(ctx.argv[4])
+        : DefaultRepeats;
+
+    auto state = std::make_shared<LightValuesState>(_lightValuesState());
+    auto restore = [state]() {
+        _lightNotificationRestore(*state);
+        lightUpdate(NotifyTransition, 0, false);
+    };
+
+    auto on = [channel, notification]() {
+        lightChannel(channel, espurna::light::ValueMax);
+        lightUpdateSequence(notification);
+    };
+
+    auto off = [channel, notification]() {
+        lightChannel(channel, espurna::light::ValueMin);
+        lightUpdateSequence(notification);
+    };
+
+    _lightNotificationInit(channel);
+    lightUpdate(NotifyTransition);
+
+    LightSequenceCallbacks callbacks;
+    callbacks.push_front(restore);
+    for (size_t n = 0; n < repeats; ++n) {
+        callbacks.push_front(off);
+        callbacks.push_front(on);
+    }
+
+    lightSequence(std::move(callbacks));
+}
+
+alignas(4) static constexpr char LightCommand[] PROGMEM = "LIGHT";
+
+static void _lightCommand(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() > 1) {
+        if (!_lightParsePayload(ctx.argv[1].c_str())) {
+            terminalError(ctx, F("Invalid payload"));
             return;
         }
+        lightUpdate();
+    }
 
-        size_t channel;
-        if (!_lightTryParseChannel(ctx.argv[1].c_str(), channel)) {
+    ctx.output.printf("%s\n", _light_state ? "ON" : "OFF");
+    terminalOK(ctx);
+}
+
+alignas(4) static constexpr char LightCommandBrightness[] PROGMEM = "BRIGHTNESS";
+
+static void _lightCommandBrightness(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() > 1) {
+        _lightAdjustBrightness(ctx.argv[1]);
+        lightUpdate();
+    }
+    ctx.output.printf("%ld\n", _light_brightness);
+    terminalOK(ctx);
+}
+
+alignas(4) static constexpr char LightCommandChannel[] PROGMEM = "CHANNEL";
+
+static void _lightCommandChannel(::terminal::CommandContext&& ctx) {
+    const size_t Channels { _light_channels.size() };
+    if (!Channels) {
+        terminalError(ctx, F("No channels configured"));
+        return;
+    }
+
+    auto description = [&](size_t channel) {
+        ctx.output.printf_P(PSTR("#%zu (%s) input:%ld value:%ld target:%ld current:%s\n"),
+                channel, _lightDesc(Channels, channel),
+                _light_channels[channel].inputValue,
+                _light_channels[channel].value,
+                _light_channels[channel].target,
+                String(_light_channels[channel].current, 2).c_str());
+    };
+
+    if (ctx.argv.size() > 2) {
+        size_t id;
+        if (!_lightTryParseChannel(ctx.argv[1].c_str(), id)) {
             terminalError(ctx, F("Invalid channel ID"));
             return;
         }
 
-        using Duration = espurna::duration::Milliseconds;
-        const auto time_convert = espurna::settings::internal::convert<Duration>;
-
-        constexpr auto DefaultNotification = LightTransition {
-            .time = Duration(500),
-            .step = Duration(25),
-        };
-
-        const auto notification = (ctx.argv.size() >= 4)
-            ? LightTransition{
-                .time = time_convert(ctx.argv[2]),
-                .step = time_convert(ctx.argv[3])}
-            : DefaultNotification;
-
-        constexpr size_t DefaultRepeats { 3 };
-
-        const auto repeats_convert = espurna::settings::internal::convert<size_t>;
-        const auto repeats = (ctx.argv.size() >= 5)
-            ? repeats_convert(ctx.argv[4])
-            : DefaultRepeats;
-
-        auto state = std::make_shared<LightValuesState>(_lightValuesState());
-        auto restore = [state]() {
-            _lightNotificationRestore(*state);
-            lightUpdate(NotifyTransition, 0, false);
-        };
-
-        auto on = [channel, notification]() {
-            lightChannel(channel, espurna::light::ValueMax);
-            lightUpdateSequence(notification);
-        };
-
-        auto off = [channel, notification]() {
-            lightChannel(channel, espurna::light::ValueMin);
-            lightUpdateSequence(notification);
-        };
-
-        _lightNotificationInit(channel);
-        lightUpdate(NotifyTransition);
-
-        LightSequenceCallbacks callbacks;
-        callbacks.push_front(restore);
-        for (size_t n = 0; n < repeats; ++n) {
-            callbacks.push_front(off);
-            callbacks.push_front(on);
+        _lightAdjustChannel(id, ctx.argv[2]);
+        lightUpdate();
+        description(id);
+    } else {
+        for (size_t index = 0; index < Channels; ++index) {
+            description(index);
         }
+    }
 
-        lightSequence(std::move(callbacks));
-    });
+    terminalOK(ctx);
+}
 
-    terminalRegisterCommand(F("LIGHT"), [](::terminal::CommandContext&& ctx) {
-        if (ctx.argv.size() > 1) {
-            if (!_lightParsePayload(ctx.argv[1].c_str())) {
-                terminalError(ctx, F("Invalid payload"));
-                return;
-            }
-            lightUpdate();
-        }
+alignas(4) static constexpr char LightCommandRgb[] PROGMEM = "RGB";
 
-        ctx.output.printf("%s\n", _light_state ? "ON" : "OFF");
-        terminalOK(ctx);
-    });
+static void _lightCommandRgb(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() > 1) {
+        _lightFromRgbPayload(ctx.argv[1].c_str());
+        lightUpdate();
+    }
 
-    terminalRegisterCommand(F("BRIGHTNESS"), [](::terminal::CommandContext&& ctx) {
-        if (ctx.argv.size() > 1) {
-            _lightAdjustBrightness(ctx.argv[1]);
-            lightUpdate();
-        }
-        ctx.output.printf("%ld\n", _light_brightness);
-        terminalOK(ctx);
-    });
+    ctx.output.printf_P(PSTR("rgb %s\n"),
+        _lightRgbPayload(_lightToTargetRgb()).c_str());
+    terminalOK(ctx);
+}
 
-    terminalRegisterCommand(F("CHANNEL"), [](::terminal::CommandContext&& ctx) {
-        const size_t Channels { _light_channels.size() };
-        if (!Channels) {
-            terminalError(ctx, F("No channels configured"));
-            return;
-        }
+alignas(4) static constexpr char LightCommandHsv[] PROGMEM = "HSV";
 
-        auto description = [&](size_t channel) {
-            ctx.output.printf_P(PSTR("#%zu (%s) input:%ld value:%ld target:%ld current:%s\n"),
-                    channel, _lightDesc(Channels, channel),
-                    _light_channels[channel].inputValue,
-                    _light_channels[channel].value,
-                    _light_channels[channel].target,
-                    String(_light_channels[channel].current, 2).c_str());
-        };
+static void _lightCommandHsv(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() > 1) {
+        _lightFromHsvPayload(ctx.argv[1].c_str());
+        lightUpdate();
+    }
 
-        if (ctx.argv.size() > 2) {
-            size_t id;
-            if (!_lightTryParseChannel(ctx.argv[1].c_str(), id)) {
-                terminalError(ctx, F("Invalid channel ID"));
-                return;
-            }
+    ctx.output.printf_P(PSTR("hsv %s\n"),
+        _lightHsvPayload().c_str());
+    terminalOK(ctx);
+}
 
-            _lightAdjustChannel(id, ctx.argv[2]);
-            lightUpdate();
-            description(id);
-        } else {
-            for (size_t index = 0; index < Channels; ++index) {
-                description(index);
-            }
-        }
+alignas(4) static constexpr char LightCommandKelvin[] PROGMEM = "KELVIN";
 
-        terminalOK(ctx);
-    });
+static void _lightCommandKelvin(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() > 1) {
+        _lightAdjustKelvin(ctx.argv[1]);
+        lightUpdate();
+    }
 
-    terminalRegisterCommand(F("RGB"), [](::terminal::CommandContext&& ctx) {
-        if (ctx.argv.size() > 1) {
-            _lightFromRgbPayload(ctx.argv[1].c_str());
-            lightUpdate();
-        }
-        ctx.output.printf_P(PSTR("rgb %s\n"), _lightRgbPayload(_lightToTargetRgb()).c_str());
-        terminalOK(ctx);
-    });
+    ctx.output.printf_P(PSTR("kelvin %ld\n"),
+        _toKelvin(_light_mireds));
+    terminalOK(ctx);
+}
 
-    terminalRegisterCommand(F("HSV"), [](::terminal::CommandContext&& ctx) {
-        if (ctx.argv.size() > 1) {
-            _lightFromHsvPayload(ctx.argv[1].c_str());
-            lightUpdate();
-        }
-        ctx.output.printf_P(PSTR("hsv %s\n"), _lightHsvPayload().c_str());
-        terminalOK(ctx);
-    });
+alignas(4) static constexpr char LightCommandMired[] PROGMEM = "MIRED";
 
-    terminalRegisterCommand(F("KELVIN"), [](::terminal::CommandContext&& ctx) {
-        if (ctx.argv.size() > 1) {
-            _lightAdjustKelvin(ctx.argv[1]);
-            lightUpdate();
-        }
-        ctx.output.printf_P(PSTR("kelvin %ld\n"), _toKelvin(_light_mireds));
-        terminalOK(ctx);
-    });
+static void _lightCommandMired(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() > 1) {
+        _lightAdjustMireds(ctx.argv[1]);
+        lightUpdate();
+    }
 
-    terminalRegisterCommand(F("MIRED"), [](::terminal::CommandContext&& ctx) {
-        if (ctx.argv.size() > 1) {
-            _lightAdjustMireds(ctx.argv[1]);
-            lightUpdate();
-        }
-        ctx.output.printf_P(PSTR("mireds %ld\n"), _light_mireds);
-        terminalOK(ctx);
-    });
+    ctx.output.printf_P(PSTR("mireds %ld\n"), _light_mireds);
+    terminalOK(ctx);
+}
+
+static constexpr ::terminal::Command Commands[] PROGMEM {
+    {LightCommandNotify, _lightCommandNotify},
+    {LightCommand, _lightCommand},
+    {LightCommandBrightness, _lightCommandBrightness},
+    {LightCommandChannel, _lightCommandChannel},
+    {LightCommandRgb, _lightCommandRgb},
+    {LightCommandHsv, _lightCommandHsv},
+    {LightCommandKelvin, _lightCommandKelvin},
+    {LightCommandMired, _lightCommandMired},
+};
+
+void _lightInitCommands() {
+    espurna::terminal::add(Commands);
 }
 
 } // namespace
-
 #endif // TERMINAL_SUPPORT
 
 size_t lightChannels() {

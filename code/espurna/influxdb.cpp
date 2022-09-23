@@ -278,6 +278,27 @@ bool _idbHeartbeat(espurna::heartbeat::Mask mask) {
     return true;
 }
 
+#if TERMINAL_SUPPORT
+alignas(4) static constexpr char IdbSend[] PROGMEM = "IDB.SEND";
+
+static void idbTerminalSend(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() != 4) {
+        terminalError(ctx, F("idb.send <topic> <id> <value>"));
+        return;
+    }
+
+    idbSend(ctx.argv[1].c_str(), ctx.argv[2].toInt(), ctx.argv[3].c_str());
+}
+
+static constexpr ::terminal::Command IdbCommands[] {
+    {IdbSend, idbTerminalSend},
+};
+
+static void idbTerminalSetup() {
+    espurna::terminal::add(IdbCommands);
+}
+#endif
+
 void idbSetup() {
     systemHeartbeat(_idbHeartbeat);
     systemHeartbeat(_idbHeartbeat,
@@ -305,14 +326,7 @@ void idbSetup() {
     espurnaRegisterLoop(_idbFlush);
 
     #if TERMINAL_SUPPORT
-        terminalRegisterCommand(F("IDB.SEND"), [](::terminal::CommandContext&& ctx) {
-            if (ctx.argv.size() != 4) {
-                terminalError(ctx, F("idb.send <topic> <id> <value>"));
-                return;
-            }
-
-            idbSend(ctx.argv[1].c_str(), ctx.argv[2].toInt(), ctx.argv[3].c_str());
-        });
+        idbTerminalSetup();
     #endif
 }
 

@@ -58,36 +58,48 @@ Stream& SerialPort = TERMINAL_SERIAL_PORT;
 
 namespace commands {
 
+alignas(4) static constexpr char Commands[] PROGMEM = "COMMANDS";
+alignas(4) static constexpr char Help[] PROGMEM = "HELP";
+
 void help(CommandContext&& ctx) {
     auto names = terminal::names();
 
     std::sort(names.begin(), names.end(),
-        [](const __FlashStringHelper* lhs, const __FlashStringHelper* rhs) {
+        [](StringView lhs, StringView rhs) {
             // XXX: Core's ..._P funcs only allow 2nd pointer to be in PROGMEM,
             //      explicitly load the 1st one
             // TODO: can we just assume linker already sorted all strings?
             const String lhs_as_string(lhs);
-            return strncasecmp_P(lhs_as_string.c_str(), reinterpret_cast<const char*>(rhs), lhs_as_string.length()) < 0;
+            return strncasecmp_P(
+                lhs_as_string.c_str(),
+                rhs.c_str(),
+                lhs_as_string.length()) < 0;
         });
 
     ctx.output.print(F("Available commands:\n"));
-    for (auto* name : names) {
-        ctx.output.printf("> %s\n", reinterpret_cast<const char*>(name));
+    for (auto name : names) {
+        ctx.output.printf("> %s\n", name.c_str());
     }
 
     terminalOK(ctx);
 }
+
+alignas(4) static constexpr char Reset[] PROGMEM = "RESET";
 
 void reset(CommandContext&& ctx) {
     prepareReset(CustomResetReason::Terminal);
     terminalOK(ctx);
 }
 
+alignas(4) static constexpr char EraseConfig[] PROGMEM = "ERASE.CONFIG";
+
 void erase_config(CommandContext&& ctx) {
     terminalOK(ctx);
     customResetReason(CustomResetReason::Terminal);
     forceEraseSDKConfig();
 }
+
+alignas(4) static constexpr char Heap[] PROGMEM = "HEAP";
 
 void heap(CommandContext&& ctx) {
     const auto stats = systemHeapStats();
@@ -97,11 +109,15 @@ void heap(CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
+alignas(4) static constexpr char Uptime[] PROGMEM = "UPTIME";
+
 void uptime(CommandContext&& ctx) {
     ctx.output.printf_P(PSTR("uptime %s\n"),
         prettyDuration(systemUptime()).c_str());
     terminalOK(ctx);
 }
+
+alignas(4) static constexpr char Info[] PROGMEM = "INFO";
 
 void info(CommandContext&& ctx) {
     const auto app = buildApp();
@@ -261,6 +277,8 @@ StringView flash_chip_mode() {
     return out;
 }
 
+alignas(4) static constexpr char Storage[] PROGMEM = "STORAGE";
+
 void storage(CommandContext&& ctx) {
     ctx.output.printf_P(PSTR("flash chip ID: 0x%06X\n"), ESP.getFlashChipId());
     ctx.output.printf_P(PSTR("speed: %u\n"), ESP.getFlashChipSpeed());
@@ -300,6 +318,8 @@ void storage(CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
+alignas(4) static constexpr char Adc[] PROGMEM = "ADC";
+
 void adc(CommandContext&& ctx) {
     const int pin = (ctx.argv.size() == 2)
         ? ctx.argv[1].toInt()
@@ -310,40 +330,50 @@ void adc(CommandContext&& ctx) {
 }
 
 #if SYSTEM_CHECK_ENABLED
+alignas(4) static constexpr char Stable[] PROGMEM = "STABLE";
+
 void stable(CommandContext&& ctx) {
     systemForceStable();
     prepareReset(CustomResetReason::Stability);
 }
+
+alignas(4) static constexpr char Unstable[] PROGMEM = "UNSTABLE";
 
 void unstable(CommandContext&& ctx) {
     systemForceUnstable();
     prepareReset(CustomResetReason::Stability);
 }
 
+alignas(4) static constexpr char Trap[] PROGMEM = "TRAP";
+
 void trap(CommandContext&& ctx) {
     __builtin_trap();
 }
 #endif
 
-void setup() {
-    terminalRegisterCommand(F("COMMANDS"), commands::help);
-    terminalRegisterCommand(F("HELP"), commands::help);
+static constexpr ::terminal::Command List[] PROGMEM {
+    {Commands, commands::help},
+    {Help, commands::help},
 
-    terminalRegisterCommand(F("INFO"), commands::info);
-    terminalRegisterCommand(F("STORAGE"), commands::storage);
-    terminalRegisterCommand(F("UPTIME"), commands::uptime);
-    terminalRegisterCommand(F("HEAP"), commands::heap);
+    {Info, commands::info},
+    {Storage, commands::storage},
+    {Uptime, commands::uptime},
+    {Heap, commands::heap},
 
-    terminalRegisterCommand(F("ADC"), commands::adc);
+    {Adc, commands::adc},
 
-    terminalRegisterCommand(F("RESET"), commands::reset);
-    terminalRegisterCommand(F("ERASE.CONFIG"), commands::erase_config);
+    {Reset, commands::reset},
+    {EraseConfig, commands::erase_config},
 
 #if SYSTEM_CHECK_ENABLED
-    terminalRegisterCommand(F("STABLE"), commands::stable);
-    terminalRegisterCommand(F("UNSTABLE"), commands::unstable);
-    terminalRegisterCommand(F("TRAP"), commands::trap);
+    {Stable, commands::stable},
+    {Unstable, commands::unstable},
+    {Trap, commands::trap},
 #endif
+};
+
+void setup() {
+    espurna::terminal::add(List);
 }
 
 } // namespace commands
@@ -595,8 +625,8 @@ void setup() {
         [](ApiRequest& api) {
             api.handle([](AsyncWebServerRequest* request) {
                 auto* response = request->beginResponseStream(F("text/plain"));
-                for (auto* name : names()) {
-                    response->print(name);
+                for (auto name : names()) {
+                    response->write(name.c_str(), name.length());
                     response->print("\r\n");
                 }
 
@@ -710,7 +740,11 @@ void terminalError(const espurna::terminal::CommandContext& ctx, const String& m
     espurna::terminal::error(ctx, message);
 }
 
-void terminalRegisterCommand(const __FlashStringHelper* name, espurna::terminal::CommandFunc func) {
+void terminalRegisterCommand(espurna::terminal::Commands commands) {
+    espurna::terminal::add(commands);
+}
+
+void terminalRegisterCommand(espurna::StringView name, espurna::terminal::CommandFunc func) {
     espurna::terminal::add(name, func);
 }
 

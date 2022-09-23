@@ -71,46 +71,59 @@ void eepromBackup(uint32_t index){
 }
 
 #if TERMINAL_SUPPORT
+alignas(4) static constexpr char EepromCommand[] PROGMEM = "EEPROM";
 
-void _eepromInitCommands() {
-
-    terminalRegisterCommand(F("EEPROM"), [](::terminal::CommandContext&& ctx) {
-        ctx.output.printf_P(PSTR("Sectors: %s, current: %lu\n"),
-                eepromSectors().c_str(), eepromCurrent());
-        if (_eeprom_commit_count > 0) {
-            ctx.output.printf_P(PSTR("Commits done: %lu, last: %s\n"),
-                _eeprom_commit_count, _eeprom_last_commit_result ? "OK" : "ERROR");
-        }
-        terminalOK(ctx);
-    });
-
-    terminalRegisterCommand(F("EEPROM.COMMIT"), [](::terminal::CommandContext&& ctx) {
-        _eepromCommit();
-        terminalOK(ctx);
-    });
-
-    terminalRegisterCommand(F("EEPROM.DUMP"), [](::terminal::CommandContext&& ctx) {
-        EEPROMr.dump(static_cast<Stream&>(ctx.output)); // XXX: only Print interface is used
-        terminalOK(ctx);
-    });
-
-    terminalRegisterCommand(F("FLASH.DUMP"), [](::terminal::CommandContext&& ctx) {
-        if (ctx.argv.size() < 2) {
-            terminalError(ctx, F("Wrong arguments"));
-            return;
-        }
-        uint32_t sector = ctx.argv[1].toInt();
-        uint32_t max = ESP.getFlashChipSize() / SPI_FLASH_SEC_SIZE;
-        if (sector >= max) {
-            terminalError(ctx, F("Sector out of range"));
-            return;
-        }
-        EEPROMr.dump(static_cast<Stream&>(ctx.output), sector); // XXX: only Print interface is used
-        terminalOK(ctx);
-    });
-
+static void _eepromCommand(::terminal::CommandContext&& ctx) {
+    ctx.output.printf_P(PSTR("Sectors: %s, current: %lu\n"),
+            eepromSectors().c_str(), eepromCurrent());
+    if (_eeprom_commit_count > 0) {
+        ctx.output.printf_P(PSTR("Commits done: %lu, last: %s\n"),
+            _eeprom_commit_count, _eeprom_last_commit_result ? "OK" : "ERROR");
+    }
+    terminalOK(ctx);
 }
 
+alignas(4) static constexpr char EepromCommit[] PROGMEM = "EEPROM.COMMIT";
+
+static void _eepromCommandCommit(::terminal::CommandContext&& ctx) {
+    _eepromCommit();
+    terminalOK(ctx);
+}
+
+alignas(4) static constexpr char EepromDump[] PROGMEM = "EEPROM.DUMP";
+
+static void _eepromCommandDump(::terminal::CommandContext&& ctx) {
+    EEPROMr.dump(static_cast<Stream&>(ctx.output)); // XXX: only Print interface is used
+    terminalOK(ctx);
+}
+
+alignas(4) static constexpr char FlashDump[] PROGMEM = "FLASH.DUMP";
+
+static void _flashCommandDump(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() < 2) {
+        terminalError(ctx, F("Wrong arguments"));
+        return;
+    }
+    uint32_t sector = ctx.argv[1].toInt();
+    uint32_t max = ESP.getFlashChipSize() / SPI_FLASH_SEC_SIZE;
+    if (sector >= max) {
+        terminalError(ctx, F("Sector out of range"));
+        return;
+    }
+    EEPROMr.dump(static_cast<Stream&>(ctx.output), sector); // XXX: only Print interface is used
+    terminalOK(ctx);
+}
+
+static constexpr ::terminal::Command EepromCommands[] PROGMEM {
+    {EepromCommand, _eepromCommand},
+    {EepromCommit, _eepromCommandCommit},
+    {EepromDump, _eepromCommandDump},
+    {FlashDump, _flashCommandDump},
+};
+
+void _eepromCommandsSetup() {
+    espurna::terminal::add(EepromCommands);
+}
 #endif
 
 // -----------------------------------------------------------------------------
@@ -141,7 +154,7 @@ void eepromSetup() {
     EEPROMr.begin(EepromSize);
 
 #if TERMINAL_SUPPORT
-    _eepromInitCommands();
+    _eepromCommandsSetup();
 #endif
 
     espurnaRegisterLoop(eepromLoop);

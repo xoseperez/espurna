@@ -1163,68 +1163,87 @@ void _rfbCommandStatusDispatch(::terminal::CommandContext&& ctx, size_t id, Rela
     }
 }
 
-void _rfbInitCommands() {
+alignas(4) static constexpr char RfbCommandSend[] PROGMEM = "RFB.SEND";
 
-    terminalRegisterCommand(F("RFB.SEND"), [](::terminal::CommandContext&& ctx) {
-        if (ctx.argv.size() == 2) {
-            rfbSend(ctx.argv[1]);
-            return;
-        }
+static void _rfbCommandSend(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() == 2) {
+        rfbSend(ctx.argv[1]);
+        return;
+    }
 
-        terminalError(ctx, F("RFB.SEND <CODE>"));
-    });
+    terminalError(ctx, F("RFB.SEND <CODE>"));
+}
 
 #if RELAY_SUPPORT
-    terminalRegisterCommand(F("RFB.LEARN"), [](::terminal::CommandContext&& ctx) {
-        if (ctx.argv.size() != 3) {
-            terminalError(ctx, F("RFB.LEARN <ID> <STATUS>"));
-            return;
-        }
+alignas(4) static constexpr char RfbCommandLearn[] PROGMEM = "RFB.LEARN";
 
-        size_t id;
-        if (!tryParseId(ctx.argv[1].c_str(), relayCount, id)) {
-            terminalError(ctx, F("Invalid relay ID"));
-            return;
-        }
+static void _rfbCommandLearn(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() != 3) {
+        terminalError(ctx, F("RFB.LEARN <ID> <STATUS>"));
+        return;
+    }
 
-        _rfbCommandStatusDispatch(std::move(ctx), id, rfbLearn);
-    });
+    size_t id;
+    if (!tryParseId(ctx.argv[1].c_str(), relayCount, id)) {
+        terminalError(ctx, F("Invalid relay ID"));
+        return;
+    }
 
-    terminalRegisterCommand(F("RFB.FORGET"), [](::terminal::CommandContext&& ctx) {
-        if (ctx.argv.size() < 2) {
-            terminalError(ctx, F("RFB.FORGET <ID> [<STATUS>]"));
-            return;
-        }
+    _rfbCommandStatusDispatch(std::move(ctx), id, rfbLearn);
+}
 
-        size_t id;
-        if (!tryParseId(ctx.argv[1].c_str(), relayCount, id)) {
-            terminalError(ctx, F("Invalid relay ID"));
-            return;
-        }
+alignas(4) static constexpr char RfbCommandForget[] PROGMEM = "RFB.FORGET";
 
-        if (ctx.argv.size() == 3) {
-            _rfbCommandStatusDispatch(std::move(ctx), id, rfbForget);
-            return;
-        }
+static void _rfbCommandForget(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() < 2) {
+        terminalError(ctx, F("RFB.FORGET <ID> [<STATUS>]"));
+        return;
+    }
 
-        rfbForget(id, true);
-        rfbForget(id, false);
+    size_t id;
+    if (!tryParseId(ctx.argv[1].c_str(), relayCount, id)) {
+        terminalError(ctx, F("Invalid relay ID"));
+        return;
+    }
 
-        terminalOK(ctx);
-    });
+    if (ctx.argv.size() == 3) {
+        _rfbCommandStatusDispatch(std::move(ctx), id, rfbForget);
+        return;
+    }
+
+    rfbForget(id, true);
+    rfbForget(id, false);
+
+    terminalOK(ctx);
+}
 #endif // if RELAY_SUPPORT
 
 #if RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
-    terminalRegisterCommand(F("RFB.WRITE"), [](::terminal::CommandContext&& ctx) {
-        if (ctx.argv.size() != 2) {
-            terminalError(ctx, F("RFB.WRITE <PAYLOAD>"));
-            return;
-        }
-        _rfbSendRawFromPayload(ctx.argv[1].c_str());
-        terminalOK(ctx);
-    });
+alignas(4) static constexpr char RfbCommandWrite[] PROGMEM = "RFB.WRITE";
+
+static void _rfbCommandWrite(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() != 2) {
+        terminalError(ctx, F("RFB.WRITE <PAYLOAD>"));
+        return;
+    }
+    _rfbSendRawFromPayload(ctx.argv[1].c_str());
+    terminalOK(ctx);
+});
 #endif
 
+static constexpr ::terminal::Command RfbCommands[] PROGMEM {
+    {RfbCommandSend, _rfbCommandSend},
+#if RELAY_SUPPORT
+    {RfbCommandLearn, _rfbCommandLearn},
+    {RfbCommandForget, _rfbCommandForget},
+#endif
+#if RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
+    {RfbCommandWrite, _rfbCommandWrite},
+#endif
+};
+
+void _rfbCommandsSetup() {
+    espurna::terminal::add(RfbCommands);
 }
 
 #endif // TERMINAL_SUPPORT
@@ -1390,7 +1409,7 @@ void rfbSetup() {
 #endif
 
 #if TERMINAL_SUPPORT
-    _rfbInitCommands();
+    _rfbCommandsSetup();
 #endif
 
     _rfb_repeats = getSetting("rfbRepeat", RFB_SEND_REPEATS);

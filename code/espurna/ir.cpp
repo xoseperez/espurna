@@ -1580,35 +1580,43 @@ void process(rx::DecodeResult& result) {
     }
 }
 
-void setup() {
-    terminalRegisterCommand(F("IR.SEND"), [](::terminal::CommandContext&& ctx) {
-        if (ctx.argv.size() == 2) {
-            auto view = StringView{ctx.argv[1]};
+alignas(4) static constexpr char IrSend[] PROGMEM = "IR.SEND";
 
-            auto simple = ir::simple::parse(view);
-            if (ir::tx::enqueue(std::move(simple))) {
-                terminalOK(ctx);
-                return;
-            }
+void send(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() == 2) {
+        auto view = StringView{ctx.argv[1]};
 
-            auto state = ir::state::parse(view);
-            if (ir::tx::enqueue(std::move(state))) {
-                terminalOK(ctx);
-                return;
-            }
-
-            auto raw = ir::raw::parse(view);
-            if (ir::tx::enqueue(std::move(raw))) {
-                terminalOK(ctx);
-                return;
-            }
-
-            terminalError(ctx, F("Invalid payload"));
+        auto simple = ir::simple::parse(view);
+        if (ir::tx::enqueue(std::move(simple))) {
+            terminalOK(ctx);
             return;
         }
 
-        terminalError(ctx, F("IR.SEND <PAYLOAD>"));
-    });
+        auto state = ir::state::parse(view);
+        if (ir::tx::enqueue(std::move(state))) {
+            terminalOK(ctx);
+            return;
+        }
+
+        auto raw = ir::raw::parse(view);
+        if (ir::tx::enqueue(std::move(raw))) {
+            terminalOK(ctx);
+            return;
+        }
+
+        terminalError(ctx, F("Invalid payload"));
+        return;
+    }
+
+    terminalError(ctx, F("IR.SEND <PAYLOAD>"));
+}
+
+static constexpr ::terminal::Command Commands[] PROGMEM {
+    {IrSend, send},
+};
+
+void setup() {
+    espurna::terminal::add(Commands);
 }
 
 } // namespace terminal

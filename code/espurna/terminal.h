@@ -26,7 +26,8 @@ using namespace espurna::terminal;
 void terminalOK(const espurna::terminal::CommandContext&);
 void terminalError(const espurna::terminal::CommandContext&, const String&);
 
-void terminalRegisterCommand(const __FlashStringHelper* name, espurna::terminal::CommandFunc func);
+void terminalRegisterCommand(espurna::StringView name, espurna::terminal::CommandFunc func);
+void terminalRegisterCommand(espurna::terminal::Commands);
 
 void terminalWebApiSetup();
 void terminalSetup();

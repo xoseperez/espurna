@@ -767,6 +767,39 @@ void setup() {
 } // namespace
 } // namespace query
 } // namespace settings
+
+namespace terminal {
+
+void button(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() == 2) {
+        size_t id;
+        if (!tryParseId(ctx.argv[1].c_str(), buttonCount, id)) {
+            terminalError(ctx, F("Invalid button ID"));
+            return;
+        }
+
+        settingsDump(ctx, espurna::button::settings::query::IndexedSettings, id);
+        terminalOK(ctx);
+        return;
+    }
+
+    size_t id { 0 };
+    for (const auto& button : espurna::button::internal::buttons) {
+        ctx.output.printf_P(
+            PSTR("button%u {%s}\n"), id++,
+            button.event_emitter
+                ? (button.event_emitter->pin()->description().c_str())
+                : PSTR("Virtual"));
+    }
+}
+
+alignas(4) static constexpr char Button[] PROGMEM = "button";
+
+static constexpr ::terminal::Command Commands[] PROGMEM {
+    {Button, button},
+};
+
+} // namespace terminal
 } // namespace button
 } // namespace espurna
 
@@ -1414,28 +1447,7 @@ void buttonSetup() {
     DEBUG_MSG_P(PSTR("[BUTTON] Number of buttons: %u\n"), count);
 
 #if TERMINAL_SUPPORT
-    terminalRegisterCommand(F("BUTTON"), [](::terminal::CommandContext&& ctx) {
-        if (ctx.argv.size() == 2) {
-            size_t id;
-            if (!tryParseId(ctx.argv[1].c_str(), buttonCount, id)) {
-                terminalError(ctx, F("Invalid button ID"));
-                return;
-            }
-
-            settingsDump(ctx, espurna::button::settings::query::IndexedSettings, id);
-            terminalOK(ctx);
-            return;
-        }
-
-        size_t id { 0 };
-        for (const auto& button : espurna::button::internal::buttons) {
-            ctx.output.printf_P(
-                PSTR("button%u {%s}\n"), id++,
-                button.event_emitter
-                    ? (button.event_emitter->pin()->description().c_str())
-                    : PSTR("Virtual"));
-        }
-    });
+    espurna::terminal::add(espurna::button::terminal::Commands);
 #endif
 
     if (count) {

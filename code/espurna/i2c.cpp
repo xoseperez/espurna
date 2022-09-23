@@ -312,40 +312,56 @@ void init() {
 }
 
 #if TERMINAL_SUPPORT
+namespace terminal {
 
-void initTerminalCommands() {
-    terminalRegisterCommand(F("I2C.LOCKED"), [](::terminal::CommandContext&& ctx) {
-        for (size_t address = 0; address < lock::storage.size(); ++address) {
-            if (lock::storage.test(address)) {
-                ctx.output.printf_P(PSTR("0x%02X\n"), address);
-            }
-        }
+alignas(4) static constexpr char Locked[] PROGMEM = "I2C.LOCKED";
 
-        terminalOK(ctx);
-    });
-
-    terminalRegisterCommand(F("I2C.SCAN"), [](::terminal::CommandContext&& ctx) {
-        size_t devices { 0 };
-        i2c::scan([&](uint8_t address) {
-            ++devices;
+void locked(::terminal::CommandContext&& ctx) {
+    for (size_t address = 0; address < lock::storage.size(); ++address) {
+        if (lock::storage.test(address)) {
             ctx.output.printf_P(PSTR("0x%02X\n"), address);
-        });
-
-        if (devices) {
-            ctx.output.printf_P(PSTR("found %zu device(s)\n"), devices);
-            terminalOK(ctx);
-            return;
         }
+    }
 
-        terminalError(ctx, F("no devices found"));
-    });
-
-    terminalRegisterCommand(F("I2C.CLEAR"), [](::terminal::CommandContext&& ctx) {
-        ctx.output.printf_P(PSTR("result %d\n"), i2c::clear());
-        terminalOK(ctx);
-    });
+    terminalOK(ctx);
 }
 
+alignas(4) static constexpr char Scan[] PROGMEM = "I2C.SCAN";
+
+void scan(::terminal::CommandContext&& ctx) {
+    size_t devices { 0 };
+    i2c::scan([&](uint8_t address) {
+        ++devices;
+        ctx.output.printf_P(PSTR("0x%02X\n"), address);
+    });
+
+    if (devices) {
+        ctx.output.printf_P(PSTR("found %zu device(s)\n"), devices);
+        terminalOK(ctx);
+        return;
+    }
+
+    terminalError(ctx, F("no devices found"));
+}
+
+alignas(4) static constexpr char Clear[] PROGMEM = "I2C.CLEAR";
+
+void clear(::terminal::CommandContext&& ctx) {
+    ctx.output.printf_P(PSTR("result %d\n"), i2c::clear());
+    terminalOK(ctx);
+}
+
+static constexpr ::terminal::Command Commands[] PROGMEM {
+    {Locked, locked},
+    {Scan, scan},
+    {Clear, clear},
+};
+
+void setup() {
+    espurna::terminal::add(Commands);
+}
+
+} // namespace terminal
 #endif // TERMINAL_SUPPORT
 
 } // namespace
@@ -578,7 +594,7 @@ void i2cSetup() {
     espurna::i2c::init();
 
 #if TERMINAL_SUPPORT
-    espurna::i2c::initTerminalCommands();
+    espurna::i2c::terminal::setup();
 #endif
 
     if (espurna::i2c::build::performScanOnBoot()) {

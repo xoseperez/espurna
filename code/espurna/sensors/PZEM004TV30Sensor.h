@@ -709,26 +709,34 @@ constexpr espurna::duration::Milliseconds PZEM004TV30Sensor::DefaultUpdateInterv
 
 PZEM004TV30Sensor::Instance PZEM004TV30Sensor::_instance{};
 
+alignas(4) static constexpr char PzemV3Address[] PROGMEM = "PZ.ADDRESS";
+
+static void pzemv3_address(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() != 2) {
+        terminalError(ctx, F("PZ.ADDRESS <ADDRESS>"));
+        return;
+    }
+
+    uint8_t updated = espurna::settings::internal::convert<uint8_t>(ctx.argv[1]);
+
+    _instance->flush();
+    if (_instance->modbusChangeAddress(updated)) {
+        _instance->_address = updated;
+        setSetting("pzemv30Addr", updated);
+        terminalOK(ctx);
+        return;
+    }
+
+    terminalError(ctx, F("Could not change the address"));
+}
+
+static constexpr ::terminal::Command PzemV3Commands[] PROGMEM {
+    {PzemV3Address, pzemv3_address},
+};
+
 void PZEM004TV30Sensor::registerTerminalCommands() {
 #if TERMINAL_SUPPORT
-    terminalRegisterCommand(F("PZ.ADDRESS"), [](::terminal::CommandContext&& ctx) {
-        if (ctx.argv.size() != 2) {
-            terminalError(ctx, F("PZ.ADDRESS <ADDRESS>"));
-            return;
-        }
-
-        uint8_t updated = espurna::settings::internal::convert<uint8_t>(ctx.argv[1]);
-
-        _instance->flush();
-        if (_instance->modbusChangeAddress(updated)) {
-            _instance->_address = updated;
-            setSetting("pzemv30Addr", updated);
-            terminalOK(ctx);
-            return;
-        }
-
-        terminalError(ctx, F("Could not change the address"));
-    });
+    espurna::terminal::add(PzemV3Commands);
 #endif
 }
 

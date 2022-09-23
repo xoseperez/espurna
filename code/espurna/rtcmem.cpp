@@ -9,28 +9,43 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include "espurna.h"
 #include "rtcmem.h"
 
-volatile RtcmemData* Rtcmem = reinterpret_cast<volatile RtcmemData*>(RTCMEM_ADDR);
+static constexpr uint32_t RtcmemMagic { RTCMEM_MAGIC };
 
+static constexpr uintptr_t RtcmemBlocks { RTCMEM_BLOCKS };
+static constexpr uintptr_t RtcmemBegin { RTCMEM_ADDR };
+static constexpr uintptr_t RtcmemEnd { RtcmemBegin + RtcmemBlocks };
+
+volatile RtcmemData* Rtcmem = reinterpret_cast<volatile RtcmemData*>(RtcmemBegin);
+
+namespace espurna {
+namespace peripherals {
+namespace rtc {
 namespace {
 
-bool _rtcmem_status = false;
+namespace internal {
 
-void _rtcmemErase() {
-    auto ptr = reinterpret_cast<volatile uint32_t*>(RTCMEM_ADDR);
-    const auto end = ptr + RTCMEM_BLOCKS;
-    DEBUG_MSG_P(PSTR("[RTCMEM] Erasing start=%p end=%p\n"), ptr, end);
-    do {
-        *ptr = 0;
-    } while (++ptr != end);
+bool status = false;
+
+} // namespace internal
+
+void erase() {
+    DEBUG_MSG_P(PSTR("[RTCMEM] Erasing start=0x%08x end=0x%08x\n"),
+        RtcmemBegin, RtcmemEnd);
+
+    auto begin = reinterpret_cast<volatile uint32_t*>(RtcmemBegin);
+    auto end = reinterpret_cast<volatile uint32_t*>(RtcmemEnd);
+    for (auto it = begin; it != end; ++it) {
+        *it = 0;
+    }
 }
 
-void _rtcmemInit() {
-    _rtcmemErase();
-    Rtcmem->magic = RTCMEM_MAGIC;
+void init() {
+    erase();
+    Rtcmem->magic = RtcmemMagic;
 }
 
 // Treat memory as dirty on cold boot, hardware wdt reset and rst pin
-bool _rtcmemStatus() {
+bool status() {
     bool readable;
 
     switch (systemResetReason()) {
@@ -42,70 +57,92 @@ bool _rtcmemStatus() {
             readable = true;
     }
 
-    readable = readable and (RTCMEM_MAGIC == Rtcmem->magic);
+    readable = readable
+        && (RtcmemMagic == Rtcmem->magic);
 
     return readable;
 }
 
 #if TERMINAL_SUPPORT
+namespace terminal {
 
-void _rtcmemInitCommands() {
-    terminalRegisterCommand(F("RTCMEM.REINIT"), [](::terminal::CommandContext&&) {
-        _rtcmemInit();
-    });
+alignas(4) static constexpr char Init[] PROGMEM = "RTCMEM.INIT";
 
-    #if DEBUG_SUPPORT
-        terminalRegisterCommand(F("RTCMEM.DUMP"), [](::terminal::CommandContext&&) {
-
-            DEBUG_MSG_P(PSTR("[RTCMEM] boot_status=%u status=%u blocks_used=%u\n"),
-                _rtcmem_status, _rtcmemStatus(), RtcmemSize);
-
-            String line;
-            line.reserve(96);
-            char buffer[16] = {0};
-
-            auto addr = reinterpret_cast<volatile uint32_t*>(RTCMEM_ADDR);
-
-            uint8_t block = 1;
-            uint8_t offset = 0;
-            uint8_t start = 0;
-
-            do {
-
-                offset = block - 1;
-
-                snprintf(buffer, sizeof(buffer), "%08x ", *(addr + offset));
-                line += buffer;
-
-                if ((block % 8) == 0) {
-                    DEBUG_MSG_P(PSTR("%02u %p: %s\n"), start, addr+start, line.c_str());
-                    start = block;
-                    line = "";
-                }
-
-                ++block;
-
-            } while (block<(RTCMEM_BLOCKS+1));
-
-        });
-    #endif
+void init(::terminal::CommandContext&& ctx) {
+    rtc::init();
+    terminalOK(ctx);
 }
 
+alignas(4) static constexpr char Dump[] PROGMEM = "RTCMEM.DUMP";
+
+void dump(::terminal::CommandContext&& ctx) {
+    ctx.output.printf_P(PSTR("boot_status=%s status=%s capacity=%u\n"),
+        internal::status ? "OK" : "INIT",
+        status() ? "OK" : "INIT",
+        RtcmemSize);
+
+    constexpr size_t Blocks = 8;
+    constexpr auto Increment = alignof(uint32_t) * Blocks;
+
+    alignas(4) uint8_t buffer[Blocks];
+    
+    String line;
+    for (auto addr = RtcmemBegin; addr < RtcmemEnd; addr += Increment) {
+        std::memcpy(buffer, reinterpret_cast<uint32_t*>(addr), 1);
+
+        line += PSTR("0x");
+        line += String(addr, 16);
+        line += ':';
+
+        for (auto offset = &buffer[0]; offset < &buffer[Blocks]; offset += 4) {
+            line += PSTR(" ");
+            line += hexEncode(offset, offset + 4);
+        }
+
+        line += '\n';
+
+        ctx.output.print(line);
+        line = "";
+    }
+}
+
+static constexpr ::terminal::Command Commands[] PROGMEM {
+    {Init, init},
+    {Dump, dump},
+};
+
+void setup() {
+    espurna::terminal::add(Commands);
+}
+
+} // namespace terminal
 #endif
 
+bool current_status() {
+    return internal::status;
+}
+
+void setup() {
+#if TERMINAL_SUPPORT
+    terminal::setup();
+#endif
+
+    internal::status = status();
+    if (!internal::status) {
+        init();
+    }
+
+}
+
 } // namespace
+} // namespace rtc
+} // namespace peripherals
+} // namespace espurna
 
 bool rtcmemStatus() {
-    return _rtcmem_status;
+    return espurna::peripherals::rtc::current_status();
 }
 
 void rtcmemSetup() {
-    _rtcmem_status = _rtcmemStatus();
-    if (!_rtcmem_status) {
-        _rtcmemInit();
-    }
-
-    #if TERMINAL_SUPPORT
-        _rtcmemInitCommands();
-    #endif
+    espurna::peripherals::rtc::setup();
 }

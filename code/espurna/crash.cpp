@@ -222,6 +222,20 @@ void dump(Print& print) {
     dump(print, true);
 }
 
+#if TERMINAL_SUPPORT
+alignas(4) static constexpr char Name[] PROGMEM = "CRASH";
+
+void command(::terminal::CommandContext&& ctx) {
+    debug::crash::forceDump(ctx.output);
+    terminalOK(ctx);
+}
+
+static constexpr ::terminal::Command Commands[] PROGMEM {
+    {Name, command},
+};
+
+#endif
+
 } // namespace crash
 } // namespace
 } // namespace debug
@@ -331,10 +345,7 @@ void crashSetup() {
     }
 
 #if TERMINAL_SUPPORT
-    terminalRegisterCommand(F("CRASH"), [](::terminal::CommandContext&& ctx) {
-        debug::crash::forceDump(ctx.output);
-        terminalOK(ctx);
-    });
+    espurna::terminal::add(debug::crash::Commands);
 #endif
 
     debug::crash::enableFromSettings();

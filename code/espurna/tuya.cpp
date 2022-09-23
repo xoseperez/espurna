@@ -606,40 +606,60 @@ error:
 
 #endif
 
-    void setup() {
+#if TERMINAL_SUPPORT
+    alignas(4) static constexpr char TuyaShow[] PROGMEM = "TUYA.SHOW";
 
-        // Print all known DP associations
+    static void terminalShow(::terminal::CommandContext&& ctx) {
+        ctx.output.printf_P(PSTR("Product: %s\n"), product.length() ? product.c_str() : "(unknown)");
 
-        #if TERMINAL_SUPPORT
+        ctx.output.print(F("\nConfig:\n"));
+        for (auto& kv : config) {
+            ctx.output.printf_P(
+                PSTR("\"%s\" => \"%s\"\n"),
+                kv.key.c_str(), kv.value.c_str());
+        }
 
-            terminalRegisterCommand(F("TUYA.SHOW"), [](::terminal::CommandContext&& ctx) {
-                ctx.output.printf_P(PSTR("Product: %s\n"), product.length() ? product.c_str() : "(unknown)");
-
-                ctx.output.print(F("\nConfig:\n"));
-                for (auto& kv : config) {
-                    ctx.output.printf_P(PSTR("\"%s\" => \"%s\"\n"), kv.key.c_str(), kv.value.c_str());
-                }
-
-                ctx.output.print(F("\nKnown DP(s):\n"));
+        ctx.output.print(F("\nKnown DP(s):\n"));
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
-                if (channelStateId) {
-                    ctx.output.printf_P(PSTR("%u (bool) => lights state\n"), channelStateId.id());
-                }
-                for (auto& entry : channelIds.map()) {
-                    ctx.output.printf_P(PSTR("%u (int) => %d (channel)\n"), entry.dp_id, entry.local_id);
-                }
+        if (channelStateId) {
+            ctx.output.printf_P(
+                PSTR("%u (bool) => lights state\n"),
+                channelStateId.id());
+        }
+        for (auto& entry : channelIds.map()) {
+            ctx.output.printf_P(
+                PSTR("%u (int) => %d (channel)\n"),
+                entry.dp_id, entry.local_id);
+        }
 #endif
-                for (auto& entry : switchIds.map()) {
-                    ctx.output.printf_P(PSTR("%u (bool) => %d (relay)\n"), entry.dp_id, entry.local_id);
-                }
-            });
+        for (auto& entry : switchIds.map()) {
+            ctx.output.printf_P(
+                PSTR("%u (bool) => %d (relay)\n"),
+                entry.dp_id, entry.local_id);
+        }
+    }
 
-            terminalRegisterCommand(F("TUYA.SAVE"), [](::terminal::CommandContext&&) {
-                for (auto& kv : config) {
-                    setSetting(kv.key, kv.value);
-                }
-            });
+    alignas(4) static constexpr char TuyaSave[] PROGMEM = "TUYA.SAVE";
 
+    static void terminalSave(::terminal::CommandContext&& ctx) {
+        for (auto& kv : config) {
+            setSetting(kv.key, kv.value);
+        }
+    }
+
+    static constexpr ::terminal::Command TuyaCommands[] PROGMEM {
+        {TuyaShow, terminalShow},
+        {TuyaSave, terminalSave},
+    };
+
+    void terminalSetup() {
+        espurna::terminal::add(TuyaCommands);
+    }
+#endif
+
+    void setup() {
+        #if TERMINAL_SUPPORT
+            tuya::terminalSetup();
         #endif
 
         // Print all IN and OUT messages

@@ -142,19 +142,25 @@ void clientFromUrl(const String& url) {
 }
 
 #if TERMINAL_SUPPORT
+alignas(4) static constexpr char OtaCommand[] PROGMEM = "OTA";
 
-void terminalCommands() {
-    terminalRegisterCommand(F("OTA"), [](::terminal::CommandContext&& ctx) {
-        if (ctx.argv.size() == 2) {
-            clientFromUrl(ctx.argv[1]);
-            terminalOK(ctx);
-            return;
-        }
+static void otaCommand(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() != 2) {
+        terminalError(ctx, F("OTA <URL>"));
+        return;
+    }
 
-        terminalError(ctx, F("OTA <url>"));
-    });
+    clientFromUrl(ctx.argv[1]);
+    terminalOK(ctx);
 }
 
+static constexpr ::terminal::Command OtaCommands[] PROGMEM {
+    {OtaCommand, otaCommand},
+};
+
+void terminalSetup() {
+    espurna::terminal::add(OtaCommands);
+}
 #endif // TERMINAL_SUPPORT
 
 #if (MQTT_SUPPORT && OTA_MQTT_SUPPORT)
@@ -195,7 +201,7 @@ void otaClientSetup() {
     moveSetting("otafp", "otaFP");
 
 #if TERMINAL_SUPPORT
-    ota::httpupdate::terminalCommands();
+    ota::httpupdate::terminalSetup();
 #endif
 
 #if (MQTT_SUPPORT && OTA_MQTT_SUPPORT)

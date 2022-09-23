@@ -287,65 +287,95 @@ void showStack(Print& output) {
     output.print(F("      (empty)\n"));
 }
 
-void setup() {
-    terminalRegisterCommand(F("RPN.RUNNERS"), [](::terminal::CommandContext&& ctx) {
-        if (internal::runners.empty()) {
-            terminalError(ctx, F("No active runners"));
-            return;
-        }
+alignas(4) static constexpr char Runners[] PROGMEM = "RPN.RUNNERS";
 
-        for (auto& runner : internal::runners) {
-            char buffer[128] = {0};
-            snprintf_P(buffer, sizeof(buffer), PSTR("%p %s %u ms, last %u ms\n"),
-                &runner, (Runner::Policy::Periodic == runner.policy()) ? "every" : "one-shot",
-                runner.period(), runner.last());
-            ctx.output.print(buffer);
-        }
+void runners(::terminal::CommandContext&& ctx) {
+    if (internal::runners.empty()) {
+        terminalError(ctx, F("No active runners"));
+        return;
+    }
 
-        terminalOK(ctx);
-    });
+    for (auto& runner : internal::runners) {
+        char buffer[128] = {0};
+        snprintf_P(buffer, sizeof(buffer),
+            PSTR("%p %s %u ms, last %u ms\n"),
+            &runner,
+            (Runner::Policy::Periodic == runner.policy())
+                ? "every"
+                : "one-shot",
+            runner.period(), runner.last());
+        ctx.output.print(buffer);
+    }
 
-    terminalRegisterCommand(F("RPN.VARS"), [](::terminal::CommandContext&& ctx) {
-        rpn_variables_foreach(internal::context, [&ctx](const String& name, const rpn_value& value) {
+    terminalOK(ctx);
+}
+
+alignas(4) static constexpr char Variables[] PROGMEM = "RPN.VARS";
+
+void variables(::terminal::CommandContext&& ctx) {
+    rpn_variables_foreach(internal::context,
+        [&ctx](const String& name, const rpn_value& value) {
             char buffer[256] = {0};
-            snprintf_P(buffer, sizeof(buffer), PSTR("      %s: %s\n"), name.c_str(), valueToString(value).c_str());
+            snprintf_P(buffer, sizeof(buffer),
+                PSTR("      %s: %s\n"),
+                name.c_str(), valueToString(value).c_str());
             ctx.output.print(buffer);
         });
-        terminalOK(ctx);
-    });
+    terminalOK(ctx);
+}
 
-    terminalRegisterCommand(F("RPN.OPS"), [](::terminal::CommandContext&& ctx) {
-        rpn_operators_foreach(internal::context, [&ctx](const String& name, size_t argc, rpn_operator::callback_type) {
+alignas(4) static constexpr char Operators[] PROGMEM = "RPN.OPS";
+
+void operators(::terminal::CommandContext&& ctx) {
+    rpn_operators_foreach(internal::context,
+        [&ctx](const String& name, size_t argc, rpn_operator::callback_type) {
             char buffer[128] = {0};
-            snprintf_P(buffer, sizeof(buffer), PSTR("      %s (%d)\n"), name.c_str(), argc);
+            snprintf_P(buffer, sizeof(buffer),
+                PSTR("      %s (%d)\n"),
+                name.c_str(), argc);
             ctx.output.print(buffer);
         });
-        terminalOK(ctx);
-    });
+    terminalOK(ctx);
+}
 
-    terminalRegisterCommand(F("RPN.TEST"), [](::terminal::CommandContext&& ctx) {
-        if (ctx.argv.size() != 2) {
-            terminalError(ctx, F("Wrong arguments"));
-            return;
-        }
+alignas(4) static constexpr char Test[] PROGMEM = "RPN.TEST";
 
-        const char* ptr = ctx.argv[1].c_str();
-        ctx.output.printf_P(PSTR("Expression: \"%s\"\n"), ctx.argv[1].c_str());
+void test(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() != 2) {
+        terminalError(ctx, F("Wrong arguments"));
+        return;
+    }
 
-        if (!rpn_process(internal::context, ptr)) {
-            rpn_stack_clear(internal::context);
-            char buffer[64] = {0};
-            snprintf_P(buffer, sizeof(buffer), PSTR("at %u (category %d code %d)"),
-                internal::context.error.position, static_cast<int>(internal::context.error.category), internal::context.error.code);
-            terminalError(ctx, buffer);
-            return;
-        }
+    const char* ptr = ctx.argv[1].c_str();
+    ctx.output.printf_P(PSTR("Expression: \"%s\"\n"), ctx.argv[1].c_str());
 
-        showStack(ctx.output);
+    if (!rpn_process(internal::context, ptr)) {
         rpn_stack_clear(internal::context);
+        char buffer[64] = {0};
+        snprintf_P(buffer, sizeof(buffer),
+            PSTR("at %u (category %d code %d)"),
+            internal::context.error.position,
+            static_cast<int>(internal::context.error.category),
+            internal::context.error.code);
+        terminalError(ctx, buffer);
+        return;
+    }
 
-        terminalOK(ctx);
-    });
+    showStack(ctx.output);
+    rpn_stack_clear(internal::context);
+
+    terminalOK(ctx);
+}
+
+static constexpr ::terminal::Command Commands[] PROGMEM {
+    {Runners, runners},
+    {Variables, variables},
+    {Operators, operators},
+    {Test, test},
+};
+
+void setup() {
+    espurna::terminal::add(Commands);
 }
 
 } // namespace terminal
@@ -975,6 +1005,24 @@ void codeHandler(unsigned char protocol, const char* raw_code) {
     schedule();
 }
 
+alignas(4) static constexpr char RfbCodes[] PROGMEM = "RFB.CODES";
+
+void rfb_codes(::terminal::CommandContext&& ctx) {
+    for (auto& code : internal::codes) {
+        char buffer[128] = {0};
+        snprintf_P(buffer, sizeof(buffer),
+            PSTR("proto=%u raw=\"%s\" count=%u last=%u\n"),
+            code.protocol, code.raw.c_str(), code.count, code.last);
+        ctx.output.print(buffer);
+    }
+
+    terminalOK(ctx);
+}
+
+static ::terminal::Command RfbCommands[] PROGMEM {
+    {RfbCodes, rfb_codes},
+};
+
 void init(rpn_context& context) {
     // - Repeat window is an arbitrary time, just about 3-4 more times it takes for
     //   a code to be sent again when holding a generic remote button
@@ -986,17 +1034,7 @@ void init(rpn_context& context) {
     internal::stale_delay = settings::staleDelay();
 
 #if TERMINAL_SUPPORT
-    terminalRegisterCommand(F("RFB.CODES"), [](::terminal::CommandContext&& ctx) {
-        for (auto& code : internal::codes) {
-            char buffer[128] = {0};
-            snprintf_P(buffer, sizeof(buffer),
-                PSTR("proto=%u raw=\"%s\" count=%u last=%u\n"),
-                code.protocol, code.raw.c_str(), code.count, code.last);
-            ctx.output.print(buffer);
-        }
-
-        terminalOK(ctx);
-    });
+    espurna::terminal::add(RfbCommands);
 #endif
 
     // Main bulk of the processing goes on in here

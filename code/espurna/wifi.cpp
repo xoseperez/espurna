@@ -2231,142 +2231,169 @@ void configure() {
 
 #if TERMINAL_SUPPORT
 namespace terminal {
+namespace commands {
+
+alignas(4) static constexpr char Stations[] PROGMEM = "WIFI.STATIONS";
+
+void stations(::terminal::CommandContext&& ctx) {
+    size_t stations { 0ul };
+    for (auto* it = wifi_softap_get_station_info(); it; it = STAILQ_NEXT(it, next), ++stations) {
+        ctx.output.printf_P(PSTR("%s %s\n"),
+            wifi::debug::mac(convertBssid(*it)).c_str(),
+            wifi::debug::ip(it->ip).c_str());
+    }
+
+    wifi_softap_free_station_info();
+
+    if (!stations) {
+        terminalError(ctx, F("No stations connected"));
+        return;
+    }
+
+    terminalOK(ctx);
+}
+
+alignas(4) static constexpr char Network[] PROGMEM = "NETWORK";
+
+void network(::terminal::CommandContext&& ctx) {
+    for (auto& addr : addrList) {
+        ctx.output.printf_P(PSTR("%s%d %4s %6s "),
+            addr.ifname().c_str(),
+            addr.ifnumber(),
+            addr.ifUp() ? "up" : "down",
+            addr.isLocal() ? "local" : "global");
+
+#if LWIP_IPV6
+        if (addr.isV4()) {
+#endif
+            ctx.output.printf_P(PSTR("ip %s gateway %s mask %s\n"),
+                wifi::debug::ip(addr.ipv4()).c_str(),
+                wifi::debug::ip(addr.gw()).c_str(),
+                wifi::debug::ip(addr.netmask()).c_str());
+#if LWIP_IPV6
+        } else {
+            // TODO: ip6_addr[...] array is included in the list
+            // we'll just see another entry
+            // TODO: routing info is not attached to the netif :/
+            // ref. nd6.h (and figure out what it does)
+            ctx.output.printf_P(PSTR("ip %s\n"),
+                wifi::debug::ip(netif->ip6_addr[i]).c_str());
+        }
+#endif
+
+    }
+
+    for (int n = 0; n < DNS_MAX_SERVERS; ++n) {
+        auto ip = IPAddress(dns_getserver(n));
+        if (!ip.isSet()) {
+            break;
+        }
+        ctx.output.printf_P(PSTR("dns %s\n"), wifi::debug::ip(ip).c_str());
+    }
+}
+
+alignas(4) static constexpr char Wifi[] PROGMEM = "WIFI";
+
+void wifi(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() == 2) {
+        auto id = espurna::settings::internal::convert<size_t>(ctx.argv[1]);
+        if (id < wifi::sta::build::NetworksMax) {
+            settingsDump(ctx, wifi::sta::settings::query::Settings, id);
+            return;
+        }
+
+        terminalError(ctx, F("Network ID out of configurable range"));
+        return;
+    }
+
+    const auto mode = wifi::opmode();
+    ctx.output.printf_P(PSTR("OPMODE: %s\n"), wifi::debug::opmode(mode).c_str());
+
+    if (mode & OpmodeAp) {
+        auto current = wifi::ap::current();
+
+        ctx.output.printf_P(PSTR("SoftAP: bssid %s channel %hhu auth %s\n"),
+            wifi::debug::mac(current.bssid).c_str(),
+            current.channel,
+            wifi::debug::authmode(current.authmode).c_str(),
+            current.ssid.c_str(),
+            current.passphrase.c_str());
+    }
+
+    if (mode & OpmodeSta) {
+        if (wifi::sta::connected()) {
+            station_config config{};
+            wifi_station_get_config(&config);
+
+            auto network = wifi::sta::current(config);
+            ctx.output.printf_P(PSTR("STA: bssid %s rssi %hhd channel %hhu ssid \"%s\"\n"),
+                wifi::debug::mac(network.bssid).c_str(),
+                network.rssi, network.channel, network.ssid.c_str());
+        } else {
+            ctx.output.printf_P(PSTR("STA: %s\n"),
+                    wifi::sta::connecting() ? "connecting" : "disconnected");
+        }
+    }
+
+    settingsDump(ctx, wifi::settings::query::Settings);
+    terminalOK(ctx);
+}
+
+alignas(4) static constexpr char Reset[] PROGMEM = "WIFI.RESET";
+
+void reset(::terminal::CommandContext&& ctx) {
+    wifiDisconnect();
+    wifi::settings::configure();
+    terminalOK(ctx);
+}
+
+alignas(4) static constexpr char Station[] PROGMEM = "WIFI.STA";
+
+void station(::terminal::CommandContext&& ctx) {
+    wifi::sta::toggle();
+    terminalOK(ctx);
+}
+
+alignas(4) static constexpr char AccessPoint[] PROGMEM = "WIFI.AP";
+
+void access_point(::terminal::CommandContext&& ctx) {
+    wifi::ap::toggle();
+    terminalOK(ctx);
+}
+
+alignas(4) static constexpr char Scan[] PROGMEM = "WIFI.SCAN";
+
+void scan(::terminal::CommandContext&& ctx) {
+    wifi::sta::scan::wait(
+        [&](bss_info* info) {
+            ctx.output.printf_P(PSTR("BSSID: %s AUTH: %11s RSSI: %3hhd CH: %2hhu SSID: %s\n"),
+                wifi::debug::mac(convertBssid(*info)).c_str(),
+                wifi::debug::authmode(info->authmode).c_str(),
+                info->rssi,
+                info->channel,
+                convertSsid(*info).c_str()
+            );
+        },
+        [&](wifi::ScanError error) {
+            terminalError(ctx, wifi::debug::error(error));
+        }
+    );
+}
+
+static constexpr ::terminal::Command List[] PROGMEM {
+    {Stations, commands::stations},
+    {Network, commands::network},
+    {Wifi, commands::wifi},
+    {Reset, commands::reset},
+    {Station, commands::station},
+    {AccessPoint, commands::access_point},
+    {Scan, commands::scan},
+};
+
+} // namespace commands
 
 void init() {
-
-    terminalRegisterCommand(F("WIFI.STATIONS"), [](::terminal::CommandContext&& ctx) {
-        size_t stations { 0ul };
-        for (auto* it = wifi_softap_get_station_info(); it; it = STAILQ_NEXT(it, next), ++stations) {
-            ctx.output.printf_P(PSTR("%s %s\n"),
-                wifi::debug::mac(convertBssid(*it)).c_str(),
-                wifi::debug::ip(it->ip).c_str());
-        }
-
-        wifi_softap_free_station_info();
-
-        if (!stations) {
-            terminalError(ctx, F("No stations connected"));
-            return;
-        }
-
-        terminalOK(ctx);
-    });
-
-    terminalRegisterCommand(F("NETWORK"), [](::terminal::CommandContext&& ctx) {
-        for (auto& addr : addrList) {
-            ctx.output.printf_P(PSTR("%s%d %4s %6s "),
-                addr.ifname().c_str(),
-                addr.ifnumber(),
-                addr.ifUp() ? "up" : "down",
-                addr.isLocal() ? "local" : "global");
-
-#if LWIP_IPV6
-            if (addr.isV4()) {
-#endif
-                ctx.output.printf_P(PSTR("ip %s gateway %s mask %s\n"),
-                    wifi::debug::ip(addr.ipv4()).c_str(),
-                    wifi::debug::ip(addr.gw()).c_str(),
-                    wifi::debug::ip(addr.netmask()).c_str());
-#if LWIP_IPV6
-            } else {
-                // TODO: ip6_addr[...] array is included in the list
-                // we'll just see another entry
-                // TODO: routing info is not attached to the netif :/
-                // ref. nd6.h (and figure out what it does)
-                ctx.output.printf_P(PSTR("ip %s\n"),
-                    wifi::debug::ip(netif->ip6_addr[i]).c_str());
-            }
-#endif
-
-        }
-
-        for (int n = 0; n < DNS_MAX_SERVERS; ++n) {
-            auto ip = IPAddress(dns_getserver(n));
-            if (!ip.isSet()) {
-                break;
-            }
-            ctx.output.printf_P(PSTR("dns %s\n"), wifi::debug::ip(ip).c_str());
-        }
-    });
-
-    terminalRegisterCommand(F("WIFI"), [](::terminal::CommandContext&& ctx) {
-        if (ctx.argv.size() == 2) {
-            auto id = espurna::settings::internal::convert<size_t>(ctx.argv[1]);
-            if (id < wifi::sta::build::NetworksMax) {
-                settingsDump(ctx, wifi::sta::settings::query::Settings, id);
-                return;
-            }
-
-            terminalError(ctx, F("Network ID out of configurable range"));
-            return;
-        }
-
-        const auto mode = wifi::opmode();
-        ctx.output.printf_P(PSTR("OPMODE: %s\n"), wifi::debug::opmode(mode).c_str());
-
-        if (mode & OpmodeAp) {
-            auto current = wifi::ap::current();
-
-            ctx.output.printf_P(PSTR("SoftAP: bssid %s channel %hhu auth %s\n"),
-                wifi::debug::mac(current.bssid).c_str(),
-                current.channel,
-                wifi::debug::authmode(current.authmode).c_str(),
-                current.ssid.c_str(),
-                current.passphrase.c_str());
-        }
-
-        if (mode & OpmodeSta) {
-            if (wifi::sta::connected()) {
-                station_config config{};
-                wifi_station_get_config(&config);
-
-                auto network = wifi::sta::current(config);
-                ctx.output.printf_P(PSTR("STA: bssid %s rssi %hhd channel %hhu ssid \"%s\"\n"),
-                    wifi::debug::mac(network.bssid).c_str(),
-                    network.rssi, network.channel, network.ssid.c_str());
-            } else {
-                ctx.output.printf_P(PSTR("STA: %s\n"),
-                        wifi::sta::connecting() ? "connecting" : "disconnected");
-            }
-        }
-
-        settingsDump(ctx, wifi::settings::query::Settings);
-        terminalOK(ctx);
-    });
-
-    terminalRegisterCommand(F("WIFI.RESET"), [](::terminal::CommandContext&& ctx) {
-        wifiDisconnect();
-        wifi::settings::configure();
-        terminalOK(ctx);
-    });
-
-    terminalRegisterCommand(F("WIFI.STA"), [](::terminal::CommandContext&& ctx) {
-        wifi::sta::toggle();
-        terminalOK(ctx);
-    });
-
-    terminalRegisterCommand(F("WIFI.AP"), [](::terminal::CommandContext&& ctx) {
-        wifi::ap::toggle();
-        terminalOK(ctx);
-    });
-
-    terminalRegisterCommand(F("WIFI.SCAN"), [](::terminal::CommandContext&& ctx) {
-        wifi::sta::scan::wait(
-            [&](bss_info* info) {
-                ctx.output.printf_P(PSTR("BSSID: %s AUTH: %11s RSSI: %3hhd CH: %2hhu SSID: %s\n"),
-                    wifi::debug::mac(convertBssid(*info)).c_str(),
-                    wifi::debug::authmode(info->authmode).c_str(),
-                    info->rssi,
-                    info->channel,
-                    convertSsid(*info).c_str()
-                );
-            },
-            [&](wifi::ScanError error) {
-                terminalError(ctx, wifi::debug::error(error));
-            }
-        );
-    });
-
+    espurna::terminal::add(commands::List);
 }
 
 } // namespace terminal

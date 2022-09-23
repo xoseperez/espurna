@@ -1041,6 +1041,28 @@ bool onKeyCheck(espurna::StringView key, const JsonVariant& value) {
 
 } // namespace web
 
+#if TERMINAL_SUPPORT
+namespace terminal {
+
+alignas(4) static constexpr char Send[] PROGMEM = "HA.SEND";
+
+void send(::terminal::CommandContext&& ctx) {
+    internal::state = internal::State::Pending;
+    publishDiscovery();
+    terminalOK(ctx);
+}
+
+static constexpr ::terminal::Command Commands[] PROGMEM {
+    {Send, send},
+};
+
+void setup() {
+    espurna::terminal::add(Commands);
+}
+
+} // namespace terminal
+#endif
+
 void setup() {
 #if WEB_SUPPORT
     wsRegister()
@@ -1056,11 +1078,7 @@ void setup() {
     mqttRegister(mqttCallback);
 
 #if TERMINAL_SUPPORT
-    terminalRegisterCommand(F("HA.SEND"), [](::terminal::CommandContext&& ctx) {
-        internal::state = internal::State::Pending;
-        publishDiscovery();
-        terminalOK(ctx);
-    });
+    terminal::setup();
 #endif
 
     espurnaRegisterReload(configure);

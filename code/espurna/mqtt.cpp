@@ -953,41 +953,53 @@ void _mqttWebSocketOnConnected(JsonObject& root) {
 // SETTINGS
 // -----------------------------------------------------------------------------
 
+#if TERMINAL_SUPPORT
 namespace {
 
-#if TERMINAL_SUPPORT
+alignas(4) static constexpr char MqttCommand[] PROGMEM = "MQTT";
 
-void _mqttInitCommands() {
-    terminalRegisterCommand(F("MQTT"), [](::terminal::CommandContext&& ctx) {
-        ctx.output.printf_P(PSTR("%s\n"), _mqttBuildInfo());
-        ctx.output.printf_P(PSTR("client %s\n"), _mqttClientState().c_str());
-        settingsDump(ctx, mqtt::settings::query::Settings);
-        terminalOK(ctx);
-    });
-
-    terminalRegisterCommand(F("MQTT.RESET"), [](::terminal::CommandContext&& ctx) {
-        _mqttConfigure();
-        mqttDisconnect();
-        terminalOK(ctx);
-    });
-
-    terminalRegisterCommand(F("MQTT.SEND"), [](::terminal::CommandContext&& ctx) {
-        if (ctx.argv.size() == 3) {
-            if (mqttSend(ctx.argv[1].c_str(), ctx.argv[2].c_str(), false, false)) {
-                terminalOK(ctx);
-            } else {
-                terminalError(ctx, F("Cannot queue the message"));
-            }
-            return;
-        }
-
-        terminalError(ctx, F("MQTT.SEND <topic> <payload>"));
-    });
+static void _mqttCommand(::terminal::CommandContext&& ctx) {
+    ctx.output.printf_P(PSTR("%s\n"), _mqttBuildInfo());
+    ctx.output.printf_P(PSTR("client %s\n"), _mqttClientState().c_str());
+    settingsDump(ctx, mqtt::settings::query::Settings);
+    terminalOK(ctx);
 }
 
-#endif // TERMINAL_SUPPORT
+alignas(4) static constexpr char MqttCommandReset[] PROGMEM = "MQTT.RESET";
+
+static void _mqttCommandReset(::terminal::CommandContext&& ctx) {
+    _mqttConfigure();
+    mqttDisconnect();
+    terminalOK(ctx);
+}
+
+alignas(4) static constexpr char MqttCommandSend[] PROGMEM = "MQTT.SEND";
+
+static void _mqttCommandSend(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() == 3) {
+        if (mqttSend(ctx.argv[1].c_str(), ctx.argv[2].c_str(), false, false)) {
+            terminalOK(ctx);
+        } else {
+            terminalError(ctx, F("Cannot queue the message"));
+        }
+        return;
+    }
+
+    terminalError(ctx, F("MQTT.SEND <topic> <payload>"));
+}
+
+static constexpr ::terminal::Command MqttCommands[] PROGMEM {
+    {MqttCommand, _mqttCommand},
+    {MqttCommandReset, _mqttCommandReset},
+    {MqttCommandSend, _mqttCommandSend},
+};
+
+void _mqttCommandsSetup() {
+    espurna::terminal::add(MqttCommands);
+}
 
 } // namespace
+#endif // TERMINAL_SUPPORT
 
 // -----------------------------------------------------------------------------
 // MQTT Callbacks
@@ -1763,7 +1775,7 @@ void mqttSetup() {
     #endif
 
     #if TERMINAL_SUPPORT
-        _mqttInitCommands();
+        _mqttCommandsSetup();
     #endif
 
     // Main callbacks

@@ -1020,36 +1020,44 @@ void onConnected(JsonObject& root) {
 namespace terminal {
 namespace {
 
-void setup() {
-    terminalRegisterCommand(F("LED"), [](::terminal::CommandContext&& ctx) {
-        if (ctx.argv.size() > 1) {
-            size_t id;
-            if (!tryParseId(ctx.argv[1].c_str(), ledCount, id)) {
-                terminalError(ctx, F("Invalid ledID"));
-                return;
-            }
+alignas(4) static constexpr char Led[] PROGMEM = "LED";
 
-            auto& led = internal::leds[id];
-            if (ctx.argv.size() == 2) {
-                settingsDump(ctx, settings::query::IndexedSettings, id);
-            } else if (ctx.argv.size() > 2) {
-                led.mode(LedMode::Manual);
-                pattern(led, Pattern(ctx.argv[2]));
-            }
-
-            schedule();
-            terminalOK(ctx);
-
+void led(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() > 1) {
+        size_t id;
+        if (!tryParseId(ctx.argv[1].c_str(), ledCount, id)) {
+            terminalError(ctx, F("Invalid ledID"));
             return;
         }
 
-        size_t id { 0 };
-        for (const auto& led : internal::leds) {
-            ctx.output.printf_P(
+        auto& led = internal::leds[id];
+        if (ctx.argv.size() == 2) {
+            settingsDump(ctx, settings::query::IndexedSettings, id);
+        } else if (ctx.argv.size() > 2) {
+            led.mode(LedMode::Manual);
+            pattern(led, Pattern(ctx.argv[2]));
+        }
+
+        schedule();
+        terminalOK(ctx);
+
+        return;
+    }
+
+    size_t id { 0 };
+    for (const auto& led : internal::leds) {
+        ctx.output.printf_P(
                 PSTR("led%u {Gpio=%hhu Mode=%s}\n"), id++, led.pin(),
                 espurna::settings::internal::serialize(led.mode()).c_str());
-        }
-    });
+    }
+}
+
+static constexpr ::terminal::Command Commands[] PROGMEM {
+    {Led, led},
+};
+
+void setup() {
+    espurna::terminal::add(Commands);
 }
 
 } // namespace

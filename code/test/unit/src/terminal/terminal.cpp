@@ -47,7 +47,7 @@ void test_hex_codes() {
     {
         static bool abc_done = false;
 
-        add(F("abc"), [](CommandContext&& ctx) {
+        add("abc", [](CommandContext&& ctx) {
             TEST_ASSERT_EQUAL(2, ctx.argv.size());
             TEST_ASSERT_EQUAL_STRING("abc", ctx.argv[0].c_str());
             TEST_ASSERT_EQUAL_STRING("abc", ctx.argv[1].c_str());
@@ -109,27 +109,54 @@ void test_parse_overlap() {
     }
 }
 
+// recent terminal version also allows a static commands list instead of passing
+// each individual name+func one by one
+void test_commands_array() {
+    static int command_calls = 0;
+
+    static Command commands[] {
+        Command{.name = "array.one", .func = [](CommandContext&&) {
+            ++command_calls;
+        }},
+        Command{.name = "array.two", .func = [](CommandContext&&) {
+            ++command_calls;
+        }},
+        Command{.name = "array.three", .func = [](CommandContext&&) {
+            ++command_calls;
+        }},
+    };
+
+    const auto before = size();
+    add(Commands{std::begin(commands), std::end(commands)});
+
+    TEST_ASSERT_EQUAL(before + 3, size());
+
+    const char input[] = "array.one\narray.two\narray.three\n";
+    TEST_ASSERT(api_find_and_call(input, DefaultOutput));
+    TEST_ASSERT_EQUAL(3, command_calls);
+}
+
 // Ensure that we can register multiple commands (at least 3, might want to test much more in the future?)
 // Ensure that registered commands can be called and they are called in order
 void test_multiple_commands() {
     // make sure commands execute in sequence
     static int command_calls = 0;
 
-    add(F("test1"), [](CommandContext&& ctx) {
+    add("test1", [](CommandContext&& ctx) {
         TEST_ASSERT_EQUAL_STRING("test1", ctx.argv[0].c_str());
         TEST_ASSERT_EQUAL(1, ctx.argv.size());
         TEST_ASSERT_EQUAL(0, command_calls);
         ++command_calls;
     });
 
-    add(F("test2"), [](CommandContext&& ctx) {
+    add("test2", [](CommandContext&& ctx) {
         TEST_ASSERT_EQUAL_STRING("test2", ctx.argv[0].c_str());
         TEST_ASSERT_EQUAL(1, ctx.argv.size());
         TEST_ASSERT_EQUAL(1, command_calls);
         ++command_calls;
     });
 
-    add(F("test3"), [](CommandContext&& ctx) {
+    add("test3", [](CommandContext&& ctx) {
         TEST_ASSERT_EQUAL_STRING("test3", ctx.argv[0].c_str());
         TEST_ASSERT_EQUAL(1, ctx.argv.size());
         TEST_ASSERT_EQUAL(2, command_calls);
@@ -144,7 +171,7 @@ void test_multiple_commands() {
 void test_command() {
     static int counter = 0;
 
-    add(F("test.command"), [](CommandContext&& ctx) {
+    add("test.command", [](CommandContext&& ctx) {
         TEST_ASSERT_EQUAL_MESSAGE(1, ctx.argv.size(),
             "Command without args should have argc == 1");
         ++counter;
@@ -169,12 +196,12 @@ void test_command() {
 void test_command_args() {
     static bool waiting = false;
 
-    add(F("test.command.arg1"), [](CommandContext&& ctx) {
+    add("test.command.arg1", [](CommandContext&& ctx) {
         TEST_ASSERT_EQUAL(2, ctx.argv.size());
         waiting = false;
     });
 
-    add(F("test.command.arg1_empty"), [](CommandContext&& ctx) {
+    add("test.command.arg1_empty", [](CommandContext&& ctx) {
         TEST_ASSERT_EQUAL(2, ctx.argv.size());
         TEST_ASSERT(!ctx.argv[1].length());
         waiting = false;
@@ -262,11 +289,11 @@ void test_quotes() {
 // we specify that commands lowercase == UPPERCASE
 // last registered one should be called, we don't check for duplicates at this time
 void test_case_insensitive() {
-    add(F("test.lowercase1"), [](CommandContext&&) {
+    add("test.lowercase1", [](CommandContext&&) {
         TEST_FAIL_MESSAGE("`test.lowercase1` was registered first, but there's another function by the same name. This should not be called");
     });
 
-    add(F("TEST.LOWERCASE1"), [](CommandContext&&) {
+    add("TEST.LOWERCASE1", [](CommandContext&&) {
         __asm__ volatile ("nop");
     });
 
@@ -276,7 +303,7 @@ void test_case_insensitive() {
 
 // We can use command ctx.output to send something back into the stream
 void test_output() {
-    add(F("test.output"), [](CommandContext&& ctx) {
+    add("test.output", [](CommandContext&& ctx) {
         if (ctx.argv.size() == 2) {
             ctx.output.print(ctx.argv[1]);
         }
@@ -406,6 +433,7 @@ int main(int, char**) {
     RUN_TEST(test_command);
     RUN_TEST(test_command_args);
     RUN_TEST(test_parse_overlap);
+    RUN_TEST(test_commands_array);
     RUN_TEST(test_multiple_commands);
     RUN_TEST(test_hex_codes);
     RUN_TEST(test_quotes);

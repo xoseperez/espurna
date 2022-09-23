@@ -28,18 +28,32 @@ struct CommandContext {
 
 using CommandFunc = void(*)(CommandContext&&);
 struct Command {
-    const __FlashStringHelper* name;
+    StringView name;
     CommandFunc func;
 };
 
+struct Commands {
+    const Command* begin;
+    const Command* end;
+};
+
 // store name<->func association at runtime 
-void add(const __FlashStringHelper* name, CommandFunc func);
-void add(Command);
+void add(Commands);
+
+template <size_t Size>
+void add(const Command (&command)[Size]) {
+    add(Commands{
+        .begin = &command[0],
+        .end = &command[Size],
+    });
+}
+
+void add(StringView, CommandFunc);
 
 // total number of registered commands
 size_t size();
 
-using CommandNames = std::vector<const __FlashStringHelper*>;
+using CommandNames = std::vector<StringView>;
 CommandNames names();
 
 // find registered command with 'name' or 'nullptr' on failure

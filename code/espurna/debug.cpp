@@ -613,6 +613,35 @@ void onBoot() {
     configure();
 }
 
+#if TERMINAL_SUPPORT
+namespace terminal {
+
+alignas(4) static constexpr char DebugBuffer[] PROGMEM = "DEBUG.BUFFER";
+
+void debug_buffer(::terminal::CommandContext&& ctx) {
+    debug::buffer::disable();
+    if (!debug::buffer::size()) {
+        terminalError(ctx, F("buffer is empty\n"));
+        return;
+    }
+
+    ctx.output.printf_P(PSTR("buffer size: %u / %u bytes\n"),
+        debug::buffer::size(), debug::buffer::capacity());
+    debug::buffer::dump(ctx.output);
+    terminalOK(ctx);
+}
+
+static constexpr ::terminal::Command commands[] PROGMEM {
+    {DebugBuffer, debug_buffer},
+};
+
+void setup() {
+    espurna::terminal::add(commands);
+}
+
+} // namespace terminal
+#endif
+
 } // namespace
 } // namespace debug
 } // namespace espurna
@@ -684,18 +713,7 @@ void debugSetup() {
 
 #if DEBUG_LOG_BUFFER_SUPPORT
 #if TERMINAL_SUPPORT
-    terminalRegisterCommand(F("DEBUG.BUFFER"), [](::terminal::CommandContext&& ctx) {
-        espurna::debug::buffer::disable();
-        if (!espurna::debug::buffer::size()) {
-            terminalError(ctx, F("buffer is empty\n"));
-            return;
-        }
-
-        ctx.output.printf_P(PSTR("buffer size: %u / %u bytes\n"),
-            espurna::debug::buffer::size(), espurna::debug::buffer::capacity());
-        espurna::debug::buffer::dump(ctx.output);
-        terminalOK(ctx);
-    });
+    espurna::debug::terminal::setup();
 #endif
 #endif
 }

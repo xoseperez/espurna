@@ -103,6 +103,8 @@ void start(String hostname, IpFoundCallback callback) {
 namespace terminal {
 namespace commands {
 
+alignas(4) static constexpr char Host[] PROGMEM = "HOST";
+
 void host(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() != 2) {
         terminalError(ctx, F("HOST <hostname>"));
@@ -125,6 +127,8 @@ void host(::terminal::CommandContext&& ctx) {
     }
 }
 
+alignas(4) static constexpr char Netstat[] PROGMEM = "NETSTAT";
+
 void netstat(::terminal::CommandContext&& ctx) {
     const struct tcp_pcb* pcbs[] {
         tcp_active_pcbs,
@@ -145,6 +149,8 @@ void netstat(::terminal::CommandContext&& ctx) {
 }
 
 #if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
+alignas(4) static constexpr char MflnProbe[] PROGMEM = "MFLN.PROBE";
+
 void mfln_probe(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() != 3) {
         terminalError(ctx, F("MFLN.PROBE <URL> <SIZE>"));
@@ -168,14 +174,18 @@ void mfln_probe(::terminal::CommandContext&& ctx) {
 }
 #endif
 
+static constexpr ::terminal::Command List[] PROGMEM {
+    {Host, host},
+    {Netstat, netstat},
+#if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
+    {MflnProbe, mfln_probe},
+#endif
+};
+
 } // namespace commands
 
 void setup() {
-    terminalRegisterCommand(F("NETSTAT"), commands::netstat);
-    terminalRegisterCommand(F("HOST"), commands::host);
-#if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
-    terminalRegisterCommand(F("MFLN.PROBE"), commands::mfln_probe);
-#endif
+    espurna::terminal::add(commands::List);
 }
 
 } // namespace terminal

@@ -22,9 +22,17 @@ Copyright (C) 2019 by Andrey F. Kupreychik <foxle@quickfox.ru>
 static_assert(1 == (RELAY_SUPPORT), "");
 static_assert(1 == (BUTTON_SUPPORT), "");
 
+#ifndef LIGHTFOX_BUTTONS
+#define LIGHTFOX_BUTTONS 4
+#endif
+
 constexpr size_t _lightfoxBuildButtons() {
     return LIGHTFOX_BUTTONS;
 }
+
+#ifndef LIGHTFOX_RELAYS
+#define LIGHTFOX_RELAYS 2
+#endif
 
 constexpr size_t _lightfoxBuildRelays() {
     return LIGHTFOX_RELAYS;
@@ -156,20 +164,28 @@ void _lightfoxWebSocketOnAction(uint32_t client_id, const char * action, JsonObj
 // -----------------------------------------------------------------------------
 
 #if TERMINAL_SUPPORT
+alignas(4) static constexpr char LightfoxCommandLearn[] PROGMEM = "LIGHTFOX.LEARN";
 
-void _lightfoxInitCommands() {
-
-    terminalRegisterCommand(F("LIGHTFOX.LEARN"), [](::terminal::CommandContext&& ctx) {
-        lightfoxLearn();
-        terminalOK(ctx);
-    });
-
-    terminalRegisterCommand(F("LIGHTFOX.CLEAR"), [](::terminal::CommandContext&& ctx) {
-        lightfoxClear();
-        terminalOK(ctx);
-    });
+static void _lightfoxCommandLearn(::terminal::CommandContext&& ctx) {
+    lightfoxLearn();
+    terminalOK(ctx);
 }
 
+alignas(4) static constexpr char LightfoxCommandClear[] PROGMEM = "LIGHTFOX.LEARN";
+
+static void _lightfoxCommandClear(::terminal::CommandContext&& ctx) {
+    lightfoxClear();
+    terminalOK(ctx);
+}
+
+static constexpr ::terminal::Command LightfoxCommands[] PROGMEM {
+    {LightfoxCommandLearn, _lightfoxCommandLearn},
+    {LightfoxCommandClear, _lightfoxCommandClear},
+};
+
+void _lightfoxCommandsSetup() {
+    espurna::terminal::add(LightfoxCommands);
+}
 #endif
 
 // -----------------------------------------------------------------------------
@@ -209,7 +225,7 @@ void lightfoxSetup() {
     #endif
 
     #if TERMINAL_SUPPORT
-        _lightfoxInitCommands();
+        _lightfoxCommandsSetup();
     #endif
 
     for (size_t relay = 0; relay < _lightfoxBuildRelays(); ++relay) {

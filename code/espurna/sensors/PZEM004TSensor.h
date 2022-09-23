@@ -475,94 +475,111 @@ private:
 constexpr BaseEmonSensor::Magnitude PZEM004TSensor::Magnitudes[];
 #endif
 
-void PZEM004TSensor::registerTerminalCommands() {
 #if TERMINAL_SUPPORT
-    terminalRegisterCommand(F("PZ.DEVICES"), [](::terminal::CommandContext&& ctx) {
-        foreach([&](const PZEM004TSensor& device) {
-            ctx.output.printf("%s\n", device._address.toString().c_str());
-        });
-        terminalOK(ctx);
+alignas(4) static constexpr char PzemDevices[] PROGMEM = "PZ.DEVICES";
+
+void pzem_devices(::terminal::CommandContext&& ctx) {
+    foreach([&](const PZEM004TSensor& device) {
+        ctx.output.printf("%s\n", device._address.toString().c_str());
     });
+    terminalOK(ctx);
+}
 
-    terminalRegisterCommand(F("PZ.PORTS"), [](::terminal::CommandContext&& ctx) {
-        auto it = _ports.begin();
-        auto end = _ports.end();
+alignas(4) static constexpr char PzemPorts[] PROGMEM = "PZ.PORTS";
 
-        if (ctx.argv.size() == 2) {
-            auto offset = espurna::settings::internal::convert<size_t>(ctx.argv[1]);
-            if (offset >= _ports.size()) {
-                terminalError(ctx, F("Invalid port ID"));
-                return;
-            }
+void pzem_ports(::terminal::CommandContext&& ctx) {
+    auto it = _ports.begin();
+    auto end = _ports.end();
 
-            while ((it != end) && offset) {
-                ++it;
-                --offset;
-            }
-
-            if (it == end) {
-                terminalError(ctx, F("Invalid port ID"));
-                return;
-            }
-
-            end = it + 1;
-        }
-
-        auto print = [&](const size_t index, const PortWeakPtr& ptr) {
-            auto port = ptr.lock();
-            if (port) {
-                ctx.output.printf_P(PSTR("%u -> %sSerial (%hhu,%hhu)\n"),
-                    index, port->tag(), port->rx(), port->tx());
-            } else {
-                ctx.output.print(F("%u -> (not configured)\n"));
-            }
-        };
-
-        size_t index { 0 };
-        while ((it != end) && (*it).use_count()) {
-            print(index, *it);
-            ++it;
-            ++index;
-        }
-
-        terminalOK(ctx);
-    });
-
-    // Set the *currently connected* device address
-    // (ref. comment at the top, shouldn't do this when multiple devices are connected)
-    terminalRegisterCommand(F("PZ.ADDRESS"), [](::terminal::CommandContext&& ctx) {
-        if (ctx.argv.size() != 3) {
-            terminalError(ctx, F("PZ.ADDRESS <PORT> <ADDRESS>"));
-            return;
-        }
-
-        auto id = espurna::settings::internal::convert<size_t>(ctx.argv[1]);
-        if (id >= _ports.size()) {
+    if (ctx.argv.size() == 2) {
+        auto offset = espurna::settings::internal::convert<size_t>(ctx.argv[1]);
+        if (offset >= _ports.size()) {
             terminalError(ctx, F("Invalid port ID"));
             return;
         }
 
-        auto port = _ports[id].lock();
-        if (!port) {
-            terminalError(ctx, F("Port not configured"));
+        while ((it != end) && offset) {
+            ++it;
+            --offset;
+        }
+
+        if (it == end) {
+            terminalError(ctx, F("Invalid port ID"));
             return;
         }
 
-        IPAddress addr;
-        addr.fromString(ctx.argv[2]);
+        end = it + 1;
+    }
 
-        if (!addr.isSet()) {
-            terminalError(ctx, F("Invalid address"));
-            return;
+    auto print = [&](const size_t index, const PortWeakPtr& ptr) {
+        auto port = ptr.lock();
+        if (port) {
+            ctx.output.printf_P(PSTR("%u -> %sSerial (%hhu,%hhu)\n"),
+                index, port->tag(), port->rx(), port->tx());
+        } else {
+            ctx.output.print(F("%u -> (not configured)\n"));
         }
+    };
 
-        if (!port->address(addr)) {
-            terminalError(ctx, F("Failed to set the address"));
-            return;
-        }
+    size_t index { 0 };
+    while ((it != end) && (*it).use_count()) {
+        print(index, *it);
+        ++it;
+        ++index;
+    }
 
-        terminalOK(ctx);
-    });
+    terminalOK(ctx);
+}
+
+alignas(4) static constexpr char PzemAddress[] PROGMEM = "PZ.ADDRESS";
+
+// Set the *currently connected* device address
+// (ref. comment at the top, shouldn't do this when multiple devices are connected)
+static void pzem_address(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() != 3) {
+        terminalError(ctx, F("PZ.ADDRESS <PORT> <ADDRESS>"));
+        return;
+    }
+
+    auto id = espurna::settings::internal::convert<size_t>(ctx.argv[1]);
+    if (id >= _ports.size()) {
+        terminalError(ctx, F("Invalid port ID"));
+        return;
+    }
+
+    auto port = _ports[id].lock();
+    if (!port) {
+        terminalError(ctx, F("Port not configured"));
+        return;
+    }
+
+    IPAddress addr;
+    addr.fromString(ctx.argv[2]);
+
+    if (!addr.isSet()) {
+        terminalError(ctx, F("Invalid address"));
+        return;
+    }
+
+    if (!port->address(addr)) {
+        terminalError(ctx, F("Failed to set the address"));
+        return;
+    }
+
+    terminalOK(ctx);
+}
+
+static constexpr ::terminal::Command PzemCommands[] PROGMEM {
+    {PzemDevices, pzem_devices},
+    {PzemPorts, pzem_ports},
+    {PzemAddress, pzem_address},
+};
+
+#endif
+
+void PZEM004TSensor::registerTerminalCommands() {
+#if TERMINAL_SUPPORT
+    espurna::terminal::add(PzemCommands);
 #endif
 }
 

@@ -488,6 +488,8 @@ void report(Print& out) {
 
 namespace commands {
 
+alignas(4) static constexpr char Ntp[] PROGMEM = "NTP";
+
 void ntp(::terminal::CommandContext&& ctx) {
     if (synced()) {
         report(ctx.output);
@@ -497,6 +499,8 @@ void ntp(::terminal::CommandContext&& ctx) {
 
     terminalError(ctx, F("NTP not synced"));
 }
+
+alignas(4) static constexpr char Sync[] PROGMEM = "NTP.SYNC";
 
 void sync(::terminal::CommandContext&& ctx) {
     if (synced()) {
@@ -508,6 +512,8 @@ void sync(::terminal::CommandContext&& ctx) {
 
     terminalError(ctx, F("NTP waiting for initial sync"));
 }
+
+alignas(4) static constexpr char Set[] PROGMEM = "NTP.SET";
 
 [[gnu::unused]]
 void set_simple(::terminal::CommandContext&& ctx) {
@@ -561,12 +567,16 @@ void set_time(::terminal::CommandContext&& ctx) {
 #endif
 }
 
+static constexpr ::terminal::Command List[] PROGMEM {
+    {Ntp, ntp},
+    {Sync, sync},
+    {Set, set_time},
+};
+
 } // namespace commands
 
 void setup() {
-    terminalRegisterCommand(F("NTP"), commands::ntp);
-    terminalRegisterCommand(F("NTP.SYNC"), commands::sync);
-    terminalRegisterCommand(F("NTP.SET"), commands::set_time);
+    espurna::terminal::add(commands::List);
 }
 
 } // namespace terminal

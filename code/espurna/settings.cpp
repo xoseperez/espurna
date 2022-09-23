@@ -300,6 +300,8 @@ void dump(const ::terminal::CommandContext& ctx, const query::IndexedSetting* be
 
 namespace commands {
 
+alignas(4) static constexpr char Config[] PROGMEM = "CONFIG";
+
 void config(::terminal::CommandContext&& ctx) {
     DynamicJsonBuffer jsonBuffer(1024);
     JsonObject& root = jsonBuffer.createObject();
@@ -307,6 +309,8 @@ void config(::terminal::CommandContext&& ctx) {
     root.prettyPrintTo(ctx.output);
     terminalOK(ctx);
 }
+
+alignas(4) static constexpr char Keys[] PROGMEM = "KEYS";
 
 void keys(::terminal::CommandContext&& ctx) {
     const auto keys = settings::sorted_keys();
@@ -328,6 +332,8 @@ void keys(::terminal::CommandContext&& ctx) {
 
     terminalOK(ctx);
 }
+
+alignas(4) static constexpr char Gc[] PROGMEM = "GC";
 
 void gc(::terminal::CommandContext&& ctx) {
     const auto keys = settings::sorted_keys();
@@ -354,6 +360,8 @@ void gc(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
+alignas(4) static constexpr char Del[] PROGMEM = "DEL";
+
 void del(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() < 2) {
         terminalError(ctx, F("del <key> [<key>...]"));
@@ -372,6 +380,8 @@ void del(::terminal::CommandContext&& ctx) {
     }
 }
 
+alignas(4) static constexpr char Set[] PROGMEM = "SET";
+
 void set(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() != 3) {
         terminalError(ctx, F("set <key> <value>"));
@@ -385,6 +395,8 @@ void set(::terminal::CommandContext&& ctx) {
 
     terminalError(ctx, F("could not set the key"));
 }
+
+alignas(4) static constexpr char Get[] PROGMEM = "GET";
 
 void get(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() < 2) {
@@ -411,10 +423,14 @@ void get(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
+alignas(4) static constexpr char Reload[] PROGMEM = "RELOAD";
+
 void reload(::terminal::CommandContext&& ctx) {
     espurnaReload();
     terminalOK(ctx);
 }
+
+alignas(4) static constexpr char FactoryReset[] PROGMEM = "FACTORY.RESET";
 
 void factory_reset(::terminal::CommandContext&& ctx) {
     factoryReset();
@@ -422,28 +438,35 @@ void factory_reset(::terminal::CommandContext&& ctx) {
 }
 
 [[gnu::unused]]
+alignas(4) static constexpr char Save[] PROGMEM = "SAVE";
+
+[[gnu::unused]]
 void save(::terminal::CommandContext&& ctx) {
     eepromCommit();
     terminalOK(ctx);
 }
 
+static constexpr ::terminal::Command List[] PROGMEM {
+    {Config, commands::config},
+    {Keys, commands::keys},
+    {Gc, commands::gc},
+
+    {Del, commands::del},
+    {Set, commands::set},
+    {Get, commands::get},
+
+    {Reload, commands::reload},
+    {FactoryReset, commands::factory_reset},
+
+#if not SETTINGS_AUTOSAVE
+    {Save, commands::save},
+#endif
+};
+
 } // namespace commands
 
 void setup() {
-    terminalRegisterCommand(F("CONFIG"), commands::config);
-    terminalRegisterCommand(F("KEYS"), commands::keys);
-    terminalRegisterCommand(F("GC"), commands::gc);
-
-    terminalRegisterCommand(F("DEL"), commands::del);
-    terminalRegisterCommand(F("SET"), commands::set);
-    terminalRegisterCommand(F("GET"), commands::get);
-
-    terminalRegisterCommand(F("RELOAD"), commands::reload);
-    terminalRegisterCommand(F("FACTORY.RESET"), commands::factory_reset);
-
-#if not SETTINGS_AUTOSAVE
-    terminalRegisterCommand(F("SAVE"), commands::save);
-#endif
+    espurna::terminal::add(commands::List);
 }
 
 } // namespace

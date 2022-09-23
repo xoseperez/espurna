@@ -2637,61 +2637,72 @@ void _relayPrint(Print& out, size_t start, size_t stop) {
     }
 }
 
-void _relayInitCommands() {
-    terminalRegisterCommand(F("RELAY"), [](::terminal::CommandContext&& ctx) {
-        if (ctx.argv.size() == 1) {
-            _relayPrint(ctx.output, 0, _relays.size());
-            terminalOK(ctx);
-            return;
-        }
+alignas(4) static constexpr char RelayCommand[] PROGMEM = "RELAY";
 
-        size_t id;
-        if (!_relayTryParseId(ctx.argv[1].c_str(), id)) {
-            terminalError(ctx, F("Invalid relayID"));
-            return;
-        }
-
-        if (ctx.argv.size() > 2) {
-            auto status = relayParsePayload(ctx.argv[2].c_str());
-            if (PayloadStatus::Unknown == status) {
-                terminalError(ctx, F("Invalid status"));
-                return;
-            }
-
-            _relayHandleStatus(id, status);
-            _relayPrint(ctx.output, _relays[id], id);
-            terminalOK(ctx);
-            return;
-        }
-
-        settingsDump(ctx, espurna::relay::settings::query::IndexedSettings, id);
+static void _relayCommand(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() == 1) {
+        _relayPrint(ctx.output, 0, _relays.size());
         terminalOK(ctx);
-    });
+        return;
+    }
 
-    terminalRegisterCommand(F("PULSE"), [](::terminal::CommandContext&& ctx) {
-        if (ctx.argv.size() < 3) {
-            terminalError(ctx, F("PULSE <ID> <TIME> [<NORMAL STATUS>]"));
+    size_t id;
+    if (!_relayTryParseId(ctx.argv[1].c_str(), id)) {
+        terminalError(ctx, F("Invalid relayID"));
+        return;
+    }
+
+    if (ctx.argv.size() > 2) {
+        auto status = relayParsePayload(ctx.argv[2].c_str());
+        if (PayloadStatus::Unknown == status) {
+            terminalError(ctx, F("Invalid status"));
             return;
         }
 
-        size_t id;
-        if (!_relayTryParseId(ctx.argv[1].c_str(), id)) {
-            terminalError(ctx, F("Invalid relayID"));
-            return;
-        }
-
-        if ((ctx.argv.size() == 4) && !_relayHandlePayload(id, ctx.argv[3])) {
-            terminalError(ctx, F("Invalid relay status"));
-            return;
-        }
-
-        if (!_relayHandlePulsePayload(id, ctx.argv[2])) {
-            terminalError(ctx, F("Normal state conflict"));
-            return;
-        }
-
+        _relayHandleStatus(id, status);
+        _relayPrint(ctx.output, _relays[id], id);
         terminalOK(ctx);
-    });
+        return;
+    }
+
+    settingsDump(ctx, espurna::relay::settings::query::IndexedSettings, id);
+    terminalOK(ctx);
+}
+
+alignas(4) static constexpr char PulseCommand[] PROGMEM = "PULSE";
+
+static void _relayCommandPulse(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() < 3) {
+        terminalError(ctx, F("PULSE <ID> <TIME> [<NORMAL STATUS>]"));
+        return;
+    }
+
+    size_t id;
+    if (!_relayTryParseId(ctx.argv[1].c_str(), id)) {
+        terminalError(ctx, F("Invalid relayID"));
+        return;
+    }
+
+    if ((ctx.argv.size() == 4) && !_relayHandlePayload(id, ctx.argv[3])) {
+        terminalError(ctx, F("Invalid relay status"));
+        return;
+    }
+
+    if (!_relayHandlePulsePayload(id, ctx.argv[2])) {
+        terminalError(ctx, F("Normal state conflict"));
+        return;
+    }
+
+    terminalOK(ctx);
+}
+
+static constexpr ::terminal::Command RelayCommands[] PROGMEM {
+    {RelayCommand, _relayCommand},
+    {PulseCommand, _relayCommandPulse},
+};
+
+void _relayCommandsSetup() {
+    espurna::terminal::add(RelayCommands);
 }
 
 } // namespace
@@ -2983,7 +2994,7 @@ void relaySetup() {
         relaySetupMQTT();
     #endif
     #if TERMINAL_SUPPORT
-        _relayInitCommands();
+        _relayCommandsSetup();
     #endif
 
     // Main callbacks

@@ -26,60 +26,68 @@ namespace {
 
 namespace internal {
 
-using Commands = std::forward_list<Command>;
-Commands commands;
+using CommandsView = std::forward_list<Commands>;
+CommandsView commands;
 
 } // namespace internal
 } // namespace
 
 size_t size() {
-    return std::distance(internal::commands.begin(), internal::commands.end());
+    size_t out { 0 };
+    for (const auto commands : internal::commands) {
+        out += commands.end - commands.begin;
+    }
+
+    return out;
 }
 
 CommandNames names() {
     CommandNames out;
     out.reserve(size());
 
-    for (auto& command : internal::commands) {
-        out.push_back(command.name);
+    for (const auto commands : internal::commands) {
+        for (auto it = commands.begin; it != commands.end; ++it) {
+            out.push_back((*it).name);
+        }
     }
 
     return out;
 }
 
-void add(Command command) {
-    if (command.func) {
-        internal::commands.emplace_front(std::move(command));
-    }
+void add(Commands commands) {
+    internal::commands.emplace_front(std::move(commands));
 }
 
-void add(const __FlashStringHelper* name, CommandFunc func) {
-    add(Command{
+void add(StringView name, CommandFunc func) {
+    const auto cmd = new Command{
         .name = name,
-        .func = func });
+        .func = func,
+    };
+
+    add(Commands{
+        .begin = cmd,
+        .end = cmd + 1,
+    });
 }
 
 const Command* find(StringView name) {
-    auto found = std::find_if(
-        internal::commands.begin(),
-        internal::commands.end(),
-        // TODO: StringView comparison
-        // note that `String::equalsIgnoreCase(const __FlashStringHelper*)` does not exist, and will create a temporary `String`
-        // both use read-1-byte-at-a-time for PROGMEM, however this variant saves around 200μs in time since there's no temporary object
-        [&](const Command& command) {
-            const auto* lhs = name.c_str();
-            const auto* rhs = reinterpret_cast<const char*>(command.name);
-            const auto len = strlen_P(rhs);
+    for (const auto commands : internal::commands) {
+        const auto found = std::find_if(
+            commands.begin,
+            commands.end,
+            [&](const Command& command) {
+                return (name.length() == command.name.length())
+                    && (strncasecmp_P(name.c_str(),
+                            command.name.c_str(),
+                            command.name.length()) == 0);
+            });
 
-            return (name.length() == len)
-                && (0 == strncasecmp_P(lhs, rhs, len));
-        });
-
-    if (found == internal::commands.end()) {
-        return nullptr;
+        if (found != commands.end) {
+            return found;
+        }
     }
 
-    return &(*found);
+    return nullptr;
 }
 
 void ok(Print& out) {
@@ -115,7 +123,7 @@ bool find_and_call(StringView cmd, Print& out) {
     auto result = parse_line(cmd);
     if (result.error != parser::Error::Ok) {
         String message;
-        message += PSTR("TERMINAL: ");
+        message += STRING_VIEW("TERMINAL: ");
         message += parser::error(result.error);
         error(out, message);
         return false;

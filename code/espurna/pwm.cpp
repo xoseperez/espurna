@@ -437,30 +437,38 @@ using namespace generic;
 #if TERMINAL_SUPPORT
 namespace terminal {
 
-void setup() {
-    terminalRegisterCommand(F("PWM.WRITE"), [](::terminal::CommandContext&& ctx) {
-        if (ctx.argv.size() == 3) {
-            const auto convert_channel = espurna::settings::internal::convert<uint32_t>;
-            const auto channel = convert_channel(ctx.argv[1]);
-            if (channel >= channels()) {
-                terminalError(ctx, F("Invalid channel ID"));
-                return;
-            }
+alignas(4) static constexpr char PwmWrite[] PROGMEM = "PWM.WRITE";
 
-            const auto convert_duty = espurna::settings::internal::convert<float>;
-            const auto value = std::clamp(convert_duty(ctx.argv[2]), 0.f, 100.f);
-            ctx.output.printf("PWM channel %u duty %s\n",
-                channel, String(value, 3).c_str());
-
-            duty(channel, value);
-            update();
-
-            terminalOK(ctx);
+void pwm_write(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() == 3) {
+        const auto convert_channel = espurna::settings::internal::convert<uint32_t>;
+        const auto channel = convert_channel(ctx.argv[1]);
+        if (channel >= channels()) {
+            terminalError(ctx, F("Invalid channel ID"));
             return;
         }
 
-        terminalError(ctx, F("PWM.WRITE <CHANNEL> <DUTY>"));
-    });
+        const auto convert_duty = espurna::settings::internal::convert<float>;
+        const auto value = std::clamp(convert_duty(ctx.argv[2]), 0.f, 100.f);
+        ctx.output.printf("PWM channel %u duty %s\n",
+                channel, String(value, 3).c_str());
+
+        duty(channel, value);
+        update();
+
+        terminalOK(ctx);
+        return;
+    }
+
+    terminalError(ctx, F("PWM.WRITE <CHANNEL> <DUTY>"));
+}
+
+static constexpr ::terminal::Command Commands[] PROGMEM {
+    {PwmWrite, pwm_write},
+};
+
+void setup() {
+    espurna::terminal::add(Commands);
 }
 
 } // namespace terminal

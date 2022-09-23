@@ -3649,88 +3649,109 @@ void setup() {
 namespace terminal {
 namespace {
 
-void setup() {
-    terminalRegisterCommand(F("MAGNITUDES"), [](::terminal::CommandContext&& ctx) {
-        if (!magnitude::count()) {
-            terminalError(ctx, F("No magnitudes"));
-            return;
-        }
+namespace commands {
 
-        size_t index = 0;
-        for (const auto& magnitude : magnitude::internal::magnitudes) {
-            ctx.output.printf_P(PSTR("%2zu * %s @ %s (read:%s reported:%s units:%s)\n"),
-                index++, magnitude::topicWithIndex(magnitude).c_str(),
-                magnitude::description(magnitude).c_str(),
-                magnitude::format(magnitude, magnitude.last).c_str(),
-                magnitude::format(magnitude, magnitude.reported).c_str(),
-                magnitude::units(magnitude).c_str());
-        }
+alignas(4) static constexpr char Magnitudes[] PROGMEM = "MAGNITUDES";
 
-        terminalOK(ctx);
-    });
+void magnitudes(::terminal::CommandContext&& ctx) {
+    if (!magnitude::count()) {
+        terminalError(ctx, F("No magnitudes"));
+        return;
+    }
 
-    terminalRegisterCommand(F("EXPECTED"), [](::terminal::CommandContext&& ctx) {
-        if (ctx.argv.size() == 3) {
-            const auto id = espurna::settings::internal::convert<size_t>(ctx.argv[1]);
-            if (id < magnitude::count()) {
-                const auto& magnitude = magnitude::get(id);
+    size_t index = 0;
+    for (const auto& magnitude : magnitude::internal::magnitudes) {
+        ctx.output.printf_P(PSTR("%2zu * %s @ %s (read:%s reported:%s units:%s)\n"),
+            index++, magnitude::topicWithIndex(magnitude).c_str(),
+            magnitude::description(magnitude).c_str(),
+            magnitude::format(magnitude, magnitude.last).c_str(),
+            magnitude::format(magnitude, magnitude.reported).c_str(),
+            magnitude::units(magnitude).c_str());
+    }
 
-                const auto result = energy::ratioFromValue(
-                    magnitude, espurna::settings::internal::convert<double>(ctx.argv[2]));
-                const auto key = settings::keys::get(
-                    magnitude, settings::suffix::Ratio);
-                ctx.output.printf("%s => %s\n", key.c_str(), String(result).c_str());
-                terminalOK(ctx);
-                return;
-            }
+    terminalOK(ctx);
+}
 
-            terminalError(ctx, F("Invalid magnitude ID"));
-            return;
-        }
+alignas(4) static constexpr char Expected[] PROGMEM = "EXPECTED";
 
-        terminalError(ctx, F("EXPECTED <ID> <VALUE>"));
-    });
+void expected(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() == 3) {
+        const auto id = espurna::settings::internal::convert<size_t>(ctx.argv[1]);
+        if (id < magnitude::count()) {
+            const auto& magnitude = magnitude::get(id);
 
-    terminalRegisterCommand(F("RESET.RATIOS"), [](::terminal::CommandContext&& ctx) {
-        energy::reset();
-        terminalOK(ctx);
-    });
-
-    terminalRegisterCommand(F("ENERGY"), [](::terminal::CommandContext&& ctx) {
-        using IndexType = decltype(Magnitude::index_global);
-
-        if (ctx.argv.size() < 2) {
-            terminalError(ctx, F("ENERGY <ID> [<VALUE>]"));
-            return;
-        }
-
-        const auto index = espurna::settings::internal::convert<IndexType>(ctx.argv[1]);
-
-        const auto* magnitude = magnitude::find(MAGNITUDE_ENERGY, index);
-        if (!magnitude) {
-            terminalError(ctx, F("Invalid magnitude ID"));
-            return;
-        }
-
-        if (ctx.argv.size() == 2) {
-            ctx.output.printf_P(PSTR("%s => %s (%s)\n"),
-                magnitude::topicWithIndex(*magnitude).c_str(),
-                magnitude::format(*magnitude, magnitude->reported).c_str(),
-                magnitude::units(*magnitude).c_str());
+            const auto result = energy::ratioFromValue(
+                magnitude, espurna::settings::internal::convert<double>(ctx.argv[2]));
+            const auto key = settings::keys::get(
+                magnitude, settings::suffix::Ratio);
+            ctx.output.printf("%s => %s\n", key.c_str(), String(result).c_str());
             terminalOK(ctx);
             return;
         }
 
-        if (ctx.argv.size() == 3) {
-            const auto energy = energy::convert(ctx.argv[2]);
-            if (!energy) {
-                terminalError(ctx, F("Invalid energy string"));
-                return;
-            }
+        terminalError(ctx, F("Invalid magnitude ID"));
+        return;
+    }
 
-            energy::set(*magnitude, energy.value());
+    terminalError(ctx, F("EXPECTED <ID> <VALUE>"));
+}
+
+alignas(4) static constexpr char ResetRatios[] PROGMEM = "RESET.RATIOS";
+
+void reset_ratios(::terminal::CommandContext&& ctx) {
+    energy::reset();
+    terminalOK(ctx);
+}
+
+alignas(4) static constexpr char Energy[] PROGMEM = "ENERGY";
+
+void energy(::terminal::CommandContext&& ctx) {
+    using IndexType = decltype(Magnitude::index_global);
+
+    if (ctx.argv.size() < 2) {
+        terminalError(ctx, F("ENERGY <ID> [<VALUE>]"));
+        return;
+    }
+
+    const auto index = espurna::settings::internal::convert<IndexType>(ctx.argv[1]);
+
+    const auto* magnitude = magnitude::find(MAGNITUDE_ENERGY, index);
+    if (!magnitude) {
+        terminalError(ctx, F("Invalid magnitude ID"));
+        return;
+    }
+
+    if (ctx.argv.size() == 2) {
+        ctx.output.printf_P(PSTR("%s => %s (%s)\n"),
+            magnitude::topicWithIndex(*magnitude).c_str(),
+            magnitude::format(*magnitude, magnitude->reported).c_str(),
+            magnitude::units(*magnitude).c_str());
+        terminalOK(ctx);
+        return;
+    }
+
+    if (ctx.argv.size() == 3) {
+        const auto energy = energy::convert(ctx.argv[2]);
+        if (!energy) {
+            terminalError(ctx, F("Invalid energy string"));
+            return;
         }
-    });
+
+        energy::set(*magnitude, energy.value());
+    }
+}
+
+static constexpr ::terminal::Command List[] PROGMEM {
+    {Magnitudes, commands::magnitudes},
+    {Expected, commands::expected},
+    {ResetRatios, commands::reset_ratios},
+    {Energy, commands::energy},
+};
+
+} // namespace commands
+
+void setup() {
+    espurna::terminal::add(commands::List);
 }
 
 } // namespace

@@ -607,6 +607,8 @@ void add(Origin origin) {
 #if TERMINAL_SUPPORT
 namespace terminal {
 
+alignas(4) static constexpr char GpioLocks[] PROGMEM = "GPIO.LOCKS";
+
 void gpio_list_origins(::terminal::CommandContext&& ctx) {
     for (const auto& origin : origin::internal::origins) {
         ctx.output.printf_P(PSTR("%c %s GPIO%hhu\t%d:%s:%s\n"),
@@ -617,6 +619,8 @@ void gpio_list_origins(::terminal::CommandContext&& ctx) {
             origin.location.func);
     }
 }
+
+alignas(4) static constexpr char Gpio[] PROGMEM = "GPIO";
 
 void gpio_read_write(::terminal::CommandContext&& ctx) {
     const int pin = (ctx.argv.size() >= 2)
@@ -692,6 +696,8 @@ void gpio_read_write(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
+alignas(4) static constexpr char RegRead[] PROGMEM = "REG.READ";
+
 void reg_read(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() == 2) {
         const auto convert = espurna::settings::internal::convert<uint32_t>;
@@ -705,6 +711,8 @@ void reg_read(::terminal::CommandContext&& ctx) {
 
     terminalError(ctx, F("REG.READ <ADDRESS>"));
 }
+
+alignas(4) static constexpr char RegWrite[] PROGMEM = "REG.WRITE";
 
 void reg_write(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() == 3) {
@@ -723,11 +731,15 @@ void reg_write(::terminal::CommandContext&& ctx) {
     terminalError(ctx, F("REG.WRITE <ADDRESS> <VALUE>"));
 }
 
+static constexpr espurna::terminal::Command Commands[] PROGMEM {
+    {GpioLocks, gpio_list_origins},
+    {Gpio, gpio_read_write},
+    {RegRead, reg_read},
+    {RegWrite, reg_write},
+};
+
 void setup() {
-    terminalRegisterCommand(F("GPIO.LOCKS"), gpio_list_origins);
-    terminalRegisterCommand(F("GPIO"), gpio_read_write);
-    terminalRegisterCommand(F("REG.READ"), reg_read);
-    terminalRegisterCommand(F("REG.WRITE"), reg_write);
+    espurna::terminal::add(Commands);
 }
 
 } // namespace terminal
