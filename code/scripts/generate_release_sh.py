@@ -82,7 +82,7 @@ def find_any(string, values):
 
 
 def generate_lines(builds, ignore):
-    cores = []
+    minimal = []
     generic = []
 
     for build in builds:
@@ -102,14 +102,14 @@ def generate_lines(builds, ignore):
 
         line = " ".join(cmd)
 
-        # push core variants to the front as they definetly include global build_flags
+        # push minimal variants to the front as they definetly include global build_flags
         output = generic
-        if "ESPURNA_CORE" in build.build_src_flags:
-            output = cores
+        if "ESPURNA_MINIMAL" in build.build_src_flags:
+            output = minimal
 
         output.append(line)
 
-    return cores + generic
+    return minimal + generic
 
 
 def every(seq, nth, total):
