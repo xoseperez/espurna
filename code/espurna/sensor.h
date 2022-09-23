@@ -268,4 +268,5 @@ espurna::sensor::Value magnitudeValue(unsigned char index);
 using SensorWebSocketMagnitudesCallback = void(*)(JsonArray&, size_t);
 void sensorWebSocketMagnitudes(JsonObject& root, const char* prefix, SensorWebSocketMagnitudesCallback);
 
+espurna::StringView sensorList();
 void sensorSetup();
