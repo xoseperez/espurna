@@ -30,7 +30,7 @@ extern "C" {
   #include <lwip/tcp.h>
   #include <lwip/inet.h> // ip_addr_t
   #include <lwip/err.h> // ERR_x
-  #include <lwip/dns.h> // dns_gethostbyname
+  #include <lwip/dns.h> // dns_getserver, dns_gethostbyname
   #include <lwip/ip_addr.h> // ip4/ip6 helpers
 };
 

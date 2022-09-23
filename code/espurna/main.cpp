@@ -127,6 +127,7 @@ void setup() {
         terminalSetup();
     #endif
 
+    networkSetup();
     wifiSetup();
     otaSetup();
 

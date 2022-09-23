@@ -3,7 +3,7 @@
 TERMINAL MODULE
 
 Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
-Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
+Copyright (C) 2020-2022 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 */
 
@@ -22,8 +22,6 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include "wifi.h"
 #include "ws.h"
 
-#include "libs/URL.h"
-#include "libs/StreamAdapter.h"
 #include "libs/PrintString.h"
 
 #include "web_asyncwebprint.ipp"
@@ -33,13 +31,6 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #include <Schedule.h>
 #include <Stream.h>
-
-// not yet CONNECTING or LISTENING
-extern "C" struct tcp_pcb *tcp_bound_pcbs;
-// accepting or sending data
-extern "C" struct tcp_pcb *tcp_active_pcbs;
-// // TIME-WAIT status
-extern "C" struct tcp_pcb *tcp_tw_pcbs;
 
 // FS 'range', declared at compile time via .ld script PROVIDE declarations
 // (althought, in recent Core versions, these may be set at runtime)
@@ -85,142 +76,6 @@ void help(CommandContext&& ctx) {
 
     terminalOK(ctx);
 }
-
-void netstat(CommandContext&& ctx) {
-    const struct tcp_pcb* pcbs[] {
-        tcp_active_pcbs,
-        tcp_tw_pcbs,
-        tcp_bound_pcbs,
-    };
-
-    for (const auto* list : pcbs) {
-        for (const tcp_pcb* pcb = list; pcb != nullptr; pcb = pcb->next) {
-            ctx.output.printf_P(PSTR("state %s local %s:%hu remote %s:%hu\n"),
-                    tcp_debug_state_str(pcb->state),
-                    IPAddress(pcb->local_ip).toString().c_str(),
-                    pcb->local_port,
-                    IPAddress(pcb->remote_ip).toString().c_str(),
-                    pcb->remote_port);
-        }
-    }
-}
-
-namespace dns {
-
-using FoundCallback = std::function<void(const char* name, const ip_addr_t* addr, void* arg)>;
-
-namespace internal {
-
-struct Task {
-    Task() = delete;
-    explicit Task(String hostname, FoundCallback callback) :
-        _hostname(std::move(hostname)),
-        _callback(std::move(callback))
-    {}
-
-    ip_addr_t* addr() {
-        return &_addr;
-    }
-
-    const String& hostname() const {
-        return _hostname;
-    }
-
-    void found_callback(const char* name, const ip_addr_t* addr, void* arg) {
-        _callback(name, addr, arg);
-    }
-
-    void found_callback() {
-        _callback(_hostname.c_str(), &_addr, nullptr);
-    }
-
-private:
-    String _hostname;
-    FoundCallback _callback;
-    ip_addr_t _addr { IPADDR_NONE };
-};
-
-using TaskPtr = std::unique_ptr<Task>;
-TaskPtr task;
-
-void found_callback(const char* name, const ip_addr_t* addr, void* arg) {
-    if (task) {
-        task->found_callback(name, addr, arg);
-        task.reset();
-    }
-}
-
-} // namespace internal
-
-bool started() {
-    return static_cast<bool>(internal::task);
-}
-
-void start(String hostname, FoundCallback callback) {
-    auto task = std::make_unique<internal::Task>(
-            std::move(hostname), std::move(callback));
-
-    const auto result = dns_gethostbyname(
-            task->hostname().c_str(), task->addr(),
-            internal::found_callback, nullptr);
-
-    switch (result) {
-    // No need to wait, return result immediately
-    case ERR_OK:
-        task->found_callback();
-        break;
-    // Task needs to linger for a bit
-    case ERR_INPROGRESS:
-        internal::task = std::move(task);
-        break;
-    }
-}
-
-} // namespace dns
-
-void host(CommandContext&& ctx) {
-    if (ctx.argv.size() != 2) {
-        terminalError(ctx, F("HOST <hostname>"));
-        return;
-    }
-
-    dns::start(std::move(ctx.argv[1]),
-        [&](const char* name, const ip_addr_t* addr, void*) {
-            if (!addr) {
-                ctx.output.printf_P(PSTR("%s not found\n"), name);
-                return;
-            }
-
-            ctx.output.printf_P(PSTR("%s has address %s\n"),
-                name, IPAddress(addr).toString().c_str());
-        });
-
-    while (dns::started()) {
-        delay(100);
-    }
-}
-
-#if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
-void mfln_probe(CommandContext&& ctx) {
-    if (ctx.argv.size() != 3) {
-        terminalError(ctx, F("<url> <value>"));
-        return;
-    }
-
-    URL _url(std::move(ctx.argv[1]));
-    uint16_t requested_mfln = atol(ctx.argv[2].c_str());
-
-    auto client = std::make_unique<BearSSL::WiFiClientSecure>();
-    client->setInsecure();
-
-    if (client->probeMaxFragmentLength(_url.host.c_str(), _url.port, requested_mfln)) {
-        terminalOK(ctx);
-        return;
-    }
-
-    terminalError(ctx, F("Buffer size not supported"));
-}
-#endif
 
 void reset(CommandContext&& ctx) {
     prepareReset(CustomResetReason::Terminal);
@@ -477,12 +332,6 @@ void setup() {
     terminalRegisterCommand(F("STORAGE"), commands::storage);
     terminalRegisterCommand(F("UPTIME"), commands::uptime);
     terminalRegisterCommand(F("HEAP"), commands::heap);
-
-    terminalRegisterCommand(F("NETSTAT"), commands::netstat);
-    terminalRegisterCommand(F("HOST"), commands::host);
-#if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
-    terminalRegisterCommand(F("MFLN.PROBE"), commands::mfln_probe);
-#endif
 
     terminalRegisterCommand(F("ADC"), commands::adc);
 

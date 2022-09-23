@@ -829,7 +829,7 @@ bool listen() {
 #if TELNET_REVERSE_SUPPORT
 namespace reverse {
 
-bool connect(Remote remote) {
+bool connect(Address address) {
     auto* pcb = tcp_new();
     if (!pcb) {
         return false;
@@ -838,7 +838,7 @@ bool connect(Remote remote) {
     // wait until the connection attempt happens
     // or, we could also fail right here as well
     auto client = make_client(pcb, false);
-    if (!client->connect(remote)) {
+    if (!client->connect(address)) {
         return false;
     }
 
@@ -855,15 +855,14 @@ namespace terminal {
 
 void setup() {
     terminalRegisterCommand(F("TELNET.REVERSE"), [](::terminal::CommandContext&& ctx) {
-        if (ctx.argc != 3) {
-            terminalError(ctx, F("<IP> <PORT>"));
+        if (ctx.argv.size() != 3) {
+            terminalError(ctx, F("TELNET.REVERSE <HOST> <PORT>"));
             return;
         }
 
-        const auto convert_addr = espurna::settings::internal::convert<IPAddress>;
-        auto addr = convert_addr(ctx.argv[1]);
-        if (!addr.isSet()) {
-            terminalError(ctx, F("Address not set"));
+        const auto ip = networkGetHostByName(ctx.argv[1]);
+        if (!ip.isSet()) {
+            terminalError(ctx, F("Host not found"));
             return;
         }
 
@@ -874,7 +873,12 @@ void setup() {
             return;
         }
 
-        if (telnet::connect(addr, port)) {
+        const auto address = Address{
+            .ip = ip,
+            .port = port,
+        };
+
+        if (connect(address)) {
             terminalOK(ctx);
             return;
         }
@@ -889,25 +893,43 @@ void setup() {
 #if MQTT_SUPPORT
 namespace mqtt {
 
+void connect_url(String url) {
+    URL parsed(std::move(url));
+    if (!parsed.host.length() || !parsed.port) {
+        DEBUG_MSG_P(PSTR("[TELNET] Cannot parse the url\n"));
+        return;
+    }
+
+    const auto port = parsed.port;
+    networkGetHostByName(std::move(parsed.host),
+        [port](const String& host, IPAddress ip) {
+            const auto addr = Address{
+                .ip = ip,
+                .port = port,
+            };
+
+            if (!connect(addr)) {
+                DEBUG_MSG_P(PSTR("[TELNET] Cannot connect to %s:%hu\n"),
+                    host.c_str(), port);
+            }
+        });
+}
+
 void setup() {
     mqttRegister([](unsigned int type, const char* topic, const char* payload) {
         switch (type) {
         case MQTT_CONNECT_EVENT:
             mqttSubscribe(MQTT_TOPIC_TELNET_REVERSE);
             break;
+
         case MQTT_MESSAGE_EVENT: {
             auto t = mqttMagnitude(topic);
             if (t.equals(MQTT_TOPIC_TELNET_REVERSE)) {
-                URL url(payload);
-
-                IPAddress addr;
-                addr.fromString(url.host);
-                if (addr.isSet()) {
-                    telnet::connect(addr, url.port);
-                }
+                connect_url(payload);
             }
             break;
         }
+
         }
     });
 }
