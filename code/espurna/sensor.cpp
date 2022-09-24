@@ -2066,8 +2066,14 @@ void load() {
 
 #if CSE7766_SUPPORT
     {
+        const auto port = uartPort(CSE7766_PORT - 1);
+        if (!port) {
+            return;
+        }
+
         auto* sensor = new CSE7766Sensor();
-        sensor->setRX(CSE7766_RX_PIN);
+        sensor->setPort(port->stream);
+
         add(sensor);
     }
 #endif
@@ -2260,9 +2266,13 @@ void load() {
 
 #if MHZ19_SUPPORT
     {
+        const auto port = uartPort(MHZ19_PORT - 1);
+        if (!port) {
+            return;
+        }
+
         auto* sensor = new MHZ19Sensor();
-        sensor->setRX(MHZ19_RX_PIN);
-        sensor->setTX(MHZ19_TX_PIN);
+        sensor->setPort(port->stream);
         sensor->setCalibrateAuto(getSetting("mhz19CalibrateAuto", false));
         add(sensor);
     }
@@ -2306,21 +2316,26 @@ void load() {
 
 #if PM1006_SUPPORT
     {
+        const auto port = uartPort(PM1006_PORT - 1);
+        if (!port) {
+            return;
+        }
+
         auto* sensor = new PM1006Sensor();
-        sensor->setRX(PM1006_RX_PIN);
+        sensor->setPort(port->stream);
         add(sensor);
     }
 #endif
 
 #if PMSX003_SUPPORT
     {
+        const auto port = uartPort(PMS_PORT - 1);
+        if (!port) {
+            return;
+        }
+
         auto* sensor = new PMSX003Sensor();
-#if PMS_USE_SOFT
-        sensor->setRX(PMS_RX_PIN);
-        sensor->setTX(PMS_TX_PIN);
-#else
-        sensor->setSerial(& PMS_HW_PORT);
-#endif
+        sensor->setPort(port->stream);
         sensor->setType(PMS_TYPE);
         add(sensor);
     }
@@ -2340,24 +2355,14 @@ void load() {
 
 #if PZEM004T_SUPPORT
     {
-        PZEM004TSensor::PortPtr port;
-
-        auto rx = getSetting("pzemRX", PZEM004TSensor::RxPin);
-        auto tx = getSetting("pzemTX", PZEM004TSensor::TxPin);
-
-        if (getSetting("pzemSoft", PZEM004TSensor::useSoftwareSerial())) {
-            port = PZEM004TSensor::makeSoftwarePort(rx, tx);
-        } else {
-            port = PZEM004TSensor::makeHardwarePort(
-                PZEM004TSensor::defaultHardwarePort(), rx, tx);
-        }
-
+        const auto port = uartPort(PZEM004T_PORT - 1);
         if (!port) {
             return;
         }
 
-        bool initialized { false };
+        auto serial = std::make_shared<PZEM004TSensor::SerialPort>(port->stream);
 
+        bool initialized { false };
 #if !defined(PZEM004T_ADDRESSES)
         for (size_t index = 0; index < PZEM004TSensor::DevicesMax; ++index) {
             auto address = getSetting({"pzemAddr", index}, PZEM004TSensor::defaultAddress(index));
@@ -2365,7 +2370,7 @@ void load() {
                 break;
             }
 
-            auto* ptr = PZEM004TSensor::make(port, address);
+            auto* ptr = PZEM004TSensor::make(serial, address);
             if (ptr) {
                 add(ptr);
                 initialized = true;
@@ -2384,7 +2389,7 @@ void load() {
             size_t device{0};
             char* address{strtok(buffer, " ")};
             while ((device < PZEM004TSensor::DevicesMax) && (address != nullptr)) {
-                auto* ptr = PZEM004TSensor::make(port, address);
+                auto* ptr = PZEM004TSensor::make(serial, IPAddress(address));
                 if (ptr) {
                     add(ptr);
                     initialized = true;
@@ -2400,18 +2405,26 @@ void load() {
 
 #if SENSEAIR_SUPPORT
     {
+        const auto port = uartPort(SENSEAIR_PORT - 1);
+        if (!port) {
+            return;
+        }
+
         auto* sensor = new SenseAirSensor();
-        sensor->setRX(SENSEAIR_RX_PIN);
-        sensor->setTX(SENSEAIR_TX_PIN);
+        sensor->setPort(port->stream);
         add(sensor);
     }
 #endif
 
 #if SDS011_SUPPORT
     {
+        const auto port = uartPort(SDS011_PORT - 1);
+        if (!port) {
+            return;
+        }
+
         auto* sensor = new SDS011Sensor();
-        sensor->setRX(SDS011_RX_PIN);
-        sensor->setTX(SDS011_TX_PIN);
+        sensor->setPort(port->stream);
         add(sensor);
     }
 #endif
@@ -2434,17 +2447,26 @@ void load() {
 
 #if SM300D2_SUPPORT
     {
+        const auto port = uartPort(SM300D2_PORT - 1);
+        if (!port) {
+            return;
+        }
+
         auto* sensor = new SM300D2Sensor();
-        sensor->setRX(SM300D2_RX_PIN);
+        sensor->setPort(port->stream);
         add(sensor);
     }
 #endif
 
 #if T6613_SUPPORT
     {
+        const auto port = uartPort(T6613_PORT - 1);
+        if (!port) {
+            return;
+        }
+
         auto* sensor = new T6613Sensor();
-        sensor->setRX(T6613_RX_PIN);
-        sensor->setTX(T6613_TX_PIN);
+        sensor->setPort(port->stream);
         add(sensor);
     }
 #endif
@@ -2459,9 +2481,13 @@ void load() {
 
 #if V9261F_SUPPORT
     {
+        const auto port = uartPort(V9261F_PORT - 1);
+        if (!port) {
+            return;
+        }
+
         auto* sensor = new V9261FSensor();
-        sensor->setRX(V9261F_PIN);
-        sensor->setInverted(V9261F_PIN_INVERSE);
+        sensor->setPort(port->stream);
         add(sensor);
     }
 #endif
@@ -2499,9 +2525,13 @@ void load() {
 
 #if EZOPH_SUPPORT
     {
+        const auto port = uartPort(EZOPH_PORT - 1);
+        if (!port) {
+            return;
+        }
+
         auto* sensor = new EZOPHSensor();
-        sensor->setRX(EZOPH_RX_PIN);
-        sensor->setTX(EZOPH_TX_PIN);
+        sensor->setPort(port->stream);
         add(sensor);
     }
 #endif
@@ -2532,31 +2562,18 @@ void load() {
 
 #if PZEM004TV30_SUPPORT
     {
-        auto rx = getSetting("pzemv30RX", PZEM004TV30Sensor::RxPin);
-        auto tx = getSetting("pzemv30TX", PZEM004TV30Sensor::TxPin);
-
-        //TODO: getSetting("pzemv30*Cfg", (SW)SERIAL_8N1); ?
-        //TODO: getSetting("serial*Cfg", ...); and attach index of the port ?
-        //TODO: more than one sensor on port, like the v1
-        PZEM004TV30Sensor::PortPtr port;
-        if (getSetting("pzemSoft", PZEM004TV30Sensor::useSoftwareSerial())) {
-            port = PZEM004TV30Sensor::makeSoftwarePort(rx, tx);
-        } else {
-            port = PZEM004TV30Sensor::makeHardwarePort(
-                    PZEM004TV30Sensor::defaultHardwarePort(), rx, tx);
+        const auto port = uartPort(PZEM004TV30_PORT - 1);
+        if (!port) {
+            return;
         }
 
-        if (port) {
-            port->begin(PZEM004TV30Sensor::Baudrate);
+        auto* sensor = PZEM004TV30Sensor::make(port->stream,
+            getSetting("pzemv30Addr", PZEM004TV30Sensor::DefaultAddress),
+            getSetting("pzemv30ReadTimeout", PZEM004TV30Sensor::DefaultReadTimeout));
+        sensor->setDebug(
+            getSetting("pzemv30Debug", PZEM004TV30Sensor::DefaultDebug));
 
-            auto* sensor = PZEM004TV30Sensor::make(std::move(port),
-                getSetting("pzemv30Addr", PZEM004TV30Sensor::DefaultAddress),
-                getSetting("pzemv30ReadTimeout", PZEM004TV30Sensor::DefaultReadTimeout));
-            sensor->setDebug(
-                getSetting("pzemv30Debug", PZEM004TV30Sensor::DefaultDebug));
-
-            add(sensor);
-        }
+        add(sensor);
     }
 #endif
 }

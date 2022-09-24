@@ -19,9 +19,9 @@ volatile RtcmemData* Rtcmem = reinterpret_cast<volatile RtcmemData*>(RtcmemBegin
 
 namespace espurna {
 namespace peripherals {
-namespace rtc {
 namespace {
 
+namespace rtc {
 namespace internal {
 
 bool status = false;
@@ -134,8 +134,9 @@ void setup() {
 
 }
 
-} // namespace
 } // namespace rtc
+
+} // namespace
 } // namespace peripherals
 } // namespace espurna
 

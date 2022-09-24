@@ -100,8 +100,8 @@
 #endif
 
 #ifdef CSE7766_PIN
-#warning "CSE7766_PIN is deprecated! Please use CSE7766_RX_PIN instead"
-#define CSE7766_RX_PIN CSE7766_PIN
+#warning "CSE7766_PIN is deprecated! Please use UART[1-3]_RX_PIN"
+#define UART1_RX_PIN CSE7766_PIN
 #endif
 
 #ifdef WIFI_FALLBACK_APMODE
@@ -169,4 +169,9 @@
 #ifdef API_REAL_TIME_VALUES
 #define SENSOR_REAL_TIME_VALUES API_REAL_TIME_VALUES
 #warning "API_REAL_TIME_VALUES is deprecated! Please use SENSOR_REAL_TIME_VALUES"
+#endif
+
+#ifdef SERIAL_BAUDRATE
+#warning "SERIAL_BAUDRATE is deprecated! Please use UART[1-3]_BAUDRATE"
+#define UART1_BAUDRATE SERIAL_BAUDRATE
 #endif

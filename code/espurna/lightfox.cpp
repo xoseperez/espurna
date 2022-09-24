@@ -38,6 +38,8 @@ constexpr size_t _lightfoxBuildRelays() {
     return LIGHTFOX_RELAYS;
 }
 
+static Stream* _lightfox_port { nullptr };
+
 // -----------------------------------------------------------------------------
 // PROTOCOL
 // -----------------------------------------------------------------------------
@@ -56,8 +58,8 @@ void _lightfoxSend(uint8_t code) {
         static_cast<uint8_t>('\r'),
         static_cast<uint8_t>('\n')
     };
-    Serial.write(data, sizeof(data));
-    Serial.flush();
+    _lightfox_port->write(data, sizeof(data));
+    _lightfox_port->flush();
     DEBUG_MSG_P(PSTR("[LIGHTFOX] Code %02X sent\n"), code);
 }
 
@@ -89,11 +91,6 @@ public:
     }
 
     bool setup() override {
-        static bool once { false };
-        if (!once) {
-            once = true;
-            Serial.begin(SERIAL_BAUDRATE);
-        }
         return true;
     }
 
@@ -125,8 +122,8 @@ public:
         DEBUG_MSG_P(PSTR("[LIGHTFOX] Sending DUAL mask: 0x%02X\n"), mask);
 
         uint8_t buffer[4] { 0xa0, 0x04, static_cast<uint8_t>(mask), 0xa1 };
-        Serial.write(buffer, sizeof(buffer));
-        Serial.flush();
+        _lightfox_port->write(buffer, sizeof(buffer));
+        _lightfox_port->flush();
     }
 
 private:
@@ -193,12 +190,12 @@ void _lightfoxCommandsSetup() {
 // -----------------------------------------------------------------------------
 
 void _lightfoxInputLoop() {
-    if (Serial.available() < 4) {
+    if (_lightfox_port->available() < 4) {
         return;
     }
 
     unsigned char bytes[4] = {0};
-    Serial.readBytes(bytes, 4);
+    _lightfox_port->readBytes(bytes, 4);
     if ((bytes[0] != 0xA0) && (bytes[1] != 0x04) && (bytes[3] != 0xA1)) {
         return;
     }
@@ -217,6 +214,13 @@ void _lightfoxInputLoop() {
 }
 
 void lightfoxSetup() {
+
+    const auto port = uartPort(LIGHTFOX_PORT - 1);
+    if (!port || !port.tx) {
+        return;
+    }
+
+    _lightfox_port = port->stream;
 
     #if WEB_SUPPORT
         wsRegister()

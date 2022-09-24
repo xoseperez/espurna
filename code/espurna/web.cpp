@@ -96,7 +96,7 @@ bool AsyncWebPrint::_addBuffer() {
 // - Returning 0 will immediatly close the connection from our side
 // - Calling _prepareRequest() **before** _buffers are filled will result in returning 0
 // - Calling yield() / delay() while request AsyncWebPrint is active **may** trigger this callback out of sequence
-//   (e.g. Serial.print(..), DEBUG_MSG(...), or any other API trying to switch contexts)
+//   (e.g. Stream.write(...), Stream.read(...), DEBUG_MSG(...), or any other API trying to switch contexts)
 // - Receiving data (tcp ack from the previous packet) **will** trigger the callback when switching contexts.
 
 void AsyncWebPrint::_prepareRequest() {

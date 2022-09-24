@@ -20,10 +20,6 @@ Support queueing and handling input without termination by Maxim Prokhorov <prok
 #include <array>
 #include <queue>
 
-#if UART_MQTT_SOFTWARE_SERIAL
-#include <SoftwareSerial.h>
-#endif
-
 namespace espurna {
 namespace uart_mqtt {
 namespace {
@@ -44,24 +40,6 @@ constexpr uint8_t TerminateOut { UART_MQTT_TERMINATE_OUT };
 constexpr bool Encode { UART_MQTT_ENCODE };
 constexpr bool Decode { UART_MQTT_DECODE };
 
-constexpr size_t Baudrate PROGMEM { UART_MQTT_BAUDRATE };
-constexpr auto Config PROGMEM = UART_MQTT_CONFIG;
-
-constexpr uint8_t RxPin { UART_MQTT_RX_PIN };
-constexpr uint8_t TxPin { UART_MQTT_TX_PIN };
-
-constexpr bool uart0_normal() {
-    return (build::TxPin == 1) && (build::RxPin == 3);
-}
-
-constexpr bool uart0_swapped() {
-    return (build::TxPin == 15) && (build::RxPin == 13);
-}
-
-HardwareSerial& uart0() {
-    return Serial;
-}
-
 } // namespace build
 
 // Output is capped, prepare using a fixed-size buffer
@@ -75,62 +53,13 @@ using Buffer = std::array<uint8_t, build::BufferSize>;
 // Prefer smaller output instead of using `Serialized` directly
 using Queue = std::queue<String>;
 
-#if UART_MQTT_SOFTWARE_SERIAL
-Stream& software_serial_port() {
-    static auto& port = ([]() -> Stream& {
-        auto* port = new SoftwareSerial(build::RxPin, build::TxPin);
-        port->begin(build::Baudrate, SWSERIAL_8N1);
-        return *port;
-    })();
-
-    return port;
-}
-#endif
-
-#if __cplusplus >= 201703L
-#define CONSTEXPR constexpr
-#else
-#define CONSTEXPR
-#endif
-
-Stream& hardware_port() {
-    // TODO: instantiate port outside of here, without Arduino config stuff
-    // TODO: this swap() thing is esp8266-specific
-    static auto& port = ([]() -> Stream& {
-        auto& port = build::uart0();
-
-        port.begin(build::Baudrate, build::Config);
-        if CONSTEXPR (build::uart0_swapped()) {
-            port.flush();
-            port.swap();
-        }
-
-        return port;
-    })();
-
-    return port;
-}
-
-Stream& port() {
-#if UART_MQTT_SOFTWARE_SERIAL
-    if CONSTEXPR (build::uart0_normal() || build::uart0_swapped()) {
-        return hardware_port();
-    }
-
-    return software_serial_port();
-#else
-    return hardware_port();
-#endif
-}
-
-#undef CONSTEXPR
-
 namespace internal {
 
 Buffer buffer;
 auto cursor = buffer.begin();
 
 Queue queue;
+Stream* port;
 
 } // namespace internal
 
@@ -278,7 +207,7 @@ void enqueue(String data) {
     internal::queue.emplace(std::move(data));
 }
 
-void write(Stream& stream, uint8_t termination, bool decode) {
+void write(Print& print, uint8_t termination, bool decode) {
     using Clock = time::CoreClock;
     
     const auto start = Clock::now();
@@ -291,16 +220,16 @@ void write(Stream& stream, uint8_t termination, bool decode) {
                 decoded.data(), decoded.size());
 
             if (size) {
-                stream.write(decoded.data(), size);
+                print.write(decoded.data(), size);
             }
 
             if (size && termination) {
-                stream.write(termination);
+                print.write(termination);
             }
         } else {
-            stream.write(front.begin(), front.length());
+            print.write(front.begin(), front.length());
             if (termination) {
-                stream.write(termination);
+                print.write(termination);
             }
         }
 
@@ -326,15 +255,22 @@ void mqtt_callback(unsigned int type, const char* topic, const char* payload) {
 }
 
 void loop() {
-    read(port(),
+    read(*internal::port,
         build::TerminateIn,
         build::Encode);
-    write(port(),
+    write(*internal::port,
         build::TerminateOut,
         build::Decode);
 }
 
 void setup() {
+    const auto port = uartPort(UART_MQTT_PORT - 1);
+    if (!port || (!port->rx || !port->tx)) {
+        return;
+    }
+
+    internal::port = port->stream;
+
     mqttRegister(mqtt_callback);
     espurnaRegisterLoop(loop);
 }

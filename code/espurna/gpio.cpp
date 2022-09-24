@@ -19,9 +19,8 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "ws.h"
 
 namespace espurna {
-namespace {
-
 namespace peripherals {
+namespace {
 
 // TODO: `struct Register { ... }` with additional size params?
 // e.g. GPIO IN / OUT register is techically u16, and we don't detect writing past the allowed 'mask'
@@ -399,8 +398,9 @@ void mode(uint8_t pin, uint8_t mode) {
 }
 
 } // namespace pin
-} // namespace peripherals
+
 } // namespace
+} // namespace peripherals
 
 namespace gpio {
 namespace {

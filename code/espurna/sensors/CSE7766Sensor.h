@@ -8,10 +8,13 @@
 
 #pragma once
 
+#define CSE7766_SYNC_INTERVAL           300     // Safe time between transmissions (ms)
+
+#define CSE7766_V1R                     1.0     // 1mR current resistor
+#define CSE7766_V2R                     1.0     // 1M voltage resistor
+
 #include "BaseSensor.h"
 #include "BaseEmonSensor.h"
-
-#include <SoftwareSerial.h>
 
 class CSE7766Sensor : public BaseEmonSensor {
 
@@ -49,30 +52,6 @@ class CSE7766Sensor : public BaseEmonSensor {
 
         // ---------------------------------------------------------------------
 
-        void setRX(unsigned char pin_rx) {
-            if (_pin_rx == pin_rx) return;
-            _pin_rx = pin_rx;
-            _dirty = true;
-        }
-
-        void setInverted(bool inverted) {
-            if (_inverted == inverted) return;
-            _inverted = inverted;
-            _dirty = true;
-        }
-
-        // ---------------------------------------------------------------------
-
-        unsigned char getRX() const {
-            return _pin_rx;
-        }
-
-        bool getInverted() const {
-            return _inverted;
-        }
-
-        // ---------------------------------------------------------------------
-
         double getRatio(unsigned char index) const override {
             switch (index) {
             case 0:
@@ -103,6 +82,13 @@ class CSE7766Sensor : public BaseEmonSensor {
         }
 
         // ---------------------------------------------------------------------
+
+        void setPort(Stream* port) {
+            _dirty = true;
+            _serial = port;
+        }
+
+        // ---------------------------------------------------------------------
         // Sensor API
         // ---------------------------------------------------------------------
 
@@ -113,22 +99,6 @@ class CSE7766Sensor : public BaseEmonSensor {
 
             if (!_dirty) return;
 
-            if (_serial) {
-                _serial.reset(nullptr);
-            }
-
-            if (3 == _pin_rx) {
-                Serial.begin(CSE7766_BAUDRATE);
-            } else if (13 == _pin_rx) {
-                Serial.begin(CSE7766_BAUDRATE);
-                Serial.flush();
-                Serial.swap();
-            } else {
-                _serial = std::make_unique<SoftwareSerial>(_pin_rx, -1, _inverted);
-                _serial->enableIntTx(false);
-                _serial->begin(CSE7766_BAUDRATE);
-            }
-
             _last_index_reset = TimeSource::now();
 
             _ready = true;
@@ -138,19 +108,12 @@ class CSE7766Sensor : public BaseEmonSensor {
 
         // Descriptive name of the sensor
         String description() const override {
-            if (_serial_is_hardware()) {
-                return F("CSE7766 @ HwSerial");
-            } else {
-                char buffer[28];
-                snprintf_P(buffer, sizeof(buffer),
-                    PSTR("CSE7766 @ SwSerial(%u,NULL)"), _pin_rx);
-                return String(buffer);
-            }
+            return F("CSE7766");
         }
 
         // Address of the sensor (it could be the GPIO or I2C address)
         String address(unsigned char) const override {
-            return String(_pin_rx, 10);
+            return String(CSE7766_PORT, 10);
         }
 
         // Loop-like method, call it in your main loop
@@ -305,7 +268,7 @@ class CSE7766Sensor : public BaseEmonSensor {
 
             _error = SENSOR_ERROR_OK;
 
-            while (_serial_available()) {
+            while (_serial->available() > 0) {
 
                 // A 24 bytes message takes ~55ms to go through at 4800 bps
                 // Reset counter if more than 1000ms have passed since last byte.
@@ -315,7 +278,7 @@ class CSE7766Sensor : public BaseEmonSensor {
 
                 _last_index_reset = TimeSource::now();
 
-                uint8_t byte = _serial_read();
+                uint8_t byte = _serial->read();
 
                 // first byte must be 0x55 or 0xF?
                 if (0 == _data_index) {
@@ -333,7 +296,7 @@ class CSE7766Sensor : public BaseEmonSensor {
 
                 _data[_data_index++] = byte;
                 if (_data_index > 23) {
-                    _serial_flush();
+                    _serial->flush();
                     break;
                 }
 
@@ -349,39 +312,7 @@ class CSE7766Sensor : public BaseEmonSensor {
 
         // ---------------------------------------------------------------------
 
-        bool _serial_is_hardware() const {
-            return (3 == _pin_rx) || (13 == _pin_rx);
-        }
-
-        bool _serial_available() const {
-            if (_serial_is_hardware()) {
-                return Serial.available();
-            } else {
-                return _serial->available();
-            }
-        }
-
-        void _serial_flush() {
-            if (_serial_is_hardware()) {
-                return Serial.flush();
-            } else {
-                return _serial->flush();
-            }
-        }
-
-        uint8_t _serial_read() const {
-            if (_serial_is_hardware()) {
-                return Serial.read();
-            } else {
-                return _serial->read();
-            }
-        }
-
-        // ---------------------------------------------------------------------
-
-        unsigned char _pin_rx = CSE7766_RX_PIN;
-        bool _inverted = CSE7766_PIN_INVERSE;
-        std::unique_ptr<SoftwareSerial> _serial;
+        Stream* _serial;
 
         double _active = 0;
         double _reactive = 0;

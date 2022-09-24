@@ -44,16 +44,210 @@
 // ----------
 //     UART/TTL-Serial network with single master and multiple slaves:
 //     http://cool-emerald.blogspot.com/2009/10/multidrop-network-for-rs232.html
+//
+// Original code:
+// --------------
+// * https://github.com/olehs/PZEM004T
+//
+// MIT License
+// 
+// Copyright (c) 2018 Oleg Sokolov
+// 
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
 
 #pragma once
-
-#include <PZEM004T.h>
 
 #include "BaseSensor.h"
 #include "BaseEmonSensor.h"
 
 #include "../sensor.h"
 #include "../terminal.h"
+
+#define PZEM_VOLTAGE (uint8_t)0xB0
+#define RESP_VOLTAGE (uint8_t)0xA0
+
+#define PZEM_CURRENT (uint8_t)0xB1
+#define RESP_CURRENT (uint8_t)0xA1
+
+#define PZEM_POWER   (uint8_t)0xB2
+#define RESP_POWER   (uint8_t)0xA2
+
+#define PZEM_ENERGY  (uint8_t)0xB3
+#define RESP_ENERGY  (uint8_t)0xA3
+
+#define PZEM_SET_ADDRESS (uint8_t)0xB4
+#define RESP_SET_ADDRESS (uint8_t)0xA4
+
+#define PZEM_POWER_ALARM (uint8_t)0xB5
+#define RESP_POWER_ALARM (uint8_t)0xA5
+
+#define PZEM_DEFAULT_READ_TIMEOUT 1000
+#define PZEM_ERROR_VALUE -1.0
+
+#define RESPONSE_SIZE sizeof(PZEMCommand)
+#define RESPONSE_DATA_SIZE RESPONSE_SIZE - 2
+
+struct PZEMCommand {
+    uint8_t command;
+    uint8_t addr[4];
+    uint8_t data;
+    uint8_t crc;
+};
+
+class PZEM004T {
+public:
+    PZEM004T() = delete;
+    explicit PZEM004T(Stream *port) :
+        _serial(port)
+    {}
+
+    void setReadTimeout(unsigned long msec) {
+        _readTimeOut = msec;
+    }
+
+    unsigned long readTimeout() {return _readTimeOut;}
+
+    float voltage(const IPAddress &addr);
+    float current(const IPAddress &addr);
+    float power(const IPAddress &addr);
+    float energy(const IPAddress &addr);
+
+    bool setAddress(const IPAddress &newAddr);
+    bool setPowerAlarm(const IPAddress &addr, uint8_t threshold);
+
+private:
+    Stream* _serial;
+    unsigned long _readTimeOut = PZEM_DEFAULT_READ_TIMEOUT;
+
+    void send(const IPAddress &addr, uint8_t cmd, uint8_t data = 0);
+    bool recieve(uint8_t resp, uint8_t *data = 0);
+
+    uint8_t crc(uint8_t *data, uint8_t sz);
+};
+
+float PZEM004T::voltage(const IPAddress &addr)
+{
+    uint8_t data[RESPONSE_DATA_SIZE];
+
+    send(addr, PZEM_VOLTAGE);
+    if(!recieve(RESP_VOLTAGE, data))
+        return PZEM_ERROR_VALUE;
+
+    return (data[0] << 8) + data[1] + (data[2] / 10.0);
+}
+
+float PZEM004T::current(const IPAddress &addr)
+{
+    uint8_t data[RESPONSE_DATA_SIZE];
+
+    send(addr, PZEM_CURRENT);
+    if(!recieve(RESP_CURRENT, data))
+        return PZEM_ERROR_VALUE;
+
+    return (data[0] << 8) + data[1] + (data[2] / 100.0);
+}
+
+float PZEM004T::power(const IPAddress &addr)
+{
+    uint8_t data[RESPONSE_DATA_SIZE];
+
+    send(addr, PZEM_POWER);
+    if(!recieve(RESP_POWER, data))
+        return PZEM_ERROR_VALUE;
+
+    return (data[0] << 8) + data[1];
+}
+
+float PZEM004T::energy(const IPAddress &addr)
+{
+    uint8_t data[RESPONSE_DATA_SIZE];
+
+    send(addr, PZEM_ENERGY);
+    if(!recieve(RESP_ENERGY, data))
+        return PZEM_ERROR_VALUE;
+
+    return ((uint32_t)data[0] << 16) + ((uint16_t)data[1] << 8) + data[2];
+}
+
+bool PZEM004T::setAddress(const IPAddress &newAddr)
+{
+    send(newAddr, PZEM_SET_ADDRESS);
+    return recieve(RESP_SET_ADDRESS);
+}
+
+bool PZEM004T::setPowerAlarm(const IPAddress &addr, uint8_t threshold)
+{
+    send(addr, PZEM_POWER_ALARM, threshold);
+    return recieve(RESP_POWER_ALARM);
+}
+
+void PZEM004T::send(const IPAddress &addr, uint8_t cmd, uint8_t data)
+{
+    PZEMCommand pzem;
+
+    pzem.command = cmd;
+    for(size_t i=0; i<sizeof(pzem.addr); i++)
+        pzem.addr[i] = addr[i];
+    pzem.data = data;
+
+    uint8_t *bytes = (uint8_t*)&pzem;
+    pzem.crc = crc(bytes, sizeof(pzem) - 1);
+
+    while (_serial->available()) {
+        _serial->read();
+    }
+
+    _serial->write(bytes, sizeof(pzem));
+}
+
+bool PZEM004T::recieve(uint8_t resp, uint8_t *data)
+{
+    uint8_t buffer[RESPONSE_SIZE];
+
+    unsigned long startTime = millis();
+    uint8_t len = 0;
+    while((len < RESPONSE_SIZE) && (millis() - startTime < _readTimeOut))
+    {
+        if (_serial->available() > 0)
+        {
+            uint8_t c = (uint8_t)_serial->read();
+            if(!c && !len)
+                continue; // skip 0 at startup
+            buffer[len++] = c;
+        }
+        yield();	// do background netw tasks while blocked for IO (prevents ESP watchdog trigger)
+    }
+
+    if(len != RESPONSE_SIZE)
+        return false;
+
+    if(buffer[6] != crc(buffer, len - 1))
+        return false;
+
+    if(buffer[0] != resp)
+        return false;
+
+    if(data)
+    {
+        for(size_t i=0; i<RESPONSE_DATA_SIZE; i++)
+            data[i] = buffer[1 + i];
+    }
+
+    return true;
+}
+
+uint8_t PZEM004T::crc(uint8_t *data, uint8_t sz)
+{
+    uint16_t crc = 0;
+    for(uint8_t i=0; i<sz; i++)
+        crc += *data++;
+    return (uint8_t)(crc & 0xFF);
+}
 
 class PZEM004TSensor : public BaseEmonSensor {
 private:
@@ -89,17 +283,6 @@ private:
     };
 
 public:
-    static constexpr unsigned char RxPin { PZEM004T_RX_PIN };
-    static constexpr unsigned char TxPin { PZEM004T_TX_PIN };
-
-    static HardwareSerial* defaultHardwarePort() {
-        return &PZEM004T_HW_PORT;
-    }
-
-    static constexpr bool useSoftwareSerial() {
-        return 1 == PZEM004T_USE_SOFT;
-    }
-
     static constexpr TimeSource::duration ReadInterval { PZEM004T_READ_INTERVAL };
     static constexpr size_t DevicesMax { PZEM004T_DEVICES_MAX };
 
@@ -118,22 +301,17 @@ public:
         return out;
     }
 
-    // TODO: PZEM lib wants us to compose things this way. prefer Stream interface
-    // and port the existing code here so we don't have to pass software / hardware pointers,
-    // and configure everything ourselves on a global level
-    // TODO: also notice neither class returns pins in use... and these
-    // should go away when migrated to global serial config
     struct SerialPort {
         using PzemPtr = std::unique_ptr<PZEM004T>;
 
-        virtual const char* tag() const = 0;
-        virtual void flush() = 0;
-
         SerialPort() = delete;
-        SerialPort(PzemPtr pzem, unsigned char rx, unsigned char tx) :
-            _pzem(std::move(pzem)),
-            _rx(rx),
-            _tx(tx)
+
+        explicit SerialPort(PzemPtr pzem) :
+            _pzem(pzem)
+        {}
+
+        explicit SerialPort(Stream* stream) :
+            _pzem(std::make_unique<PZEM004T>(stream))
         {}
 
         float read(const IPAddress& address, unsigned char magnitude) {
@@ -192,78 +370,16 @@ public:
 
         bool address(const IPAddress& address) {
             return _pzem->setAddress(address);
-        }
-
-        unsigned char rx() const {
-            return _rx;
-        }
-
-        unsigned char tx() const {
-            return _tx;
+            send(newAddr, PZEM_SET_ADDRESS);
+            return recieve(RESP_SET_ADDRESS);
         }
 
     private:
         PzemPtr _pzem;
         bool _busy { false };
-        unsigned char _rx;
-        unsigned char _tx;
-    };
-
-    struct SoftwareSerialPort : public SerialPort {
-        SoftwareSerialPort() = delete;
-        SoftwareSerialPort(unsigned char rx, unsigned char tx) :
-            SerialPort(std::make_unique<PZEM004T>(rx, tx), rx, tx)
-        {}
-
-        const char* tag() const override {
-            return "Sw";
-        }
-
-        void flush() override {
-        }
-    };
-
-    struct HardwareSerialPort : public SerialPort {
-        HardwareSerialPort() = delete;
-        HardwareSerialPort(HardwareSerial* serial, unsigned char rx, unsigned char tx) :
-            SerialPort(std::make_unique<PZEM004T>(serial), rx, tx),
-            _serial(serial)
-        {
-            if ((rx == 13) && (tx == 15)) {
-                _serial->flush();
-                _serial->swap();
-            }
-        }
-
-        const char* tag() const override {
-            return "Hw";
-        }
-
-        void flush() override {
-            // Clear buffer in case of late response (Timeout)
-            // This we cannot do it from outside the library
-            while (_serial->available() > 0) {
-                _serial->read();
-            }
-        }
-
-    private:
-        HardwareSerial* _serial;
     };
 
     using PortPtr = std::shared_ptr<SerialPort>;
-
-    static PortPtr makeHardwarePort(HardwareSerial* port, unsigned char rx, unsigned char tx) {
-        auto ptr = std::make_shared<HardwareSerialPort>(port, rx, tx);
-        _ports.push_back(ptr);
-        return ptr;
-    }
-
-    static PortPtr makeSoftwarePort(unsigned char rx, unsigned char tx) {
-        auto ptr = std::make_shared<SoftwareSerialPort>(rx, tx);
-        _ports.push_back(ptr);
-        return ptr;
-    }
 
 private:
     PZEM004TSensor(PortPtr port, IPAddress address) :
@@ -368,11 +484,7 @@ public:
 
     // Descriptive name of the sensor
     String description() const override {
-        char buffer[32];
-        snprintf_P(buffer, sizeof(buffer),
-            PSTR("PZEM004T @ %sSerial(%hhu,%hhu)"),
-            _port->tag(), _port->rx(), _port->tx());
-        return String(buffer);
+        return F("PZEM004T");
     }
 
     // Descriptive name of the slot # index
@@ -514,8 +626,8 @@ void pzem_ports(::terminal::CommandContext&& ctx) {
     auto print = [&](const size_t index, const PortWeakPtr& ptr) {
         auto port = ptr.lock();
         if (port) {
-            ctx.output.printf_P(PSTR("%u -> %sSerial (%hhu,%hhu)\n"),
-                index, port->tag(), port->rx(), port->tx());
+            ctx.output.printf_P(PSTR("%u -> (%p)\n"),
+                index, port.get());
         } else {
             ctx.output.print(F("%u -> (not configured)\n"));
         }

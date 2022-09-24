@@ -34,6 +34,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "settings.h"
 #include "system.h"
 #include "terminal.h"
+#include "uart.h"
 #include "utils.h"
 #include "network.h"
 #include "wifi.h"

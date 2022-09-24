@@ -39,6 +39,7 @@ bool _rfb_transmit { false };
 
 #else
 
+static Stream* _rfb_port { nullptr };
 constexpr bool _rfb_receive { true };
 constexpr bool _rfb_transmit { true };
 
@@ -654,7 +655,7 @@ bool _rfbEnqueue(const char* code, size_t length, unsigned char repeats = 1u) {
 }
 
 void _rfbSendRaw(const uint8_t* message, size_t size) {
-    Serial.write(message, size);
+    _rfb_port->write(message, size);
 }
 
 void _rfbAckImpl() {
@@ -663,8 +664,8 @@ void _rfbAckImpl() {
     };
 
     DEBUG_MSG_P(PSTR("[RF] Sending ACK\n"));
-    Serial.write(message, sizeof(message));
-    Serial.flush();
+    _rfb_port->write(message, sizeof(message));
+    _rfb_port->flush();
 }
 
 void _rfbLearnImpl() {
@@ -673,16 +674,16 @@ void _rfbLearnImpl() {
     };
 
     DEBUG_MSG_P(PSTR("[RF] Sending LEARN\n"));
-    Serial.write(message, sizeof(message));
-    Serial.flush();
+    _rfb_port->write(message, sizeof(message));
+    _rfb_port->flush();
 }
 
 void _rfbSendImpl(const RfbMessage& message) {
-    Serial.write(CodeStart);
-    Serial.write(CodeSendBasic);
+    _rfb_port->write(CodeStart);
+    _rfb_port->write(CodeSendBasic);
     _rfbSendRaw(message.code, sizeof(message.code));
-    Serial.write(CodeEnd);
-    Serial.flush();
+    _rfb_port->write(CodeEnd);
+    _rfb_port->flush();
 }
 
 void _rfbParse(uint8_t code, const std::vector<uint8_t>& payload) {
@@ -759,8 +760,8 @@ static RfbParser _rfb_parser(_rfbParse);
 
 void _rfbReceiveImpl() {
 
-    while (Serial.available()) {
-        auto c = Serial.read();
+    while (_rfb_port->available()) {
+        auto c = _rfb_port->read();
         if (c < 0) {
             continue;
         }
@@ -1350,7 +1351,12 @@ void _rfbSettingsMigrate(int version) {
 
 void rfbSetup() {
 #if RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
-    Serial.begin(SERIAL_BAUDRATE);
+    const auto port = uartPort(RFB_PORT - 1);
+    if (!port || (!port.tx || !port.rx)) {
+        return;
+    }
+
+    _rfb_port = port->stream;
     _rfb_parser.reserve(RfbParser::MessageSizeBasic);
 #elif RFB_PROVIDER == RFB_PROVIDER_RCSWITCH
 

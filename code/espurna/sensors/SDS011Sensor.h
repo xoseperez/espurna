@@ -2,7 +2,6 @@
 // SDS011 dust sensor
 // Based on: https://github.com/ricki-z/SDS011
 //
-// Uses SoftwareSerial library
 // Copyright (C) 2018 by Lucas Pleß <hello at lucas-pless dot com>
 // -----------------------------------------------------------------------------
 
@@ -10,35 +9,13 @@
 
 #pragma once
 
-#include <SoftwareSerial.h>
-
 #include "BaseSensor.h"
 
-
 class SDS011Sensor : public BaseSensor {
-
     public:
-
-        void setRX(unsigned char pin_rx) {
-            if (_pin_rx == pin_rx) return;
-            _pin_rx = pin_rx;
+        void setPort(Stream* port) {
+            _serial = port;
             _dirty = true;
-        }
-
-        void setTX(unsigned char pin_tx) {
-            if (_pin_tx == pin_tx) return;
-            _pin_tx = pin_tx;
-            _dirty = true;
-        }
-
-        // ---------------------------------------------------------------------
-
-        unsigned char getRX() const {
-            return _pin_rx;
-        }
-
-        unsigned char getTX() const {
-            return _pin_tx;
         }
 
         // ---------------------------------------------------------------------
@@ -55,34 +32,19 @@ class SDS011Sensor : public BaseSensor {
 
         // Initialization method, must be idempotent
         void begin() override {
-
             if (!_dirty) return;
-
-            if (_serial) {
-                _serial.reset(nullptr);
-            }
-
-            _serial = std::make_unique<SoftwareSerial>(_pin_rx, _pin_tx);
-            _serial->begin(9600);
-
             _ready = true;
             _dirty = false;
         }
 
         // Descriptive name of the sensor
         String description() const override {
-            char buffer[32];
-            snprintf_P(buffer, sizeof(buffer),
-                PSTR("SDS011 @ SwSerial(%hhu,%hhu)"), _pin_rx, _pin_tx);
-            return String(buffer);
+            return F("SDS011");
         }
 
         // Address of the sensor (it could be the GPIO or I2C address)
         String address(unsigned char) const override {
-            char buffer[8];
-            snprintf_P(buffer, sizeof(buffer),
-                PSTR("%hhu:%hhu"), _pin_rx, _pin_tx);
-            return String(buffer);
+            return String(SDS011_PORT, 10);
         }
 
         // Type for slot # index
@@ -102,8 +64,6 @@ class SDS011Sensor : public BaseSensor {
             if (index == 1) return _p10;
             return 0;
         }
-
-
 
     protected:
 
@@ -156,10 +116,7 @@ class SDS011Sensor : public BaseSensor {
 
         double _p2dot5 = 0;
         double _p10 = 0;
-        unsigned char _pin_rx;
-        unsigned char _pin_tx;
-        std::unique_ptr<SoftwareSerial> _serial;
-
+        Stream* _serial;
 };
 
 #endif // SENSOR_SUPPORT && SDS011_SUPPORT

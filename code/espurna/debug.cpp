@@ -431,11 +431,58 @@ void dump(Print& out) {
 #if DEBUG_SERIAL_SUPPORT
 namespace serial {
 
-void output(Print& out, const char (&prefix)[10], const char* message, size_t len) {
+using Output = void(*)(const char (&)[10], const char*, size_t);
+
+void null_output(const char (&)[10], const char*, size_t) {
+}
+
+namespace internal {
+
+Print* port { nullptr };
+Output output { null_output };
+
+} // namespace
+
+void output(const char (&prefix)[10], const char* message, size_t len) {
+    internal::output(prefix, message, len);
+}
+
+void port_output(const char (&prefix)[10], const char* message, size_t len) {
     if (prefix[0] != '\0') {
-        out.write(&prefix[0], sizeof(prefix) - 1);
+        internal::port->write(&prefix[0], sizeof(prefix) - 1);
     }
-    out.write(message, len);
+    internal::port->write(message, len);
+}
+
+void setup() {
+    // HardwareSerial::begin() will automatically enable this when
+    // `#if defined(DEBUG_ESP_PORT) && !defined(NDEBUG)`
+    // Do not interfere when that is the case
+    const auto port = uartPort(DEBUG_SERIAL_PORT - 1);
+    if (!port || !port->tx) {
+        return;
+    }
+
+    // TODO: notice that SDK accepts anything as putc / printf,
+    // but we don't really have a good reason to wrire both
+    // this debug output and the one from SDK
+    // (and most of the time this is need to grab boot info from a
+    // physically connected device)
+    if (!build::coreDebug() && settings::sdkDebug()) {
+        switch (port->type) {
+        case driver::uart::Type::Uart0:
+            uart_set_debug(0);
+            break;
+        case driver::uart::Type::Uart1:
+            uart_set_debug(1);
+            break;
+        default:
+            break;
+        }
+    }
+
+    internal::port = port->stream;
+    internal::output = port_output;
 }
 
 } // namespace serial
@@ -511,7 +558,7 @@ void send(const char* message, size_t len, Timestamp timestamp) {
     bool pause { false };
 
 #if DEBUG_SERIAL_SUPPORT
-    serial::output(DEBUG_PORT, prefix, message, len);
+    serial::output(prefix, message, len);
 #endif
 
 #if DEBUG_UDP_SUPPORT
@@ -574,13 +621,6 @@ bool status(espurna::heartbeat::Mask mask) {
 }
 
 void configure() {
-    // HardwareSerial::begin() will automatically enable this when
-    // `#if defined(DEBUG_ESP_PORT) && !defined(NDEBUG)`
-    // Do not interfere when that is the case
-    if (!build::coreDebug()) {
-        DEBUG_PORT.setDebugOutput(settings::sdkDebug());
-    }
-
 #if DEBUG_LOG_BUFFER_SUPPORT
     if (settings::buffer()) {
         debug::buffer::enable(settings::bufferSize());
@@ -701,16 +741,14 @@ void debugShowBanner() {
 
 void debugSetup() {
 #if DEBUG_SERIAL_SUPPORT
-    DEBUG_PORT.begin(SERIAL_BAUDRATE);
+    espurna::debug::serial::setup();
 #endif
-
 #if DEBUG_UDP_SUPPORT
     if (espurna::debug::syslog::build::enabled()) {
         espurna::debug::syslog::configure();
         espurnaRegisterReload(espurna::debug::syslog::configure);
     }
 #endif
-
 #if DEBUG_LOG_BUFFER_SUPPORT
 #if TERMINAL_SUPPORT
     espurna::debug::terminal::setup();

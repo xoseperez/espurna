@@ -1,6 +1,5 @@
 // -----------------------------------------------------------------------------
 // SenseAir S8 CO2 Sensor
-// Uses SoftwareSerial library
 // Contribution by Yonsm Guo
 // -----------------------------------------------------------------------------
 
@@ -8,10 +7,7 @@
 
 #pragma once
 
-#include <SoftwareSerial.h>
-
 #include "BaseSensor.h"
-
 
 // SenseAir sensor utils. Notice that we only read a single register.
 // 0xFE is the address aka "Any sensor"
@@ -127,26 +123,9 @@ private:
 class SenseAirSensor : public BaseSensor, SenseAir {
     public:
 
-        void setRX(unsigned char pin_rx) {
-            if (_pin_rx == pin_rx) return;
-            _pin_rx = pin_rx;
+        void setPort(Stream* port) {
+            _serial = port;
             _dirty = true;
-        }
-
-        void setTX(unsigned char pin_tx) {
-            if (_pin_tx == pin_tx) return;
-            _pin_tx = pin_tx;
-            _dirty = true;
-        }
-
-        // ---------------------------------------------------------------------
-
-        unsigned char getRX() const {
-            return _pin_rx;
-        }
-
-        unsigned char getTX() const {
-            return _pin_tx;
         }
 
         // ---------------------------------------------------------------------
@@ -163,18 +142,7 @@ class SenseAirSensor : public BaseSensor, SenseAir {
 
         // Initialization method, must be idempotent
         void begin() override {
-
             if (!_dirty) return;
-
-            if (_serial) {
-                _serial.reset(nullptr);
-            }
-
-            _serial = std::make_unique<SoftwareSerial>(_pin_rx, _pin_tx, false);
-            _serial->enableIntTx(false);
-            _serial->begin(9600);
-            _serial->enableRx(true);
-            _serial->setTimeout(200);
 
             _startTime = TimeSource::now();
             _warmedUp = false;
@@ -185,18 +153,12 @@ class SenseAirSensor : public BaseSensor, SenseAir {
 
         // Descriptive name of the sensor
         String description() const override {
-            char buffer[28];
-            snprintf_P(buffer, sizeof(buffer),
-                PSTR("SenseAir S8 @ SwSerial(%hhu,%hhu)"), _pin_rx, _pin_tx);
-            return String(buffer);
+            return F("SenseAir");
         }
 
         // Address of the sensor (it could be the GPIO or I2C address)
         String address(unsigned char) const override {
-            char buffer[8];
-            snprintf_P(buffer, sizeof(buffer),
-                PSTR("%hhu:%hhu"), _pin_rx, _pin_tx);
-            return String(buffer);
+            return String(SENSEAIR_PORT, 10);
         }
 
         // Type for slot # index
@@ -249,15 +211,11 @@ class SenseAirSensor : public BaseSensor, SenseAir {
         }
 
     private:
-
-        std::unique_ptr<SoftwareSerial> _serial;
+        Stream* _serial;
 
         using TimeSource = espurna::time::CoreClock;
         TimeSource::time_point _startTime;
         bool _warmedUp = false;
-
-        unsigned char _pin_rx;
-        unsigned char _pin_tx;
 
         int16_t _co2 = 0;
         int16_t _lastCo2 = 0;

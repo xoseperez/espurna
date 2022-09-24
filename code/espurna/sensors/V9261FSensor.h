@@ -7,8 +7,6 @@
 
 #pragma once
 
-#include <SoftwareSerial.h>
-
 #include "BaseEmonSensor.h"
 #include "../libs/fs_math.h"
 
@@ -34,28 +32,9 @@ class V9261FSensor : public BaseEmonSensor {
             BaseEmonSensor(Magnitudes)
         {}
 
-        // ---------------------------------------------------------------------
-
-        void setRX(unsigned char pin_rx) {
-            if (_pin_rx == pin_rx) return;
-            _pin_rx = pin_rx;
+        void setPort(Stream* port) {
+            _serial = port;
             _dirty = true;
-        }
-
-        void setInverted(bool inverted) {
-            if (_inverted == inverted) return;
-            _inverted = inverted;
-            _dirty = true;
-        }
-
-        // ---------------------------------------------------------------------
-
-        unsigned char getRX() const {
-            return _pin_rx;
-        }
-
-        bool getInverted() const {
-            return _inverted;
         }
 
         // ---------------------------------------------------------------------
@@ -72,34 +51,20 @@ class V9261FSensor : public BaseEmonSensor {
 
         // Initialization method, must be idempotent
         void begin() override {
-
             if (!_dirty) return;
-
-            if (_serial) {
-                _serial.reset(nullptr);
-            }
-
-            _serial = std::make_unique<SoftwareSerial>(_pin_rx, -1, _inverted);
-            _serial->enableIntTx(false);
-            _serial->begin(V9261F_BAUDRATE);
-
             _reading = false;
             _ready = true;
             _dirty = false;
-
         }
 
         // Descriptive name of the sensor
         String description() const override {
-            char buffer[28];
-            snprintf_P(buffer, sizeof(buffer),
-                PSTR("V9261F @ SwSerial(%u,NULL)"), _pin_rx);
-            return String(buffer);
+            return F("V9261F");
         }
 
         // Address of the sensor (it could be the GPIO or I2C address)
         String address(unsigned char) const override {
-            return String(_pin_rx, 10);
+            return String(V9261F_PORT, 10);
         }
 
         // Loop-like method, call it in your main loop
@@ -302,9 +267,7 @@ class V9261FSensor : public BaseEmonSensor {
 
         // ---------------------------------------------------------------------
 
-        unsigned char _pin_rx { V9261F_PIN };
-        bool _inverted { V9261F_PIN_INVERSE };
-        std::unique_ptr<SoftwareSerial> _serial;
+        Stream* _serial { nullptr };
 
         using TimeSource = espurna::time::CoreClock;
         static constexpr auto SyncInterval = TimeSource::duration { V9261F_SYNC_INTERVAL };

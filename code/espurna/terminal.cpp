@@ -48,7 +48,9 @@ constexpr size_t serialBufferSize() {
     return TERMINAL_SERIAL_BUFFER_SIZE;
 }
 
-Stream& SerialPort = TERMINAL_SERIAL_PORT;
+constexpr size_t serialPort() {
+    return TERMINAL_SERIAL_PORT - 1;
+}
 
 } // namespace build
 
@@ -381,11 +383,22 @@ void setup() {
 #if TERMINAL_SERIAL_SUPPORT
 namespace serial {
 
-void loop() {
+using LoopFunc = void(*)();
+void empty_loop() {
+}
+
+namespace internal {
+
+Stream* stream { nullptr };
+LoopFunc loop { empty_loop };
+
+} // namespace internal
+
+void processing_loop() {
     using LineBuffer = LineBuffer<build::serialBufferSize()>;
     static LineBuffer buffer;
 
-    static auto& port = build::SerialPort;
+    auto& port = *internal::stream;
 
 #if defined(ARDUINO_ESP8266_RELEASE_2_7_2) \
     || defined(ARDUINO_ESP8266_RELEASE_2_7_3) \
@@ -426,6 +439,20 @@ void loop() {
 
         find_and_call(result.line, port);
     }
+}
+
+void loop() {
+    internal::loop();
+}
+
+void setup() {
+    auto port = uartPort(build::serialPort());
+    if (!port || (!port->rx || !port->tx)) {
+        return;
+    }
+
+    internal::stream = port->stream;
+    internal::loop = processing_loop;
 }
 
 } // namespace serial
@@ -705,12 +732,15 @@ void setup() {
 
 void loop() {
 #if TERMINAL_SERIAL_SUPPORT
-    // TODO: check if something else is using this port?
     serial::loop();
 #endif
 }
 
 void setup() {
+#if TERMINAL_SERIAL_SUPPORT
+    serial::setup();
+#endif
+
 #if WEB_SUPPORT
     // Show DEBUG panel with input
     web::setup();

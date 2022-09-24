@@ -1,7 +1,6 @@
 // -----------------------------------------------------------------------------
 // T6613 CO2 sensor
 // https://www.amphenol-sensors.com/en/telaire/co2/525-co2-sensor-modules/321-t6613
-// Uses SoftwareSerial library
 // Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
@@ -9,10 +8,7 @@
 
 #pragma once
 
-#include <SoftwareSerial.h>
-
 #include "BaseSensor.h"
-
 
 class T6613Sensor : public BaseSensor {
 
@@ -35,26 +31,9 @@ class T6613Sensor : public BaseSensor {
         using TimeSource = espurna::time::CoreClock;
         static constexpr auto Timeout = espurna::duration::Milliseconds(1000);
 
-        void setRX(unsigned char pin_rx) {
-            if (_pin_rx == pin_rx) return;
-            _pin_rx = pin_rx;
+        void setPort(Stream* port) {
+            _serial = port;
             _dirty = true;
-        }
-
-        void setTX(unsigned char pin_tx) {
-            if (_pin_tx == pin_tx) return;
-            _pin_tx = pin_tx;
-            _dirty = true;
-        }
-
-        // ---------------------------------------------------------------------
-
-        unsigned char getRX() const {
-            return _pin_rx;
-        }
-
-        unsigned char getTX() const {
-            return _pin_tx;
         }
 
         // ---------------------------------------------------------------------
@@ -71,37 +50,19 @@ class T6613Sensor : public BaseSensor {
 
         // Initialization method, must be idempotent
         void begin() override {
-
             if (!_dirty) return;
-
-            if (_serial) {
-                _serial.reset(nullptr);
-            }
-
-            _serial = std::make_unique<SoftwareSerial>(_pin_rx, _pin_tx, false);
-            _serial->enableIntTx(false);
-            _serial->begin(19200);
-
             _ready = true;
             _dirty = false;
-
         }
 
         // Descriptive name of the sensor
         String description() const override {
-            char buffer[32];
-            snprintf_P(buffer, sizeof(buffer),
-                PSTR("T6613 @ SwSerial(%hhu,%hhu)"),
-                _pin_rx, _pin_tx);
-            return String(buffer);
+            return F("T6613");
         }
 
         // Address of the sensor (it could be the GPIO or I2C address)
         String address(unsigned char) const override {
-            char buffer[8];
-            snprintf_P(buffer, sizeof(buffer),
-                PSTR("%hhu:%hhu"), _pin_rx, _pin_tx);
-            return String(buffer);
+            return String(T6613_PORT, 10);
         }
 
         // Type for slot # index
@@ -191,9 +152,7 @@ class T6613Sensor : public BaseSensor {
         }
 
         double _co2 = 0;
-        unsigned char _pin_rx;
-        unsigned char _pin_tx;
-        std::unique_ptr<SoftwareSerial> _serial;
+        Stream* _serial { nullptr };
 
 };
 

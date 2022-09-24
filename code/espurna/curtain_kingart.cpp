@@ -21,17 +21,6 @@ Copyright (C) 2020 - Eric Chauvet
 #include "settings.h"
 #include "ws.h"
 
-#ifndef KINGART_CURTAIN_PORT
-#define KINGART_CURTAIN_PORT         Serial      // Hardware serial port by default
-#endif
-
-#ifndef KINGART_CURTAIN_BUFFER_SIZE
-#define KINGART_CURTAIN_BUFFER_SIZE  100         // Local UART buffer size
-#endif
-
-#define KINGART_CURTAIN_TERMINATION  '\e'        // Termination character after each message
-#define KINGART_CURTAIN_BAUDRATE     19200       // Serial speed is fixed for the device
-
 // --> Let see after if we define a curtain generic switch, use these for now
 #define CURTAIN_BUTTON_UNKNOWN       -1
 #define CURTAIN_BUTTON_PAUSE         0
@@ -47,6 +36,8 @@ Copyright (C) 2020 - Eric Chauvet
 // <--
 
 #define KINGART_DEBUG_MSG_P(...) do { if (_curtain_debug_flag) { DEBUG_MSG_P(__VA_ARGS__); } } while(0)
+
+Stream* _curtain_port { nullptr };
 
 char _KACurtainBuffer[KINGART_CURTAIN_BUFFER_SIZE];
 bool _KACurtainNewData = false;
@@ -117,9 +108,9 @@ void _KASetMoving() {
 //------------------------------------------------------------------------------
 //Send a buffer to serial
 void _KACurtainSend(const char * tx_buffer) {
-    KINGART_CURTAIN_PORT.print(tx_buffer);
-    KINGART_CURTAIN_PORT.print(KINGART_CURTAIN_TERMINATION);
-    KINGART_CURTAIN_PORT.flush();
+    _curtain_port->print(tx_buffer);
+    _curtain_port->print(KINGART_CURTAIN_TERMINATION);
+    _curtain_port->flush();
     KINGART_DEBUG_MSG_P(PSTR("[KA] UART OUT %s\n"), tx_buffer);
 }
 
@@ -192,8 +183,8 @@ void _KAStopMoving() {
 //Receive a buffer from serial
 bool _KACurtainReceiveUART() {
     static unsigned char ndx = 0;
-    while (KINGART_CURTAIN_PORT.available() > 0 && !_KACurtainNewData) {
-        char rc = KINGART_CURTAIN_PORT.read();
+    while (_curtain_port->available() > 0 && !_KACurtainNewData) {
+        char rc = _curtain_port->read();
         if (rc != KINGART_CURTAIN_TERMINATION) {
             _KACurtainBuffer[ndx] = rc;
             if (ndx < KINGART_CURTAIN_BUFFER_SIZE - 1) ndx++;
@@ -468,9 +459,12 @@ void _KACurtainLoop() {
 
 //------------------------------------------------------------------------------
 void kingartCurtainSetup() {
+    const auto port = uartPort(KINGART_CURTAIN_PORT - 1);
+    if (!port || (!port->tx || !port->rx)) {
+        return;
+    }
 
-    // Init port to receive and send messages
-    KINGART_CURTAIN_PORT.begin(KINGART_CURTAIN_BAUDRATE);
+    _curtain_port = port->stream;
 
 #if MQTT_SUPPORT
     // Register MQTT callback only when supported

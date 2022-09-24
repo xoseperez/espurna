@@ -113,6 +113,9 @@ void setup() {
     // Init persistance
     settingsSetup();
 
+    // Init hardware / software UART ports
+    uartSetup();
+
     // Configure logger and crash recorder
     #if DEBUG_SUPPORT
         debugConfigureBoot();

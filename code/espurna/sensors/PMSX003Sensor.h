@@ -1,6 +1,5 @@
 // -----------------------------------------------------------------------------
 // PMS Dust Sensor
-// Uses SoftwareSerial library
 // Contribution by Òscar Rovira López
 // Refine to support PMS5003T/PMS5003ST by Yonsm Guo
 // -----------------------------------------------------------------------------
@@ -10,11 +9,6 @@
 #pragma once
 
 #include "BaseSensor.h"
-
-#include <SoftwareSerial.h>
-
-// Generic data
-#define PMS_BAUD_RATE       9600
 
 // Type of sensor
 #define PMS_TYPE_X003       0
@@ -163,42 +157,14 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
         };
 
     public:
-
-        ~PMSX003Sensor() {
-            removeSerial();
-        }
-
-        void setRX(unsigned char pin_rx) {
-            if (_pin_rx == pin_rx) return;
-            _pin_rx = pin_rx;
-            _dirty = true;
-        }
-
-        void setTX(unsigned char pin_tx) {
-            if (_pin_tx == pin_tx) return;
-            _pin_tx = pin_tx;
-            _dirty = true;
-        }
-
-        void setSerial(HardwareSerial * serial) {
-            _soft = false;
-            _serial = serial;
+        void setPort(Stream* port) {
+            _serial = port;
             _dirty = true;
         }
 
         // Should call setType after constructor immediately to enable corresponding slot count
         void setType(unsigned char type) {
             _type = type;
-        }
-
-        // ---------------------------------------------------------------------
-
-        unsigned char getRX() {
-            return _pin_rx;
-        }
-
-        unsigned char getTX() {
-            return _pin_tx;
         }
 
         unsigned char getType() {
@@ -219,20 +185,7 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
 
         // Initialization method, must be idempotent
         void begin() override {
-
             if (!_dirty) return;
-
-            if (_soft) {
-                if (_serial) removeSerial();
-                _serial = new SoftwareSerial(_pin_rx, _pin_tx, false);
-                static_cast<SoftwareSerial*>(_serial)->enableIntTx(false);
-            }
-
-            if (_soft) {
-                static_cast<SoftwareSerial*>(_serial)->begin(PMS_BAUD_RATE);
-            } else {
-                static_cast<HardwareSerial*>(_serial)->begin(PMS_BAUD_RATE);
-            }
 
             passiveMode();
 
@@ -244,40 +197,21 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
 
         // Descriptive name of the sensor
         String description() const override {
-            char buffer[28];
-            if (_soft) {
-                snprintf_P(buffer, sizeof(buffer),
-                    PSTR("%s @ SwSerial(%u,%u)"),
-                    Specs[_type].name, _pin_rx, _pin_tx);
-            } else {
-                snprintf_P(buffer, sizeof(buffer),
-                    PSTR("%s @ HwSerial"), Specs[_type].name);
-            }
-
-            return String(buffer);
+            return String(Specs[_type].name);
         }
 
         // Descriptive name of the slot # index
         String description(unsigned char index) const override {
-            char buffer[36] = {0};
-            if (_soft) {
-                snprintf_P(buffer, sizeof(buffer),
-                    PSTR("%d @ %s @ SwSerial(%u,%u)"),
-                    int(index + 1), Specs[_type].name, _pin_rx, _pin_tx);
-            } else {
-                snprintf_P(buffer, sizeof(buffer),
-                    PSTR("%d @ %s @ HwSerial"),
-                    int(index + 1), Specs[_type].name);
-            }
-            return String(buffer);
+            String out;
+            out += String(index + 1, 10);
+            out += " @ ";
+            out += description();
+            return out;
         }
 
         // Address of the sensor (it could be the GPIO or I2C address)
         String address(unsigned char index) const override {
-            char buffer[8];
-            snprintf_P(buffer, sizeof(buffer),
-                PSTR("%hhu:%hhu"), _pin_rx, _pin_tx);
-            return String(buffer);
+            return String(PMS_PORT, 10);
         }
 
         // Type for slot # index
@@ -381,18 +315,7 @@ class PMSX003Sensor : public BaseSensor, PMSX003 {
             return _slot_values[index];
         }
 
-    private:
-        void removeSerial() {
-            if (_serial && _soft) {
-                delete static_cast<SoftwareSerial*>(_serial);
-            }
-        }
-
     protected:
-        bool _soft = true;
-        unsigned char _pin_rx;
-        unsigned char _pin_tx;
-
         using TimeSource = espurna::time::CoreClock;
         TimeSource::time_point _startTime;
         bool _warmedUp = false;

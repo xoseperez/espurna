@@ -1370,8 +1370,11 @@ public:
         static bool once { false };
         if (!once) {
             once = true;
-            Serial.begin(SERIAL_BAUDRATE);
-            espurnaRegisterLoop(loop);
+            const auto port = uartPort(RELAY_PROVIDER_DUAL_PORT - 1);
+            if (port) {
+                _port = port->stream;
+                espurnaRegisterLoop(loop);
+            }
         }
         return true;
     }
@@ -1421,17 +1424,17 @@ public:
         DEBUG_MSG_P(PSTR("[RELAY] Sending DUAL mask: %s\n"), mask.toString().c_str());
 
         uint8_t buffer[4] { 0xa0, 0x04, static_cast<unsigned char>(mask.toUnsigned()), 0xa1 };
-        Serial.write(buffer, sizeof(buffer));
-        Serial.flush();
+        _port->write(buffer, sizeof(buffer));
+        _port->flush();
     }
 
     static void loop() {
-        if (Serial.available() < 4) {
+        if (_port->available() < 4) {
             return;
         }
 
         unsigned char bytes[4] = {0};
-        Serial.readBytes(bytes, 4);
+        _port->readBytes(bytes, 4);
         if ((bytes[0] != 0xA0) && (bytes[1] != 0x04) && (bytes[3] != 0xA1)) {
             return;
         }
@@ -1453,6 +1456,7 @@ public:
     }
 
 private:
+    Stream* _port { nullptr };
     size_t _id;
 
     static std::vector<DualProvider*> _instances;
@@ -1480,7 +1484,10 @@ public:
         static bool once { false };
         if (!once) {
             once = true;
-            Serial.begin(SERIAL_BAUDRATE);
+            const auto port = uartPort(RELAY_PROVIDER_STM_PORT - 1);
+            if (port) {
+                _port = port->stream;
+            }
         }
         return true;
     }
@@ -1492,19 +1499,22 @@ public:
     }
 
     void change(bool status) override {
-        Serial.flush();
-        Serial.write(0xA0);
-        Serial.write(_id + 1);
-        Serial.write(status);
-        Serial.write(0xA1 + status + _id);
+        if (_port) {
+            _port->flush();
+            _port->write(0xA0);
+            _port->write(_id + 1);
+            _port->write(status);
+            _port->write(0xA1 + status + _id);
 
-        // TODO: is this really solved via interlock delay, so we don't have to switch contexts here?
-        //delay(100);
+            // TODO: is this really solved via interlock delay, so we don't have to switch contexts here?
+            //delay(100);
 
-        Serial.flush();
+            _port->flush();
+        }
     }
 
 private:
+    Stream* _port;
     size_t _id;
 };
 

@@ -40,8 +40,6 @@ namespace tuya {
         return false;
     }
 
-    constexpr unsigned long SerialSpeed { 9600u };
-
     constexpr unsigned long DiscoveryTimeout { 1500u };
 
     constexpr unsigned long HeartbeatSlow { 9000u };
@@ -66,7 +64,7 @@ namespace tuya {
         String value;
     };
 
-    Transport tuyaSerial(TUYA_SERIAL);
+    Transport* tuyaSerial { nullptr };
     std::priority_queue<DataFrame> outputFrames;
 
     template <typename T>
@@ -429,19 +427,18 @@ error:
     }
 
     void processSerial(State& state) {
+        while (tuyaSerial->available()) {
 
-        while (tuyaSerial.available()) {
+            tuyaSerial->read();
 
-            tuyaSerial.read();
-
-            if (tuyaSerial.done()) {
-                processFrame(state, tuyaSerial);
-                tuyaSerial.reset();
+            if (tuyaSerial->done()) {
+                processFrame(state, *tuyaSerial);
+                tuyaSerial->reset();
             }
 
-            if (tuyaSerial.full()) {
-                tuyaSerial.rewind();
-                tuyaSerial.reset();
+            if (tuyaSerial->full()) {
+                tuyaSerial->rewind();
+                tuyaSerial->reset();
             }
         }
 
@@ -462,7 +459,7 @@ error:
             // flush serial buffer before transmitting anything
             // send fast heartbeat until mcu responds with something
             case State::INIT:
-                tuyaSerial.rewind();
+                tuyaSerial->rewind();
                 state = State::BOOT;
             case State::BOOT:
                 sendHeartbeat(Heartbeat::Boot);
@@ -509,10 +506,10 @@ error:
             }
         }
 
-        if (TUYA_SERIAL && !outputFrames.empty()) {
+        if (!outputFrames.empty()) {
             auto& frame = outputFrames.top();
             dataframeDebugSend("=>", frame);
-            tuyaSerial.write(frame.serialize());
+            tuyaSerial->write(frame.serialize());
             outputFrames.pop();
         }
 
@@ -658,6 +655,15 @@ error:
 #endif
 
     void setup() {
+        const auto port = uartPort(TUYA_PORT - 1);
+
+        // No point starting up when port is unusable
+        if (!port || (!port->tx || !port->rx)) {
+            return;
+        }
+
+        tuyaSerial = new Transport(*port->stream);
+
         #if TERMINAL_SUPPORT
             tuya::terminalSetup();
         #endif
@@ -669,8 +675,7 @@ error:
         filter = getSetting("tuyaFilter", 1 == TUYA_FILTER_ENABLED);
 
         // Install main loop method and WiFiStatus ping (only works with specific mode)
-        TUYA_SERIAL.begin(SerialSpeed);
-
+        
         ::espurnaRegisterLoop(loop);
         ::wifiRegister([](espurna::wifi::Event event) {
             switch (event) {

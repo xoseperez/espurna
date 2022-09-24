@@ -59,33 +59,13 @@
 #define DEBUG_SERIAL_SUPPORT    1               // Enable serial debug log
 #endif
 
-#ifndef DEBUG_PORT
-#define DEBUG_PORT              Serial          // Default debugging port
-#endif
-
-#ifndef SERIAL_BAUDRATE
-#define SERIAL_BAUDRATE         115200          // Default baudrate
+#ifndef DEBUG_SERIAL_PORT
+#define DEBUG_SERIAL_PORT       1               // Default debugging port
 #endif
 
 #ifndef DEBUG_ADD_TIMESTAMP
 #define DEBUG_ADD_TIMESTAMP     1               // Add timestamp to debug messages
                                                 // (in millis overflowing every 1000 seconds)
-#endif
-
-// Second serial port (used for RX)
-
-#ifndef SERIAL_RX_ENABLED
-#define SERIAL_RX_ENABLED       0               // Secondary serial port for RX
-#endif
-
-#ifndef SERIAL_RX_PORT
-#define SERIAL_RX_PORT          Serial          // This setting is usually defined
-                                                // in the hardware.h file for those
-                                                // boards that require it
-#endif
-
-#ifndef SERIAL_RX_BAUDRATE
-#define SERIAL_RX_BAUDRATE      115200          // Default baudrate
 #endif
 
 //------------------------------------------------------------------------------
@@ -175,16 +155,16 @@
 //------------------------------------------------------------------------------
 
 #ifndef TERMINAL_SUPPORT
-#define TERMINAL_SUPPORT         1              // Enable terminal commands (0.97Kb)
+#define TERMINAL_SUPPORT                1       // Enable terminal commands (0.97Kb)
 #endif
 
 #ifndef TERMINAL_SERIAL_SUPPORT
-#define TERMINAL_SERIAL_SUPPORT  1              // Enable terminal over UART
+#define TERMINAL_SERIAL_SUPPORT         1       // Enable terminal over UART
 #endif
 
 #ifndef TERMINAL_SERIAL_PORT
-#define TERMINAL_SERIAL_PORT     Serial         // Use specific 'global' Arduino HardwareSerial object
-                                                // (UART0 by default)
+#define TERMINAL_SERIAL_PORT            1       // Use specific port configured as UART#_PORT
+                                                // (first port by default)
 #endif
 
 #ifndef TERMINAL_SERIAL_BUFFER_SIZE
@@ -389,9 +369,17 @@
 #define RELAY_PROVIDER_STM_SUPPORT      0
 #endif
 
+#ifndef RELAY_PROVIDER_STM_PORT
+#define RELAY_PROVIDER_STM_PORT         1
+#endif
+
 // Sonoff Dual, using serial protocol
 #ifndef RELAY_PROVIDER_DUAL_SUPPORT
 #define RELAY_PROVIDER_DUAL_SUPPORT     0
+#endif
+
+#ifndef RELAY_PROVIDER_DUAL_PORT
+#define RELAY_PROVIDER_DUAL_PORT        1
 #endif
 
 // Default boot mode: 0 means OFF, 1 ON and 2 whatever was before
@@ -884,6 +872,20 @@
 #endif
 
 // -----------------------------------------------------------------------------
+// UART
+// -----------------------------------------------------------------------------
+
+#ifndef UART_SUPPORT
+#define UART_SUPPORT                1
+#endif
+
+#ifndef UART_SOFTWARE_SUPPORT
+#define UART_SOFTWARE_SUPPORT       0           // (optional) allows to set TX and RX pins
+                                                // to values other than just 1, 2, 3, 13 or 15
+                                                // which by default use hardware UART
+#endif
+
+// -----------------------------------------------------------------------------
 // UART <-> MQTT
 // -----------------------------------------------------------------------------
 
@@ -891,30 +893,8 @@
 #define UART_MQTT_SUPPORT           0           // Not enabled by default
 #endif
 
-#ifndef UART_MQTT_BAUDRATE
-#define UART_MQTT_BAUDRATE          115200
-#endif
-
-#ifndef UART_MQTT_CONFIG
-#define UART_MQTT_CONFIG            SERIAL_8N1 // Arduino-specific serial configuration
-                                               // 8bit, no parity bit, stop 1bit by default
-                                               // (note that software serial config is prefixed with SW)
-#endif
-
-#ifndef UART_MQTT_SOFTWARE_SERIAL
-#define UART_MQTT_SOFTWARE_SERIAL   0          // Enable when hardware port needs to be replaced by a software one
-                                               // (*not recommended* for full-duplex communication, it is possible
-                                               // to lose data due to timing constraints)
-                                               // Depends on TX and RX setting below and *will* use hardware
-                                               // port when using known pins like 1 and 3, or 13 and 15
-#endif
-
-#ifndef UART_MQTT_TX_PIN
-#define UART_MQTT_TX_PIN            1
-#endif
-
-#ifndef UART_MQTT_RX_PIN
-#define UART_MQTT_RX_PIN            3
+#ifndef UART_MQTT_PORT
+#define UART_MQTT_PORT              1
 #endif
 
 #ifndef UART_MQTT_BUFFER_SIZE
@@ -1491,8 +1471,12 @@
 #define RFB_PROVIDER                RFB_PROVIDER_RCSWITCH
 #endif
 
+#ifndef RFB_PORT
+#define RFB_PORT                    1               // If EFM is enabled, use this UART port 
+#endif
+
 #ifndef RFB_RX_PIN
-#define RFB_RX_PIN                  GPIO_NONE
+#define RFB_RX_PIN                  GPIO_NONE       // If RCSWITCH is enabled, use these pins
 #endif
 
 #ifndef RFB_TX_PIN
@@ -1712,8 +1696,8 @@
 #define TUYA_SUPPORT                0
 #endif
 
-#ifndef TUYA_SERIAL
-#define TUYA_SERIAL                 Serial
+#ifndef TUYA_PORT
+#define TUYA_PORT                   1
 #endif
 
 #ifndef TUYA_FILTER_ENABLED
@@ -1775,6 +1759,26 @@
 #ifndef PWM_DUTY_LIMIT
 #define PWM_DUTY_LIMIT              100  // (percentage)
                                          // Clamp duty value, prevent 100% power
+#endif
+
+// =============================================================================
+// Curtain hardware support
+// =============================================================================
+
+#ifndef KINGART_CURTAIN_SUPPORT
+#define KINGART_CURTAIN_SUPPORT      0
+#endif
+
+#ifndef KINGART_CURTAIN_PORT
+#define KINGART_CURTAIN_PORT         1
+#endif
+
+#ifndef KINGART_CURTAIN_BUFFER_SIZE
+#define KINGART_CURTAIN_BUFFER_SIZE  128
+#endif
+
+#ifndef KINGART_CURTAIN_TERMINATION
+#define KINGART_CURTAIN_TERMINATION  '\e'        // Termination character after each message
 #endif
 
 // =============================================================================

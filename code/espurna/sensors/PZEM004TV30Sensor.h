@@ -19,9 +19,6 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include <cstdint>
 #include <array>
 
-// TODO: keep this until we have external API giving us swserial stream objects
-#include <SoftwareSerial.h>
-
 #if DEBUG_SUPPORT
 #define PZEM_DEBUG_MSG_P(...) do { if (_debug) {\
     DEBUG_MSG_P(__VA_ARGS__); }\
@@ -33,114 +30,16 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 class PZEM004TV30Sensor : public BaseEmonSensor {
 public:
     using TimeSource = espurna::time::CoreClock;
-
-    static constexpr unsigned char RxPin { PZEM004TV30_RX_PIN };
-    static constexpr unsigned char TxPin { PZEM004TV30_TX_PIN };
-
-    static constexpr bool useSoftwareSerial() {
-        return 1 == PZEM004TV30_USE_SOFT;
-    }
-
-    static HardwareSerial* defaultHardwarePort() {
-        return &PZEM004TV30_HW_PORT;
-    }
-
-    static constexpr unsigned long Baudrate = 9600u;
-
-    struct SerialPort {
-        virtual const char* tag() const = 0;
-        virtual void begin(unsigned long baudrate) = 0;
-        virtual Stream* operator->() = 0;
-
-        SerialPort() = delete;
-        SerialPort(unsigned char rx, unsigned char tx) :
-            _rx(rx),
-            _tx(tx)
-        {}
-
-        unsigned char rx() const {
-            return _rx;
-        }
-
-        unsigned char tx() const {
-            return _tx;
-        }
-
-    private:
-        unsigned char _rx;
-        unsigned char _tx;
-    };
-
-    struct SoftwarePort : public SerialPort {
-        SoftwarePort() = delete;
-        SoftwarePort(unsigned char rx, unsigned char tx) :
-            SerialPort(rx, tx),
-            _serial(std::make_unique<SoftwareSerial>(rx, tx))
-        {}
-
-        const char* tag() const override {
-            return "Sw";
-        }
-
-        void begin(unsigned long baudrate) override {
-            _serial->begin(baudrate);
-        }
-
-        Stream* operator->() override {
-            return static_cast<Stream*>(_serial.get());
-        }
-
-    private:
-        std::unique_ptr<SoftwareSerial> _serial;
-    };
-
-    struct HardwarePort : public SerialPort {
-        HardwarePort() = delete;
-        HardwarePort(HardwareSerial* serial, unsigned char rx, unsigned char tx) :
-            SerialPort(rx, tx),
-            _serial(serial)
-        {
-            if ((rx == 13) && (tx == 15)) {
-                _serial->flush();
-                _serial->swap();
-            }
-        }
-
-        void begin(unsigned long baudrate) override {
-            _serial->begin(baudrate);
-        }
-
-        const char* tag() const override {
-            return "Hw";
-        }
-
-        Stream* operator->() override {
-            return static_cast<Stream*>(_serial);
-        }
-
-    private:
-        HardwareSerial* _serial;
-    };
-
-    using PortPtr = std::unique_ptr<SerialPort>;
     using Instance = std::unique_ptr<PZEM004TV30Sensor>;
-
-    static PortPtr makeHardwarePort(HardwareSerial* port, unsigned char rx, unsigned char tx) {
-        return std::make_unique<HardwarePort>(port, rx, tx);
-    }
-
-    static PortPtr makeSoftwarePort(unsigned char rx, unsigned char tx) {
-        return std::make_unique<SoftwarePort>(rx, tx);
-    }
 
     // Note that the device (aka slave) address needs be changed first via
     // - some external tool. For example, using USB2TTL adapter and a PC app
     // - `pzem.address` with **only** one device on the line
     //    (because we would change all 0xf8-addressed devices at the same time)
-    static PZEM004TV30Sensor* make(PortPtr port, uint8_t address, TimeSource::duration timeout) {
+    static PZEM004TV30Sensor* make(Stream* port, uint8_t address, TimeSource::duration timeout) {
         static_assert(std::is_same<TimeSource::duration, espurna::duration::Milliseconds>::value, "");
         if (!_instance) {
-            _instance.reset(new PZEM004TV30Sensor(std::move(port), address, timeout));
+            _instance.reset(new PZEM004TV30Sensor(port, address, timeout));
             return _instance.get();
         }
 
@@ -308,7 +207,7 @@ public:
             return;
         }
 
-        (*_port)->write(builder.buffer.data(), builder.size);
+        _port->write(builder.buffer.data(), builder.size);
 
         size_t expect = modbusExpect(builder);
         if (!expect) {
@@ -329,7 +228,7 @@ public:
         // TODO: testing is much easier, b/c we can just grab any modbus simulator and set up multiple devices
         const auto ts = TimeSource::now();
         while ((bytes < expect) && (TimeSource::now() - ts < _read_timeout)) {
-            int c = (*_port)->read();
+            int c = _port->read();
             if (c < 0) {
                 continue;
             }
@@ -574,7 +473,7 @@ public:
     }
 
     void flush() {
-        while ((*_port)->read() >= 0) {
+        while (_port->read() >= 0) {
         }
     }
 
@@ -616,11 +515,8 @@ public:
     }
 
     String description() const override {
-        static const String base(F("PZEM004T V3.0"));
-        return base + " @ "
-            + _port->tag()
-            + F("Serial, 0x")
-            + String(_address, 16);
+        static const String base(F("PZEM004TV30"));
+        return base + " @ 0x" + String(_address, 16);
     }
 
     String address(unsigned char) const override {
@@ -675,16 +571,16 @@ public:
 
 private:
     PZEM004TV30Sensor() = delete;
-    PZEM004TV30Sensor(PortPtr port, uint8_t address, TimeSource::duration timeout) :
+    PZEM004TV30Sensor(Stream* port, uint8_t address, TimeSource::duration timeout) :
         BaseEmonSensor(Magnitudes),
-        _port(std::move(port)),
+        _port(port),
         _address(address),
         _read_timeout(timeout)
     {}
 
     static Instance _instance;
 
-    PortPtr _port;
+    Stream* _port { nullptr };
     uint8_t _address { DefaultAddress };
     TimeSource::duration _read_timeout { DefaultReadTimeout };
 

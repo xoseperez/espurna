@@ -1401,6 +1401,94 @@
 #endif
 
 // -----------------------------------------------------------------------------
+// UART
+// -----------------------------------------------------------------------------
+
+#ifndef UART1_BAUDRATE
+#define UART1_BAUDRATE              115200
+#endif
+
+#ifndef UART1_TX_PIN
+#define UART1_TX_PIN                1
+#endif
+
+#ifndef UART1_RX_PIN
+#define UART1_RX_PIN                3
+#endif
+
+#ifndef UART1_DATA_BITS
+#define UART1_DATA_BITS             8
+#endif
+
+#ifndef UART1_PARITY
+#define UART1_PARITY                None
+#endif
+
+#ifndef UART1_STOP_BITS
+#define UART1_STOP_BITS             1
+#endif
+
+#ifndef UART1_INVERT
+#define UART1_INVERT                0
+#endif
+
+#ifndef UART2_BAUDRATE
+#define UART2_BAUDRATE              115200
+#endif
+
+#ifndef UART2_TX_PIN
+#define UART2_TX_PIN                GPIO_NONE
+#endif
+
+#ifndef UART2_RX_PIN
+#define UART2_RX_PIN                GPIO_NONE
+#endif
+
+#ifndef UART2_DATA_BITS
+#define UART2_DATA_BITS             8
+#endif
+
+#ifndef UART2_PARITY
+#define UART2_PARITY                None
+#endif
+
+#ifndef UART2_STOP_BITS
+#define UART2_STOP_BITS             1
+#endif
+
+#ifndef UART2_INVERT
+#define UART2_INVERT                0
+#endif
+
+#ifndef UART3_BAUDRATE
+#define UART3_BAUDRATE              115200
+#endif
+
+#ifndef UART3_TX_PIN
+#define UART3_TX_PIN                GPIO_NONE
+#endif
+
+#ifndef UART3_RX_PIN
+#define UART3_RX_PIN                GPIO_NONE
+#endif
+
+#ifndef UART3_DATA_BITS
+#define UART3_DATA_BITS             8
+#endif
+
+#ifndef UART3_PARITY
+#define UART3_PARITY                None
+#endif
+
+#ifndef UART3_STOP_BITS
+#define UART3_STOP_BITS             1
+#endif
+
+#ifndef UART3_INVERT
+#define UART3_INVERT                0
+#endif
+
+// -----------------------------------------------------------------------------
 // General
 // -----------------------------------------------------------------------------
 

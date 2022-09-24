@@ -264,21 +264,10 @@
 #define CSE7766_SUPPORT                 0
 #endif
 
-#ifndef CSE7766_RX_PIN
-#define CSE7766_RX_PIN                  3      // RX pin connected to the CSE7766
-                                               // As we never transmit anything, this is the only pin used
+#ifndef CSE7766_PORT
+#define CSE7766_PORT                    1      // By default, use the first port
+                                               // (needs `UART#_BAUDRATE 4800`)
 #endif
-
-#ifndef CSE7766_PIN_INVERSE
-#define CSE7766_PIN_INVERSE             0       // Signal is inverted
-#endif
-
-#define CSE7766_SYNC_INTERVAL           300     // Safe time between transmissions (ms)
-#define CSE7766_BAUDRATE                4800    // UART baudrate
-
-#define CSE7766_V1R                     1.0     // 1mR current resistor
-#define CSE7766_V2R                     1.0     // 1M voltage resistor
-
 
 //------------------------------------------------------------------------------
 // Digital sensor
@@ -812,12 +801,9 @@
 #define MHZ19_SUPPORT                   0
 #endif
 
-#ifndef MHZ19_RX_PIN
-#define MHZ19_RX_PIN                    13
-#endif
-
-#ifndef MHZ19_TX_PIN
-#define MHZ19_TX_PIN                    15
+#ifndef MHZ19_PORT
+#define MHZ19_PORT                      1     // By default, use the first port
+                                              // (needs `UART#_BAUDRATE 9600`)
 #endif
 
 //------------------------------------------------------------------------------
@@ -913,12 +899,9 @@
 #define PM1006_SUPPORT                    0
 #endif
 
-#ifndef PM1006_RX_PIN
-#define PM1006_RX_PIN                     3
-#endif
-
-#ifndef PM1006_BAUDRATE
-#define PM1006_BAUDRATE                   9600
+#ifndef PM1006_PORT
+#define PM1006_PORT                       1    // By default, use the first port
+                                               // (needs `UART#_BAUDRATE 9600`)
 #endif
 
 //------------------------------------------------------------------------------
@@ -930,6 +913,11 @@
 #define PMSX003_SUPPORT                 0
 #endif
 
+#ifndef PMS_PORT
+#define PMS_PORT                        1     // By default, use the first port
+                                              // (needs `UART#_BAUDRATE 9600`)
+#endif
+
 #ifndef PMS_TYPE
 #define PMS_TYPE                        PMS_TYPE_X003
 #endif
@@ -939,22 +927,6 @@
 // The PMS's fan will stop working on sleeping cycle, and will wake up on reading cycle.
 #ifndef PMS_SMART_SLEEP
 #define PMS_SMART_SLEEP                 0
-#endif
-
-#ifndef PMS_USE_SOFT
-#define PMS_USE_SOFT                    0       // If PMS_USE_SOFT == 1, DEBUG_SERIAL_SUPPORT must be 0
-#endif
-
-#ifndef PMS_RX_PIN
-#define PMS_RX_PIN                      13      // Software serial RX GPIO (if PMS_USE_SOFT == 1)
-#endif
-
-#ifndef PMS_TX_PIN
-#define PMS_TX_PIN                      15      // Software serial TX GPIO (if PMS_USE_SOFT == 1)
-#endif
-
-#ifndef PMS_HW_PORT
-#define PMS_HW_PORT                     Serial  // Hardware serial port (if PMS_USE_SOFT == 0)
 #endif
 
 //------------------------------------------------------------------------------
@@ -990,22 +962,9 @@
 #define PZEM004T_SUPPORT                0
 #endif
 
-#ifndef PZEM004T_USE_SOFT
-#define PZEM004T_USE_SOFT               0       // By default, use Hardware serial with GPIO15 (TX) and GPIO13 (RX)
-                                                // (but, make sure to change DEBUG_PORT to Serial1 or set DEBUG_SERIAL_SUPPORT to 0)
-#endif
-
-#ifndef PZEM004T_RX_PIN
-#define PZEM004T_RX_PIN                 13      // Serial RX GPIO (if PZEM004T_USE_SOFT == 1, creates a SoftwareSerial object)
-#endif
-
-#ifndef PZEM004T_TX_PIN
-#define PZEM004T_TX_PIN                 15      // Serial TX GPIO (if PZEM004T_USE_SOFT == 1, creates a SoftwareSerial object)
-#endif
-
-#ifndef PZEM004T_HW_PORT
-#define PZEM004T_HW_PORT                Serial  // Hardware serial port (if PZEM004T_USE_SOFT == 0)
-                                                // ESP8266: Serial1 does not allow receiving data, no point in changing this setting
+#ifndef PZEM004T_PORT
+#define PZEM004T_PORT                   1       // By default, use the first port
+                                                // (needs `UART#_BAUDRATE 9600`)
 #endif
 
 #ifndef PZEM004T_READ_INTERVAL
@@ -1047,22 +1006,9 @@
 #define PZEM004TV30_ADDRESS                0xF8    // Default: factory value
 #endif
 
-#ifndef PZEM004TV30_USE_SOFT
-#define PZEM004TV30_USE_SOFT               0       // By default, use Hardware serial with GPIO15 (TX) and GPIO13 (RX)
-                                                   // (but, make sure to change DEBUG_PORT to Serial1 or set DEBUG_SERIAL_SUPPORT to 0)
-#endif
-
-#ifndef PZEM004TV30_HW_PORT
-#define PZEM004TV30_HW_PORT                Serial  // Hardware serial port (if PZEM004TV30_USE_SOFT == 0)
-                                                   // ESP8266: Serial1 does not allow receiving data, no point in changing this setting
-#endif
-
-#ifndef PZEM004TV30_RX_PIN
-#define PZEM004TV30_RX_PIN                 13      // Serial RX GPIO (if PZEM004T_USE_SOFT == 1, creates a SoftwareSerial object)
-#endif
-
-#ifndef PZEM004TV30_TX_PIN
-#define PZEM004TV30_TX_PIN                 15      // Serial TX GPIO (if PZEM004T_USE_SOFT == 1, creates a SoftwareSerial object)
+#ifndef PZEM004TV30_PORT
+#define PZEM004TV30_PORT                   1      // By default, use the first port
+                                                  // (needs `UART#_BAUDRATE 9600`)
 #endif
 
 #ifndef PZEM004TV30_DEBUG
@@ -1078,12 +1024,9 @@
 #define SDS011_SUPPORT                   0
 #endif
 
-#ifndef SDS011_RX_PIN
-#define SDS011_RX_PIN                    14
-#endif
-
-#ifndef SDS011_TX_PIN
-#define SDS011_TX_PIN                    12
+#ifndef SDS011_PORT
+#define SDS011_PORT                      1   // By default, use the first port
+                                             // (needs `UART#_BAUDRATE 9600`)
 #endif
 
 //------------------------------------------------------------------------------
@@ -1095,12 +1038,9 @@
 #define SENSEAIR_SUPPORT                0
 #endif
 
-#ifndef SENSEAIR_RX_PIN
-#define SENSEAIR_RX_PIN                 0
-#endif
-
-#ifndef SENSEAIR_TX_PIN
-#define SENSEAIR_TX_PIN                 2
+#ifndef SENSEAIR_PORT
+#define SENSEAIR_PORT                   1    // By default, use the first port
+                                             // (needs `UART#_BAUDRATE 9600`)
 #endif
 
 //------------------------------------------------------------------------------
@@ -1138,12 +1078,9 @@
 #define SM300D2_SUPPORT                   0
 #endif
 
-#ifndef SM300D2_RX_PIN
-#define SM300D2_RX_PIN                    13
-#endif
-
-#ifndef SM300D2_BAUDRATE
-#define SM300D2_BAUDRATE                  9600
+#ifndef SM300D2_PORT
+#define SM300D2_PORT                      1     // By default, use the first port
+                                                // (needs `UART#_BAUDRATE 9600`)
 #endif
 
 //------------------------------------------------------------------------------
@@ -1193,12 +1130,9 @@
 #define T6613_SUPPORT                   0
 #endif
 
-#ifndef T6613_RX_PIN
-#define T6613_RX_PIN                    4
-#endif
-
-#ifndef T6613_TX_PIN
-#define T6613_TX_PIN                    5
+#ifndef T6613_PORT
+#define T6613_PORT                      1    // By default, use the first port
+                                             // (needs `UART#_BAUDRATE 9600`)
 #endif
 
 //------------------------------------------------------------------------------
@@ -1223,16 +1157,14 @@
 #define V9261F_SUPPORT                  0
 #endif
 
-#ifndef V9261F_PIN
-#define V9261F_PIN                      2       // TX pin from the V9261F
+#ifndef V9261F_PORT
+#define V9261F_PORT                     1       // By default, use the first port
+                                                // (needs `UART#_BAUDRATE 4800` and `UART#_INVERSE 1`)
 #endif
 
-#ifndef V9261F_PIN_INVERSE
-#define V9261F_PIN_INVERSE              1       // Signal is inverted
-#endif
-
+#ifndef V9261F_SYNC_INTERVAL
 #define V9261F_SYNC_INTERVAL            600     // Sync signal length (ms)
-#define V9261F_BAUDRATE                 4800    // UART baudrate
+#endif
 
 // Default ratios
 #define V9261F_CURRENT_FACTOR           79371434.0
@@ -1320,12 +1252,9 @@
 #define EZOPH_SUPPORT                0
 #endif
 
-#ifndef EZOPH_RX_PIN
-#define EZOPH_RX_PIN                 13      // Software serial RX GPIO
-#endif
-
-#ifndef EZOPH_TX_PIN
-#define EZOPH_TX_PIN                 15      // Software serial TX GPIO
+#ifndef EZOPH_PORT
+#define EZOPH_PORT                   1       // By default, use the first port
+                                             // (needs `UART#_BAUDRATE 9600`)
 #endif
 
 #ifndef EZOPH_SYNC_INTERVAL
@@ -1476,6 +1405,26 @@
 // =============================================================================
 // Configuration helpers
 // =============================================================================
+
+// UART support for sensors using serial port
+// (notice that baudrate and mode config is set *externally*)
+#if (\
+    CSE7766_SUPPORT || \
+    MHZ19_SUPPORT || \
+    PM1006_SUPPORT || \
+    PMSX003_SUPPORT || \
+    PZEM004T_SUPPORT || \
+    SENSEAIR_SUPPORT || \
+    SDS011_SUPPORT || \
+    SM300D2_SUPPORT || \
+    T6613_SUPPORT || \
+    V9261F_SUPPORT || \
+    EZOPH_SUPPORT || \
+    PZEM004TV30_SUPPORT \
+)
+#undef UART_SUPPORT
+#define UART_SUPPORT 1
+#endif
 
 // I2C support when sensor needs it
 #if ( ADE7953_SUPPORT || \

@@ -96,15 +96,11 @@ public:
         return r == 0 && g == 0 && b == 0;
     }
 
-    void println() const {
-        Serial.print(("r="));Serial.print(r);Serial.print((" "));
-        Serial.print(("g="));Serial.print(g);Serial.print( (" "));
-        Serial.print(("b="));Serial.println(b);
-    }
-
     String to_str() {
         char buf[20];
-        sprintf(buf, "r=%hhu, g=%hhu, b=%hhu", r, g, b);
+        snprintf_P(buf, sizeof(buf),
+            PSTR("r=%hhu, g=%hhu, b=%hhu"),
+            r, g, b);
         return buf;
     }
 };
