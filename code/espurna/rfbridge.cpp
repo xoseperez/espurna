@@ -1229,7 +1229,7 @@ static void _rfbCommandWrite(::terminal::CommandContext&& ctx) {
     }
     _rfbSendRawFromPayload(ctx.argv[1].c_str());
     terminalOK(ctx);
-});
+}
 #endif
 
 static constexpr ::terminal::Command RfbCommands[] PROGMEM {
@@ -1352,7 +1352,7 @@ void _rfbSettingsMigrate(int version) {
 void rfbSetup() {
 #if RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
     const auto port = uartPort(RFB_PORT - 1);
-    if (!port || (!port.tx || !port.rx)) {
+    if (!port || (!port->tx || !port->rx)) {
         return;
     }
 
