@@ -1159,7 +1159,7 @@
 
 #ifndef V9261F_PORT
 #define V9261F_PORT                     1       // By default, use the first port
-                                                // (needs `UART[1-3]_BAUDRATE 4800` and `UART[1-3]_INVERSE 1`)
+                                                // (needs `UART[1-3]_BAUDRATE 4800` and `UART[1-3]_INVERT 1`)
 #endif
 
 #ifndef V9261F_SYNC_INTERVAL
