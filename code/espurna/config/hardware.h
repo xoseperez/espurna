@@ -2304,21 +2304,21 @@
 #elif defined(HEYGO_HY02)
 
     // Info
-    #define MANUFACTURER		"HEYGO"
-    #define DEVICE				"HY02"
+    #define MANUFACTURER        "HEYGO"
+    #define DEVICE              "HY02"
 
     // Buttons
-    #define BUTTON1_PIN			13
-    #define BUTTON1_CONFIG		BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON1_RELAY		1
+    #define BUTTON1_PIN         13
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
 
     // Relays
-    #define RELAY1_PIN			12
-    #define RELAY1_TYPE			RELAY_TYPE_NORMAL
+    #define RELAY1_PIN          12
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
     // LEDs
-    #define LED1_PIN			4
-    #define LED1_PIN_INVERSE	0
+    #define LED1_PIN            4
+    #define LED1_PIN_INVERSE    0
 
 // -----------------------------------------------------------------------------
 // Maxcio W-US002S
@@ -2327,29 +2327,29 @@
 #elif defined(MAXCIO_WUS002S)
 
     // Info
-    #define MANUFACTURER		"MAXCIO"
-    #define DEVICE				"WUS002S"
+    #define MANUFACTURER        "MAXCIO"
+    #define DEVICE              "WUS002S"
 
     // Buttons
-    #define BUTTON1_PIN			2
-    #define BUTTON1_CONFIG		BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON1_RELAY		1
+    #define BUTTON1_PIN         2
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
 
     // Relays
-    #define RELAY1_PIN			13
-    #define RELAY1_TYPE			RELAY_TYPE_NORMAL
+    #define RELAY1_PIN          13
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
     // LEDs
-    #define LED1_PIN			3
-    #define LED1_PIN_INVERSE	0
+    #define LED1_PIN            3
+    #define LED1_PIN_INVERSE    0
 
     // HLW8012
     #ifndef HLW8012_SUPPORT
-    #define HLW8012_SUPPORT		1
+    #define HLW8012_SUPPORT     1
     #endif
-    #define HLW8012_SEL_PIN		12
-    #define HLW8012_CF1_PIN		5
-    #define HLW8012_CF_PIN		4
+    #define HLW8012_SEL_PIN     12
+    #define HLW8012_CF1_PIN     5
+    #define HLW8012_CF_PIN      4
 
     #define HLW8012_CURRENT_R               0.002            // Current resistor
     #define HLW8012_VOLTAGE_R_UP            ( 2 * 1000000 )  // Upstream voltage resistor
@@ -2364,21 +2364,21 @@
 #elif defined(MAXCIO_WDE004)
 
     // Info
-    #define MANUFACTURER		"MAXCIO"
-    #define DEVICE				"WDE004"
+    #define MANUFACTURER        "MAXCIO"
+    #define DEVICE              "WDE004"
 
     // Buttons
-    #define BUTTON1_PIN			1
-    #define BUTTON1_CONFIG		BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON1_RELAY		1
+    #define BUTTON1_PIN         1
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
 
     // Relays
-    #define RELAY1_PIN			14
-    #define RELAY1_TYPE			RELAY_TYPE_NORMAL
+    #define RELAY1_PIN          14
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
     // LEDs
-    #define LED1_PIN			13
-    #define LED1_PIN_INVERSE	1
+    #define LED1_PIN            13
+    #define LED1_PIN_INVERSE    1
 
 // -----------------------------------------------------------------------------
 // Maxcio W-UK007S
@@ -2427,25 +2427,25 @@
 #elif defined(OUKITEL_P1)
 
     // Info
-    #define MANUFACTURER		"Oukitel"
-    #define DEVICE				"P1"
+    #define MANUFACTURER        "Oukitel"
+    #define DEVICE              "P1"
 
     // Buttons
-    #define BUTTON1_PIN			13
-    #define BUTTON1_CONFIG		BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON1_RELAY		1
+    #define BUTTON1_PIN         13
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
 
     // Relays
     // Right
-    #define RELAY1_PIN			12
-    #define RELAY1_TYPE			RELAY_TYPE_NORMAL
+    #define RELAY1_PIN          12
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
     // Left
-    #define RELAY2_PIN			15
-    #define RELAY2_TYPE			RELAY_TYPE_NORMAL
+    #define RELAY2_PIN          15
+    #define RELAY2_TYPE         RELAY_TYPE_NORMAL
 
     // LEDs
-    #define LED1_PIN			0  // blue
-    #define LED1_PIN_INVERSE	1
+    #define LED1_PIN            0  // blue
+    #define LED1_PIN_INVERSE    1
     #define LED1_MODE           LED_MODE_WIFI
 
 // -----------------------------------------------------------------------------
@@ -2455,28 +2455,28 @@
 #elif defined(YIDIAN_XSSSA05)
 
     // Info
-    #define MANUFACTURER		"YIDIAN"
-    #define DEVICE				"XSSSA05"
+    #define MANUFACTURER        "YIDIAN"
+    #define DEVICE              "XSSSA05"
 
     // Disable UART noise since this board uses GPIO3
     #define UART_SUPPORT        0
 
     // Buttons
-    #define BUTTON1_PIN			13
-    #define BUTTON1_CONFIG		BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON1_RELAY		1
+    #define BUTTON1_PIN         13
+    #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY       1
 
     // Relays
-    #define RELAY1_PIN			12
-    #define RELAY1_TYPE			RELAY_TYPE_NORMAL
+    #define RELAY1_PIN          12
+    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
 
     // LEDs
-    #define LED1_PIN			0  // red
-    #define LED1_PIN_INVERSE	1
+    #define LED1_PIN            0  // red
+    #define LED1_PIN_INVERSE    1
     #define LED1_MODE           LED_MODE_WIFI
 
-    #define LED2_PIN			15  // blue
-    #define LED2_PIN_INVERSE	1
+    #define LED2_PIN            15  // blue
+    #define LED2_PIN_INVERSE    1
     #define LED2_MODE           LED_MODE_RELAY
 
     // HLW8012
