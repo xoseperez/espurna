@@ -16,6 +16,7 @@ Copyright (C) 2020-2022 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include "mqtt.h"
 #include "settings.h"
 #include "system.h"
+#include "sensor.h"
 #include "telnet.h"
 #include "terminal.h"
 #include "utils.h"
