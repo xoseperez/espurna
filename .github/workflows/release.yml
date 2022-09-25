@@ -89,7 +89,7 @@ jobs:
       - name: Archive
         run: |
           pushd build
-          zip \
+          time zip \
             --quiet \
             --recurse-paths \
             ../Build_${{ matrix.thread }}.zip ./
@@ -117,7 +117,7 @@ jobs:
 
       - name: Prepare debug info
         run: |
-          zip \
+          time zip \
             -9 \
             --quiet \
             --junk-paths \
