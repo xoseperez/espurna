@@ -332,6 +332,8 @@ String weekdays(size_t index) {
 ID_VALUE(hour, settings::hour)
 ID_VALUE(minute, settings::minute)
 
+#undef ID_VALUE
+
 } // namespace internal
 
 static constexpr espurna::settings::query::IndexedSetting IndexedSettings[] PROGMEM {
