@@ -114,7 +114,9 @@ void setup() {
     settingsSetup();
 
     // Init hardware / software UART ports
-    uartSetup();
+    #if UART_SUPPORT
+        uartSetup();
+    #endif
 
     // Configure logger and crash recorder
     #if DEBUG_SUPPORT
