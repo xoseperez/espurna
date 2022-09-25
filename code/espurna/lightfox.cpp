@@ -216,7 +216,7 @@ void _lightfoxInputLoop() {
 void lightfoxSetup() {
 
     const auto port = uartPort(LIGHTFOX_PORT - 1);
-    if (!port || !port.tx) {
+    if (!port || !port->tx) {
         return;
     }
 
