@@ -155,12 +155,6 @@
     #define LED1_PIN            2
     #define LED1_PIN_INVERSE    1
 
-#elif defined(NODEMCU_BASIC)
-    // Info
-    // Generic NodeMCU Board without any buttons or relays connected.
-    #define MANUFACTURER        "NODEMCU"
-    #define DEVICE              "BASIC"
-
 #elif defined(WEMOS_D1_MINI)
 
     // Info
@@ -4571,19 +4565,21 @@
     #define MANUFACTURER        "TUYA"
     #define DEVICE              "GENERIC_DIMMER"
 
-    #define TUYA_SUPPORT        1
-    #define LIGHT_PROVIDER      LIGHT_PROVIDER_CUSTOM
-
-    #define TUYA_PORT           1
+    #define UART_SUPPORT        1
 
     #define UART1_BAUDRATE      9600
     #define UART1_TX_PIN        1
     #define UART1_RX_PIN        3
 
-    #define LED1_GPIO           14
+    #define TUYA_SUPPORT        1
+    #define TUYA_PORT           1
 
     #define TUYA_CH_STATE_DPID  1
     #define TUYA_CH1_DPID       2
+
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_CUSTOM
+
+    #define LED1_GPIO           14
 
 // -----------------------------------------------------------------------------
 // Etekcity ESW01-USA
