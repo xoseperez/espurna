@@ -266,7 +266,7 @@
 
 #ifndef CSE7766_PORT
 #define CSE7766_PORT                    1      // By default, use the first port
-                                               // (needs `UART#_BAUDRATE 4800`)
+                                               // (needs `UART[1-3]_BAUDRATE 4800`)
 #endif
 
 //------------------------------------------------------------------------------
@@ -803,7 +803,7 @@
 
 #ifndef MHZ19_PORT
 #define MHZ19_PORT                      1     // By default, use the first port
-                                              // (needs `UART#_BAUDRATE 9600`)
+                                              // (needs `UART[1-3]_BAUDRATE 9600`)
 #endif
 
 //------------------------------------------------------------------------------
@@ -901,7 +901,7 @@
 
 #ifndef PM1006_PORT
 #define PM1006_PORT                       1    // By default, use the first port
-                                               // (needs `UART#_BAUDRATE 9600`)
+                                               // (needs `UART[1-3]_BAUDRATE 9600`)
 #endif
 
 //------------------------------------------------------------------------------
@@ -915,7 +915,7 @@
 
 #ifndef PMS_PORT
 #define PMS_PORT                        1     // By default, use the first port
-                                              // (needs `UART#_BAUDRATE 9600`)
+                                              // (needs `UART[1-3]_BAUDRATE 9600`)
 #endif
 
 #ifndef PMS_TYPE
@@ -964,7 +964,7 @@
 
 #ifndef PZEM004T_PORT
 #define PZEM004T_PORT                   1       // By default, use the first port
-                                                // (needs `UART#_BAUDRATE 9600`)
+                                                // (needs `UART[1-3]_BAUDRATE 9600`)
 #endif
 
 #ifndef PZEM004T_READ_INTERVAL
@@ -1008,7 +1008,7 @@
 
 #ifndef PZEM004TV30_PORT
 #define PZEM004TV30_PORT                   1      // By default, use the first port
-                                                  // (needs `UART#_BAUDRATE 9600`)
+                                                  // (needs `UART[1-3]_BAUDRATE 9600`)
 #endif
 
 #ifndef PZEM004TV30_DEBUG
@@ -1026,7 +1026,7 @@
 
 #ifndef SDS011_PORT
 #define SDS011_PORT                      1   // By default, use the first port
-                                             // (needs `UART#_BAUDRATE 9600`)
+                                             // (needs `UART[1-3]_BAUDRATE 9600`)
 #endif
 
 //------------------------------------------------------------------------------
@@ -1040,7 +1040,7 @@
 
 #ifndef SENSEAIR_PORT
 #define SENSEAIR_PORT                   1    // By default, use the first port
-                                             // (needs `UART#_BAUDRATE 9600`)
+                                             // (needs `UART[1-3]_BAUDRATE 9600`)
 #endif
 
 //------------------------------------------------------------------------------
@@ -1080,7 +1080,7 @@
 
 #ifndef SM300D2_PORT
 #define SM300D2_PORT                      1     // By default, use the first port
-                                                // (needs `UART#_BAUDRATE 9600`)
+                                                // (needs `UART[1-3]_BAUDRATE 9600`)
 #endif
 
 //------------------------------------------------------------------------------
@@ -1132,7 +1132,7 @@
 
 #ifndef T6613_PORT
 #define T6613_PORT                      1    // By default, use the first port
-                                             // (needs `UART#_BAUDRATE 9600`)
+                                             // (needs `UART[1-3]_BAUDRATE 9600`)
 #endif
 
 //------------------------------------------------------------------------------
@@ -1159,7 +1159,7 @@
 
 #ifndef V9261F_PORT
 #define V9261F_PORT                     1       // By default, use the first port
-                                                // (needs `UART#_BAUDRATE 4800` and `UART#_INVERSE 1`)
+                                                // (needs `UART[1-3]_BAUDRATE 4800` and `UART[1-3]_INVERSE 1`)
 #endif
 
 #ifndef V9261F_SYNC_INTERVAL
@@ -1254,7 +1254,7 @@
 
 #ifndef EZOPH_PORT
 #define EZOPH_PORT                   1       // By default, use the first port
-                                             // (needs `UART#_BAUDRATE 9600`)
+                                             // (needs `UART[1-3]_BAUDRATE 9600`)
 #endif
 
 #ifndef EZOPH_SYNC_INTERVAL

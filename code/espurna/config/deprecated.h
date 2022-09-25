@@ -171,7 +171,53 @@
 #warning "API_REAL_TIME_VALUES is deprecated! Please use SENSOR_REAL_TIME_VALUES"
 #endif
 
+#ifdef DEBUG_PORT
+#warning "DEBUG_PORT is deprecated! Please set up the appropriate port as DEBUG_SERIAL_PORT=[1-3]"
+#endif
+
 #ifdef SERIAL_BAUDRATE
 #warning "SERIAL_BAUDRATE is deprecated! Please use UART[1-3]_BAUDRATE"
 #define UART1_BAUDRATE SERIAL_BAUDRATE
+#endif
+
+#if ( defined(PZEM004TV30_HW_PORT) || \
+    defined(PZEM004TV30_USE_SOFT) || \
+    defined(PZEM004T_HW_PORT) || \
+    defined(PZEM004T_USE_SOFT) || \
+    defined(PMS_USE_SOFT) \
+)
+#warning "Software serial can be enabled with UART_SOFTWARE_SUPPORT"
+#undef UART_SOFTWARE_SUPPORT
+#define UART_SOFTWARE_SUPPORT 1
+#endif
+
+#if ( defined(CSE7766_RX_PIN) || \
+    defined(CSE7766_BAUDRATE) || \
+    defined(CSE7766_PIN_INVERSE) || \
+    defined(MHZ19_RX_PIN) || \
+    defined(MHZ19_TX_PIN) || \
+    defined(PM1006_RX_PIN) || \
+    defined(PM1006_BAUDRATE) || \
+    defined(PMS_RX_PIN) || \
+    defined(PMS_TX_PIN) || \
+    defined(PMS_HW_PORT) || \
+    defined(PZEM004T_RX_PIN) || \
+    defined(PZEM004T_TX_PIN) || \
+    defined(PZEM004TV30_RX_PIN) || \
+    defined(PZEM004TV30_TX_PIN) || \
+    defined(SDS011_RX_PIN) || \
+    defined(SDS011_TX_PIN) || \
+    defined(SENSEAIR_RX_PIN) || \
+    defined(SENSEAIR_TX_PIN) || \
+    defined(SM300D2_RX_PIN) || \
+    defined(SM300D2_TX_PIN) || \
+    defined(T6613_RX_PIN) || \
+    defined(T6613_TX_PIN) || \
+    defined(V9261F_PIN) || \
+    defined(V9261F_PIN_INVERSE) || \
+    defined(V9261F_BAUDRATE) || \
+    defined(EZOPH_RX_PIN) || \
+    defined(EZOPH_TX_PIN) \
+)
+#warning "Sensor serial port configuration should be using UART_... (see general.h) and UART[1-3]_... (see defaults.h)"
 #endif
