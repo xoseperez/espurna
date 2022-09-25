@@ -1367,16 +1367,18 @@ public:
     }
 
     bool setup() override {
-        static bool once { false };
-        if (!once) {
-            once = true;
+        static bool once = ([]() {
             const auto port = uartPort(RELAY_PROVIDER_DUAL_PORT - 1);
             if (port) {
-                _port = port->stream;
+                DualProvider::_port = port->stream;
                 espurnaRegisterLoop(loop);
+                return true;
             }
-        }
-        return true;
+
+            return false;
+        })();
+
+        return once;
     }
 
     void change(bool) override {
@@ -1456,13 +1458,14 @@ public:
     }
 
 private:
-    Stream* _port { nullptr };
     size_t _id;
 
     static std::vector<DualProvider*> _instances;
+    static Stream* _port;
 };
 
 std::vector<DualProvider*> DualProvider::_instances;
+Stream* DualProvider::_port = nullptr;
 
 #endif // RELAY_PROVIDER_DUAL_SUPPORT
 
@@ -1481,15 +1484,18 @@ public:
     }
 
     bool setup() override {
-        static bool once { false };
-        if (!once) {
-            once = true;
+        static bool once = ([]() {
             const auto port = uartPort(RELAY_PROVIDER_STM_PORT - 1);
             if (port) {
-                _port = port->stream;
+                StmProvider::_port = port->stream;
+                espurnaRegisterLoop(loop);
+                return true;
             }
-        }
-        return true;
+
+            return false;
+        })();
+
+        return once;
     }
 
     void boot(bool) override {
@@ -1514,9 +1520,11 @@ public:
     }
 
 private:
-    Stream* _port;
     size_t _id;
+    static Stream* _port;
 };
+
+Stream* StmProvider::_port = nullptr;
 
 #endif // RELAY_PROVIDER_STM_SUPPORT
 
