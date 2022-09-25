@@ -50,9 +50,9 @@
 // * https://github.com/olehs/PZEM004T
 //
 // MIT License
-// 
+//
 // Copyright (c) 2018 Oleg Sokolov
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
@@ -125,7 +125,7 @@ private:
     unsigned long _readTimeOut = PZEM_DEFAULT_READ_TIMEOUT;
 
     void send(const IPAddress &addr, uint8_t cmd, uint8_t data = 0);
-    bool recieve(uint8_t resp, uint8_t *data = 0);
+    bool receive(uint8_t resp, uint8_t *data = 0);
 
     uint8_t crc(uint8_t *data, uint8_t sz);
 };
@@ -135,7 +135,7 @@ float PZEM004T::voltage(const IPAddress &addr)
     uint8_t data[RESPONSE_DATA_SIZE];
 
     send(addr, PZEM_VOLTAGE);
-    if(!recieve(RESP_VOLTAGE, data))
+    if(!receive(RESP_VOLTAGE, data))
         return PZEM_ERROR_VALUE;
 
     return (data[0] << 8) + data[1] + (data[2] / 10.0);
@@ -146,7 +146,7 @@ float PZEM004T::current(const IPAddress &addr)
     uint8_t data[RESPONSE_DATA_SIZE];
 
     send(addr, PZEM_CURRENT);
-    if(!recieve(RESP_CURRENT, data))
+    if(!receive(RESP_CURRENT, data))
         return PZEM_ERROR_VALUE;
 
     return (data[0] << 8) + data[1] + (data[2] / 100.0);
@@ -157,7 +157,7 @@ float PZEM004T::power(const IPAddress &addr)
     uint8_t data[RESPONSE_DATA_SIZE];
 
     send(addr, PZEM_POWER);
-    if(!recieve(RESP_POWER, data))
+    if(!receive(RESP_POWER, data))
         return PZEM_ERROR_VALUE;
 
     return (data[0] << 8) + data[1];
@@ -168,7 +168,7 @@ float PZEM004T::energy(const IPAddress &addr)
     uint8_t data[RESPONSE_DATA_SIZE];
 
     send(addr, PZEM_ENERGY);
-    if(!recieve(RESP_ENERGY, data))
+    if(!receive(RESP_ENERGY, data))
         return PZEM_ERROR_VALUE;
 
     return ((uint32_t)data[0] << 16) + ((uint16_t)data[1] << 8) + data[2];
@@ -177,13 +177,13 @@ float PZEM004T::energy(const IPAddress &addr)
 bool PZEM004T::setAddress(const IPAddress &newAddr)
 {
     send(newAddr, PZEM_SET_ADDRESS);
-    return recieve(RESP_SET_ADDRESS);
+    return receive(RESP_SET_ADDRESS);
 }
 
 bool PZEM004T::setPowerAlarm(const IPAddress &addr, uint8_t threshold)
 {
     send(addr, PZEM_POWER_ALARM, threshold);
-    return recieve(RESP_POWER_ALARM);
+    return receive(RESP_POWER_ALARM);
 }
 
 void PZEM004T::send(const IPAddress &addr, uint8_t cmd, uint8_t data)
@@ -205,7 +205,7 @@ void PZEM004T::send(const IPAddress &addr, uint8_t cmd, uint8_t data)
     _serial->write(bytes, sizeof(pzem));
 }
 
-bool PZEM004T::recieve(uint8_t resp, uint8_t *data)
+bool PZEM004T::receive(uint8_t resp, uint8_t *data)
 {
     uint8_t buffer[RESPONSE_SIZE];
 
@@ -263,7 +263,7 @@ private:
     template <typename T>
     static void foreach(T&& callback) {
         for (auto it = _head_instance; it; it = it->_next_instance) {
-            callback(*it);
+            callback(*it, (*it)._address);
         }
     }
 
@@ -307,7 +307,7 @@ public:
         SerialPort() = delete;
 
         explicit SerialPort(PzemPtr pzem) :
-            _pzem(pzem)
+            _pzem(std::move(pzem))
         {}
 
         explicit SerialPort(Stream* stream) :
@@ -370,8 +370,6 @@ public:
 
         bool address(const IPAddress& address) {
             return _pzem->setAddress(address);
-            send(newAddr, PZEM_SET_ADDRESS);
-            return recieve(RESP_SET_ADDRESS);
         }
 
     private:
@@ -573,6 +571,11 @@ public:
             : _head_instance;
     }
 
+#if TERMINAL_SUPPORT
+    static void command_devices(::terminal::CommandContext&&);
+    static void command_ports(::terminal::CommandContext&&);
+    static void command_address(::terminal::CommandContext&&);
+#endif
 private:
     PortPtr _port;
     using PortWeakPtr = std::weak_ptr<PortPtr::element_type>;
@@ -590,16 +593,16 @@ constexpr BaseEmonSensor::Magnitude PZEM004TSensor::Magnitudes[];
 #if TERMINAL_SUPPORT
 alignas(4) static constexpr char PzemDevices[] PROGMEM = "PZ.DEVICES";
 
-void pzem_devices(::terminal::CommandContext&& ctx) {
-    foreach([&](const PZEM004TSensor& device) {
-        ctx.output.printf("%s\n", device._address.toString().c_str());
+void PZEM004TSensor::command_devices(::terminal::CommandContext&& ctx) {
+    foreach([&](const PZEM004TSensor&, const IPAddress& address) {
+        ctx.output.printf("%s\n", address.toString().c_str());
     });
     terminalOK(ctx);
 }
 
 alignas(4) static constexpr char PzemPorts[] PROGMEM = "PZ.PORTS";
 
-void pzem_ports(::terminal::CommandContext&& ctx) {
+void PZEM004TSensor::command_ports(::terminal::CommandContext&& ctx) {
     auto it = _ports.begin();
     auto end = _ports.end();
 
@@ -647,7 +650,7 @@ alignas(4) static constexpr char PzemAddress[] PROGMEM = "PZ.ADDRESS";
 
 // Set the *currently connected* device address
 // (ref. comment at the top, shouldn't do this when multiple devices are connected)
-static void pzem_address(::terminal::CommandContext&& ctx) {
+void PZEM004TSensor::command_address(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() != 3) {
         terminalError(ctx, F("PZ.ADDRESS <PORT> <ADDRESS>"));
         return;
@@ -682,9 +685,9 @@ static void pzem_address(::terminal::CommandContext&& ctx) {
 }
 
 static constexpr ::terminal::Command PzemCommands[] PROGMEM {
-    {PzemDevices, pzem_devices},
-    {PzemPorts, pzem_ports},
-    {PzemAddress, pzem_address},
+    {PzemDevices, PZEM004TSensor::command_devices},
+    {PzemPorts, PZEM004TSensor::command_ports},
+    {PzemAddress, PZEM004TSensor::command_address},
 };
 
 #endif
