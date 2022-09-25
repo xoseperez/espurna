@@ -186,6 +186,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Configure light dimmer pins from settings ([#2129](https://github.com/xoseperez/espurna/issues/2129))
 #### System
 - Detect Tasmota magic numbers when booting, and do a preventive factory reset ([#2370](https://github.com/xoseperez/espurna/issues/2370))
+- Runtime UART configuration. (`uartBaud#`, `uartInv#`, etc.), see `uart` and `uart <id>` terminal commands output. ([574fbf19](https://github.com/xoseperez/espurna/commit/574fbf196014dbcffa0e99630ea377cce36873e9))
 #### Terminal
 - Show pretty uptime string with `NTP_SUPPORT=1` ([#2137](https://github.com/xoseperez/espurna/issues/2137))
 - Change command-line parser ([ef202109](https://github.com/xoseperez/espurna/commit/ef202109e7e09779d44970e065b71f3cb49660b3) for latest version; ref. [#2245](https://github.com/xoseperez/espurna/issues/2245) and [#2247](https://github.com/xoseperez/espurna/issues/2247) for previous implementation)
@@ -194,7 +195,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Configure Thingspeak URL at runtime ([#2124](https://github.com/xoseperez/espurna/issues/2124), thanks to **[@sametflo](https://github.com/sametflo)**)
 - Refactor deprecated WiFiClientSecure ([#2140](https://github.com/xoseperez/espurna/issues/2140), [#2144](https://github.com/xoseperez/espurna/issues/2144))
 #### WebUI
-- WebUI: alert when WS closes ([#2131](https://github.com/xoseperez/espurna/issues/2131), thanks to **[@foxman69](https://github.com/foxman69)**)
+- WebUI: alert when web socket connection closes ([#2131](https://github.com/xoseperez/espurna/issues/2131), thanks to **[@foxman69](https://github.com/foxman69)**)
 - Allow to disable Web(UI) OTA support ([#2190](https://github.com/xoseperez/espurna/issues/2190))
 - Kingart curtain switch UI support ([#2250](https://github.com/xoseperez/espurna/issues/2250), thanks to **[@echauvet](https://github.com/echauvet)**)
 - Refactor WS implementation, add some comments to the header ([#2261](https://github.com/xoseperez/espurna/issues/2261))
