@@ -1674,14 +1674,6 @@ BaseFilterPtr makeFilter(Filter filter) {
     return out;
 }
 
-String units(Unit unit) {
-    return espurna::settings::internal::serialize(unit);
-}
-
-String units(const Magnitude& magnitude) {
-    return units(magnitude.units);
-}
-
 // Hardcoded decimals for each magnitude
 unsigned char decimals(Unit unit) {
     switch (unit) {
@@ -1863,26 +1855,55 @@ void report(const Value& report) {
 #endif // MQTT_SUPPORT
 }
 
-Value value(const Magnitude& magnitude, double value) {
-    return Value {
+Info info(const Magnitude& magnitude) {
+    return Info{
         .type = magnitude.type,
         .index = magnitude.index_global,
         .units = magnitude.units,
         .decimals = magnitude.decimals,
-        .value = value,
         .topic = topicWithIndex(magnitude),
+    };
+}
+
+Value value(const Magnitude& magnitude, double value) {
+    return Value{
+        .type = magnitude.type,
+        .index = magnitude.index_global,
+        .units = magnitude.units,
+        .decimals = magnitude.decimals,
+        .topic = topicWithIndex(magnitude),
+        .value = value,
         .repr = format(magnitude, value),
     };
 }
 
-Info info(const Magnitude& magnitude) {
-    return Info {
-        .type = magnitude.type,
-        .index = magnitude.index_global,
-        .units = magnitude.units,
-        .decimals = magnitude.decimals,
-        .topic = topicWithIndex(magnitude),
-    };
+template <typename T>
+Value safe_value(size_t index, T&& retrieve) {
+    Value out;
+    out.value = Value::Unknown;
+
+    if (index < count()) {
+        const auto& magnitude = get(index);
+        out = value(magnitude, retrieve(magnitude));
+    }
+
+    return out;
+}
+
+Value safe_value_last(size_t index) {
+    return safe_value(
+        index,
+        [](const Magnitude& magnitude) {
+            return magnitude.last;
+        });
+}
+
+Value safe_value_reported(size_t index) {
+    return safe_value(
+        index,
+        [](const Magnitude& magnitude) {
+            return magnitude.reported;
+        });
 }
 
 } // namespace magnitude
@@ -1973,18 +1994,18 @@ void post() {
 //
 // Notice that *every* available sensor (*_SUPPORT set to 1) is queued for initialization.
 // For the time being, failure to `begin()` any sensor will stall all subsequent sensors.
-// 
+//
 // Future updates *should* work out whether we need to:
 // - allow to 'enable' specific sensor in settings
 //   (...would we have too much key prefixes?)
 // - 'probe' sensor (bus scan, attempt to read) separate from actual loading
 // - allow to soft-fail begin()
 //   (although, removing stable magnitude IDs)
-// 
+//
 // If you want to add another sensor instance of the same type, just duplicate
 // the initialization block and change the respective method arguments.
 // For example, to add a second DHT sensor:
-// 
+//
 // #if DHT_SUPPORT
 // {
 //     auto* sensor = new DHTSensor();
@@ -1993,7 +2014,7 @@ void post() {
 //     add(sensor);
 // }
 // #endif
-// 
+//
 // Obviously, both DHT2_PIN and DHT2_TYPE should be accessible
 // - use `build_src_flags = -DDHT2_PIN=... -DDHT2_TYPE=...`
 // - update config/custom.h or config/sensor.h, adding `#define DHT2_PIN ...` and `#define DHT2_TYPE ...`
@@ -2794,6 +2815,14 @@ sensor::Unit filter(const Magnitude& magnitude, Unit unit) {
     return supported(magnitude, unit) ? unit : magnitude.units;
 }
 
+String name(Unit unit) {
+    return espurna::settings::internal::serialize(unit);
+}
+
+String name(const Magnitude& magnitude) {
+    return name(magnitude.units);
+}
+
 } // namespace
 } // namespace units
 
@@ -2932,7 +2961,7 @@ ParseResult convert(StringView value) {
 
     auto it = begin;
     while (it != end) {
-        if (*it == '+') { 
+        if (*it == '+') {
             break;
         }
 
@@ -3284,7 +3313,7 @@ void units(JsonObject& root) {
             for (auto it = range.begin(); it != range.end(); ++it) {
                 JsonArray& unit = units.createNestedArray();
                 unit.add(static_cast<int>(*it)); // raw id
-                unit.add(magnitude::units(*it));  // as string
+                unit.add(units::name(*it));  // as string
             }
         }}
     });
@@ -3683,7 +3712,7 @@ void magnitudes(::terminal::CommandContext&& ctx) {
             magnitude::description(magnitude).c_str(),
             magnitude::format(magnitude, magnitude.last).c_str(),
             magnitude::format(magnitude, magnitude.reported).c_str(),
-            magnitude::units(magnitude).c_str());
+            units::name(magnitude).c_str());
     }
 
     terminalOK(ctx);
@@ -3742,7 +3771,7 @@ void energy(::terminal::CommandContext&& ctx) {
         ctx.output.printf_P(PSTR("%s => %s (%s)\n"),
             magnitude::topicWithIndex(*magnitude).c_str(),
             magnitude::format(*magnitude, magnitude->reported).c_str(),
-            magnitude::units(*magnitude).c_str());
+            units::name(*magnitude).c_str());
         terminalOK(ctx);
         return;
     }
@@ -3869,7 +3898,7 @@ void loop() {
             }
 
             // -------------------------------------------------------------
-            // RAW value, returned from the sensor 
+            // RAW value, returned from the sensor
             // -------------------------------------------------------------
 
             value.raw = magnitude.sensor->value(magnitude.slot);
@@ -3954,7 +3983,7 @@ void loop() {
                     String out;
                     out += magnitude::format(magnitude, value);
                     if (units != Unit::None) {
-                        out += magnitude::units(units);
+                        out += units::name(units);
                     }
 
                     return out;
@@ -4154,33 +4183,18 @@ unsigned char magnitudeType(unsigned char index) {
     return MAGNITUDE_NONE;
 }
 
-String magnitudeUnits(unsigned char index) {
-    using namespace espurna::sensor;
-
-    if (index < magnitude::count()) {
-        return magnitude::units(magnitude::get(index));
-    }
-
-    return String();
+espurna::sensor::Value magnitudeReadValue(unsigned char index) {
+    return espurna::sensor::magnitude::safe_value_last(index);
 }
 
-String magnitudeUnits(espurna::sensor::Unit units) {
-    return espurna::sensor::magnitude::units(units);
+espurna::sensor::Value magnitudeReportValue(unsigned char index) {
+    return espurna::sensor::magnitude::safe_value_reported(index);
 }
 
 espurna::sensor::Value magnitudeValue(unsigned char index) {
-    using namespace espurna::sensor;
-
-    Value out;
-    out.value = Value::Unknown;
-
-    if (index < magnitude::count()) {
-        const auto& magnitude = magnitude::get(index);
-        out = magnitude::value(magnitude,
-            realTimeValues() ? magnitude.last : magnitude.reported);
-    }
-
-    return out;
+    return espurna::sensor::realTimeValues()
+        ? espurna::sensor::magnitude::safe_value_last(index)
+        : espurna::sensor::magnitude::safe_value_reported(index);
 }
 
 String magnitudeDescription(unsigned char index) {
@@ -4205,6 +4219,10 @@ String magnitudeTopic(unsigned char index) {
 
 String magnitudeTypeTopic(unsigned char type) {
     return espurna::sensor::magnitude::topic(type);
+}
+
+String magnitudeUnitsName(espurna::sensor::Unit units) {
+    return espurna::sensor::units::name(units);
 }
 
 espurna::sensor::Info magnitudeInfo(unsigned char index) {

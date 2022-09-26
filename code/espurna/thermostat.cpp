@@ -426,7 +426,7 @@ String _getLocalUnit(unsigned char type) {
     for (unsigned char index = 0; index < magnitudeCount(); ++index) {
         const auto info = magnitudeInfo(index);
         if (info.type == type) {
-            return magnitudeUnits(info.units);
+            return magnitudeUnitName(info.units);
         }
     }
 #endif

@@ -208,18 +208,20 @@ private:
     WattSeconds _ws;
 };
 
+// '.value' is set to 'Value::Unknown' when index is out of bounds
+// '.value' is undefined when either reading or report hadn't happened yet
 struct Value {
-    static constexpr double Unknown { std::numeric_limits<double>::quiet_NaN() };
+    static constexpr double Unknown {
+        std::numeric_limits<double>::quiet_NaN() };
 
     unsigned char type;
     unsigned char index;
 
     Unit units;
     unsigned char decimals;
+    String topic;
 
     double value;
-
-    String topic;
     String repr;
 
     explicit operator bool() const;
@@ -242,28 +244,40 @@ struct Info {
 //--------------------------------------------------------------------------------
 
 String magnitudeTypeTopic(unsigned char type);
+String magnitudeUnitsName(espurna::sensor::Unit);
 
 using MagnitudeReadHandler = void(*)(const espurna::sensor::Value&);
+
+// Executes 'handler(value)' every time sensor reading happens
+// (depends on read interval and won't happen in case sensor returns an error)
 void sensorOnMagnitudeRead(MagnitudeReadHandler handler);
+
+// Executes 'handler(value)' every time sensor report happens
+// (depends on report counter of sensor reads and conditions like min / max delta)
 void sensorOnMagnitudeReport(MagnitudeReadHandler handler);
 
-size_t sensorCount();
+// Amount of registered sensor magnitudes aka measurements
 size_t magnitudeCount();
 
 // Base magnitude info. Will contain `.type = MAGNITUDE_NONE` when index is out of bounds
 espurna::sensor::Info magnitudeInfo(unsigned char index);
-String magnitudeUnits(espurna::sensor::Unit);
 
+// type of magnitude at index; returns MAGNITUDE_NONE when index is out of bounds
 unsigned char magnitudeType(unsigned char index);
+
+// returns global index of magnitudes of the same type
 unsigned char magnitudeIndex(unsigned char index);
 
 String magnitudeTopic(unsigned char index);
-String magnitudeUnits(unsigned char index);
-String magnitudeDescription(unsigned char index);
 
-// Retrieves magnitude value. Depends on the internal 'real time' setting,
-// whether the value is the latest read or the last reported.
+// Get either last or reported reading; repends on the real-time setting
 espurna::sensor::Value magnitudeValue(unsigned char index);
+
+// Retrieves last sensor reading of the magnitude at index
+espurna::sensor::Value magnitudeReadValue(unsigned char index);
+
+// Retrieves last reported value of the magnitude at index
+espurna::sensor::Value magnitudeReportValue(unsigned char index);
 
 using SensorWebSocketMagnitudesCallback = void(*)(JsonArray&, size_t);
 void sensorWebSocketMagnitudes(JsonObject& root, const char* prefix, SensorWebSocketMagnitudesCallback);

@@ -326,7 +326,6 @@ RelayContext makeRelayContext() {
 
 class RelayDiscovery : public Discovery {
 public:
-    RelayDiscovery() = delete;
     explicit RelayDiscovery(Context& ctx) :
         _ctx(ctx),
         _relay(makeRelayContext()),
@@ -648,7 +647,6 @@ void receiveLightJson(char* payload) {
 
 class SensorDiscovery : public Discovery {
 public:
-    SensorDiscovery() = delete;
     explicit SensorDiscovery(Context& ctx) :
         _ctx(ctx),
         _magnitudes(magnitudeCount())
@@ -662,7 +660,7 @@ public:
         return *_root;
     }
 
-    bool ok() const {
+    bool ok() const override {
         return _index < _magnitudes;
     }
 
@@ -684,8 +682,8 @@ public:
             json[F("uniq_id")] = uniqueId();
 
             json[F("name")] = _ctx.name() + ' ' + name() + ' ' + localId();
-            json[F("stat_t")] = mqttTopic(magnitudeTopic(_index), false);
-            json[F("unit_of_meas")] = magnitudeUnits(_index);
+            json[F("stat_t")] = mqttTopic(_info.topic, false);
+            json[F("unit_of_meas")] = magnitudeUnitsName(_info.units);
 
             json.printTo(_message);
         }
@@ -695,14 +693,14 @@ public:
 
     const String& name() {
         if (!_name.length()) {
-            _name = magnitudeTypeTopic(magnitudeType(_index));
+            _name = magnitudeTypeTopic(_info.type);
         }
 
         return _name;
     }
 
     unsigned char localId() const {
-        return magnitudeIndex(_index);
+        return _info.index;
     }
 
     const String& uniqueId() {
@@ -718,6 +716,7 @@ public:
             auto current = _index;
             ++_index;
             if ((_index > current) && (_index < _magnitudes)) {
+                _info = magnitudeInfo(_index);
                 _unique_id = "";
                 _name = "";
                 _topic = "";
@@ -733,8 +732,9 @@ private:
     Context& _ctx;
     JsonObject* _root { nullptr };
 
-    unsigned char _index { 0u };
     unsigned char _magnitudes { 0u };
+    unsigned char _index { 0u };
+    espurna::sensor::Info _info;
 
     String _unique_id;
     String _name;
