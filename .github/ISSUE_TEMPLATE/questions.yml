@@ -19,12 +19,16 @@ body:
       required: false
 
   - type: input
+    id: version
     attributes:
       label: Version
-      description: ESPurna version
-      placeholder: |
-        Value on WebUI home page, commit hash or filename of a release .bin
-        e.g. 1.16.0-dev.git12345678+github220101
+      description: |
+        ESPurna version, if this question is related to something happening with the firmware
+        * .bin filename or snapshot name / date, if downloaded from 'Releases'
+        * 'Firmware version' in WebUI
+        * First line of `info` terminal command output
+        * Output of `git rev-parse HEAD`, in the directory that was created when you cloned this repository
+      placeholder: 1.16.0-dev.git12345678+github250718
     validations:
       required: false
 

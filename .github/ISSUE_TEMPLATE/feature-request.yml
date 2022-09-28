@@ -13,8 +13,6 @@ body:
       label: Description
       description: |
         Is your feature request related to a problem? Please describe
-      placeholder: |
-        A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
     validations:
       required: true
 
@@ -22,22 +20,16 @@ body:
     attributes:
       label: Solution
       description: |
-        Describe the solution you'd like
-      placeholder: |
         A clear and concise description of what you want to happen
 
   - type: textarea
     attributes:
       label: Alternatives
       description: |
-        Describe alternatives you've considered
-      placeholder: |
-        A clear and concise description of any alternative solutions or features you've considered
+        A clear and concise description of any alternative solutions or features you have considered
 
   - type: textarea
     attributes:
       label: Additional context
       description: |
-        Add any other information about the feature request
-      placeholder: |
-        (references, screenshots, etc.)
+        Add any other information about the feature request (references, screenshots, etc.)
