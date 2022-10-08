@@ -650,6 +650,10 @@ void onBoot() {
         break;
     }
 
+#if DEBUG_SERIAL_SUPPORT
+    espurna::debug::serial::setup();
+#endif
+
     configure();
 }
 
@@ -740,9 +744,6 @@ void debugShowBanner() {
 }
 
 void debugSetup() {
-#if DEBUG_SERIAL_SUPPORT
-    espurna::debug::serial::setup();
-#endif
 #if DEBUG_UDP_SUPPORT
     if (espurna::debug::syslog::build::enabled()) {
         espurna::debug::syslog::configure();
