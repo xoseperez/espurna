@@ -31,7 +31,9 @@ Updated to use WiFiServer and support reverse connections by Niek van der Maas <
 #include "mqtt.h"
 #include "telnet.h"
 #include "terminal.h"
+#include "web_utils.h"
 #include "wifi.h"
+#include "ws.h"
 
 #include "libs/URL.h"
 
@@ -64,6 +66,8 @@ constexpr bool authentication() {
 
 namespace settings {
 namespace keys {
+
+alignas(4) static constexpr char Prefix[] PROGMEM = "telnet";
 
 alignas(4) static constexpr char Station[] PROGMEM = "telnetSTA";
 alignas(4) static constexpr char Authentication[] PROGMEM = "telnetAuth";
@@ -103,8 +107,6 @@ EXACT_VALUE(port, settings::port)
 
 } // namespace internal
 
-alignas(4) static constexpr char Prefix[] PROGMEM = "telnet";
-
 static constexpr std::array<espurna::settings::query::Setting, 3> Settings PROGMEM {{
      {keys::Station, internal::station},
      {keys::Authentication, internal::authentication},
@@ -112,7 +114,7 @@ static constexpr std::array<espurna::settings::query::Setting, 3> Settings PROGM
 }};
 
 bool checkExactPrefix(StringView key) {
-    return espurna::settings::query::samePrefix(key, Prefix);
+    return espurna::settings::query::samePrefix(key, keys::Prefix);
 }
 
 String findValueFrom(StringView key) {
@@ -960,9 +962,39 @@ void setup() {
 } // namespace reverse
 #endif // TELNET_REVERSE_SUPPORT
 
+#if WEB_SUPPORT
+namespace web {
+
+bool onKeyCheck(espurna::StringView key, const JsonVariant&) {
+    return settings::query::checkExactPrefix(key);
+}
+
+void onVisible(JsonObject& root) {
+    wsPayloadModule(root, settings::keys::Prefix);
+}
+
+void onConnected(JsonObject& root) {
+    for (auto setting : settings::query::Settings) {
+        root[setting.key()] = setting.value();
+    }
+}
+
+void setup() {
+    wsRegister()
+        .onKeyCheck(onKeyCheck)
+        .onVisible(onVisible)
+        .onConnected(onConnected);
+}
+
+} // namespace web
+#endif
+
 void setup() {
 #if TELNET_REVERSE_SUPPORT
     reverse::setup();
+#endif
+#if WEB_SUPPORT
+    web::setup();
 #endif
 
     listen();
