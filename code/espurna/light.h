@@ -268,6 +268,10 @@ void lightUpdate(bool save);
 void lightUpdate();
 
 bool lightHasColor();
+bool lightHasWarmWhite();
+bool lightHasColdWhite();
+bool lightHasWhite();
+
 bool lightUseRGB();
 bool lightUseCCT();
 

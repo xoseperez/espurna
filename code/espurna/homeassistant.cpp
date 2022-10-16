@@ -411,21 +411,15 @@ private:
 
 // Example payload:
 // {
+//  "state": "ON",
 //  "brightness": 255,
-//  "color_temp": 155,
+//  "color_mode": "rgb",
 //  "color": {
 //    "r": 255,
 //    "g": 180,
 //    "b": 200,
-//    "x": 0.406,
-//    "y": 0.301,
-//    "h": 344.0,
-//    "s": 29.412
 //  },
-//  "effect": "colorloop",
-//  "state": "ON",
 //  "transition": 2,
-//  "white_value": 150
 // }
 
 // Notice that we only support JSON schema payloads, leaving it to the user to configure special
@@ -490,21 +484,33 @@ public:
             json[F("pl_avail")] = quote(mqttPayloadStatus(true));
             json[F("pl_not_avail")] = quote(mqttPayloadStatus(false));
 
-            // send `true` for every payload we support sending / receiving
-            // already enabled by default: "state", "transition"
-
-            json[F("brightness")] = true;
-
             // Note that since we send back the values immediately, HS mode sliders
             // *will jump*, as calculations of input do not always match the output.
             // (especially, when gamma table is used, as we modify the results)
             // In case or RGB, channel values input is expected to match the output exactly.
 
+            // Since 2022.9.x we have a different payload setup
+            // - https://github.com/xoseperez/espurna/issues/2539
+            // - https://github.com/home-assistant/core/blob/2022.9.7/homeassistant/components/mqtt/light/schema_json.py
+            // * ignore 'onoff' and 'brightness'
+            //   both described as 'Must be the only supported mode'
+            // * 'hs' is always supported, but HA UI depends on our setting and
+            //   what gets sent in the json payload
+            // * 'c' and 'w' mean different things depending on *our* context
+            //   'rgbw' - we receive and map to 'w' to our 'warm'
+            //   'rgbww' - we receive and map 'c' to our 'cold' and 'w' to our 'warm'
+            //   'cw' / 'ww' without 'rgb' are not supported; see 'brightness' or 'color_temp'
+            json["brightness"] = true;
+            json["color_mode"] = true;
+            JsonArray& modes = json.createNestedArray("supported_color_modes");
+
             if (lightHasColor()) {
-                if (lightUseRGB()) {
-                    json[F("rgb")] = true;
-                } else {
-                    json[F("hs")] = true;
+                modes.add("hs");
+                modes.add("rgb");
+                if (lightHasWarmWhite() && lightHasColdWhite()) {
+                    modes.add("rgbww");
+                } else if (lightHasWarmWhite()) {
+                    modes.add("rgbw");
                 }
             }
 
@@ -512,12 +518,16 @@ public:
             // (...besides the internally pinned value, ref. MQTT_TOPIC_MIRED. not used here though)
             // - in RGB mode, we convert the temperature into a specific color
             // - in CCT mode, white channels are used
+            if (lightHasColor() || lightHasWhite()) {
+                const auto range = lightMiredsRange();
+                json["min_mirs"] = range.cold();
+                json["max_mirs"] = range.warm();
+                modes.add("color_temp");
+                modes.add("white");
+            }
 
-            if (lightHasColor() || lightUseCCT()) {
-                auto range = lightMiredsRange();
-                json[F("min_mirs")] = range.cold();
-                json[F("max_mirs")] = range.warm();
-                json[F("color_temp")] = true;
+            if (!modes.size()) {
+                modes.add("brightness");
             }
 
             json.printTo(_message);
@@ -535,6 +545,33 @@ private:
     String _message;
 };
 
+void heartbeat_rgb(JsonObject& root, JsonObject& color) {
+    const auto rgb = lightRgb();
+
+    color["r"] = rgb.red();
+    color["g"] = rgb.green();
+    color["b"] = rgb.blue();
+
+    if (lightHasWarmWhite() && lightHasColdWhite()) {
+        root["color_mode"] = "rgbww";
+        color["c"] = lightColdWhite();
+        color["w"] = lightWarmWhite();
+    } else if (lightHasWarmWhite()) {
+        root["color_mode"] = "rgbw";
+        color["w"] = lightWarmWhite();
+    } else {
+        root["color_mode"] = "rgb";
+    }
+}
+
+void heartbeat_hsv(JsonObject& root, JsonObject& color) {
+    root["color_mode"] = "hs";
+
+    const auto hsv = lightHsv();
+    color["h"] = hsv.hue();
+    color["s"] = hsv.saturation();
+}
+
 bool heartbeat(espurna::heartbeat::Mask mask) {
     // TODO: mask json payload specifically?
     // or, find a way to detach masking from the system setting / don't use heartbeat timer
@@ -542,27 +579,17 @@ bool heartbeat(espurna::heartbeat::Mask mask) {
         DynamicJsonBuffer buffer(512);
         JsonObject& root = buffer.createObject();
 
-        auto state = lightState();
-        root[F("state")] = state ? "ON" : "OFF";
+        const auto state = lightState();
+        root["state"] = state ? "ON" : "OFF";
 
         if (state) {
-            root[F("brightness")] = lightBrightness();
-
-            if (lightUseCCT()) {
-                root[F("white_value")] = lightColdWhite();
-            }
-
-            if (lightColor()) {
+            root["brightness"] = lightBrightness();
+            if (lightHasColor() && lightColor()) {
                 auto& color = root.createNestedObject("color");
                 if (lightUseRGB()) {
-                    auto rgb = lightRgb();
-                    color[F("r")] = rgb.red();
-                    color[F("g")] = rgb.green();
-                    color[F("b")] = rgb.blue();
+                    heartbeat_rgb(root, color);
                 } else {
-                    auto hsv = lightHsv();
-                    color[F("h")] = hsv.hue();
-                    color[F("s")] = hsv.saturation();
+                    heartbeat_hsv(root, color);
                 }
             }
         }
@@ -588,54 +615,64 @@ void receiveLightJson(char* payload) {
         return;
     }
 
-    if (!root.containsKey(F("state"))) {
+    if (!root.containsKey("state")) {
         return;
     }
 
-    const auto state = root[F("state")].as<String>();
-    if (state == F("ON")) {
+    const auto state = root["state"].as<String>();
+
+    if (StringView("ON") == state) {
         lightState(true);
-    } else if (state == F("OFF")) {
+    } else if (StringView("OFF") == state) {
         lightState(false);
     } else {
         return;
     }
 
     auto transition = lightTransitionTime();
-    if (root.containsKey(F("transition"))) {
+    if (root.containsKey("transition")) {
         using LocalUnit = decltype(lightTransitionTime());
         using RemoteUnit = std::chrono::duration<float>;
-        auto seconds = RemoteUnit(root[F("transition")].as<float>());
+        auto seconds = RemoteUnit(root["transition"].as<float>());
 
         if (seconds.count() > 0.0f) {
             transition = std::chrono::duration_cast<LocalUnit>(seconds);
         }
     }
 
-    if (root.containsKey(F("color_temp"))) {
+    if (root.containsKey("color_temp")) {
         lightMireds(root["color_temp"].as<long>());
     }
 
-    if (root.containsKey(F("brightness"))) {
-        lightBrightness(root[F("brightness")].as<long>());
+    if (root.containsKey("brightness")) {
+        lightBrightness(root["brightness"].as<long>());
     }
 
-    if (lightHasColor() && root.containsKey(F("color"))) {
-        JsonObject& color = root[F("color")];
-        if (lightUseRGB()) {
-            lightRgb({
-                color[F("r")].as<long>(),
-                color[F("g")].as<long>(),
-                color[F("b")].as<long>()});
-        } else {
+    if (lightHasColor() && root.containsKey("color")) {
+        JsonObject& color = root["color"];
+        if (color.containsKey("h")
+         && color.containsKey("s"))
+        {
             lightHs(
-                color[F("h")].as<long>(),
-                color[F("s")].as<long>());
+                color["h"].as<long>(),
+                color["s"].as<long>());
+        } else if (color.containsKey("r")
+                && color.containsKey("g")
+                && color.containsKey("b"))
+        {
+            lightRgb({
+                color["r"].as<long>(),
+                color["g"].as<long>(),
+                color["b"].as<long>()});
         }
-    }
 
-    if (lightUseCCT() && root.containsKey(F("white_value"))) {
-        lightColdWhite(root[F("white_value")].as<long>());
+        if (color.containsKey("w")) {
+            lightWarmWhite(color["w"].as<long>());
+        }
+
+        if (color.containsKey("c")) {
+            lightColdWhite(color["c"].as<long>());
+        }
     }
 
     lightUpdate({transition, lightTransitionStep()});

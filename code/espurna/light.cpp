@@ -474,7 +474,9 @@ struct Pointers {
     Pointers& operator=(const Pointers&) = default;
     Pointers& operator=(Pointers&&) = default;
 
-    Pointers(LightChannel* red, LightChannel* green, LightChannel* blue, LightChannel* cold, LightChannel* warm) :
+    using Type = LightChannel*;
+
+    Pointers(Type red, Type green, Type blue, Type cold, Type warm) :
         _red(red),
         _green(green),
         _blue(blue),
@@ -645,7 +647,11 @@ Ticker _light_report_ticker;
 std::forward_list<LightReportListener> _light_report;
 
 bool _light_has_controls = false;
+bool _light_has_cold_white = false;
+bool _light_has_warm_white = false;
 bool _light_has_color = false;
+
+bool _light_use_color = false;
 bool _light_use_rgb = false;
 bool _light_use_white = false;
 bool _light_use_cct = false;
@@ -1006,9 +1012,8 @@ void _lightFromCommaSeparatedPayload(const char* payload, size_t len) {
 }
 
 void _lightFromRgbPayload(const char* rgb) {
-    if (!_light_has_color || (_light_channels.size() < 3)) {
+    if (!_light_has_color) {
         return;
-
     }
 
     if (!rgb || (*rgb == '\0')) {
@@ -1036,7 +1041,7 @@ void _lightFromRgbPayload(const char* rgb) {
 // - V [0...100]
 
 void _lightFromHsvPayload(const char* hsv) {
-    if (!hsv || (*hsv == '\0') || !_light_has_color) {
+    if (!_light_has_color || !hsv || (*hsv == '\0')) {
         return;
     }
 
@@ -1116,7 +1121,7 @@ long _lightCCTMireds() {
 void _fromKelvin(long kelvin) {
     // work through the brightness function instead of adjusting here
     // (but, note that +color +cct -white variant will set every rgb channel to 0)
-    if (_light_has_color && _light_use_cct) {
+    if (_light_use_color && _light_use_cct) {
         if (_light_use_white) {
             _lightMireds(kelvin);
         } else {
@@ -1127,7 +1132,7 @@ void _fromKelvin(long kelvin) {
         return;
     }
 
-    if (!_light_has_color && _light_use_cct) {
+    if (!_light_use_color && _light_use_cct) {
         _lightMiredsCCT(kelvin);
         return;
     }
@@ -2047,7 +2052,14 @@ void _lightMqttCallback(unsigned int type, const char* topic, char* payload) {
 
     if (type == MQTT_CONNECT_EVENT) {
 
+        mqttSubscribe(MQTT_TOPIC_TRANSITION);
+
+        mqttSubscribe(MQTT_TOPIC_CHANNEL "/+");
         mqttSubscribe(MQTT_TOPIC_BRIGHTNESS);
+
+        if (!_light_has_controls) {
+            mqttSubscribe(MQTT_TOPIC_LIGHT);
+        }
 
         if (_light_has_color) {
             mqttSubscribe(MQTT_TOPIC_COLOR_RGB);
@@ -2055,25 +2067,13 @@ void _lightMqttCallback(unsigned int type, const char* topic, char* payload) {
             mqttSubscribe(MQTT_TOPIC_COLOR_HSV);
         }
 
-        if (_light_has_color || _light_use_cct) {
+        if (_light_has_color || _light_has_cold_white || _light_has_warm_white) {
             mqttSubscribe(MQTT_TOPIC_MIRED);
             mqttSubscribe(MQTT_TOPIC_KELVIN);
         }
 
-        // Transition config (everything sent after this will use this new value)
-        mqttSubscribe(MQTT_TOPIC_TRANSITION);
-
-        // Group color
         if (mqtt_group_color.length() > 0) {
             mqttSubscribeRaw(mqtt_group_color.c_str());
-        }
-
-        // Channels
-        mqttSubscribe(MQTT_TOPIC_CHANNEL "/+");
-
-        // Global lights control
-        if (!_light_has_controls) {
-            mqttSubscribe(MQTT_TOPIC_LIGHT);
         }
     }
 
@@ -2166,14 +2166,14 @@ void _lightMqttSetup() {
 } // namespace
 
 void lightMQTT() {
-    if (_light_has_color) {
-        auto rgb = _lightToTargetRgb();
+    if (_light_use_color) {
+        const auto rgb = _lightToTargetRgb();
         mqttSend(MQTT_TOPIC_COLOR_HEX, _lightRgbHexPayload(rgb).c_str());
         mqttSend(MQTT_TOPIC_COLOR_RGB, _lightRgbPayload(rgb).c_str());
         mqttSend(MQTT_TOPIC_COLOR_HSV, _lightHsvPayload(rgb).c_str());
     }
 
-    if (_light_has_color || _light_use_cct) {
+    if (_light_use_color || _light_use_cct) {
         mqttSend(MQTT_TOPIC_MIRED, String(_light_mireds).c_str());
     }
 
@@ -2223,9 +2223,7 @@ bool _lightApiRgbSetter(ApiRequest& request) {
 }
 
 void _lightApiSetup() {
-
     if (_light_has_color) {
-
         apiRegister(F(MQTT_TOPIC_COLOR_RGB),
             [](ApiRequest& request) {
                 request.send(_lightRgbPayload(_lightToTargetRgb()));
@@ -2253,7 +2251,9 @@ void _lightApiSetup() {
                 return true;
             }
         );
+    }
 
+    if (_light_has_color || _light_has_cold_white || _light_has_warm_white) {
         apiRegister(F(MQTT_TOPIC_MIRED),
             [](ApiRequest& request) {
                 request.send(String(_light_mireds));
@@ -2277,7 +2277,6 @@ void _lightApiSetup() {
                 return true;
             }
         );
-
     }
 
     apiRegister(F(MQTT_TOPIC_TRANSITION),
@@ -2362,7 +2361,7 @@ bool _lightWebSocketOnKeyCheck(espurna::StringView key, const JsonVariant&) {
 }
 
 void _lightWebSocketStatus(JsonObject& root) {
-    if (_light_has_color) {
+    if (_light_use_color) {
         if (_light_use_rgb) {
             root["rgb"] = _lightRgbHexPayload(_lightToInputRgb());
         } else {
@@ -2393,7 +2392,7 @@ void _lightWebSocketOnVisible(JsonObject& root) {
 
 void _lightWebSocketOnConnected(JsonObject& root) {
     root["mqttGroupColor"] = espurna::light::settings::mqttGroup();
-    root["useColor"] = _light_has_color;
+    root["useColor"] = _light_use_color;
     root["useWhite"] = _light_use_white;
     root["useGamma"] = _light_use_gamma;
     root["useTransitions"] = _light_use_transitions;
@@ -2502,7 +2501,7 @@ static void _lightCommandNotify(::terminal::CommandContext&& ctx) {
     };
 
     if ((ctx.argv.size() < 2) || (ctx.argv.size() > 5)) {
-        terminalError(ctx, F("NOTIFY <CHANNEL> [<REPEATS>] [<TIME>] [<STEP>]")); 
+        terminalError(ctx, F("NOTIFY <CHANNEL> [<REPEATS>] [<TIME>] [<STEP>]"));
         return;
     }
 
@@ -2696,6 +2695,18 @@ void _lightInitCommands() {
 
 size_t lightChannels() {
     return _light_channels.size();
+}
+
+bool lightHasWhite() {
+    return _light_has_cold_white || _light_has_warm_white;
+}
+
+bool lightHasColdWhite() {
+    return _light_has_cold_white;
+}
+
+bool lightHasWarmWhite() {
+    return _light_has_warm_white;
 }
 
 bool lightHasColor() {
@@ -3193,36 +3204,40 @@ inline bool _lightUseGamma(size_t channels, size_t index) {
     return false;
 }
 
-inline bool _lightUseGamma(size_t index) {
-    return _lightUseGamma(_light_channels.size(), index);
-}
-
 void _lightConfigure() {
-    const size_t Channels { _light_channels.size() };
+    const auto Channels = _light_channels.size();
 
-    // TODO: just bounce off invalid input, so there's no need for setting values back?
-    _light_has_color = espurna::light::settings::color();
-    if (_light_has_color && (Channels < 3)) {
-        _light_has_color = false;
+    const auto has_color = (Channels >= 3);
+    _light_has_color = has_color;
+
+    const auto use_color = espurna::light::settings::color();
+    _light_use_color = use_color && has_color;
+    if (!_light_use_color) {
         espurna::light::settings::color(false);
     }
 
-    _light_use_white = espurna::light::settings::white();
-    if (_light_use_white && (Channels < 4) && (Channels != 2)) {
-        _light_use_white = false;
+    const auto has_warm_white = (Channels >= 4) || (Channels >= 1);
+    _light_has_warm_white = has_warm_white;
+
+    const auto has_cold_white = (Channels == 5) || (Channels == 2);
+    _light_has_cold_white = has_cold_white;
+
+    const auto use_white = espurna::light::settings::white();
+    _light_use_white = use_white && (has_cold_white || has_warm_white);
+    if (!_light_use_white) {
         espurna::light::settings::white(false);
     }
 
-    _light_use_cct = espurna::light::settings::cct();
-    if (_light_use_cct && (((Channels < 5) && (Channels != 2)) || !_light_use_white)) {
-        _light_use_cct = false;
+    const auto use_cct = espurna::light::settings::cct();
+    _light_use_cct = !_light_use_white
+        && use_cct && has_cold_white && has_warm_white;
+    if (!_light_use_cct) {
         espurna::light::settings::cct(false);
     }
 
-    // TODO: cct and white can't be enabled at the same time
     const auto last_process_input_values = _light_process_input_values;
     _light_process_input_values =
-        (_light_has_color) ? (
+        (_light_use_color) ? (
             (_light_use_cct) ? _lightValuesWithRgbCct :
             (_light_use_white) ? _lightValuesWithRgbWhite :
             _lightValuesWithBrightnessExceptWhite) :
