@@ -84,7 +84,7 @@ public:
     virtual const char* id() const = 0;
 };
 
-PayloadStatus relayParsePayload(const char * payload);
+PayloadStatus relayParsePayload(espurna::StringView);
 
 bool relayStatus(size_t id, bool status, bool report, bool group_report);
 bool relayStatus(size_t id, bool status);
@@ -100,11 +100,11 @@ void relayToggle(size_t id);
 
 size_t relayCount();
 
-const String& relayPayloadOn();
-const String& relayPayloadOff();
-const String& relayPayloadToggle();
+espurna::StringView relayPayloadOn();
+espurna::StringView relayPayloadOff();
+espurna::StringView relayPayloadToggle();
 
-const char* relayPayload(PayloadStatus status);
+espurna::StringView relayPayload(PayloadStatus status);
 
 void relayPulse(size_t id, espurna::duration::Milliseconds, bool);
 void relayPulse(size_t id, espurna::duration::Milliseconds);

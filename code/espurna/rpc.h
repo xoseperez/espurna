@@ -8,6 +8,8 @@ Part of MQTT and API modules
 
 #include <Arduino.h>
 
+#include "types.h"
+
 // --------------------------------------------------------------------------
 
 enum class PayloadStatus {
@@ -17,7 +19,8 @@ enum class PayloadStatus {
     Unknown = 0xFF
 };
 
-using rpc_payload_check_t = PayloadStatus(*)(const char*);
+using RpcPayloadCheck = PayloadStatus(*)(espurna::StringView);
 
-bool rpcHandleAction(const String& action);
-PayloadStatus rpcParsePayload(const char* payload, const rpc_payload_check_t ext_check = nullptr);
+bool rpcHandleAction(espurna::StringView);
+PayloadStatus rpcParsePayload(espurna::StringView, RpcPayloadCheck);
+PayloadStatus rpcParsePayload(espurna::StringView);

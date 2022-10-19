@@ -1502,19 +1502,14 @@ void _relayHandleStatus(size_t id, PayloadStatus status) {
     }
 }
 
-bool _relayHandlePayload(size_t id, const char* payload) {
-    auto status = relayParsePayload(payload);
+bool _relayHandlePayload(size_t id, espurna::StringView payload) {
+    const auto status = relayParsePayload(payload);
     if (status != PayloadStatus::Unknown) {
         _relayHandleStatus(id, status);
         return true;
     }
 
     return false;
-}
-
-[[gnu::unused]]
-bool _relayHandlePayload(size_t id, const String& payload) {
-    return _relayHandlePayload(id, payload.c_str());
 }
 
 // Initialize pulse timers after ON or OFF event
@@ -1539,7 +1534,7 @@ void _relayProcessActivePulse(const Relay& relay, size_t id, bool status) {
 // start pulse for the current status as 'target'
 // TODO: special suffixes for minutes, hours and days
 [[gnu::unused]]
-bool _relayHandlePulsePayload(size_t id, const char* payload) {
+bool _relayHandlePulsePayload(size_t id, espurna::StringView payload) {
     const auto status = relayStatus(id);
     if (_relayPulseActive(id, status)) {
         return false;
@@ -1555,11 +1550,6 @@ bool _relayHandlePulsePayload(size_t id, const char* payload) {
     }
 
     return false;
-}
-
-[[gnu::unused]]
-bool _relayHandlePulsePayload(size_t id, const String& payload) {
-    return _relayHandlePulsePayload(id, payload.c_str());
 }
 
 [[gnu::unused]]
@@ -1955,19 +1945,21 @@ size_t relayCount() {
     return _relays.size();
 }
 
-PayloadStatus relayParsePayload(const char * payload) {
+PayloadStatus relayParsePayload(espurna::StringView payload) {
 #if MQTT_SUPPORT || API_SUPPORT
-    return rpcParsePayload(payload, [](const char* payload) {
-        if (_relay_payload_off.equals(payload)) {
-            return PayloadStatus::Off;
-        } else if (_relay_payload_on.equals(payload)) {
-            return PayloadStatus::On;
-        } else if (_relay_payload_toggle.equals(payload)) {
-            return PayloadStatus::Toggle;
-        }
+    return rpcParsePayload(
+        payload,
+        [](espurna::StringView payload) {
+            if (payload.equals(_relay_payload_off)) {
+                return PayloadStatus::Off;
+            } else if (payload.equals(_relay_payload_on)) {
+                return PayloadStatus::On;
+            } else if (payload.equals(_relay_payload_toggle)) {
+                return PayloadStatus::Toggle;
+            }
 
-        return PayloadStatus::Unknown;
-    });
+            return PayloadStatus::Unknown;
+        });
 #else
     return rpcParsePayload(payload);
 #endif
@@ -2173,9 +2165,9 @@ void _relayWebSocketOnAction(uint32_t, const char* action, JsonObject& data) {
             return;
         }
 
-        _relayHandlePayload(
-            data[F("id")].as<size_t>(),
-            data[F("status")].as<String>().c_str());
+        const auto id = data[F("id")].as<size_t>();
+        const auto status = data[F("status")].as<String>();
+        _relayHandlePayload(id, status);
     }
 }
 
@@ -2278,26 +2270,26 @@ void relaySetupAPI() {
 
 #if MQTT_SUPPORT || API_SUPPORT
 
-const String& relayPayloadOn() {
+espurna::StringView relayPayloadOn() {
     return _relay_payload_on;
 }
 
-const String& relayPayloadOff() {
+espurna::StringView relayPayloadOff() {
     return _relay_payload_off;
 }
 
-const String& relayPayloadToggle() {
+espurna::StringView relayPayloadToggle() {
     return _relay_payload_toggle;
 }
 
-const char* relayPayload(PayloadStatus status) {
+espurna::StringView relayPayload(PayloadStatus status) {
     switch (status) {
     case PayloadStatus::Off:
-        return _relay_payload_off.c_str();
+        return _relay_payload_off;
     case PayloadStatus::On:
-        return _relay_payload_on.c_str();
+        return _relay_payload_on;
     case PayloadStatus::Toggle:
-        return _relay_payload_toggle.c_str();
+        return _relay_payload_toggle;
     case PayloadStatus::Unknown:
         break;
     }
@@ -2418,13 +2410,13 @@ void _relayMqttPublishCustomTopic(size_t id) {
         status = _relayInvertStatus(status);
     }
 
-    mqttSendRaw(topic.c_str(), relayPayload(status));
+    mqttSendRaw(topic.c_str(), relayPayload(status).begin());
 }
 
 void _relayMqttReport(size_t id) {
     if (_relays[id].report) {
         _relays[id].report = false;
-        mqttSend(MQTT_TOPIC_RELAY, id, relayPayload(_relayPayloadStatus(id)));
+        mqttSend(MQTT_TOPIC_RELAY, id, relayPayload(_relayPayloadStatus(id)).c_str()); // TODO FIXED LENGTH
     }
 
     if (_relays[id].group_report) {
@@ -2435,7 +2427,7 @@ void _relayMqttReport(size_t id) {
 
 void _relayMqttReportAll() {
     for (unsigned int id=0; id < _relays.size(); id++) {
-        mqttSend(MQTT_TOPIC_RELAY, id, relayPayload(_relayPayloadStatus(id)));
+        mqttSend(MQTT_TOPIC_RELAY, id, relayPayload(_relayPayloadStatus(id)).c_str()); // TODO FIXED LENGTH
     }
 }
 
@@ -2474,7 +2466,7 @@ bool _relayMqttHeartbeat(espurna::heartbeat::Mask mask) {
     return mqttConnected();
 }
 
-void _relayMqttHandleCustomTopic(const String& topic, const char* payload) {
+void _relayMqttHandleCustomTopic(const String& topic, espurna::StringView payload) {
     PathParts received(topic);
     for (auto& topic : _relay_custom_topics) {
         if (topic.match(received)) {

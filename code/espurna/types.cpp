@@ -114,4 +114,27 @@ bool StringView::equals(StringView other) const {
     return false;
 }
 
+bool StringView::equalsIgnoreCase(StringView other) const {
+    if (other._len == _len) {
+        if (inFlash(_ptr) || inFlash(other._ptr)) {
+            if (_ptr == other._ptr) {
+                return true;
+            }
+
+            String copy;
+            const char* ptr = _ptr;
+            if (inFlash(_ptr)) {
+                copy = toString();
+                ptr = copy.begin();
+            }
+
+            return strncasecmp_P(ptr, other._ptr, _len) == 0;
+        }
+
+        return __builtin_strncasecmp(_ptr, other._ptr, _len) == 0;
+    }
+
+    return false;
+}
+
 } // namespace espurna

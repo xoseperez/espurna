@@ -295,7 +295,8 @@ struct StringView {
         return toString();
     }
 
-    bool equals(StringView other) const;
+    bool equals(StringView) const;
+    bool equalsIgnoreCase(StringView) const;
 
 private:
 #if defined(HOST_MOCK)

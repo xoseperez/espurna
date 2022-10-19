@@ -1151,7 +1151,7 @@ void _rfbApiSetup() {
 #if TERMINAL_SUPPORT
 
 void _rfbCommandStatusDispatch(::terminal::CommandContext&& ctx, size_t id, RelayStatusCallback callback) {
-    auto parsed = rpcParsePayload(ctx.argv[2].c_str());
+    const auto parsed = rpcParsePayload(ctx.argv[2]);
     switch (parsed) {
     case PayloadStatus::On:
     case PayloadStatus::Off:

@@ -250,12 +250,8 @@ output:
 
 } // namespace internal
 
-Result parse(const String& value) {
+Result parse(StringView value) {
     return internal::parse(value.begin(), value.end());
-}
-
-Result parse(const char* value) {
-    return internal::parse(value, value + strlen(value));
 }
 
 #if 0

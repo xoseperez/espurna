@@ -103,12 +103,7 @@ struct Pattern {
     Pattern(Pattern&&) = default;
     Pattern& operator=(Pattern&&) = default;
 
-    Pattern(const char* begin, const char* end);
-
-    explicit Pattern(const String& input) :
-        Pattern(input.begin(), input.end())
-    {}
-
+    explicit Pattern(espurna::StringView);
     explicit Pattern(Delays&& delays) :
         _delays(std::move(delays)),
         _sequence(_delays),
@@ -798,6 +793,25 @@ void pattern(Led& led, Pattern&& other) {
     status(led, true);
 }
 
+void payload_status(Led& led, StringView payload) {
+    led.mode(LedMode::Manual);
+    led.stop();
+
+    const auto value = rpcParsePayload(payload);
+    switch (value) {
+    case PayloadStatus::On:
+    case PayloadStatus::Off:
+        led::status(led, (value == PayloadStatus::On));
+        break;
+    case PayloadStatus::Toggle:
+        led::status(led, !led::status(led));
+        break;
+    case PayloadStatus::Unknown:
+        pattern(led, Pattern(payload));
+        break;
+    }
+}
+
 void run(Led& led, const Delay& delay) {
     using TimeSource = espurna::time::CpuClock;
 
@@ -964,28 +978,11 @@ void callback(unsigned int type, const char* topic, char* payload) {
         }
 
         size_t ledID;
-        if (!tryParseId(magnitude.substring(strlen(MQTT_TOPIC_LED) + 1).c_str(), ledCount, ledID)) {
-            return;
+        if (tryParseId(mqttMagnitudeTail(magnitude, MQTT_TOPIC_LED), ledCount, ledID)) {
+            payload_status(internal::leds[ledID], payload);
         }
 
-        auto& led = internal::leds[ledID];
-        if (led.mode() != LedMode::Manual) {
-            return;
-        }
-
-        const auto value = rpcParsePayload(payload);
-        switch (value) {
-        case PayloadStatus::On:
-        case PayloadStatus::Off:
-            led::status(led, (value == PayloadStatus::On));
-            return;
-        case PayloadStatus::Toggle:
-            led::status(led, !led::status(led));
-            return;
-        case PayloadStatus::Unknown:
-            pattern(led, Pattern(payload, payload + strlen(payload)));
-            break;
-        }
+        return;
     }
 }
 
@@ -1025,7 +1022,7 @@ alignas(4) static constexpr char Led[] PROGMEM = "LED";
 void led(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() > 1) {
         size_t id;
-        if (!tryParseId(ctx.argv[1].c_str(), ledCount, id)) {
+        if (!tryParseId(ctx.argv[1], ledCount, id)) {
             terminalError(ctx, F("Invalid ledID"));
             return;
         }
@@ -1034,8 +1031,7 @@ void led(::terminal::CommandContext&& ctx) {
         if (ctx.argv.size() == 2) {
             settingsDump(ctx, settings::query::IndexedSettings, id);
         } else if (ctx.argv.size() > 2) {
-            led.mode(LedMode::Manual);
-            pattern(led, Pattern(ctx.argv[2]));
+            payload_status(led, ctx.argv[2]);
         }
 
         schedule();

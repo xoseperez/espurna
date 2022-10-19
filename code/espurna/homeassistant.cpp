@@ -319,8 +319,8 @@ RelayContext makeRelayContext() {
         mqttTopic(MQTT_TOPIC_STATUS, false),
         quote(mqttPayloadStatus(true)),
         quote(mqttPayloadStatus(false)),
-        quote(relayPayload(PayloadStatus::On)),
-        quote(relayPayload(PayloadStatus::Off))
+        quote(relayPayload(PayloadStatus::On).toString()),
+        quote(relayPayload(PayloadStatus::Off).toString())
     };
 }
 

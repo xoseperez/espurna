@@ -2036,7 +2036,7 @@ void _lightRestoreSettings() {
     lightBrightness(espurna::light::settings::brightness());
 }
 
-bool _lightParsePayload(const char* payload) {
+bool _lightParsePayload(espurna::StringView payload) {
     switch (rpcParsePayload(payload)) {
     case PayloadStatus::On:
         lightState(true);
@@ -2052,10 +2052,6 @@ bool _lightParsePayload(const char* payload) {
     }
 
     return true;
-}
-
-bool _lightParsePayload(const String& payload) {
-    return _lightParsePayload(payload.c_str());
 }
 
 bool _lightTryParseChannel(const char* p, size_t& id) {
@@ -2620,7 +2616,7 @@ alignas(4) static constexpr char LightCommand[] PROGMEM = "LIGHT";
 
 static void _lightCommand(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() > 1) {
-        if (!_lightParsePayload(ctx.argv[1].c_str())) {
+        if (!_lightParsePayload(ctx.argv[1])) {
             terminalError(ctx, F("Invalid payload"));
             return;
         }

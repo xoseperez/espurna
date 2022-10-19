@@ -71,11 +71,8 @@ void help(CommandContext&& ctx) {
             // XXX: Core's ..._P funcs only allow 2nd pointer to be in PROGMEM,
             //      explicitly load the 1st one
             // TODO: can we just assume linker already sorted all strings?
-            const String lhs_as_string(lhs);
             return strncasecmp_P(
-                lhs_as_string.c_str(),
-                rhs.c_str(),
-                lhs_as_string.length()) < 0;
+                lhs.toString().begin(), rhs.begin(), lhs.length()) < 0;
         });
 
     ctx.output.print(F("Available commands:\n"));

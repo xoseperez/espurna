@@ -76,10 +76,7 @@ const Command* find(StringView name) {
             commands.begin,
             commands.end,
             [&](const Command& command) {
-                return (name.length() == command.name.length())
-                    && (strncasecmp_P(name.c_str(),
-                            command.name.c_str(),
-                            command.name.length()) == 0);
+                return name.equalsIgnoreCase(command.name);
             });
 
         if (found != commands.end) {

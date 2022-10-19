@@ -14,7 +14,7 @@ Copyright (C) 2020-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 // '<on1>,<off1>,<repeats1> <on2>,<off2>,<repeats2> ...'
 // And returns a list of Delay objects for the pattern
 
-Pattern::Pattern(const char* begin, const char* end) {
+Pattern::Pattern(espurna::StringView value) {
     char buffer[16];
 
     const char* on1;
@@ -26,8 +26,8 @@ Pattern::Pattern(const char* begin, const char* end) {
     const char* repeat1;
     const char* repeat2;
 
-    const char* YYCURSOR { begin };
-    const char* YYLIMIT { end };
+    const char* YYCURSOR { value.begin() };
+    const char* YYLIMIT { value.end() };
     const char* YYMARKER;
 
 loop:
