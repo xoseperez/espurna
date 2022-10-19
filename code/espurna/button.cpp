@@ -773,7 +773,7 @@ namespace terminal {
 void button(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() == 2) {
         size_t id;
-        if (!tryParseId(ctx.argv[1].c_str(), buttonCount, id)) {
+        if (!tryParseId(ctx.argv[1], buttonCount, id)) {
             terminalError(ctx, F("Invalid button ID"));
             return;
         }
@@ -1010,35 +1010,36 @@ namespace {
 
 #if DEBUG_SUPPORT || MQTT_SUPPORT
 
-String _buttonEventString(ButtonEvent event) {
-    const __FlashStringHelper* ptr = nullptr;
+const char* _buttonEventString(ButtonEvent event) {
+    const char* out = "none";
+
     switch (event) {
     case ButtonEvent::Pressed:
-        ptr = F("pressed");
+        out = PSTR("pressed");
         break;
     case ButtonEvent::Released:
-        ptr = F("released");
+        out = PSTR("released");
         break;
     case ButtonEvent::Click:
-        ptr = F("click");
+        out = PSTR("click");
         break;
     case ButtonEvent::DoubleClick:
-        ptr = F("double-click");
+        out = PSTR("double-click");
         break;
     case ButtonEvent::LongClick:
-        ptr = F("long-click");
+        out = PSTR("long-click");
         break;
     case ButtonEvent::LongLongClick:
-        ptr = F("looong-click");
+        out = PSTR("looong-click");
         break;
     case ButtonEvent::TripleClick:
-        ptr = F("triple-click");
+        out = PSTR("triple-click");
         break;
     case ButtonEvent::None:
-        ptr = F("none");
         break;
     }
-    return String(ptr);
+
+    return out;
 }
 
 #endif
@@ -1048,7 +1049,7 @@ String _buttonEventString(ButtonEvent event) {
 void buttonEvent(size_t id, ButtonEvent event) {
 
     DEBUG_MSG_P(PSTR("[BUTTON] Button #%u event %d (%s)\n"),
-        id, static_cast<int>(event), _buttonEventString(event).c_str()
+        id, static_cast<int>(event), _buttonEventString(event)
     );
 
     if (event == ButtonEvent::None) {
@@ -1064,7 +1065,7 @@ void buttonEvent(size_t id, ButtonEvent event) {
 
 #if MQTT_SUPPORT
     if ((action != ButtonAction::None) || _buttons_mqtt_send_all[id]) {
-        mqttSend(MQTT_TOPIC_BUTTON, id, _buttonEventString(event).c_str(), false, _buttons_mqtt_retain[id]);
+        mqttSend(MQTT_TOPIC_BUTTON, id, String(_buttonEventString(event)).c_str(), false, _buttons_mqtt_retain[id]);
     }
 #endif
 

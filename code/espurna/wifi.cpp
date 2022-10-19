@@ -2526,32 +2526,45 @@ String event(wifi::Event value) {
 
 [[gnu::unused]]
 const char* state(wifi::State value) {
+    const char* out = "?";
+
     switch (value) {
     case wifi::State::Boot:
-        return "Boot";
+        out = PSTR("Boot");
+        break;
     case wifi::State::Connect:
-        return "Connect";
+        out = PSTR("Connect");
+        break;
     case wifi::State::TryConnectBetter:
-        return "TryConnectBetter";
+        out = PSTR("TryConnectBetter");
+        break;
     case wifi::State::Fallback:
-        return "Fallback";
+        out = PSTR("Fallback");
+        break;
     case wifi::State::Connected:
-        return "Connected";
+        out = PSTR("Connected");
+        break;
     case wifi::State::Idle:
-        return "Idle";
+        out = PSTR("Idle");
+        break;
     case wifi::State::Init:
-        return "Init";
+        out = PSTR("Init");
+        break;
     case wifi::State::Timeout:
-        return "Timeout";
+        out = PSTR("Timeout");
+        break;
     case wifi::State::WaitScan:
-        return "WaitScan";
+        out = PSTR("WaitScan");
+        break;
     case wifi::State::WaitScanWithoutCurrent:
-        return "WaitScanWithoutCurrent";
+        out = PSTR("WaitScanWithoutCurrent");
+        break;
     case wifi::State::WaitConnected:
-        return "WaitConnected";
+        out = PSTR("WaitConnected");
+        break;
     }
 
-    return "";
+    return out;
 }
 
 } // namespace debug

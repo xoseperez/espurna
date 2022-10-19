@@ -763,8 +763,17 @@ void init(rpn_context& context) {
         return 0;
     });
 
-    rpn_operator_set(context, "black", 0, [](rpn_context& ctxt) -> rpn_error {
-        ::lightColor(0ul);
+    rpn_operator_set(context, "brightness", 0, [](rpn_context& ctxt) -> rpn_error {
+        rpn_value value { static_cast<rpn_int>(::lightBrightness()) };
+        rpn_stack_push(ctxt, value);
+        return 0;
+    });
+
+    rpn_operator_set(context, "set_brightness", 1, [](rpn_context& ctxt) -> rpn_error {
+        rpn_value value;
+        rpn_stack_pop(ctxt, value);
+
+        ::lightBrightness(value.toInt());
         return 0;
     });
 

@@ -970,26 +970,27 @@ char _lightTag(size_t channels, size_t index) {
 }
 
 const char* _lightDesc(size_t channels, size_t index) {
-    const __FlashStringHelper* ptr { F("UNKNOWN") };
+    const char* out = PSTR("UNKNOWN");
+
     switch (_lightTag(channels, index)) {
     case 'W':
-        ptr = F("WARM WHITE");
+        out = PSTR("WARM WHITE");
         break;
     case 'C':
-        ptr = F("COLD WHITE");
+        out = PSTR("COLD WHITE");
         break;
     case 'R':
-        ptr = F("RED");
+        out = PSTR("RED");
         break;
     case 'G':
-        ptr = F("GREEN");
+        out = PSTR("GREEN");
         break;
     case 'B':
-        ptr = F("BLUE");
+        out = PSTR("BLUE");
         break;
     }
 
-    return reinterpret_cast<const char*>(ptr);
+    return out;
 }
 
 } // namespace
@@ -1000,15 +1001,15 @@ const char* _lightDesc(size_t channels, size_t index) {
 
 namespace {
 
-void _lightFromHexPayload(const char* payload, size_t len) {
-    const bool JustRgb { (len == 6) };
-    const bool WithBrightness { (len == 8) };
+void _lightFromHexPayload(espurna::StringView payload) {
+    const bool JustRgb { (payload.length() == 6) };
+    const bool WithBrightness { (payload.length() == 8) };
     if (!JustRgb && !WithBrightness) {
         return;
     }
 
     uint8_t values[4] {0, 0, 0, 0};
-    if (hexDecode(payload, len, values, sizeof(values))) {
+    if (hexDecode(payload.begin(), payload.length(), values, sizeof(values))) {
         _light_mapping.red(values[0]);
         _light_mapping.green(values[1]);
         _light_mapping.blue(values[2]);
@@ -1018,11 +1019,11 @@ void _lightFromHexPayload(const char* payload, size_t len) {
     }
 }
 
-void _lightFromCommaSeparatedPayload(const char* payload, size_t len) {
+void _lightFromCommaSeparatedPayload(espurna::StringView payload) {
     constexpr size_t BufferSize { 16 };
-    if (len < BufferSize) {
+    if (payload.length() < BufferSize) {
         char buffer[BufferSize] = {0};
-        std::copy(payload, payload + len, buffer);
+        std::copy(payload.begin(), payload.end(), buffer);
 
         auto it = _light_channels.begin();
         char* tok = std::strtok(buffer, ",");
@@ -1048,28 +1049,27 @@ void _lightFromCommaSeparatedPayload(const char* payload, size_t len) {
     }
 }
 
-void _lightFromRgbPayload(const char* rgb) {
+void _lightFromRgbPayload(espurna::StringView payload) {
     if (!_light_has_color) {
         return;
     }
 
-    if (!rgb || (*rgb == '\0')) {
+    if (!payload.length() || (payload[0] == '\0')) {
         return;
     }
-
-    const size_t PayloadLen { strlen(rgb) };
 
     // HEX value is always prefixed, like CSS
     // - #AABBCC
     // Extra byte is interpreted like RGB + brightness
     // - #AABBCCDD
-    if (rgb[0] == '#') {
-        _lightFromHexPayload(rgb + 1, PayloadLen - 1);
+    if (payload[0] == '#') {
+        _lightFromHexPayload(
+            espurna::StringView(payload.begin() + 1, payload.end()));
         return;
     }
 
     // Otherwise, assume comma-separated decimal values
-    _lightFromCommaSeparatedPayload(rgb, PayloadLen);
+    _lightFromCommaSeparatedPayload(payload);
 }
 
 // HSV string is expected to be "H,S,V", where:
@@ -1077,17 +1077,16 @@ void _lightFromRgbPayload(const char* rgb) {
 // - S [0...100]
 // - V [0...100]
 
-void _lightFromHsvPayload(const char* hsv) {
-    if (!_light_has_color || !hsv || (*hsv == '\0')) {
+void _lightFromHsvPayload(espurna::StringView payload) {
+    if (!_light_has_color || !payload.length() || (payload[0] == '\0')) {
         return;
     }
 
-    const size_t PayloadLen { strlen(hsv) };
     constexpr size_t BufferSize { 16 };
 
-    if (PayloadLen < BufferSize) {
+    if (payload.length() < BufferSize) {
         char buffer[BufferSize] = {0};
-        std::copy(hsv, hsv + PayloadLen, buffer);
+        std::copy(payload.begin(), payload.end(), buffer);
 
         long values[3] {0, 0, 0};
         char* tok = std::strtok(buffer, ",");
@@ -1374,11 +1373,11 @@ String _lightGroupPayload() {
 // Basic value adjustments. Expression can be:
 // +offset, -offset or the new value
 
-long _lightAdjustValue(long value, const String& operation) {
+long _lightAdjustValue(long value, espurna::StringView operation) {
     if (operation.length()) {
         char* endp { nullptr };
-        auto updated = std::strtol(operation.c_str(), &endp, 10);
-        if ((endp == operation.c_str()) || (*endp != '\0')) {
+        auto updated = std::strtol(operation.begin(), &endp, 10);
+        if ((endp == operation.begin()) || (*endp != '\0')) {
             return value;
         }
 
@@ -1394,42 +1393,26 @@ long _lightAdjustValue(long value, const String& operation) {
     return value;
 }
 
-void _lightAdjustBrightness(const String& payload) {
+void _lightAdjustBrightness(espurna::StringView payload) {
     lightBrightness(_lightAdjustValue(_light_brightness, payload));
 }
 
-void _lightAdjustBrightness(const char* payload) {
-    _lightAdjustBrightness(String(payload));
-}
-
-void _lightAdjustChannel(LightChannel& channel, const String& payload) {
+void _lightAdjustChannel(LightChannel& channel, espurna::StringView payload) {
     channel = _lightAdjustValue(channel.inputValue, payload);
 }
 
-void _lightAdjustChannel(size_t id, const String& payload) {
+void _lightAdjustChannel(size_t id, espurna::StringView payload) {
     if (id < _light_channels.size()) {
         _lightAdjustChannel(_light_channels[id], payload);
     }
 }
 
-void _lightAdjustChannel(size_t id, const char* payload) {
-    _lightAdjustChannel(id, String(payload));
-}
-
-void _lightAdjustKelvin(const String& payload) {
+void _lightAdjustKelvin(espurna::StringView payload) {
     _fromKelvin(_lightAdjustValue(_toKelvin(_light_mireds), payload));
 }
 
-void _lightAdjustKelvin(const char* payload) {
-    _lightAdjustKelvin(String(payload));
-}
-
-void _lightAdjustMireds(const String& payload) {
+void _lightAdjustMireds(espurna::StringView payload) {
     _fromMireds(_lightAdjustValue(_light_mireds, payload));
-}
-
-void _lightAdjustMireds(const char* payload) {
-    _lightAdjustMireds(String(payload));
 }
 
 } // namespace
@@ -2054,8 +2037,8 @@ bool _lightParsePayload(espurna::StringView payload) {
     return true;
 }
 
-bool _lightTryParseChannel(const char* p, size_t& id) {
-    return tryParseId(p, lightChannels, id);
+bool _lightTryParseChannel(espurna::StringView value, size_t& id) {
+    return tryParseId(value, lightChannels, id);
 }
 
 } // namespace
@@ -2190,12 +2173,10 @@ void _lightMqttCallback(unsigned int type, const char* topic, char* payload) {
         // Channel
         if (t.startsWith(MQTT_TOPIC_CHANNEL)) {
             size_t id;
-            if (!_lightTryParseChannel(t.c_str() + strlen(MQTT_TOPIC_CHANNEL) + 1, id)) {
-                return;
+            if (_lightTryParseChannel(mqttMagnitudeTail(t, MQTT_TOPIC_CHANNEL), id)) {
+                _lightAdjustChannel(id, payload);
+                _lightUpdateFromMqtt();
             }
-
-            _lightAdjustChannel(id, payload);
-            _lightUpdateFromMqtt();
             return;
         }
 
@@ -2258,9 +2239,10 @@ namespace {
 
 template <typename T>
 bool _lightApiTryHandle(ApiRequest& request, T&& callback) {
-    auto id_param = request.wildcard(0);
+    const auto param = request.wildcard(0);
+
     size_t id;
-    if (!_lightTryParseChannel(id_param.c_str(), id)) {
+    if (!_lightTryParseChannel(param, id)) {
         return false;
     }
 
@@ -2268,7 +2250,7 @@ bool _lightApiTryHandle(ApiRequest& request, T&& callback) {
 }
 
 bool _lightApiRgbSetter(ApiRequest& request) {
-    lightColor(request.param(F("value")), true);
+    lightParseRgb(request.param(F("value")));
     lightUpdate();
     return true;
 }
@@ -2297,7 +2279,7 @@ void _lightApiSetup() {
                 return true;
             },
             [](ApiRequest& request) {
-                lightColor(request.param(F("value")), false);
+                lightParseHsv(request.param(F("value")));
                 lightUpdate();
                 return true;
             }
@@ -2458,31 +2440,42 @@ void _lightWebSocketOnConnected(JsonObject& root) {
 }
 
 void _lightWebSocketOnAction(uint32_t client_id, const char* action, JsonObject& data) {
+    STRING_VIEW_INLINE(Color, "color");
+
     if (_light_has_color) {
-        if (STRING_VIEW("color") == action) {
-            if (data.containsKey(F("rgb"))) {
-                _lightFromRgbPayload(data[F("rgb")].as<const char*>());
+        if (Color == action) {
+            STRING_VIEW_INLINE(Rgb, "rgb");
+            STRING_VIEW_INLINE(Hsv, "hsv");
+
+            if (data.containsKey(Rgb)) {
+                _lightFromRgbPayload(data[Rgb].as<espurna::StringView>());
                 lightUpdate();
-            } else if (data.containsKey("hsv")) {
-                _lightFromHsvPayload(data[F("hsv")].as<const char*>());
+            } else if (data.containsKey(Hsv)) {
+                _lightFromHsvPayload(data[Hsv].as<espurna::StringView>());
                 lightUpdate();
             }
         }
     }
 
-    if (STRING_VIEW("mireds") == action) {
-        if (data.containsKey(F("mireds"))) {
-            _fromMireds(data[F("mireds")].as<long>());
+    STRING_VIEW_INLINE(Mireds, "mireds");
+    STRING_VIEW_INLINE(Brightness, "brightness");
+    STRING_VIEW_INLINE(Id, "id");
+    STRING_VIEW_INLINE(Channel, "channel");
+    STRING_VIEW_INLINE(Value, "value");
+
+    if (Mireds == action) {
+        if (data.containsKey(Mireds)) {
+            _fromMireds(data[Mireds].as<long>());
             lightUpdate();
         }
-    } else if (STRING_VIEW("channel") == action) {
-        if (data.containsKey(F("id")) && data.containsKey(F("value"))) {
-            lightChannel(data[F("id")].as<size_t>(), data[F("value")].as<long>());
+    } else if (Channel == action) {
+        if (data.containsKey(Id) && data.containsKey(Value)) {
+            lightChannel(data[Id].as<size_t>(), data[Value].as<long>());
             lightUpdate();
         }
-    } else if (STRING_VIEW("brightness") == action) {
-        if (data.containsKey(F("value"))) {
-            lightBrightness(data[F("value")].as<long>());
+    } else if (Brightness == action) {
+        if (data.containsKey(Value)) {
+            lightBrightness(data[Value].as<long>());
             lightUpdate();
         }
     }
@@ -2557,7 +2550,7 @@ static void _lightCommandNotify(::terminal::CommandContext&& ctx) {
     }
 
     size_t channel;
-    if (!_lightTryParseChannel(ctx.argv[1].c_str(), channel)) {
+    if (!_lightTryParseChannel(ctx.argv[1], channel)) {
         terminalError(ctx, F("Invalid channel ID"));
         return;
     }
@@ -2649,7 +2642,8 @@ static void _lightCommandChannel(::terminal::CommandContext&& ctx) {
 
     auto description = [&](size_t channel) {
         ctx.output.printf_P(PSTR("#%zu (%s) input:%ld value:%ld target:%ld current:%s\n"),
-                channel, _lightDesc(Channels, channel),
+                channel,
+                _lightDesc(Channels, channel),
                 _light_channels[channel].inputValue,
                 _light_channels[channel].value,
                 _light_channels[channel].target,
@@ -2658,7 +2652,7 @@ static void _lightCommandChannel(::terminal::CommandContext&& ctx) {
 
     if (ctx.argv.size() > 2) {
         size_t id;
-        if (!_lightTryParseChannel(ctx.argv[1].c_str(), id)) {
+        if (!_lightTryParseChannel(ctx.argv[1], id)) {
             terminalError(ctx, F("Invalid channel ID"));
             return;
         }
@@ -2679,7 +2673,7 @@ alignas(4) static constexpr char LightCommandRgb[] PROGMEM = "RGB";
 
 static void _lightCommandRgb(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() > 1) {
-        _lightFromRgbPayload(ctx.argv[1].c_str());
+        _lightFromRgbPayload(ctx.argv[1]);
         lightUpdate();
     }
 
@@ -2692,7 +2686,7 @@ alignas(4) static constexpr char LightCommandHsv[] PROGMEM = "HSV";
 
 static void _lightCommandHsv(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() > 1) {
-        _lightFromHsvPayload(ctx.argv[1].c_str());
+        _lightFromHsvPayload(ctx.argv[1]);
         lightUpdate();
     }
 
@@ -3081,25 +3075,12 @@ bool lightState() {
     return _light_state;
 }
 
-void lightColor(const char* color, bool rgb) {
-    DEBUG_MSG_P(PSTR("[LIGHT] %s: %s\n"), rgb ? "RGB" : "HSV", color);
-    if (rgb) {
-        _lightFromRgbPayload(color);
-    } else {
-        _lightFromHsvPayload(color);
-    }
+void lightParseHsv(espurna::StringView value) {
+    _lightFromHsvPayload(value);
 }
 
-void lightColor(const String& color, bool rgb) {
-    lightColor(color.c_str(), rgb);
-}
-
-void lightColor(const char* color) {
-    lightColor(color, true);
-}
-
-void lightColor(const String& color) {
-    lightColor(color.c_str());
+void lightParseRgb(espurna::StringView value) {
+    _lightFromRgbPayload(value);
 }
 
 String lightRgbPayload() {

@@ -202,11 +202,8 @@ using LightSequenceCallbacks = std::forward_list<espurna::Callback>;
 void lightSequence(LightSequenceCallbacks);
 void lightUpdateSequence(LightTransition);
 
-void lightColor(const char* color, bool rgb);
-void lightColor(const String& color, bool rgb);
-
-void lightColor(const char* color);
-void lightColor(const String& color);
+void lightParseHsv(espurna::StringView);
+void lightParseRgb(espurna::StringView);
 
 String lightRgbPayload();
 String lightHsvPayload();

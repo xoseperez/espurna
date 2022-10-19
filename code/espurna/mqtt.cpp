@@ -1274,6 +1274,11 @@ String mqttMagnitude(const char* topic) {
     return output;
 }
 
+// Retrieve lefthand side of the extracted magnitude value
+espurna::StringView mqttMagnitudeTail(espurna::StringView magnitude, espurna::StringView topic) {
+    return espurna::StringView(magnitude.begin() + topic.length(), magnitude.end());
+}
+
 /**
     Returns a full MQTT topic from the magnitude
 

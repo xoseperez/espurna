@@ -70,6 +70,7 @@ String mqttTopic(const String& magnitude, unsigned int index, bool is_set);
 String mqttTopic(const char* magnitude, unsigned int index, bool is_set);
 
 String mqttMagnitude(const char* topic);
+espurna::StringView mqttMagnitudeTail(espurna::StringView magnitude, espurna::StringView topic);
 
 uint16_t mqttSendRaw(const char * topic, const char * message, bool retain, int qos);
 uint16_t mqttSendRaw(const char * topic, const char * message, bool retain);

@@ -209,7 +209,7 @@ private:
 };
 
 struct StringView {
-    StringView() = delete;
+    StringView() noexcept = default;
     ~StringView() = default;
 
     constexpr StringView(const StringView&) noexcept = default;
@@ -251,7 +251,6 @@ struct StringView {
         _len(0)
     {}
 
-    StringView(const String&&) = delete;
     StringView(const String& string) noexcept :
         StringView(string.c_str(), string.length())
     {}
@@ -279,6 +278,10 @@ struct StringView {
 
     constexpr const char* c_str() const {
         return _ptr;
+    }
+
+    constexpr const char& operator[](size_t offset) const {
+        return *(_ptr + offset);
     }
 
     constexpr size_t length() const {
@@ -339,5 +342,9 @@ inline String operator+=(String& lhs, StringView rhs) {
         alignas(4) static constexpr char __pstr__[] PROGMEM = (X);\
         ::espurna::StringView{__pstr__};\
     })
+
+#define STRING_VIEW_INLINE(NAME, X)\
+        alignas(4) static constexpr char __pstr__ ## NAME ##  __ [] PROGMEM = (X);\
+        constexpr auto NAME = ::espurna::StringView(__pstr__ ## NAME ## __)
 
 } // namespace espurna

@@ -104,7 +104,7 @@ using std::isnan;
 #endif
 
 // -----------------------------------------------------------------------------
-// std::make_unique & std::clamp backports for C++11, since we still use it
+// various backports for C++11, since we still use it with gcc v4.8
 // -----------------------------------------------------------------------------
 #if __cplusplus <= 201103L
 
@@ -139,6 +139,11 @@ constexpr auto cbegin(const T& value) -> decltype(std::begin(value)) {
 template <typename T>
 constexpr auto cend(const T& value) -> decltype(std::end(value)) {
     return std::end(value);
+}
+
+template <typename T>
+constexpr std::reverse_iterator<T> make_reverse_iterator(T iterator) {
+    return std::reverse_iterator<T>(iterator);
 }
 
 } // namespace std

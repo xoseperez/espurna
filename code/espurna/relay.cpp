@@ -217,41 +217,33 @@ constexpr RelayMqttTopicMode mqttTopicMode(size_t index) {
     );
 }
 
-const __FlashStringHelper* payloadOn() {
-    return F(RELAY_MQTT_ON);
-}
+alignas(4) static constexpr char PayloadOn[] PROGMEM = RELAY_MQTT_ON;
+alignas(4) static constexpr char PayloadOff[] PROGMEM = RELAY_MQTT_OFF;
+alignas(4) static constexpr char PayloadToggle[] PROGMEM = RELAY_MQTT_TOGGLE;
 
-const __FlashStringHelper* payloadOff() {
-    return F(RELAY_MQTT_OFF);
-}
-
-const __FlashStringHelper* payloadToggle() {
-    return F(RELAY_MQTT_TOGGLE);
-}
-
-constexpr const char* mqttTopicSub(size_t index) {
+constexpr espurna::StringView mqttTopicSub(size_t index) {
     return (
-        (index == 0) ? (RELAY1_MQTT_TOPIC_SUB) :
-        (index == 1) ? (RELAY2_MQTT_TOPIC_SUB) :
-        (index == 2) ? (RELAY3_MQTT_TOPIC_SUB) :
-        (index == 3) ? (RELAY4_MQTT_TOPIC_SUB) :
-        (index == 4) ? (RELAY5_MQTT_TOPIC_SUB) :
-        (index == 5) ? (RELAY6_MQTT_TOPIC_SUB) :
-        (index == 6) ? (RELAY7_MQTT_TOPIC_SUB) :
-        (index == 7) ? (RELAY8_MQTT_TOPIC_SUB) : ""
+        (index == 0) ? STRING_VIEW(RELAY1_MQTT_TOPIC_SUB) :
+        (index == 1) ? STRING_VIEW(RELAY2_MQTT_TOPIC_SUB) :
+        (index == 2) ? STRING_VIEW(RELAY3_MQTT_TOPIC_SUB) :
+        (index == 3) ? STRING_VIEW(RELAY4_MQTT_TOPIC_SUB) :
+        (index == 4) ? STRING_VIEW(RELAY5_MQTT_TOPIC_SUB) :
+        (index == 5) ? STRING_VIEW(RELAY6_MQTT_TOPIC_SUB) :
+        (index == 6) ? STRING_VIEW(RELAY7_MQTT_TOPIC_SUB) :
+        (index == 7) ? STRING_VIEW(RELAY8_MQTT_TOPIC_SUB) : ""
     );
 }
 
-constexpr const char* mqttTopicPub(size_t index) {
+constexpr espurna::StringView mqttTopicPub(size_t index) {
     return (
-        (index == 0) ? (RELAY1_MQTT_TOPIC_PUB) :
-        (index == 1) ? (RELAY2_MQTT_TOPIC_PUB) :
-        (index == 2) ? (RELAY3_MQTT_TOPIC_PUB) :
-        (index == 3) ? (RELAY4_MQTT_TOPIC_PUB) :
-        (index == 4) ? (RELAY5_MQTT_TOPIC_PUB) :
-        (index == 5) ? (RELAY6_MQTT_TOPIC_PUB) :
-        (index == 6) ? (RELAY7_MQTT_TOPIC_PUB) :
-        (index == 7) ? (RELAY8_MQTT_TOPIC_PUB) : ""
+        (index == 0) ? STRING_VIEW(RELAY1_MQTT_TOPIC_PUB) :
+        (index == 1) ? STRING_VIEW(RELAY2_MQTT_TOPIC_PUB) :
+        (index == 2) ? STRING_VIEW(RELAY3_MQTT_TOPIC_PUB) :
+        (index == 3) ? STRING_VIEW(RELAY4_MQTT_TOPIC_PUB) :
+        (index == 4) ? STRING_VIEW(RELAY5_MQTT_TOPIC_PUB) :
+        (index == 5) ? STRING_VIEW(RELAY6_MQTT_TOPIC_PUB) :
+        (index == 6) ? STRING_VIEW(RELAY7_MQTT_TOPIC_PUB) :
+        (index == 7) ? STRING_VIEW(RELAY8_MQTT_TOPIC_PUB) : ""
     );
 }
 
@@ -872,17 +864,17 @@ RelaySync syncMode() {
 
 [[gnu::unused]]
 String payloadOn() {
-    return getSetting(keys::PayloadOn, build::payloadOn());
+    return getSetting(keys::PayloadOn, StringView(build::PayloadOn));
 }
 
 [[gnu::unused]]
 String payloadOff() {
-    return getSetting(keys::PayloadOff, build::payloadOff());
+    return getSetting(keys::PayloadOff, StringView(build::PayloadOff));
 }
 
 [[gnu::unused]]
 String payloadToggle() {
-    return getSetting(keys::PayloadToggle, build::payloadToggle());
+    return getSetting(keys::PayloadToggle, StringView(build::PayloadToggle));
 }
 
 #if MQTT_SUPPORT
@@ -1466,24 +1458,27 @@ Stream* StmProvider::_port = nullptr;
 // UTILITY
 // -----------------------------------------------------------------------------
 
-bool _relayTryParseId(const char* p, size_t& id) {
-    return tryParseId(p, relayCount, id);
+bool _relayTryParseId(espurna::StringView value, size_t& id) {
+    return tryParseId(value, relayCount, id);
 }
 
 [[gnu::unused]]
-bool _relayTryParseIdFromPath(const String& endpoint, size_t& id) {
-    int next_slash { endpoint.lastIndexOf('/') };
-    if (next_slash < 0) {
+bool _relayTryParseIdFromPath(espurna::StringView endpoint, size_t& id) {
+    const auto begin = std::make_reverse_iterator(endpoint.end());
+    const auto end = std::make_reverse_iterator(endpoint.begin());
+
+    auto next_slash = std::find(begin, end, '/');
+    if (next_slash == end) {
         return false;
     }
 
-    const char* p { endpoint.c_str() + next_slash + 1 };
-    if (*p == '\0') {
+    espurna::StringView tail { next_slash.base() + 1, endpoint.end() };
+    if ((*tail.begin()) == '\0') {
         DEBUG_MSG_P(PSTR("[RELAY] relayID was not specified\n"));
         return false;
     }
 
-    return _relayTryParseId(p, id);
+    return _relayTryParseId(tail, id);
 }
 
 void _relayHandleStatus(size_t id, PayloadStatus status) {
@@ -2201,9 +2196,10 @@ namespace {
 
 template <typename T>
 bool _relayApiTryHandle(ApiRequest& request, T&& callback) {
-    auto id_param = request.wildcard(0);
+    const auto param = request.wildcard(0);
+
     size_t id;
-    if (!_relayTryParseId(id_param.c_str(), id)) {
+    if (!_relayTryParseId(param, id)) {
         return false;
     }
 
@@ -2514,7 +2510,7 @@ void relayMQTTCallback(unsigned int type, const char* topic, char* payload) {
         auto is_pulse = t.startsWith(MQTT_TOPIC_PULSE);
         if (is_relay || is_pulse) {
             size_t id;
-            if (!_relayTryParseIdFromPath(t.c_str(), id)) {
+            if (!_relayTryParseIdFromPath(t, id)) {
                 return;
             }
 
@@ -2591,7 +2587,7 @@ static void _relayCommand(::terminal::CommandContext&& ctx) {
     }
 
     size_t id;
-    if (!_relayTryParseId(ctx.argv[1].c_str(), id)) {
+    if (!_relayTryParseId(ctx.argv[1], id)) {
         terminalError(ctx, F("Invalid relayID"));
         return;
     }
@@ -2622,7 +2618,7 @@ static void _relayCommandPulse(::terminal::CommandContext&& ctx) {
     }
 
     size_t id;
-    if (!_relayTryParseId(ctx.argv[1].c_str(), id)) {
+    if (!_relayTryParseId(ctx.argv[1], id)) {
         terminalError(ctx, F("Invalid relayID"));
         return;
     }

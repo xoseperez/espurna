@@ -524,13 +524,13 @@ RfbRelayMatch _rfbMatch(const char* code) {
                 return;
             }
 
-            const char* id_ptr = key.c_str() + prefix.length();
-            if (*id_ptr == '\0') {
+            espurna::StringView id_view(key.begin() + prefix.length(), key.end());
+            if (!id_view.length() || (*id_view.begin()) == '\0') {
                 return;
             }
 
             size_t id;
-            if (!tryParseId(id_ptr, relayCount, id)) {
+            if (!tryParseId(id_view, relayCount, id)) {
                 return;
             }
 
@@ -1185,7 +1185,7 @@ static void _rfbCommandLearn(::terminal::CommandContext&& ctx) {
     }
 
     size_t id;
-    if (!tryParseId(ctx.argv[1].c_str(), relayCount, id)) {
+    if (!tryParseId(ctx.argv[1], relayCount, id)) {
         terminalError(ctx, F("Invalid relay ID"));
         return;
     }
@@ -1202,7 +1202,7 @@ static void _rfbCommandForget(::terminal::CommandContext&& ctx) {
     }
 
     size_t id;
-    if (!tryParseId(ctx.argv[1].c_str(), relayCount, id)) {
+    if (!tryParseId(ctx.argv[1], relayCount, id)) {
         terminalError(ctx, F("Invalid relay ID"));
         return;
     }
