@@ -793,7 +793,7 @@ void button(::terminal::CommandContext&& ctx) {
     }
 }
 
-alignas(4) static constexpr char Button[] PROGMEM = "button";
+alignas(4) static constexpr char Button[] PROGMEM = "BUTTON";
 
 static constexpr ::terminal::Command Commands[] PROGMEM {
     {Button, button},
