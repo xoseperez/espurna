@@ -486,7 +486,7 @@ void setup() {
 
             auto cmd = std::make_shared<String>(std::move(line));
 
-            schedule_function([cmd]() {
+            espurnaRegisterOnce([cmd]() {
                 PrintString out(TCP_MSS);
                 api_find_and_call(*cmd, out);
 
@@ -621,7 +621,7 @@ void onAction(uint32_t client_id, const char* action, JsonObject& data) {
         return;
     }
 
-    schedule_function([cmd, client_id]() {
+    espurnaRegisterOnce([cmd, client_id]() {
         PrintLine<Output> out(client_id);
         api_find_and_call(*cmd, out);
     });

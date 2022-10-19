@@ -9,12 +9,12 @@
 #include <type_traits>
 #include <queue>
 
-#include "libs/TypeChecks.h"
-#include "tuya_types.h"
-#include "tuya_util.h"
-#include "tuya_transport.h"
-#include "tuya_protocol.h"
-#include "tuya_dataframe.h"
+#include <espurna/libs/TypeChecks.h>
+#include <espurna/tuya_types.h>
+#include <espurna/tuya_util.h>
+#include <espurna/tuya_transport.h>
+#include <espurna/tuya_protocol.h>
+#include <espurna/tuya_dataframe.h>
 
 using namespace tuya;
 

@@ -197,8 +197,7 @@ void lightTransition(LightTransition);
 
 // Light internals are forced to be sequential. In case some actions need to happen
 // right after transition / channel state / state changes, it will call these functions
-using LightSequenceCallback = std::function<void()>;
-using LightSequenceCallbacks = std::forward_list<LightSequenceCallback>;
+using LightSequenceCallbacks = std::forward_list<espurna::Callback>;
 
 void lightSequence(LightSequenceCallbacks);
 void lightUpdateSequence(LightTransition);

@@ -7,7 +7,7 @@
 #pragma GCC diagnostic warning "-Wpointer-arith"
 #pragma GCC diagnostic warning "-Wstrict-overflow=5"
 
-#include <settings_embedis.h>
+#include <espurna/settings_embedis.h>
 
 #include <array>
 #include <algorithm>

@@ -563,11 +563,7 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
         }
 
         if (strcmp(action, "reconnect") == 0) {
-            static Ticker timer;
-            timer.once_ms_scheduled(100, []() {
-                wifiDisconnect();
-                yield();
-            });
+            wifiDisconnect();
             return;
         }
 

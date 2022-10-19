@@ -11,8 +11,6 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "web.h"
 #include "libs/TypeChecks.h"
 
-#include <Schedule.h>
-
 #if WEB_SUPPORT
 
 namespace asyncwebprint {
@@ -48,7 +46,7 @@ void AsyncWebPrint::scheduleFromRequest(AsyncWebPrintConfig config, AsyncWebServ
     });
 
     // attach another capture to the scheduled function, so we execute as soon as we exit next loop()
-    schedule_function([callback, print]() {
+    espurnaRegisterOnce([callback, print]() {
         if (State::None != print->getState()) return;
         callback(*print.get());
         print->flush();

@@ -17,7 +17,6 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #include <Arduino.h>
 #include <coredecls.h>
-#include <Ticker.h>
 
 #include <ctime>
 #include <errno.h>
@@ -592,7 +591,7 @@ void report() {
     }
 
     const auto info = makeInfo();
-    DEBUG_MSG_P(PSTR("[NTP] Server    %s\n"), internal::server.c_str());
+    DEBUG_MSG_P(PSTR("[NTP] Server    %s\n"), ntp::internal::server.c_str());
     DEBUG_MSG_P(PSTR("[NTP] Last Sync %s (UTC)\n"), info.sync.c_str());
     DEBUG_MSG_P(PSTR("[NTP] UTC Time  %s\n"), info.utc.c_str());
 
@@ -602,11 +601,17 @@ void report() {
     }
 }
 
+void schedule_now() {
+    ::espurnaRegisterOnceUnique(report);
+}
+
 } // namespace debug
 #endif
 
 namespace tick {
 
+// Never allow delays less than a second, or greater than a minute
+// (ref. Non-OS 3.1.1 os_timer_arm, actual minimal value is 5ms)
 static constexpr espurna::duration::Seconds OffsetMin { 1 };
 static constexpr espurna::duration::Seconds OffsetMax { 60 };
 
@@ -615,7 +620,7 @@ using Callbacks = std::forward_list<NtpTickCallback>;
 namespace internal {
 
 Callbacks callbacks;
-Ticker timer;
+timer::SystemTimer timer;
 
 } // namespace internal
 
@@ -660,27 +665,15 @@ void callback() {
     schedule(OffsetMax - espurna::duration::Seconds(local_tm.tm_sec));
 }
 
-void schedule(espurna::duration::Seconds offset) {
-    static bool scheduled { false };
-
-    // Never allow delays less than a second, or greater than a minute
-    // (ref. Non-OS 3.1.1 os_timer_arm, actual minimal value is 5ms)
-    if (!scheduled) {
-        scheduled = true;
-        internal::timer.once_scheduled(
-            std::clamp(offset, OffsetMin, OffsetMax).count(),
-            []() {
-                scheduled = false;
-                callback();
-            });
-    }
+void schedule_now() {
+    ::espurnaRegisterOnceUnique(callback);
 }
 
-void init() {
-    static bool initialized { false };
-    if (!initialized) {
-        schedule_function(callback);
-        initialized = true;
+void schedule(espurna::duration::Seconds offset) {
+    if (!internal::timer) {
+        internal::timer.once(
+            std::clamp(offset, OffsetMin, OffsetMax),
+            schedule_now);
     }
 }
 
@@ -688,13 +681,13 @@ void init() {
 
 void onSystemTimeSynced() {
     internal::status.update(::time(nullptr));
-    tick::init();
+    tick::schedule_now();
 
 #if WEB_SUPPORT
     wsPost(web::onData);
 #endif
 #if DEBUG_SUPPORT
-    schedule_function(debug::report);
+    debug::schedule_now();
 #endif
 }
 
@@ -801,7 +794,7 @@ void onStationModeGotIP(WiFiEventStationModeGotIP) {
         DEBUG_MSG_P(PSTR("[NTP] Updating `ntpDhcp` to ignore the DHCP values\n"));
         settings::dhcp(false);
         sntp_servermode_dhcp(0);
-        schedule_function(configure);
+        ::espurnaRegisterOnce(configure);
         return;
     }
 

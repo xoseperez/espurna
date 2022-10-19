@@ -21,7 +21,6 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 // esp8266 re-defines enum values from tcp header... include them first
 #define LWIP_INTERNAL
 #include <ESP8266WiFi.h>
-#include <Ticker.h>
 #undef LWIP_INTERNAL
 
 extern "C" {
@@ -94,8 +93,7 @@ void wifiStartAp();
 void wifiToggleAp();
 void wifiToggleSta();
 
-// Disconnects STA intefrace
-// (and will immediatly trigger a reconnection)
+// Disconnects STA intefrace, will trigger reconnection
 void wifiDisconnect();
 
 // Toggle WiFi modem

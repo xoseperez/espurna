@@ -149,10 +149,11 @@ target_link_libraries(esp8266 PUBLIC common)
 add_library(terminal STATIC
     ${ESPURNA_PATH}/code/espurna/terminal_commands.cpp
     ${ESPURNA_PATH}/code/espurna/terminal_parsing.cpp
+    ${ESPURNA_PATH}/code/espurna/types.cpp
 )
 target_link_libraries(terminal PUBLIC esp8266)
 target_include_directories(terminal PUBLIC
-    ${ESPURNA_PATH}/code/espurna/
+    ${ESPURNA_PATH}/code/
 )
 target_compile_options(terminal PUBLIC
     ${COMMON_FLAGS}
@@ -180,4 +181,4 @@ function(build_tests)
     endforeach()
 endfunction()
 
-build_tests(basic settings terminal tuya url)
+build_tests(basic settings terminal tuya types url)

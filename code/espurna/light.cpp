@@ -18,8 +18,6 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include "rtcmem.h"
 #include "ws.h"
 
-#include <Ticker.h>
-#include <Schedule.h>
 #include <ArduinoJson.h>
 
 #include <array>
@@ -638,13 +636,52 @@ void _lightUpdateMapping(T& channels) {
     }
 }
 
+template <typename T>
+struct LightTimerValue {
+    using Timer = espurna::timer::SystemTimer;
+    using Duration = Timer::Duration;
+
+    LightTimerValue() = delete;
+    constexpr LightTimerValue(T defaultValue) :
+        _defaultValue(defaultValue)
+    {}
+
+    explicit operator bool() const {
+        return _value != _defaultValue;
+    }
+
+    void wait_set(Duration duration, T value) {
+        _timer.once(
+            duration,
+            [&]() {
+                _value = value;
+            });
+    }
+
+    void reset() {
+        _value = _defaultValue;
+    }
+
+    T get() {
+        const auto value = _value;
+        reset();
+        return value;
+    }
+
+private:
+    T _defaultValue;
+    T _value;
+    espurna::timer::SystemTimer _timer;
+};
+
 auto _light_save_delay = espurna::light::build::saveDelay();
 bool _light_save { espurna::light::build::save() };
-Ticker _light_save_ticker;
+
+LightTimerValue<bool> _light_save_timer(false);
 
 auto _light_report_delay = espurna::light::build::reportDelay();
-Ticker _light_report_ticker;
 std::forward_list<LightReportListener> _light_report;
+LightTimerValue<int> _light_report_timer(0);
 
 bool _light_has_controls = false;
 bool _light_has_cold_white = false;
@@ -1675,11 +1712,6 @@ private:
 };
 
 struct LightSequenceHandler {
-    LightSequenceHandler& operator=(const LightSequenceCallbacks& callbacks) {
-        _callbacks = callbacks;
-        return *this;
-    }
-
     LightSequenceHandler& operator=(LightSequenceCallbacks&& callbacks) {
         _callbacks = std::move(callbacks);
         return *this;
@@ -1701,12 +1733,37 @@ private:
     LightSequenceCallbacks _callbacks;
 };
 
+struct LightProviderHandler {
+    using Timer = espurna::timer::SystemTimer;
+    using Duration = Timer::Duration;
+
+    LightProviderHandler() = default;
+
+    explicit operator bool() const {
+        return _ready;
+    }
+
+    void stop() {
+        _ready = false;
+        _timer.stop();
+    }
+
+    void start(Duration duration) {
+        _timer.once(duration,
+            [&]() {
+                _ready = true;
+            });
+    }
+
+private:
+    Timer _timer;
+    bool _ready { false };
+};
+
 LightUpdateHandler _light_update;
-bool _light_provider_update = false;
+LightProviderHandler _light_provider_update;
 
 LightSequenceHandler _light_sequence;
-
-Ticker _light_transition_ticker;
 std::unique_ptr<LightTransitionHandler> _light_transition;
 
 auto _light_transition_time = espurna::light::build::transitionTime();
@@ -1805,7 +1862,7 @@ void _lightProviderUpdate() {
     }
 
     if (!_light_transition) {
-        _light_provider_update = false;
+        _light_provider_update.stop();
         return;
     }
 
@@ -1820,13 +1877,11 @@ void _lightProviderUpdate() {
         _light_transition.reset(nullptr);
     }
 
-    _light_provider_update = false;
+    _light_provider_update.stop();
 }
 
 void _lightProviderSchedule(espurna::duration::Milliseconds next) {
-    _light_transition_ticker.once_ms(next.count(), []() {
-        _light_provider_update = true;
-    });
+    _light_provider_update.start(next);
 }
 
 } // namespace
@@ -2894,6 +2949,17 @@ void _lightSequenceCheck() {
     }
 }
 
+void _lightPostLoop() {
+    if (_light_report_timer) {
+        _lightReport(_light_report_timer.get());
+    }
+
+    if (_light_save_timer) {
+        _light_save_timer.reset();
+        _lightSaveSettings();
+    }
+}
+
 void _lightUpdate() {
     if (!_light_update) {
         return;
@@ -2917,18 +2983,12 @@ void _lightUpdate() {
 
         // Send current state to all available 'report' targets
         // (make sure to delay the report, in case lightUpdate is called repeatedly)
-        _light_report_ticker.once_ms(
-            _light_report_delay.count(),
-            [report]() {
-                _lightReport(report);
-            });
+        _light_report_timer.wait_set(_light_report_delay, report);
 
         // Always save to RTCMEM, optionally preserve the state in the settings storage
         _lightSaveRtcmem();
         if (save) {
-            _light_save_ticker.once_ms(
-                _light_save_delay.count(),
-                _lightSaveSettings);
+            _light_save_timer.wait_set(_light_save_delay, true);
         }
     });
 }
@@ -3337,7 +3397,7 @@ bool lightAdd() {
         _light_channels.emplace_back(LightChannel());
         if (State::Scheduled != state) {
             state = State::Scheduled;
-            schedule_function([]() {
+            espurnaRegisterOnceUnique([]() {
                 _lightBoot();
                 state = State::Done;
             });
@@ -3482,6 +3542,7 @@ void lightSetup() {
         _lightSequenceCheck();
         _lightUpdate();
         _lightProviderUpdate();
+        _lightPostLoop();
     });
 }
 

@@ -126,6 +126,12 @@ void clientFromHttps(const String& url) {
 
 #endif // SECURE_CLIENT_BEARSSL
 
+namespace internal {
+
+String url;
+
+} // namespace internal
+
 void clientFromUrl(const String& url) {
     if (url.startsWith("http://")) {
         clientFromHttp(url);
@@ -139,6 +145,17 @@ void clientFromUrl(const String& url) {
 #endif
 
     DEBUG_MSG_P(PSTR("[OTA] Incorrect URL specified\n"));
+}
+
+void clientFromInternalUrl() {
+    const auto url = std::move(internal::url);
+    clientFromUrl(url);
+}
+
+[[gnu::unused]]
+void clientQueueUrl(String url) {
+    internal::url = std::move(url);
+    espurnaRegisterOnceUnique(clientFromInternalUrl);
 }
 
 #if TERMINAL_SUPPORT
@@ -173,16 +190,9 @@ void mqttCallback(unsigned int type, const char* topic, char* payload) {
 
     if (type == MQTT_MESSAGE_EVENT) {
         const String t = mqttMagnitude(topic);
-        static bool busy { false };
-
-        if (!busy && t.equals(MQTT_TOPIC_OTA)) {
+        if (!internal::url.length() && t.equals(MQTT_TOPIC_OTA)) {
             DEBUG_MSG_P(PSTR("[OTA] Queuing from URL: %s\n"), payload);
-
-            const String url(payload);
-            schedule_function([url]() {
-                clientFromUrl(url);
-                busy = false;
-            });
+            clientQueueUrl(payload);
         }
 
         return;

@@ -62,6 +62,9 @@ void espurnaReload();
 using LoopCallback = void (*)();
 void espurnaRegisterLoop(LoopCallback);
 
+void espurnaRegisterOnce(espurna::Callback);
+void espurnaRegisterOnceUnique(espurna::Callback::Type);
+
 espurna::duration::Milliseconds espurnaLoopDelay();
 void espurnaLoopDelay(espurna::duration::Milliseconds);
 

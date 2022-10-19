@@ -20,7 +20,7 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include "ws_utils.h"
 
 // Generalized WS lifetime callbacks.
-// Each callback is kept as std::function, thus we can use complex objects, and not just basic function pointers.
+// Callback could either be a lambda or a plain function pointer
 //
 // Connection start:
 // - on_visible will be the very first message sent, callback data will be grouped together

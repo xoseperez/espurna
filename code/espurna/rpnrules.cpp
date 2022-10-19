@@ -1093,7 +1093,7 @@ namespace system {
 void sleep(uint64_t duration, RFMode mode);
 
 void scheduleSleep(uint64_t duration, RFMode mode) {
-    schedule_function([duration, mode]() {
+    espurnaRegisterOnce([duration, mode]() {
         sleep(duration, mode);
     });
 }

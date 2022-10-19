@@ -191,7 +191,7 @@ void enable() {
 
 void delayedEnable() {
     disable();
-    schedule_function(enable);
+    ::espurnaRegisterOnce(enable);
 }
 
 void send(const char* message, size_t len, Timestamp);

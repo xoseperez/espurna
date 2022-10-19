@@ -104,7 +104,7 @@ void disconnect() {
 void onDisconnect(void* arg, AsyncClient*) {
     DEBUG_MSG_P(PSTR("\n"));
     otaFinalize(reinterpret_cast<BasicHttpClient*>(arg)->size, CustomResetReason::Ota, true);
-    schedule_function(internal::disconnect);
+    espurnaRegisterOnce(internal::disconnect);
 }
 
 void onTimeout(void*, AsyncClient* client, uint32_t) {

@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <unity.h>
 
-#include "libs/URL.h"
+#include <espurna/libs/URL.h>
 
 void test_parse() {
     URL url("http://api.thingspeak.com/update");

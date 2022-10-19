@@ -13,7 +13,6 @@ Updated secure client support by Niek van der Maas < mail at niekvandermaas dot 
 
 #include <forward_list>
 #include <utility>
-#include <Ticker.h>
 
 #include "system.h"
 #include "mdns.h"
@@ -537,7 +536,7 @@ private:
 
 size_t _mqtt_json_payload_count { 0ul };
 std::forward_list<MqttPayload> _mqtt_json_payload;
-Ticker _mqtt_json_payload_flush;
+espurna::timer::SystemTimer _mqtt_json_payload_flush;
 
 } // namespace
 
@@ -795,16 +794,16 @@ void _mqttConfigure() {
 
 #if MDNS_SERVER_SUPPORT
 
-constexpr unsigned long MqttMdnsDiscoveryInterval { 15000 };
-Ticker _mqtt_mdns_discovery;
+constexpr auto MqttMdnsDiscoveryInterval = espurna::duration::Seconds(15);
+espurna::timer::SystemTimer _mqtt_mdns_discovery;
 
 void _mqttMdnsStop() {
-    _mqtt_mdns_discovery.detach();
+    _mqtt_mdns_discovery.stop();
 }
 
 void _mqttMdnsDiscovery();
 void _mqttMdnsSchedule() {
-    _mqtt_mdns_discovery.once_ms_scheduled(MqttMdnsDiscoveryInterval, _mqttMdnsDiscovery);
+    _mqtt_mdns_discovery.once(MqttMdnsDiscoveryInterval, _mqttMdnsDiscovery);
 }
 
 void _mqttMdnsDiscovery() {
@@ -1369,7 +1368,8 @@ uint16_t mqttSendRaw(const char * topic, const char * message) {
 bool mqttSend(const char * topic, const char * message, bool force, bool retain) {
     if (!force && _mqtt_use_json) {
         mqttEnqueue(topic, message);
-        _mqtt_json_payload_flush.once_ms(MQTT_USE_JSON_DELAY, mqttFlush);
+        _mqtt_json_payload_flush.once(
+            espurna::duration::Milliseconds(MQTT_USE_JSON_DELAY), mqttFlush);
         return true;
     }
 

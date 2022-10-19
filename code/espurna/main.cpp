@@ -23,6 +23,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "espurna.h"
 #include "main.h"
 
+#include <algorithm>
+#include <utility>
+
 // -----------------------------------------------------------------------------
 // GENERAL CALLBACKS
 // -----------------------------------------------------------------------------
@@ -47,24 +50,35 @@ constexpr espurna::duration::Milliseconds loopDelay() {
 } // namespace build
 
 namespace settings {
+namespace keys {
+
+alignas(4) static constexpr char LoopDelay[] PROGMEM = "loopDelay";
+
+} // namespace keys
 
 espurna::duration::Milliseconds loopDelay() {
-    return std::clamp(getSetting("loopDelay", build::loopDelay()), build::LoopDelayMin, build::LoopDelayMax);
+    return std::clamp(getSetting(keys::LoopDelay, build::loopDelay()), build::LoopDelayMin, build::LoopDelayMax);
 }
 
 } // namespace settings
 
 namespace internal {
 
-std::vector<LoopCallback> loop_callbacks;
-espurna::duration::Milliseconds loop_delay { build::LoopDelayMin };
-
 std::vector<LoopCallback> reload_callbacks;
 bool reload_flag { false };
 
+std::vector<LoopCallback> loop_callbacks;
+espurna::duration::Milliseconds loop_delay { build::LoopDelayMin };
+
+std::forward_list<Callback> once_callbacks;
+
 } // namespace internal
 
-bool reload() {
+void flag_reload() {
+    internal::reload_flag = true;
+}
+
+bool check_reload() {
     if (internal::reload_flag) {
         internal::reload_flag = false;
         return true;
@@ -73,15 +87,65 @@ bool reload() {
     return false;
 }
 
+void push_reload(ReloadCallback callback) {
+    internal::reload_callbacks.push_back(callback);
+}
+
+void push_loop(LoopCallback callback) {
+    internal::loop_callbacks.push_back(callback);
+}
+
+duration::Milliseconds loop_delay() {
+    return internal::loop_delay;
+}
+
+void loop_delay(duration::Milliseconds value) {
+    internal::loop_delay = value;
+}
+
+void push_once(Callback callback) {
+    internal::once_callbacks.push_front(std::move(callback));
+}
+
+void push_once_unique(Callback::Type callback) {
+    auto& callbacks = internal::once_callbacks;
+
+    auto it = std::find_if(
+        callbacks.begin(),
+        callbacks.end(),
+        [&](const Callback& other) {
+            return other == callback;
+        });
+
+    if ((it != callbacks.begin()) && (it != callbacks.end())) {
+        std::swap(*callbacks.begin(), *it);
+        return;
+    }
+
+    push_once(Callback(callback));
+}
+
 void loop() {
     // Reload config before running any callbacks
-    if (reload()) {
+    if (check_reload()) {
         for (const auto& callback : internal::reload_callbacks) {
             callback();
         }
     }
 
+    // Loop callbacks, registered some time in setup()
+    // Notice that everything is in order of registration
     for (const auto& callback : internal::loop_callbacks) {
+        callback();
+    }
+
+    // One-time callbacks, registered some time during runtime
+    // Notice that callback container is LIFO, most recently added
+    // callback is called first. Copy to allow container modifications.
+    decltype(internal::once_callbacks) once_callbacks;
+    once_callbacks.swap(internal::once_callbacks);
+
+    for (const auto& callback : once_callbacks) {
         callback();
     }
 
@@ -313,43 +377,34 @@ void setup() {
 } // namespace main
 
 } // namespace
-
-bool StringView::equals(StringView other) const {
-    if (other._len == _len) {
-        if (inFlash(_ptr) && inFlash(other._ptr)) {
-            return _ptr == other._ptr;
-        } else if (inFlash(_ptr)) {
-            return memcmp_P(other._ptr, _ptr, _len) == 0;
-        } else if (inFlash(other._ptr)) {
-            return memcmp_P(_ptr, other._ptr, _len) == 0;
-        }
-
-        return __builtin_memcmp(_ptr, other._ptr, _len) == 0;
-    }
-
-    return false;
-}
-
 } // namespace espurna
 
-void espurnaRegisterLoop(LoopCallback callback) {
-    espurna::main::internal::loop_callbacks.push_back(callback);
+void espurnaRegisterOnce(espurna::Callback callback) {
+    espurna::main::push_once(std::move(callback));
+}
+
+void espurnaRegisterOnceUnique(espurna::Callback::Type ptr) {
+    espurna::main::push_once_unique(ptr);
 }
 
 void espurnaRegisterReload(LoopCallback callback) {
-    espurna::main::internal::reload_callbacks.push_back(callback);
+    espurna::main::push_reload(callback);
+}
+
+void espurnaRegisterLoop(LoopCallback callback) {
+    espurna::main::push_loop(callback);
 }
 
 void espurnaReload() {
-    espurna::main::internal::reload_flag = true;
+    espurna::main::flag_reload();
 }
 
 espurna::duration::Milliseconds espurnaLoopDelay() {
-    return espurna::main::internal::loop_delay;
+    return espurna::main::loop_delay();
 }
 
 void espurnaLoopDelay(espurna::duration::Milliseconds value) {
-    espurna::main::internal::loop_delay = value;
+    espurna::main::loop_delay(value);
 }
 
 void setup() {

@@ -6,21 +6,23 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 */
 
+#include "espurna.h"
 #include "rpc.h"
 
-#include <Schedule.h>
 #include <cstring>
 
 #include "system.h"
 #include "utils.h"
 
+static void rpcPrepareReset() {
+    prepareReset(CustomResetReason::Rpc);
+}
+
 bool rpcHandleAction(const String& action) {
     bool result = false;
     if (action.equals("reboot")) {
         result = true;
-        schedule_function([]() {
-            prepareReset(CustomResetReason::Rpc);
-        });
+        espurnaRegisterOnce(rpcPrepareReset);
     } else if (action.equals("heartbeat")) {
         result = true;
         systemScheduleHeartbeat();

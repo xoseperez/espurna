@@ -363,15 +363,7 @@ Mode mode(size_t index) {
 namespace {
 
 struct Timer {
-    // limit is per https://www.espressif.com/sites/default/files/documentation/2c-esp8266_non_os_sdk_api_reference_en.pdf
-    // > 3.1.1 os_timer_arm
-    // > with `system_timer_reinit()`, the timer value allowed ranges from 100 to 0x0x689D0.
-    // > otherwise, the timer value allowed ranges from 5 to 0x68D7A3.
-
-    static constexpr auto DurationMin = Duration { 5 };
-    static constexpr auto DurationMax = Duration { espurna::duration::Hours { 1 } };
-
-    using TimeSource = espurna::time::CoreClock;
+    using Duration = timer::SystemTimer::Duration;
 
     Timer() = delete;
     Timer(const Timer&) = delete;
@@ -384,14 +376,14 @@ struct Timer {
     {}
 
     ~Timer() {
-        stop();
+        _timer.stop();
     }
 
     Timer& operator=(const Timer&) = delete;
     Timer& operator=(Timer&&) = delete;
 
     explicit operator bool() const {
-        return _armed;
+        return static_cast<bool>(_timer);
     }
 
     bool operator==(const Timer& other) const {
@@ -420,54 +412,28 @@ struct Timer {
     }
 
     void stop() {
-        if (_armed) {
-            os_timer_disarm(&_timer);
-            _timer = os_timer_t{};
-            _armed = false;
-        }
+        _timer.stop();
     }
 
     void start() {
-        stop();
-
-        auto delay = std::clamp(_duration, DurationMin, DurationMax);
-        os_timer_setfn(&_timer, timerCallback, this);
-        os_timer_arm(&_timer, delay.count(), 0);
-
-        _start = TimeSource::now();
-        _armed = true;
+        const auto id = _id;
+        const auto status = _status;
+        _timer.once(
+            (_duration.count() > 0)
+                ? _duration
+                : timer::SystemTimer::DurationMin,
+            [id, status]() {
+                relayStatus(id, status);
+            });
     }
 
 private:
-    void check() {
-        auto elapsed = TimeSource::now() - _start;
-        if (elapsed <= _duration) {
-            auto left = std::clamp(_duration - elapsed, DurationMin, DurationMax);
-            if (left != DurationMin) {
-                os_timer_arm(&_timer, left.count(), 0);
-                return;
-            }
-        }
-
-        relayStatus(_id, _status);
-        stop();
-    }
-
-    static void timerCallback(void* arg) {
-        reinterpret_cast<Timer*>(arg)->check();
-    }
-
     Duration _duration;
     size_t _id;
     bool _status;
 
-    TimeSource::time_point _start;
-    bool _armed { false };
-    os_timer_t _timer {};
+    timer::SystemTimer _timer;
 };
-
-constexpr Duration Timer::DurationMin;
-constexpr Duration Timer::DurationMax;
 
 namespace internal {
 
@@ -1087,7 +1053,8 @@ public:
 namespace {
 
 struct RelaySaveTimer {
-    using Duration = espurna::duration::Milliseconds;
+    using Timer = espurna::timer::SystemTimer;
+    using Duration = Timer::Duration;
 
     RelaySaveTimer() = default;
 
@@ -1098,33 +1065,28 @@ struct RelaySaveTimer {
     RelaySaveTimer& operator=(RelaySaveTimer&&) = delete;
 
     ~RelaySaveTimer() {
-        stop();
+        _timer.stop();
     }
 
     void schedule(Duration duration) {
-        stop();
-
-        os_timer_setfn(&_timer, timerCallback, this);
-        os_timer_arm(&_timer, duration.count(), 0);
-        _armed = true;
+        _timer.once(
+            duration,
+            [&]() {
+                _ready = true;
+            });
     }
 
     void stop() {
-        if (_armed) {
-            os_timer_disarm(&_timer);
-            _timer = os_timer_t{};
-            _done = false;
-            _armed = false;
-            _persist = false;
-        }
+        _timer.stop();
+        _persist = false;
     }
 
     template <typename T>
     void process(T&& callback) {
-        if (_done) {
+        if (_ready) {
             callback(_persist);
             _persist = false;
-            _done = false;
+            _ready = false;
         }
     }
 
@@ -1135,23 +1097,14 @@ struct RelaySaveTimer {
     }
 
 private:
-    void done() {
-        _done = true;
-        _armed = false;
-    }
-
-    static void timerCallback(void* arg) {
-        reinterpret_cast<RelaySaveTimer*>(arg)->done();
-    }
-
     bool _persist { false };
-    bool _done { false };
-    bool _armed { false };
-    os_timer_t _timer;
+    bool _ready { false };
+    Timer _timer;
 };
 
 struct RelaySyncTimer {
-    using Duration = espurna::duration::Milliseconds;
+    using Timer = espurna::timer::SystemTimer;
+    using Duration = Timer::Duration;
     using Callback = void(*)();
 
     RelaySyncTimer() = default;
@@ -1167,43 +1120,30 @@ struct RelaySyncTimer {
     }
 
     void schedule(Duration duration, Callback callback) {
-        stop();
-
-        os_timer_setfn(&_timer, timerCallback, this);
-        os_timer_arm(&_timer, duration.count(), 0);
+        _timer.once(
+            duration,
+            [&]() {
+                _ready = true;
+            });
         _callback = callback;
-        _armed = true;
     }
 
     void stop() {
-        if (_armed) {
-            os_timer_disarm(&_timer);
-            _timer = os_timer_t{};
-            _done = false;
-            _armed = false;
-        }
+        _timer.stop();
+        _ready = false;
     }
 
     void process() {
-        if (_done) {
+        if (_ready) {
             _callback();
-            _done = false;
+            _ready = false;
         }
     }
 
 private:
-    void done() {
-        _done = true;
-    }
-
-    static void timerCallback(void* arg) {
-        reinterpret_cast<RelaySyncTimer*>(arg)->done();
-    }
-
     Callback _callback { nullptr };
-    bool _done { false };
-    bool _armed { false };
-    os_timer_t _timer;
+    bool _ready { false };
+    Timer _timer;
 };
 
 using Relays = std::vector<Relay>;
@@ -1382,13 +1322,7 @@ public:
     }
 
     void change(bool) override {
-        static bool scheduled { false };
-        if (!scheduled) {
-            schedule_function([]() {
-                flush();
-                scheduled = false;
-            });
-        }
+        espurnaRegisterOnceUnique(flush);
     }
 
     size_t relayId() const {
@@ -3023,15 +2957,11 @@ void relaySetup() {
 
 bool relayAdd(RelayProviderBasePtr&& provider) {
     if (provider && provider->setup()) {
-        static bool scheduled { false };
         _relays.emplace_back(std::move(provider));
-        if (!scheduled) {
-            schedule_function([]() {
-                _relayConfigure();
-                _relayBootAll();
-                scheduled = false;
-            });
-        }
+        espurnaRegisterOnceUnique([]() {
+            _relayConfigure();
+            _relayBootAll();
+        });
         return true;
     }
 

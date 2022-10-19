@@ -1107,7 +1107,7 @@ espurna::duration::Milliseconds interval() {
 
 namespace internal {
 
-Ticker timer;
+timer::SystemTimer timer;
 bool wait { false };
 
 } // namespace internal
@@ -1141,13 +1141,15 @@ bool wait() {
 }
 
 void stop() {
-    internal::timer.detach();
+    internal::timer.stop();
+}
+
+void reset() {
+    internal::wait = false;
 }
 
 void start(espurna::duration::Milliseconds next) {
-    internal::timer.attach_ms(next.count(), []() {
-        internal::wait = false;
-    });
+    internal::timer.repeat(next, reset);
 }
 
 } // namespace garp
@@ -1503,7 +1505,7 @@ wifi::Networks preparedNetworks;
 bool connected { false };
 bool wait { false };
 
-Ticker timer;
+timer::SystemTimer timer;
 bool persist { false };
 
 using TaskPtr = std::unique_ptr<Task>;
@@ -1521,7 +1523,7 @@ bool persist() {
 
 void stop() {
     internal::task.reset();
-    internal::timer.detach();
+    internal::timer.stop();
 }
 
 bool start(String&& hostname) {
@@ -1530,7 +1532,7 @@ bool start(String&& hostname) {
             std::move(hostname),
             std::move(internal::preparedNetworks),
             build::ConnectionRetries);
-        internal::timer.detach();
+        internal::timer.stop();
         return true;
     }
 
@@ -1539,7 +1541,7 @@ bool start(String&& hostname) {
 }
 
 void schedule(espurna::duration::Milliseconds next, internal::ActionPtr ptr) {
-    internal::timer.once_ms(next.count(), ptr);
+    internal::timer.once(next, ptr);
     DEBUG_MSG_P(PSTR("[WIFI] Next connection attempt in %u (ms)\n"), next.count());
 }
 
@@ -1725,7 +1727,7 @@ namespace internal {
 
 int8_t threshold { build::threshold() };
 int8_t counter { build::Checks };
-Ticker timer;
+timer::SystemTimer timer;
 
 void task() {
     if (!wifi::sta::connected()) {
@@ -1749,12 +1751,12 @@ void task() {
 
 void start() {
     counter = build::Checks;
-    timer.attach_ms(build::Interval.count(), task);
+    timer.repeat(build::Interval, task);
 }
 
 void stop() {
     counter = build::Checks;
-    timer.detach();
+    timer.stop();
 }
 
 } // namespace internal
@@ -2091,7 +2093,7 @@ namespace internal {
 
 auto timeout = build::Timeout;
 bool enabled { false };
-Ticker timer;
+timer::SystemTimer timer;
 
 } // namespace internal
 
@@ -2108,13 +2110,13 @@ bool enabled() {
 }
 
 void remove() {
-    internal::timer.detach();
+    internal::timer.stop();
 }
 
 void check();
 
 void schedule() {
-    internal::timer.once_ms(internal::timeout.count(), check);
+    internal::timer.once(internal::timeout, check);
 }
 
 void check() {
@@ -2342,7 +2344,7 @@ void wifi(::terminal::CommandContext&& ctx) {
 alignas(4) static constexpr char Reset[] PROGMEM = "WIFI.RESET";
 
 void reset(::terminal::CommandContext&& ctx) {
-    wifiDisconnect();
+    wifi::sta::disconnect();
     wifi::settings::configure();
     terminalOK(ctx);
 }

@@ -8,8 +8,6 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "espurna.h"
 
-#include <Ticker.h>
-
 #include "rtcmem.h"
 #include "ws.h"
 #include "ntp.h"
@@ -327,6 +325,87 @@ void blockingDelay(CoreClock::duration timeout) {
 
 } // namespace time
 
+namespace timer {
+
+constexpr SystemTimer::Duration SystemTimer::DurationMin;
+constexpr SystemTimer::Duration SystemTimer::DurationMax;
+
+SystemTimer::SystemTimer() = default;
+
+void SystemTimer::start(Duration duration, Callback callback, bool repeat) {
+    stop();
+    if (!duration.count()) {
+        return;
+    }
+
+    if (!_timer) {
+        _timer.reset(new os_timer_t{});
+    }
+
+    _callback = std::move(callback);
+    _armed = _timer.get();
+    _repeat = repeat;
+
+    os_timer_setfn(_timer.get(),
+        [](void* arg) {
+            reinterpret_cast<SystemTimer*>(arg)->callback();
+        },
+        this);
+
+    size_t total = 0;
+    if (duration > DurationMax) {
+        total = 1;
+        while (duration > DurationMax) {
+            total *= 2;
+            duration /= 2;
+        }
+        _tick.reset(new Tick{
+            .total = total,
+            .count = 0,
+        });
+        repeat = true;
+    }
+
+    os_timer_arm(_armed, duration.count(), repeat);
+}
+
+void SystemTimer::stop() {
+    if (_armed) {
+        os_timer_disarm(_armed);
+        _armed = nullptr;
+        _callback = nullptr;
+        _tick = nullptr;
+    }
+}
+
+void SystemTimer::callback() {
+    if (_tick) {
+        ++_tick->count;
+        if (_tick->count < _tick->total) {
+            return;
+        }
+    }
+
+    _callback();
+
+    if (_repeat) {
+        if (_tick) {
+            _tick->count = 0;
+        }
+        return;
+    }
+
+    stop();
+}
+
+void SystemTimer::schedule_once(Duration duration, Callback callback) {
+    once(duration, [callback = std::move(callback)]() {
+        espurnaRegisterOnce(callback);
+    });
+}
+
+} // namespace timer
+
 namespace {
 
 namespace memory {
@@ -514,7 +593,7 @@ namespace internal {
 
 Data persistent_data { &Rtcmem->sys };
 
-Ticker timer;
+timer::SystemTimer timer;
 bool flag { true };
 
 } // namespace internal
@@ -574,6 +653,11 @@ uint8_t counter() {
         : build::ChecksMin;
 }
 
+void reset() {
+    DEBUG_MSG_P(PSTR("[MAIN] Resetting stability counter\n"));
+    internal::persistent_data.counter(build::ChecksMin);
+}
+
 void init() {
     const auto count = counter();
 
@@ -601,10 +685,7 @@ void init() {
     internal::persistent_data.counter(next);
     internal::flag = (count < build::ChecksMax);
 
-    internal::timer.once_scheduled(build::CheckTime.count(), []() {
-        DEBUG_MSG_P(PSTR("[MAIN] Resetting stability counter\n"));
-        internal::persistent_data.counter(build::ChecksMin);
-    });
+    internal::timer.once(build::CheckTime, reset);
 }
 
 bool check() {
@@ -830,7 +911,7 @@ struct CallbackRunner {
 
 namespace internal {
 
-Ticker timer;
+timer::SystemTimer timer;
 std::vector<CallbackRunner> runners;
 bool scheduled { false };
 
@@ -890,11 +971,12 @@ void run() {
         next = BeatMin;
     }
 
-    internal::timer.once_ms(next.count(), schedule);
+    internal::timer.once(next, schedule);
 }
 
 void stop(Callback callback) {
-    auto found = std::remove_if(internal::runners.begin(), internal::runners.end(),
+    auto found = std::remove_if(
+        internal::runners.begin(), internal::runners.end(),
         [&](const CallbackRunner& runner) {
             return callback == runner.callback;
         });
@@ -918,7 +1000,7 @@ void push(Callback callback, Mode mode, duration::Seconds interval) {
         offset - msec
     });
 
-    internal::timer.detach();
+    internal::timer.stop();
     schedule();
 }
 
@@ -972,7 +1054,7 @@ void init() {
     pushOnce([](Mask) {
         if (!espurna::boot::stability::check()) {
             DEBUG_MSG_P(PSTR("[MAIN] System UNSTABLE\n"));
-        } else if (espurna::boot::internal::timer.active()) {
+        } else if (espurna::boot::internal::timer) {
             DEBUG_MSG_P(PSTR("[MAIN] Pending stability counter reset...\n"));
         }
         return true;
@@ -1035,7 +1117,7 @@ void init() {
 // Store reset reason both here and in for the next boot
 namespace internal {
 
-Ticker reset_timer;
+timer::SystemTimer reset_timer;
 auto reset_reason = CustomResetReason::None;
 
 void reset(CustomResetReason reason) {
@@ -1070,9 +1152,11 @@ static constexpr espurna::duration::Milliseconds ShortDelayForReset { 500 };
 void deferredReset(duration::Milliseconds delay, CustomResetReason reason) {
     DEBUG_MSG_P(PSTR("[MAIN] Requested reset: %s\n"),
         espurna::boot::serialize(reason).c_str());
-    internal::reset_timer.once_ms(delay.count(), [reason]() {
-        internal::reset(reason);
-    });
+    internal::reset_timer.once(
+        delay,
+        [reason]() {
+            internal::reset(reason);
+        });
 }
 
 // SDK reserves last 16KiB on the flash for it's own means

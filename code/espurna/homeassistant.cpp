@@ -905,12 +905,12 @@ enum class State {
 };
 
 State state { State::Initial };
-Ticker timer;
+timer::SystemTimer timer;
 
 void send(TaskPtr ptr, FlagPtr flag_ptr);
 
 void stop(bool done) {
-    timer.detach();
+    timer.stop();
     if (done) {
         DEBUG_MSG_P(PSTR("[HA] Stopping discovery\n"));
         state = State::Sent;
@@ -921,8 +921,8 @@ void stop(bool done) {
 }
 
 void schedule(espurna::duration::Milliseconds wait, TaskPtr ptr, FlagPtr flag_ptr) {
-    internal::timer.once_ms_scheduled(
-        wait.count(),
+    timer.schedule_once(
+        wait,
         [ptr, flag_ptr]() {
             send(ptr, flag_ptr);
         });
@@ -989,7 +989,7 @@ void send(TaskPtr ptr, FlagPtr flag_ptr) {
 } // namespace internal
 
 void publishDiscovery() {
-    if (!mqttConnected() || internal::timer.active() || (internal::state != internal::State::Pending)) {
+    if (!mqttConnected() || internal::timer || (internal::state != internal::State::Pending)) {
         return;
     }
 
@@ -1031,7 +1031,7 @@ void mqttCallback(unsigned int type, const char* topic, char* payload) {
         if (internal::state == internal::State::Sent) {
             internal::state = internal::State::Pending;
         }
-        internal::timer.detach();
+        internal::timer.stop();
         return;
     }
 
@@ -1039,7 +1039,7 @@ void mqttCallback(unsigned int type, const char* topic, char* payload) {
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
         ::mqttSubscribe(MQTT_TOPIC_LIGHT_JSON);
 #endif
-        ::schedule_function(publishDiscovery);
+        ::espurnaRegisterOnce(publishDiscovery);
         return;
     }
 

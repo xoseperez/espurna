@@ -2,17 +2,10 @@
 #include <Arduino.h>
 #include <StreamString.h>
 
-#include <libs/PrintString.h>
-#include <terminal_commands.h>
+#include <espurna/libs/PrintString.h>
+#include <espurna/terminal_commands.h>
 
 namespace espurna {
-
-// no special cases for flash strings
-bool StringView::equals(espurna::StringView other) const {
-    return _ptr == other._ptr
-        || (_len == other._len && (0 == __builtin_memcmp(_ptr, other._ptr, _len)));
-}
-
 namespace terminal {
 namespace test {
 namespace {
