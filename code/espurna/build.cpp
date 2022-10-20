@@ -244,87 +244,74 @@ alignas(4) static constexpr char Name[] PROGMEM = APP_NAME;
 alignas(4) static constexpr char Version[] PROGMEM = APP_VERSION;
 alignas(4) static constexpr char Author[] PROGMEM = APP_AUTHOR;
 alignas(4) static constexpr char Website[] PROGMEM = APP_WEBSITE;
-alignas(4) static constexpr char BuildTime[] PROGMEM = __TIMESTAMP__;
+
+alignas(4) static constexpr char BuildDate[] PROGMEM = __DATE__;
+alignas(4) static constexpr char BuildTime[] PROGMEM = __TIME__;
 
 } // namespace internal
 
-// ref. https://gcc.gnu.org/onlinedocs/cpp/Common-Predefined-Macros.html
-// > __TIMESTAMP__
-// > This macro expands to a string constant that describes the date and time of the last modification of the current source file.
-// > The string constant contains abbreviated day of the week, month, day of the month, time in hh:mm:ss form, year and looks like
-// > "Sun Sep 16 01:03:52 1973". If the day of the month is less than 10, it is padded with a space on the left.
+// ref. https://gcc.gnu.org/onlinedocs/cpp/Standard-Predefined-Macros.html
+//
+// __DATE__
+// > This macro expands to a string constant that describes the date on which the preprocessor is being run.
+// > The string constant contains eleven characters and looks like "Feb 12 1996". If the day of the month is less than 10,
+// > it is padded with a space on the left.
+// > 
+// > If GCC cannot determine the current date, it will emit a warning message (once per compilation) and __DATE__ will expand to "??? ?? ????".
+// 
+// __TIME__
+// > This macro expands to a string constant that describes the time at which the preprocessor is being run.
+// > The string constant contains eight characters and looks like "23:59:01".
 // >
-// > If GCC cannot determine the current date, it will emit a warning message (once per compilation) and __TIMESTAMP__ will expand to
-// > "??? ??? ?? ??:??:?? ????".
+// > If GCC cannot determine the current time, it will emit a warning message (once per compilation) and __TIME__ will expand to "??:??:??".
 namespace time {
 
-// "Thu Jan  1 03:00:00 1970"
+// "Jan  1 1970"
 //  ^^^
-constexpr StringView raw_weekday() {
-    return StringView(&internal::BuildTime[0], &internal::BuildTime[3]);
-}
-static_assert(raw_weekday().length() == 3, "");
-
-// "Thu Jan  1 03:00:00 1970"
-//      ^^^
 constexpr StringView raw_month() {
-    return StringView(&internal::BuildTime[4], &internal::BuildTime[7]);
+    return StringView(&internal::BuildDate[0], &internal::BuildDate[3]);
 }
 static_assert(raw_month().length() == 3, "");
 
-// "Thu Jan  1 03:00:00 1970"
-//          ^^ (with space, or without)
+// "Jan  1 1970"
+//      ^^ (with space, or without)
 constexpr StringView raw_day() {
-    return (internal::BuildTime[8] == ' ')
-        ? StringView(&internal::BuildTime[9], &internal::BuildTime[10])
-        : StringView(&internal::BuildTime[8], &internal::BuildTime[10]);
+    return (internal::BuildDate[4] == ' ')
+        ? StringView(&internal::BuildDate[5], &internal::BuildDate[6])
+        : StringView(&internal::BuildDate[4], &internal::BuildDate[6]);
 }
 static_assert(raw_day().length() < 3, "");
 
-// "Thu Jan  1 03:00:00 1970"
-//             ^^
-constexpr StringView raw_hour() {
-    return StringView(&internal::BuildTime[11], &internal::BuildTime[13]);
-}
-static_assert(raw_hour().length() == 2, "");
-
-// "Thu Jan  1 03:00:00 1970"
-//                ^^
-constexpr StringView raw_minute() {
-    return StringView(&internal::BuildTime[14], &internal::BuildTime[16]);
-}
-static_assert(raw_minute().length() == 2, "");
-
-// "Thu Jan  1 03:00:00 1970"
-//                   ^^
-constexpr StringView raw_second() {
-    return StringView(&internal::BuildTime[17], &internal::BuildTime[19]);
-}
-static_assert(raw_second().length() == 2, "");
-
-// "Thu Jan  1 03:00:00 1970"
-//                      ^^^^
+// "Jan  1 1970"
+//         ^^^^
 constexpr StringView raw_year() {
-    return StringView(&internal::BuildTime[20], &internal::BuildTime[24]);
+    return StringView(&internal::BuildDate[7], &internal::BuildDate[11]);
 }
 static_assert(raw_year().length() == 4, "");
 
+// "03:00:00"
+//  ^^
+constexpr StringView raw_hour() {
+    return StringView(&internal::BuildTime[0], &internal::BuildTime[2]);
+}
+static_assert(raw_hour().length() == 2, "");
+
+// "03:00:00"
+//     ^^
+constexpr StringView raw_minute() {
+    return StringView(&internal::BuildTime[3], &internal::BuildTime[5]);
+}
+static_assert(raw_minute().length() == 2, "");
+
+// "03:00:00"
+//        ^^
+constexpr StringView raw_second() {
+    return StringView(&internal::BuildTime[6], &internal::BuildTime[8]);
+}
+static_assert(raw_second().length() == 2, "");
+
 #define STRING_EQUALS(EXPECTED, ACTUAL)\
     (__builtin_memcmp((ACTUAL).c_str(), (EXPECTED), (ACTUAL).length()) == 0)
-
-constexpr int from_raw_weekday(StringView weekday) {
-    return STRING_EQUALS("Sun", weekday) ? 1 :
-        STRING_EQUALS("Mon", weekday) ? 2 :
-        STRING_EQUALS("Tue", weekday) ? 3 :
-        STRING_EQUALS("Wed", weekday) ? 4 :
-        STRING_EQUALS("Thu", weekday) ? 5 :
-        STRING_EQUALS("Fri", weekday) ? 6 :
-        STRING_EQUALS("Sat", weekday) ? 7 : 0;
-}
-
-constexpr int weekday() {
-    return from_raw_weekday(raw_weekday());
-}
 
 constexpr int from_raw_month(StringView month) {
     return STRING_EQUALS("Jan", month) ? 1 :
