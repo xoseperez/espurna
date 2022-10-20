@@ -125,7 +125,7 @@ String serialize(Span bytes, bool encode) {
 // have time to send the previously buffered data.
 void send(String data) {
     mqttSendRaw(
-        mqttTopic(MQTT_TOPIC_UARTIN, false).c_str(),
+        mqttTopic(MQTT_TOPIC_UARTIN).c_str(),
         data.c_str(), false, 0);
 }
 
@@ -238,7 +238,7 @@ void write(Print& print, uint8_t termination, bool decode) {
 }
 
 
-void mqtt_callback(unsigned int type, const char* topic, const char* payload) {
+void mqtt_callback(unsigned int type, StringView topic, StringView payload) {
     static constexpr char Subscription[] = MQTT_TOPIC_UARTOUT;
 
     switch (type) {
@@ -248,7 +248,7 @@ void mqtt_callback(unsigned int type, const char* topic, const char* payload) {
     case MQTT_MESSAGE_EVENT:
         const auto t = mqttMagnitude(topic);
         if (t.equals(Subscription)) {
-            enqueue(payload);
+            enqueue(payload.toString());
         }
         break;
     }

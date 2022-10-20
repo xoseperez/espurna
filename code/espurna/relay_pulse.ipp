@@ -149,21 +149,19 @@ update_decimal:
     ++ptr;
 
     if (type != Type::Unknown) {
-        char* endp { nullptr };
-        uint32_t value = strtoul(token.c_str(), &endp, 10);
-
-        if (endp && (endp != token.c_str()) && endp[0] == '\0') {
+        const auto result = parseUnsigned(token, 10);
+        if (result.ok) {
             switch (type) {
             case Type::Hours: {
-                out += ::espurna::duration::Hours { value };
+                out += ::espurna::duration::Hours { result.value };
                 break;
             }
             case Type::Minutes: {
-                out += ::espurna::duration::Minutes { value };
+                out += ::espurna::duration::Minutes { result.value };
                 break;
             }
             case Type::Seconds: {
-                out += ::espurna::duration::Seconds { value };
+                out += ::espurna::duration::Seconds { result.value };
                 break;
             }
             case Type::Unknown:

@@ -176,7 +176,7 @@ bool _thermostatMqttHeartbeat(espurna::heartbeat::Mask mask) {
     return mqttConnected();
 }
 
-void thermostatMqttCallback(unsigned int type, const char* topic, char* payload) {
+void thermostatMqttCallback(unsigned int type, espurna::StringView topic, espurna::StringView payload) {
 
     if (type == MQTT_CONNECT_EVENT) {
       mqttSubscribeRaw(thermostat_remote_sensor_topic.c_str());
@@ -184,24 +184,22 @@ void thermostatMqttCallback(unsigned int type, const char* topic, char* payload)
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
-
-        // Match topic
-        String t = mqttMagnitude(topic);
-
-        if (strcmp(topic, thermostat_remote_sensor_topic.c_str()) != 0
-         && !t.equals(MQTT_TOPIC_HOLD_TEMP))
+        auto t = mqttMagnitude(topic);
+        if ((topic != thermostat_remote_sensor_topic)
+            && !t.equals(MQTT_TOPIC_HOLD_TEMP))
+        {
            return;
+        }
 
-        // Parse JSON input
         DynamicJsonBuffer jsonBuffer;
-        JsonObject& root = jsonBuffer.parseObject(payload);
+        JsonObject& root = jsonBuffer.parseObject(payload.begin());
         if (!root.success()) {
             DEBUG_MSG_P(PSTR("[THERMOSTAT] Error parsing data\n"));
             return;
         }
 
-        // Check rempte sensor temperature
-        if (strcmp(topic, thermostat_remote_sensor_topic.c_str()) == 0) {
+        // Check remote sensor temperature
+        if (topic == thermostat_remote_sensor_topic) {
             if (root.containsKey(magnitudeTopic(MAGNITUDE_TEMPERATURE))) {
                 String remote_temp = root[magnitudeTopic(MAGNITUDE_TEMPERATURE)];
                 _remote_temp.temp = remote_temp.toFloat();

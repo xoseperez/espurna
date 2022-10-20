@@ -329,11 +329,11 @@ bool executeCommand(const String& command) {
             one_color_palette.reset(new Palette("Color", {root[MQTT_PAYLOAD_PALETTE].as<uint32_t>()}));
             newPalette = one_color_palette.get();
         } else {
-            auto palette = root[MQTT_PAYLOAD_PALETTE].as<const char*>();
+            auto palette = root[MQTT_PAYLOAD_PALETTE].as<String>();
             bool palette_found = false;
             for (size_t i = 0; i < pals.size(); ++i) {
                 auto pal_name = pals[i].name();
-                if (strcmp(palette, pal_name) == 0) {
+                if (palette = pal_name) {
                     newPalette = &pals[i];
                     palette_found = true;
                     scene_setup_required = true;
@@ -341,9 +341,9 @@ bool executeCommand(const String& command) {
                 }
             }
             if (!palette_found) {
-                uint32_t color = (uint32_t)strtoul(palette, NULL, 0);
-                if (color != 0) {
-                    one_color_palette.reset(new Palette("Color", {color}));
+                const auto result = parseUnsigned(palette);
+                if (result.ok) {
+                    one_color_palette.reset(new Palette("Color", {result.value}));
                     newPalette = one_color_palette.get();
                 }
             }
@@ -409,17 +409,14 @@ void garlandLoop(void) {
 }
 
 //------------------------------------------------------------------------------
-void garlandMqttCallback(unsigned int type, const char* topic, char* payload) {
+void garlandMqttCallback(unsigned int type, espurna::StringView topic, espurna::StringView payload) {
     if (type == MQTT_CONNECT_EVENT) {
         mqttSubscribe(MQTT_TOPIC_GARLAND);
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
-        // Match topic
-        String t = mqttMagnitude(topic);
-
+        auto t = mqttMagnitude(topic);
         if (t.equals(MQTT_TOPIC_GARLAND)) {
-            // Parse JSON input
             DynamicJsonBuffer jsonBuffer;
             JsonObject& root = jsonBuffer.parseObject(payload);
             if (!root.success()) {
@@ -433,7 +430,7 @@ void garlandMqttCallback(unsigned int type, const char* topic, char* payload) {
             }
 
             if (command == MQTT_COMMAND_IMMEDIATE) {
-                _immediate_command = payload;
+                _immediate_command = payload.toString();
             } else if (command == MQTT_COMMAND_RESET) {
                 std::queue<String> empty_queue;
                 std::swap(_command_queue, empty_queue);
@@ -444,9 +441,9 @@ void garlandMqttCallback(unsigned int type, const char* topic, char* payload) {
                 setDefault();
                 garlandEnabled(true);
             } else if (command == MQTT_COMMAND_QUEUE) {
-                _command_queue.push(payload);
+                _command_queue.push(payload.toString());
             } else if (command == MQTT_COMMAND_SEQUENCE) {
-                _command_sequence.push_back(payload);
+                _command_sequence.push_back(payload.toString());
             }
         }
     }
@@ -674,18 +671,19 @@ byte Anim::rngb() {
 //------------------------------------------------------------------------------
 
 void garlandEnabled(bool enabled) {
-    _garland_enabled = enabled;
     setSetting(NAME_GARLAND_ENABLED, _garland_enabled);
-    if (!_garland_enabled) {
-        schedule_function([]() {
+    if (_garland_enabled != enabled) {
+        espurnaRegisterOnceUnique([]() {
             pixels.clear();
             pixels.show();
         });
     }
 
+    _garland_enabled = enabled;
+
 #if WEB_SUPPORT
-    wsPost([](JsonObject& root) {
-        root["garlandEnabled"] = _garland_enabled;
+    wsPost([enabled](JsonObject& root) {
+        root["garlandEnabled"] = enabled;
     });
 #endif
 }

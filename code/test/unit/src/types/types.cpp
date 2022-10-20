@@ -18,6 +18,17 @@ void test_view() {
         expected, view.begin(), view.length());
 }
 
+void test_view_nullptr() {
+    auto func = [](espurna::StringView view) {
+        TEST_ASSERT_EQUAL(0, view.length());
+        TEST_ASSERT_EQUAL(nullptr, view.begin());
+        TEST_ASSERT_EQUAL(nullptr, view.end());
+    };
+
+    static_assert(!std::is_convertible<std::nullptr_t, espurna::StringView>::value, "");
+    func(espurna::StringView());
+}
+
 void test_view_convert() {
     const String origin("12345");
     StringView view(origin);
@@ -38,6 +49,15 @@ void test_view_convert() {
     StringView copy_view(copy);
     TEST_ASSERT_EQUAL(view.length(), copy_view.length());
     TEST_ASSERT(view.equals(copy_view));
+}
+
+void test_view_compare() {
+    StringView base("aaaa bbbb cccc dddd");
+
+    TEST_ASSERT(base.startsWith("aaaa"));
+    TEST_ASSERT(base.endsWith("dddd"));
+    TEST_ASSERT(base.equals("aaaa bbbb cccc dddd"));
+    TEST_ASSERT(base.equalsIgnoreCase("aaaa BBBB cccc DDDD"));
 }
 
 void test_callback_empty() {
@@ -204,7 +224,9 @@ int main(int, char**) {
 
     using namespace espurna::test;
 	RUN_TEST(test_view);
+	RUN_TEST(test_view_nullptr);
 	RUN_TEST(test_view_convert);
+	RUN_TEST(test_view_compare);
 	RUN_TEST(test_callback_empty);
 	RUN_TEST(test_callback_simple);
 	RUN_TEST(test_callback_lambda);

@@ -57,13 +57,15 @@ struct ApiRequest {
         });
     }
 
-    const String& param(const String& name) {
-        auto* result = _request.getParam(name, HTTP_PUT == _request.method());
+    espurna::StringView param(const String& name) {
+        const auto* result = _request.getParam(name, HTTP_PUT == _request.method());
+
+        espurna::StringView out;
         if (result) {
-            return result->value();
+            out = result->value();
         }
 
-        return _empty_string();
+        return out;
     }
 
     void send(const String& payload) {
@@ -86,7 +88,7 @@ struct ApiRequest {
     }
 
     String part(size_t index) const {
-        return _parts[index];
+        return _parts[index].toString();
     }
 
     // Only works when pattern cointains '+', retrieving the part at the same index from the real path
@@ -95,11 +97,6 @@ struct ApiRequest {
     size_t wildcards() const;
 
 private:
-    const String& _empty_string() const {
-        static const String string;
-        return string;
-    }
-
     bool _done { false };
 
     AsyncWebServerRequest& _request;

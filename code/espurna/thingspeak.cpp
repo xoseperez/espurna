@@ -94,7 +94,7 @@ String apiKey() {
 }
 
 String address() {
-    return getSetting(FPSTR(keys::Address), FPSTR(build::ApiKey));
+    return getSetting(FPSTR(keys::Address), FPSTR(build::Address));
 }
 
 #if RELAY_SUPPORT
@@ -362,7 +362,7 @@ public:
     }
 
     bool send(const String& address, const String& data, Completion completion) {
-        _address = address;
+        _address = URL(address);
         return send(data, completion);
     }
 

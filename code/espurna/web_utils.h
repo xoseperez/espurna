@@ -48,6 +48,8 @@ struct StringTraits<::espurna::StringView, void> {
         return nullptr;
     }
 
+    // technically, we could've had append w/ strings only
+    // but, this also means append of char, which we could not do
     static const bool has_append = false;
     static const bool has_equals = true;
     static const bool should_duplicate = true;

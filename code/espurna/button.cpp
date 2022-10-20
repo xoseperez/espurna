@@ -773,7 +773,7 @@ namespace terminal {
 void button(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() == 2) {
         size_t id;
-        if (!tryParseId(ctx.argv[1], buttonCount, id)) {
+        if (!tryParseId(ctx.argv[1], buttonCount(), id)) {
             terminalError(ctx, F("Invalid button ID"));
             return;
         }

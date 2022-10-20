@@ -418,33 +418,22 @@ private:
     Result _result;
 };
 
-// TODO: std::from_chars works directly with the view. not available with -std=c++11,
-//       and needs some care in regards to the code size
-
 template <typename T>
-T sized(StringView view) {
-    String value(view);
-
-    char* endp { nullptr };
-    unsigned long result { std::strtoul(value.c_str(), &endp, 10) };
-    if ((endp != value.c_str()) && (*endp == '\0')) {
-        constexpr unsigned long Boundary { 1ul << (sizeof(T) * 8) };
-        if (result < Boundary) {
-            return result;
-        }
+T sized(StringView value) {
+    const auto result = parseUnsigned(value, 10);
+    constexpr decltype(result.value) Boundary { 1ul << (sizeof(T) * 8) };
+    if (result.ok && (result.value < Boundary)) {
+        return result.value;
     }
 
     return 0;
 }
 
 template <>
-unsigned long sized(StringView view) {
-    String value(view);
-
-    char* endp { nullptr };
-    unsigned long result { std::strtoul(value.c_str(), &endp, 10) };
-    if ((endp != value.c_str()) && (*endp == '\0')) {
-        return result;
+unsigned long sized(StringView value) {
+    const auto result = parseUnsigned(value, 10);
+    if (result.ok) {
+        return result.value;
     }
 
     return 0;
@@ -1263,7 +1252,7 @@ bool publish_raw { build::rxRaw() };
 bool publish_simple { build::rxSimple() };
 bool publish_state { build::rxState() };
 
-void callback(unsigned int type, const char* topic, char* payload) {
+void callback(unsigned int type, StringView topic, StringView payload) {
     switch (type) {
 
     case MQTT_CONNECT_EVENT:
@@ -1273,15 +1262,13 @@ void callback(unsigned int type, const char* topic, char* payload) {
         break;
 
     case MQTT_MESSAGE_EVENT: {
-        StringView view{payload, payload + strlen(payload)};
-
-        String t = mqttMagnitude(topic);
+        auto t = mqttMagnitude(topic);
         if (t.equals(build::topicTxSimple())) {
-            ir::tx::enqueue(ir::simple::parse(view));
+            ir::tx::enqueue(ir::simple::parse(payload));
         } else if (t.equals(build::topicTxState())) {
-            ir::tx::enqueue(ir::state::parse(view));
+            ir::tx::enqueue(ir::state::parse(payload));
         } else if (t.equals(build::topicTxRaw())) {
-            ir::tx::enqueue(ir::raw::parse(view));
+            ir::tx::enqueue(ir::raw::parse(payload));
         }
 
         break;

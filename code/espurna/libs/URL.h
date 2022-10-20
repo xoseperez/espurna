@@ -13,6 +13,8 @@
 #include <cstdint>
 #include <utility>
 
+#include "../types.h"
+
 class URL {
 public:
     URL() = default;
@@ -22,12 +24,8 @@ public:
     URL& operator=(const URL&) = default;
     URL& operator=(URL&&) = default;
 
-    URL(const String& string) {
+    explicit URL(espurna::StringView string) {
         _parse(string);
-    }
-
-    URL(String&& string) {
-        _parse(std::move(string));
     }
 
     String protocol;
@@ -36,8 +34,9 @@ public:
     uint16_t port { 0 };
 
 private:
-    void _parse(String buffer) {
-        // cut the protocol part
+    void _parse(espurna::StringView string) {
+        auto buffer = string.toString();
+
         int index = buffer.indexOf("://");
         if (index > 0) {
             this->protocol = buffer.substring(0, index);

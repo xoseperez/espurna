@@ -54,23 +54,24 @@ Updated secure client support by Niek van der Maas < mail at niekvandermaas dot 
 #define MQTT_TOPIC_CMD              "cmd"
 #define MQTT_TOPIC_SCHEDULE         "schedule"
 
-using mqtt_callback_f = std::function<void(unsigned int type, const char* topic, char* payload)>;
-using mqtt_pid_callback_f = std::function<void()>;
-
 void mqttHeartbeat(espurna::heartbeat::Callback);
-void mqttRegister(mqtt_callback_f callback);
 
-void mqttOnPublish(uint16_t pid, mqtt_pid_callback_f);
-void mqttOnSubscribe(uint16_t pid, mqtt_pid_callback_f);
+// stateless callback; generally, registered once per module when calling setup()
+using MqttCallback = void(*)(unsigned int type, espurna::StringView topic, espurna::StringView payload);
+void mqttRegister(MqttCallback);
 
-String mqttTopic(const String& magnitude, bool is_set);
-String mqttTopic(const char* magnitude, bool is_set);
+// stateful callback for ACK'ed messages; should be used when waiting for certain messsage to be PUBlished
+using MqttPidCallback = std::function<void()>;
+void mqttOnPublish(uint16_t pid, MqttPidCallback);
+void mqttOnSubscribe(uint16_t pid, MqttPidCallback);
 
-String mqttTopic(const String& magnitude, unsigned int index, bool is_set);
-String mqttTopic(const char* magnitude, unsigned int index, bool is_set);
+String mqttTopic(const String& magnitude);
+String mqttTopic(const String& magnitude, size_t index);
 
-String mqttMagnitude(const char* topic);
-espurna::StringView mqttMagnitudeTail(espurna::StringView magnitude, espurna::StringView topic);
+String mqttTopicSetter(const String& magnitude);
+String mqttTopicSetter(const String& magnitude, size_t index);
+
+espurna::StringView mqttMagnitude(espurna::StringView topic);
 
 uint16_t mqttSendRaw(const char * topic, const char * message, bool retain, int qos);
 uint16_t mqttSendRaw(const char * topic, const char * message, bool retain);
@@ -94,7 +95,7 @@ bool mqttSend(const char * topic, unsigned int index, const char * message);
 void mqttSendStatus();
 void mqttFlush();
 
-void mqttEnqueue(const char* topic, const char* message);
+void mqttEnqueue(espurna::StringView topic, espurna::StringView payload);
 
 const String& mqttPayloadOnline();
 const String& mqttPayloadOffline();

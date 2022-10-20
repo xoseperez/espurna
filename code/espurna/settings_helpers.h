@@ -41,6 +41,10 @@ public:
         _key(std::move(key))
     {}
 
+    Key(StringView key) :
+        Key(key.toString())
+    {}
+
     Key(const String& prefix, size_t index) :
         _key(prefix)
     {
@@ -52,6 +56,10 @@ public:
     {
         _key += index;
     }
+
+    Key(StringView key, size_t index) :
+        Key(key.toString(), index)
+    {}
 
     Key(const char* prefix, size_t index) :
         _key(prefix)

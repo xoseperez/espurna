@@ -13,16 +13,127 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <limits>
 #include <random>
 
-bool tryParseId(espurna::StringView value, TryParseIdFunc limit, size_t& out) {
-    static_assert(std::numeric_limits<size_t>::max() >= std::numeric_limits<unsigned long>::max(), "");
+// We can only return small values (max 'z' aka 122)
+static constexpr uint8_t InvalidByte { 255u };
 
-    char* endp { nullptr };
-    out = strtoul(value.begin(), &endp, 10); // TODO from_chars
-    if ((endp == value.begin()) || (*endp != '\0') || (out >= limit())) {
-        return false;
+static uint8_t bin_char2byte(char c) {
+    switch (c) {
+    case '0'...'1':
+        return (c - '0');
     }
 
-    return true;
+    return InvalidByte;
+}
+
+static uint8_t oct_char2byte(char c) {
+    switch (c) {
+    case '0'...'7':
+        return (c - '0');
+    }
+
+    return InvalidByte;
+}
+
+static uint8_t dec_char2byte(char c) {
+    switch (c) {
+    case '0'...'9':
+        return (c - '0');
+    }
+
+    return InvalidByte;
+}
+
+static uint8_t hex_char2byte(char c) {
+    switch (c) {
+    case '0'...'9':
+        return (c - '0');
+    case 'a'...'f':
+        return 10 + (c - 'a');
+    case 'A'...'F':
+        return 10 + (c - 'A');
+    }
+
+    return InvalidByte;
+}
+
+static ParseUnsignedResult parseUnsignedImpl(espurna::StringView value, int base) {
+    auto out = ParseUnsignedResult{
+        .ok = false,
+        .value = 0,
+    };
+
+    using Char2Byte = uint8_t(*)(char);
+    Char2Byte char2byte = nullptr;
+
+    switch (base) {
+    case 2:
+        char2byte = bin_char2byte;
+        break;
+    case 8:
+        char2byte = oct_char2byte;
+        break;
+    case 10:
+        char2byte = dec_char2byte;
+        break;
+    case 16:
+        char2byte = hex_char2byte;
+        break;
+    }
+
+    if (!char2byte) {
+        return out;
+    }
+
+    for (auto it = value.begin(); it != value.end(); ++it) {
+        const auto digit = char2byte(*it);
+        if (digit == InvalidByte) {
+            out.ok = false;
+            goto err;
+        }
+
+        const auto value = out.value;
+        out.value = (out.value * uint32_t(base)) + digit;
+        // TODO explicitly set the output bit width?
+        if (value > out.value) {
+            out.ok = false;
+            goto err;
+        }
+
+        out.ok = true;
+    }
+
+err:
+    return out;
+}
+
+bool tryParseId(espurna::StringView value, size_t limit, size_t& out) {
+    using T = std::remove_cvref<decltype(out)>::type;
+    static_assert(std::is_same<T, size_t>::value, "");
+
+    if (value.length()) {
+        const auto result = parseUnsignedImpl(value, 10);
+        if (result.ok && (result.value < limit)) {
+            out = result.value;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool tryParseIdPath(espurna::StringView value, size_t limit, size_t& out) {
+    if (value.length()) {
+        const auto before_begin = value.begin() - 1;
+        for (auto it = value.end() - 1; it != before_begin; --it) {
+            if ((*it) == '/') {
+                return tryParseId(
+                    espurna::StringView(it + 1, value.end()),
+                    limit, out);
+            }
+        }
+    }
+
+    return false;
 }
 
 String prettyDuration(espurna::duration::Seconds seconds) {
@@ -187,37 +298,15 @@ char* strnstr(const char* buffer, const char* token, size_t n) {
   return nullptr;
 }
 
-namespace {
-
-uint32_t parseUnsignedImpl(const String& value, int base) {
-    const char* ptr { value.c_str() };
-    char* endp { nullptr };
-
-    // invalidate the whole string when invalid chars are detected
-    // while this does not return a 'result' type, we can't know
-    // whether 0 was the actual decoded number or not
-    const auto result = strtoul(ptr, &endp, base);
-    if (endp == ptr || endp[0] != '\0') {
-        return 0;
-    }
-
-    return result;
-}
-
-} // namespace
-
-uint32_t parseUnsigned(const String& value, int base) {
+ParseUnsignedResult parseUnsigned(espurna::StringView value, int base) {
     return parseUnsignedImpl(value, base);
 }
 
-uint32_t parseUnsigned(const String& value) {
-    if (!value.length()) {
-        return 0;
-    }
-
+ParseUnsignedResult parseUnsigned(espurna::StringView value) {
     int base = 10;
-    if (value.length() > 2) {
-        auto* ptr = value.c_str();
+
+    if (value.length() && (value.length() > 2)) {
+        const auto* ptr = value.begin();
         if (*ptr == '0') {
             switch (*(ptr + 1)) {
             case 'b':
@@ -231,9 +320,12 @@ uint32_t parseUnsigned(const String& value) {
                 break;
             }
         }
+
+        value = espurna::StringView(
+            value.begin() + 2, value.end());
     }
 
-    return parseUnsignedImpl((base == 10) ? value : value.substring(2), base);
+    return parseUnsignedImpl(value, base);
 }
 
 String formatUnsigned(uint32_t value, int base) {
@@ -322,34 +414,18 @@ size_t hexEncode(const uint8_t* in, size_t in_size, char* out, size_t out_size) 
 
 // From an hexa char array ("A220EE...") to a byte array (half the size)
 uint8_t* hexDecode(const char* in_begin, const char* in_end, uint8_t* out_begin, uint8_t* out_end) {
-    // We can only return small values (max 'z' aka 122)
-    constexpr uint8_t InvalidByte { 255u };
-
-    auto char2byte = [](char ch) -> uint8_t {
-        switch (ch) {
-        case '0'...'9':
-            return (ch - '0');
-        case 'a'...'f':
-            return 10 + (ch - 'a');
-        case 'A'...'F':
-            return 10 + (ch - 'A');
-        }
-
-        return InvalidByte;
-    };
-
     constexpr uint8_t Shift { 4 };
 
     const char* in_ptr { in_begin };
     uint8_t* out_ptr { out_begin };
     while ((in_ptr != in_end) && (out_ptr != out_end)) {
-        uint8_t lhs = char2byte(*in_ptr);
+        uint8_t lhs = hex_char2byte(*in_ptr);
         if (lhs == InvalidByte) {
             break;
         }
         ++in_ptr;
 
-        uint8_t rhs = char2byte(*in_ptr);
+        uint8_t rhs = hex_char2byte(*in_ptr);
         if (rhs == InvalidByte) {
             break;
         }

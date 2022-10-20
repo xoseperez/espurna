@@ -221,29 +221,29 @@ alignas(4) static constexpr char PayloadOn[] PROGMEM = RELAY_MQTT_ON;
 alignas(4) static constexpr char PayloadOff[] PROGMEM = RELAY_MQTT_OFF;
 alignas(4) static constexpr char PayloadToggle[] PROGMEM = RELAY_MQTT_TOGGLE;
 
-constexpr espurna::StringView mqttTopicSub(size_t index) {
+const StringView mqttTopicSub(size_t index) {
     return (
-        (index == 0) ? STRING_VIEW(RELAY1_MQTT_TOPIC_SUB) :
-        (index == 1) ? STRING_VIEW(RELAY2_MQTT_TOPIC_SUB) :
-        (index == 2) ? STRING_VIEW(RELAY3_MQTT_TOPIC_SUB) :
-        (index == 3) ? STRING_VIEW(RELAY4_MQTT_TOPIC_SUB) :
-        (index == 4) ? STRING_VIEW(RELAY5_MQTT_TOPIC_SUB) :
-        (index == 5) ? STRING_VIEW(RELAY6_MQTT_TOPIC_SUB) :
-        (index == 6) ? STRING_VIEW(RELAY7_MQTT_TOPIC_SUB) :
-        (index == 7) ? STRING_VIEW(RELAY8_MQTT_TOPIC_SUB) : ""
+        (index == 0) ? StringView(PSTR(RELAY1_MQTT_TOPIC_SUB)) :
+        (index == 1) ? StringView(PSTR(RELAY2_MQTT_TOPIC_SUB)) :
+        (index == 2) ? StringView(PSTR(RELAY3_MQTT_TOPIC_SUB)) :
+        (index == 3) ? StringView(PSTR(RELAY4_MQTT_TOPIC_SUB)) :
+        (index == 4) ? StringView(PSTR(RELAY5_MQTT_TOPIC_SUB)) :
+        (index == 5) ? StringView(PSTR(RELAY6_MQTT_TOPIC_SUB)) :
+        (index == 6) ? StringView(PSTR(RELAY7_MQTT_TOPIC_SUB)) :
+        (index == 7) ? StringView(PSTR(RELAY8_MQTT_TOPIC_SUB)) : ""
     );
 }
 
-constexpr espurna::StringView mqttTopicPub(size_t index) {
+const StringView mqttTopicPub(size_t index) {
     return (
-        (index == 0) ? STRING_VIEW(RELAY1_MQTT_TOPIC_PUB) :
-        (index == 1) ? STRING_VIEW(RELAY2_MQTT_TOPIC_PUB) :
-        (index == 2) ? STRING_VIEW(RELAY3_MQTT_TOPIC_PUB) :
-        (index == 3) ? STRING_VIEW(RELAY4_MQTT_TOPIC_PUB) :
-        (index == 4) ? STRING_VIEW(RELAY5_MQTT_TOPIC_PUB) :
-        (index == 5) ? STRING_VIEW(RELAY6_MQTT_TOPIC_PUB) :
-        (index == 6) ? STRING_VIEW(RELAY7_MQTT_TOPIC_PUB) :
-        (index == 7) ? STRING_VIEW(RELAY8_MQTT_TOPIC_PUB) : ""
+        (index == 0) ? StringView(PSTR(RELAY1_MQTT_TOPIC_PUB)) :
+        (index == 1) ? StringView(PSTR(RELAY2_MQTT_TOPIC_PUB)) :
+        (index == 2) ? StringView(PSTR(RELAY3_MQTT_TOPIC_PUB)) :
+        (index == 3) ? StringView(PSTR(RELAY4_MQTT_TOPIC_PUB)) :
+        (index == 4) ? StringView(PSTR(RELAY5_MQTT_TOPIC_PUB)) :
+        (index == 5) ? StringView(PSTR(RELAY6_MQTT_TOPIC_PUB)) :
+        (index == 6) ? StringView(PSTR(RELAY7_MQTT_TOPIC_PUB)) :
+        (index == 7) ? StringView(PSTR(RELAY8_MQTT_TOPIC_PUB)) : ""
     );
 }
 
@@ -1459,26 +1459,12 @@ Stream* StmProvider::_port = nullptr;
 // -----------------------------------------------------------------------------
 
 bool _relayTryParseId(espurna::StringView value, size_t& id) {
-    return tryParseId(value, relayCount, id);
+    return tryParseId(value, relayCount(), id);
 }
 
 [[gnu::unused]]
-bool _relayTryParseIdFromPath(espurna::StringView endpoint, size_t& id) {
-    const auto begin = std::make_reverse_iterator(endpoint.end());
-    const auto end = std::make_reverse_iterator(endpoint.begin());
-
-    auto next_slash = std::find(begin, end, '/');
-    if (next_slash == end) {
-        return false;
-    }
-
-    espurna::StringView tail { next_slash.base() + 1, endpoint.end() };
-    if ((*tail.begin()) == '\0') {
-        DEBUG_MSG_P(PSTR("[RELAY] relayID was not specified\n"));
-        return false;
-    }
-
-    return _relayTryParseId(tail, id);
+bool _relayTryParseIdFromPath(espurna::StringView value, size_t& id) {
+    return tryParseIdPath(value, relayCount(), id);
 }
 
 void _relayHandleStatus(size_t id, PayloadStatus status) {
@@ -2462,7 +2448,7 @@ bool _relayMqttHeartbeat(espurna::heartbeat::Mask mask) {
     return mqttConnected();
 }
 
-void _relayMqttHandleCustomTopic(const String& topic, espurna::StringView payload) {
+void _relayMqttHandleCustomTopic(espurna::StringView topic, espurna::StringView payload) {
     PathParts received(topic);
     for (auto& topic : _relay_custom_topics) {
         if (topic.match(received)) {
@@ -2487,10 +2473,8 @@ void _relayMqttHandleDisconnect() {
 
 } // namespace
 
-void relayMQTTCallback(unsigned int type, const char* topic, char* payload) {
-
+void relayMQTTCallback(unsigned int type, espurna::StringView topic, espurna::StringView payload) {
     static bool connected { false };
-
     if (!_relays.size()) {
         return;
     }
@@ -2504,7 +2488,7 @@ void relayMQTTCallback(unsigned int type, const char* topic, char* payload) {
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
-        String t = mqttMagnitude(topic);
+        const auto t = mqttMagnitude(topic);
 
         auto is_relay = t.startsWith(MQTT_TOPIC_RELAY);
         auto is_pulse = t.startsWith(MQTT_TOPIC_PULSE);
@@ -2592,8 +2576,10 @@ static void _relayCommand(::terminal::CommandContext&& ctx) {
         return;
     }
 
+    ctx.output.println(id);
+
     if (ctx.argv.size() > 2) {
-        auto status = relayParsePayload(ctx.argv[2].c_str());
+        auto status = relayParsePayload(ctx.argv[2]);
         if (PayloadStatus::Unknown == status) {
             terminalError(ctx, F("Invalid status"));
             return;

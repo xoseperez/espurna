@@ -12,6 +12,8 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 
 #include <memory>
 
+#include "compat.h"
+
 // missing in our original header
 extern "C" int memcmp_P(const void*, const void*, size_t);
 
@@ -52,10 +54,7 @@ struct Callback {
     Callback& operator=(Callback&& other) noexcept;
 
     template <typename T>
-    using remove_cvref = typename std::remove_cv<std::remove_reference<T>>::type;
-
-    template <typename T>
-    using is_callback = std::is_same<remove_cvref<T>, Callback>;
+    using is_callback = std::is_same<std::remove_cvref<T>, Callback>;
 
     template <typename T>
     using is_type = std::is_same<T, Type>;
@@ -212,6 +211,8 @@ struct StringView {
     StringView() noexcept = default;
     ~StringView() = default;
 
+    StringView(std::nullptr_t) = delete;
+
     constexpr StringView(const StringView&) noexcept = default;
     constexpr StringView(StringView&&) noexcept = default;
 
@@ -244,11 +245,6 @@ struct StringView {
     explicit StringView(const __FlashStringHelper* ptr) noexcept :
         _ptr(reinterpret_cast<const char*>(ptr)),
         _len(strlen_P(_ptr))
-    {}
-
-    explicit constexpr StringView(std::nullptr_t) noexcept :
-        _ptr(nullptr),
-        _len(0)
     {}
 
     StringView(const String& string) noexcept :
@@ -300,6 +296,9 @@ struct StringView {
 
     bool equals(StringView) const;
     bool equalsIgnoreCase(StringView) const;
+
+    bool startsWith(StringView) const;
+    bool endsWith(StringView) const;
 
 private:
 #if defined(HOST_MOCK)

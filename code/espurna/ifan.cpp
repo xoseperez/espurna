@@ -69,7 +69,7 @@ String speedToPayload(FanSpeed speed) {
     return espurna::settings::internal::serialize(speed);
 }
 
-constexpr unsigned long DefaultSaveDelay { 1000ul };
+static constexpr auto DefaultSaveDelay = duration::Seconds{ 10 };
 
 // We expect to write a specific 'mask' via GPIO LOW & HIGH to set the speed
 // Sync up with the relay and write it on ON / OFF status events
@@ -96,25 +96,21 @@ constexpr int controlPin() {
 }
 
 struct Config {
-    Config() = default;
-    explicit Config(unsigned long save_, FanSpeed speed_) :
-        save(save_),
-        speed(speed_)
-    {}
-
-    unsigned long save { DefaultSaveDelay };
-    FanSpeed speed { FanSpeed::Off };
-    StatePins state_pins;
+    duration::Seconds save;
+    FanSpeed speed;
 };
 
 Config readSettings() {
-    return Config(
-        getSetting("fanSave", DefaultSaveDelay),
-        getSetting("fanSpeed", FanSpeed::Medium)
-    );
+    return Config{
+        .save = getSetting("fanSave", DefaultSaveDelay),
+        .speed = getSetting("fanSpeed", FanSpeed::Medium)};
 }
 
-Config config;
+StatePins state_pins;
+Config config {
+    .save = DefaultSaveDelay,
+    .speed = FanSpeed::Medium,
+};
 
 void configure() {
     config = readSettings();
@@ -127,10 +123,10 @@ void report(FanSpeed speed [[gnu::unused]]) {
 }
 
 void save(FanSpeed speed) {
-    static Ticker ticker;
+    static timer::SystemTimer ticker;
     config.speed = speed;
-    ticker.once_ms(config.save, []() {
-        auto value = speedToPayload(config.speed);
+    ticker.once(config.save, []() {
+        const auto value = speedToPayload(config.speed);
         setSetting("fanSpeed", value);
         DEBUG_MSG_P(PSTR("[IFAN] Saved speed setting \"%s\"\n"), value.c_str());
     });
@@ -217,13 +213,13 @@ void updateSpeed(FanSpeed speed) {
     updateSpeed(config, speed);
 }
 
-void updateSpeedFromPayload(const String& payload) {
-    updateSpeed(payloadToSpeed(payload));
+void updateSpeedFromPayload(StringView payload) {
+    updateSpeed(payloadToSpeed(payload.toString()));
 }
 
 #if MQTT_SUPPORT
 
-void onMqttEvent(unsigned int type, const char* topic, char* payload) {
+void onMqttEvent(unsigned int type, StringView topic, StringView payload) {
     switch (type) {
 
     case MQTT_CONNECT_EVENT:
@@ -245,9 +241,10 @@ void onMqttEvent(unsigned int type, const char* topic, char* payload) {
 
 class FanProvider : public RelayProviderBase {
 public:
-    explicit FanProvider(BasePinPtr&& pin, const Config& config, FanSpeedUpdate& callback) :
+    FanProvider(BasePinPtr&& pin, const Config& config, const StatePins& pins, FanSpeedUpdate& callback) :
         _pin(std::move(pin)),
-        _config(config)
+        _config(config),
+        _pins(pins)
     {
         callback = [this](FanSpeed speed) {
             change(speed);
@@ -265,8 +262,8 @@ public:
         auto state = stateFromSpeed(speed);
         DEBUG_MSG_P(PSTR("[IFAN] State mask: %s\n"), maskFromSpeed(speed));
 
-        for (size_t index = 0; index < _config.state_pins.size(); ++index) {
-            auto& pin = _config.state_pins[index].second;
+        for (size_t index = 0; index < _pins.size(); ++index) {
+            auto& pin = _pins[index].second;
             if (!pin) {
                 continue;
             }
@@ -282,6 +279,7 @@ public:
 private:
     BasePinPtr _pin;
     const Config& _config;
+    const StatePins& _pins;
 };
 
 #if TERMINAL_SUPPORT
@@ -314,19 +312,18 @@ void setup() {
 #endif
 
 void setup() {
-
-    config.state_pins = setupStatePins();
-    if (!config.state_pins.size()) {
+    state_pins = setupStatePins();
+    if (!state_pins.size()) {
         return;
     }
 
     configure();
-
     espurnaRegisterReload(configure);
 
     auto relay_pin = gpioRegister(controlPin());
     if (relay_pin) {
-        auto provider = std::make_unique<FanProvider>(std::move(relay_pin), config, onFanSpeedUpdate);
+        auto provider = std::make_unique<FanProvider>(
+            std::move(relay_pin), config, state_pins, onFanSpeedUpdate);
         if (!relayAdd(std::move(provider))) {
             DEBUG_MSG_P(PSTR("[IFAN] Could not add relay provider for GPIO%d\n"), controlPin());
             gpioUnlock(controlPin());

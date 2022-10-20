@@ -362,11 +362,8 @@ bool Led::toggle() {
 
 #include "led_pattern.re.ipp"
 
-} // namespace
-
 namespace settings {
 namespace keys {
-namespace {
 
 alignas(4) static constexpr char Gpio[] PROGMEM = "ledGpio";
 alignas(4) static constexpr char Inverse[] PROGMEM = "ledInv";
@@ -374,11 +371,9 @@ alignas(4) static constexpr char Mode[] PROGMEM = "ledMode";
 alignas(4) static constexpr char Relay[] PROGMEM = "ledRelay";
 alignas(4) static constexpr char Pattern[] PROGMEM = "ledPattern";
 
-} // namespace
 } // namespace keys
 
 namespace options {
-namespace {
 
 using espurna::settings::options::Enumeration;
 
@@ -415,9 +410,9 @@ static constexpr Enumeration<LedMode> LedModeOptions[] PROGMEM {
 #endif
 };
 
-} // namespace
 } // namespace options
 } // namespace settings
+} // namespace
 } // namespace led
 
 // -----------------------------------------------------------------------------
@@ -445,8 +440,9 @@ String serialize(LedMode mode) {
 // -----------------------------------------------------------------------------
 
 namespace led {
-namespace build {
 namespace {
+
+namespace build {
 
 constexpr size_t LedsMax { 8ul };
 
@@ -531,11 +527,9 @@ constexpr bool inverse(size_t index) {
     );
 }
 
-} // namespace
 } // namespace build
 
 namespace settings {
-namespace {
 
 unsigned char pin(size_t id) {
     return getSetting({keys::Gpio, id}, build::pin(id));
@@ -567,7 +561,6 @@ void migrate(int version) {
     }
 }
 
-} // namespace
 } // namespace settings
 
 // For network-based modes, indefinitely cycle ON <-> OFF
@@ -590,18 +583,15 @@ LED_STATIC_DELAY(NetworkConfigInverse, 900, 100);
 LED_STATIC_DELAY(NetworkIdle, 500, 500);
 
 namespace internal {
-namespace {
 
 std::vector<Led> leds;
 bool update { false };
 
-} // namespace
 } // namespace internal
 
 namespace settings {
 namespace query {
 namespace internal {
-namespace {
 
 #define ID_VALUE(NAME)\
 String NAME (size_t id) {\
@@ -616,10 +606,7 @@ ID_VALUE(relay)
 
 #undef ID_VALUE
 
-} // namespace
 } // namespace internal
-
-namespace {
 
 static constexpr espurna::settings::query::IndexedSetting IndexedSettings[] PROGMEM {
     {keys::Gpio, internal::pin},
@@ -646,14 +633,12 @@ void setup() {
     });
 }
 
-} // namespace
 } // namespace query
 } // namespace settings
 
 #if RELAY_SUPPORT
 namespace relay {
 namespace internal {
-namespace {
 
 struct Link {
     Led& led;
@@ -697,10 +682,7 @@ size_t find(Led& led) {
     return RelaysMax;
 }
 
-} // namespace
 } // namespace internal
-
-namespace {
 
 void unlink(Led& led) {
     internal::unlink(led);
@@ -730,11 +712,8 @@ bool areAnyOn() {
     return result;
 }
 
-} // namespace
 } // namespace relay
 #endif
-
-namespace {
 
 size_t count() {
     return internal::leds.size();
@@ -794,8 +773,10 @@ void pattern(Led& led, Pattern&& other) {
 }
 
 void payload_status(Led& led, StringView payload) {
-    led.mode(LedMode::Manual);
     led.stop();
+    led.status(false);
+
+    led.mode(LedMode::Manual);
 
     const auto value = rpcParsePayload(payload);
     switch (value) {
@@ -957,13 +938,10 @@ void loop() {
     cancel();
 }
 
-} // namespace
-
 #if MQTT_SUPPORT
 namespace mqtt {
-namespace {
 
-void callback(unsigned int type, const char* topic, char* payload) {
+void callback(unsigned int type, StringView topic, StringView payload) {
     if (type == MQTT_CONNECT_EVENT) {
         mqttSubscribe(MQTT_TOPIC_LED "/+");
         return;
@@ -972,13 +950,13 @@ void callback(unsigned int type, const char* topic, char* payload) {
     // Only want `led/+/<MQTT_SETTER>`
     // We get the led ID from the `+`
     if (type == MQTT_MESSAGE_EVENT) {
-        const String magnitude = mqttMagnitude(topic);
+        const auto magnitude = mqttMagnitude(topic);
         if (!magnitude.startsWith(MQTT_TOPIC_LED)) {
             return;
         }
 
         size_t ledID;
-        if (tryParseId(mqttMagnitudeTail(magnitude, MQTT_TOPIC_LED), ledCount, ledID)) {
+        if (tryParseIdPath(magnitude, ledCount(), ledID)) {
             payload_status(internal::leds[ledID], payload);
         }
 
@@ -986,13 +964,11 @@ void callback(unsigned int type, const char* topic, char* payload) {
     }
 }
 
-} // namespace
 } // namespace mqtt
 #endif // MQTT_SUPPORT
 
 #if WEB_SUPPORT
 namespace web {
-namespace {
 
 bool onKeyCheck(StringView key, const JsonVariant&) {
     return settings::query::checkSamePrefix(key);
@@ -1009,20 +985,18 @@ void onConnected(JsonObject& root) {
     }
 }
 
-} // namespace
 } // namespace web
 #endif // WEB_SUPPORT
 
 #if TERMINAL_SUPPORT
 namespace terminal {
-namespace {
 
 alignas(4) static constexpr char Led[] PROGMEM = "LED";
 
 void led(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() > 1) {
         size_t id;
-        if (!tryParseId(ctx.argv[1], ledCount, id)) {
+        if (!tryParseId(ctx.argv[1], ledCount(), id)) {
             terminalError(ctx, F("Invalid ledID"));
             return;
         }
@@ -1056,11 +1030,8 @@ void setup() {
     espurna::terminal::add(Commands);
 }
 
-} // namespace
 } // namespace terminal
 #endif
-
-namespace {
 
 void setup() {
     migrateVersion(settings::migrate);
@@ -1107,7 +1078,7 @@ void setup() {
 
 } // namespace
 } // namespace led
-} // namespace led
+} // namespace espurna
 
 bool ledStatus(size_t id, bool status) {
     if (id < espurna::led::count()) {

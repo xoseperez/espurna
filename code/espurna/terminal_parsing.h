@@ -80,7 +80,7 @@ struct LineBuffer {
         }
 
         return Result{
-            .line = StringView(nullptr),
+            .line = StringView(),
             .overflow = _overflow };
     }
 
@@ -164,7 +164,7 @@ struct LineView {
             }
         }
 
-        return StringView{nullptr};
+        return StringView();
     }
 
     explicit operator bool() const {

@@ -45,6 +45,14 @@ namespace espurna {
 namespace telnet {
 namespace {
 
+constexpr bool isEspurnaMinimal() {
+#if defined(ESPURNA_MINIMAL_ARDUINO_OTA) || defined(ESPURNA_MINIMAL_WEBUI)
+    return true;
+#else
+    return false;
+#endif
+}
+
 namespace build {
 
 constexpr size_t ClientsMax { TELNET_MAX_CLIENTS };
@@ -929,7 +937,7 @@ void connect_url(String url) {
 }
 
 void setup() {
-    mqttRegister([](unsigned int type, const char* topic, const char* payload) {
+    mqttRegister([](unsigned int type, StringView topic, StringView payload) {
         switch (type) {
         case MQTT_CONNECT_EVENT:
             mqttSubscribe(MQTT_TOPIC_TELNET_REVERSE);
@@ -938,7 +946,7 @@ void setup() {
         case MQTT_MESSAGE_EVENT: {
             auto t = mqttMagnitude(topic);
             if (t.equals(MQTT_TOPIC_TELNET_REVERSE)) {
-                connect_url(payload);
+                connect_url(payload.toString());
             }
             break;
         }

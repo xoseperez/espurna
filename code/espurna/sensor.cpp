@@ -2954,8 +2954,8 @@ ParseResult convert(StringView value) {
         return out;
     }
 
-    const auto begin = value.c_str();
-    const auto end = value.c_str() + value.length();
+    const auto begin = value.begin();
+    const auto end = value.end();
 
     String kwh_number;
 
@@ -2972,11 +2972,12 @@ ParseResult convert(StringView value) {
     KilowattHours::Type kwh { 0 };
     WattSeconds::Type ws { 0 };
 
-    char* endp { nullptr };
-    kwh = strtoul(kwh_number.c_str(), &endp, 10);
-    if (!endp || (endp == kwh_number.c_str())) {
+    const auto result = parseUnsigned(kwh_number, 10);
+    if (!result.ok) {
         return out;
     }
+
+    kwh = result.value;
 
     if ((it != end) && (*it == '+')) {
         ++it;
@@ -2984,13 +2985,13 @@ ParseResult convert(StringView value) {
             return out;
         }
 
-        String ws_number;
-        ws_number.concat(it, (end - it));
-
-        ws = strtoul(ws_number.c_str(), &endp, 10);
-        if (!endp || (endp == ws_number.c_str())) {
+        const auto result = parseUnsigned(
+                StringView(it, end), 10);
+        if (!result.ok) {
             return out;
         }
+
+        ws = result.value;
     }
 
     out = Energy {
@@ -3016,7 +3017,7 @@ void set(const Magnitude& magnitude, const Energy& energy) {
     }
 }
 
-void set(const Magnitude& magnitude, const String& payload) {
+void set(const Magnitude& magnitude, StringView payload) {
     if (!payload.length()) {
         return;
     }
@@ -3027,14 +3028,6 @@ void set(const Magnitude& magnitude, const String& payload) {
     }
 
     set(magnitude, energy.value());
-}
-
-void set(const Magnitude& magnitude, const char* payload) {
-    if (!payload) {
-        return;
-    }
-
-    set(magnitude, String(payload));
 }
 
 Energy get(unsigned char index) {
@@ -3547,28 +3540,16 @@ void setup() {
 } // namespace web
 #endif
 
-bool tryParseIndex(const char* p, unsigned char type, unsigned char& output) {
-    char* endp { nullptr };
-    const unsigned long result { strtoul(p, &endp, 10) };
-    if ((endp == p) || (*endp != '\0') || (result >= magnitude::count(type))) {
-        DEBUG_MSG_P(PSTR("[SENSOR] Invalid magnitude ID (%s)\n"), p);
-        return false;
-    }
-
-    output = result;
-    return true;
-}
-
 #if API_SUPPORT
 namespace api {
 namespace {
 
 template <typename T>
 bool tryHandle(ApiRequest& request, unsigned char type, T&& callback) {
-    unsigned char index { 0u };
+    size_t index = 0;
     if (request.wildcards()) {
-        auto index_param = request.wildcard(0);
-        if (!tryParseIndex(index_param.c_str(), type, index)) {
+        const auto param = request.wildcard(0);
+        if (!::tryParseId(param, magnitude::count(type), index)) {
             return false;
         }
     }
@@ -3634,7 +3615,7 @@ void setup() {
 namespace mqtt {
 namespace {
 
-void callback(unsigned int type, const char* topic, char* payload) {
+void callback(unsigned int type, StringView topic, StringView payload) {
     if (!magnitude::count(MAGNITUDE_ENERGY)) {
         return;
     }
@@ -3642,43 +3623,29 @@ void callback(unsigned int type, const char* topic, char* payload) {
     static const auto base = magnitude::topic(MAGNITUDE_ENERGY);
 
     switch (type) {
-
     case MQTT_MESSAGE_EVENT:
     {
-        String tail = mqttMagnitude(topic);
-        if (!tail.startsWith(base)) {
+        auto t = mqttMagnitude(topic);
+        if (!t.startsWith(base)) {
             break;
         }
 
-        for (auto ptr = tail.c_str(); ptr != tail.end(); ++ptr) {
-            if (*ptr != '/') {
-                continue;
-            }
+        size_t index;
+        if (!tryParseIdPath(t, magnitude::count(MAGNITUDE_ENERGY), index)) {
+            break;
+        }
 
-            ++ptr;
-            if (ptr == tail.end()) {
-                break;
-            }
-
-            unsigned char index;
-            if (!tryParseIndex(ptr, MAGNITUDE_ENERGY, index)) {
-                break;
-            }
-
-            const auto* magnitude = magnitude::find(MAGNITUDE_ENERGY, index);
-            if (magnitude) {
-                energy::set(*magnitude, static_cast<const char*>(payload));
-            }
+        const auto* magnitude = magnitude::find(MAGNITUDE_ENERGY, index);
+        if (magnitude) {
+            energy::set(*magnitude, payload.toString());
         }
 
         break;
     }
 
     case MQTT_CONNECT_EVENT:
-    {
         mqttSubscribe((base + F("/+")).c_str());
         break;
-    }
 
     }
 }

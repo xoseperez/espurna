@@ -282,7 +282,7 @@ void unsubscribe() {
     mqttUnsubscribeRaw(settings::topicOut().c_str());
 }
 
-void callback(unsigned int type, const char* topic, char* payload) {
+void callback(unsigned int type, espurna::StringView topic, espurna::StringView payload) {
     if (!enabled()) {
         return;
     }
@@ -296,10 +296,10 @@ void callback(unsigned int type, const char* topic, char* payload) {
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
-        auto out = settings::topicOut();
-        if (out.equals(topic)) {
+        const auto out = settings::topicOut();
+        if (topic == out) {
             DynamicJsonBuffer jsonBuffer(1024);
-            JsonObject& root = jsonBuffer.parseObject(payload);
+            JsonObject& root = jsonBuffer.parseObject(payload.begin());
             if (!root.success()) {
                 DEBUG_MSG_P(PSTR("[DOMOTICZ] Error parsing data\n"));
                 return;

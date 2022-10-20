@@ -34,6 +34,7 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 // -----------------------------------------------------------------------------
 
+namespace espurna {
 namespace rpnrules {
 namespace {
 
@@ -447,13 +448,37 @@ void subscribe() {
     }
 }
 
-void callback(unsigned int type, const char * topic, const char * payload) {
+rpn_value process_variable(espurna::StringView payload) {
+    auto tmp = std::make_unique<rpn_context>();
+
+    rpn_value out;
+    if (!rpn_process(*tmp, payload.begin())) {
+        return out;
+    }
+
+    if (rpn_stack_size(*tmp) != 1) {
+        return out;
+    }
+
+    out = rpn_stack_pop(*tmp);
+    return out;
+}
+
+void callback(unsigned int type, StringView topic, StringView payload) {
     if (type == MQTT_CONNECT_EVENT) {
         subscribe();
         return;
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
+        if (!payload.length()) {
+            return;
+        }
+
+        if ((payload[0] == '&') || (payload[0] == '$')) {
+            return;
+        }
+
         size_t index { 0 };
         String rpnTopic;
 
@@ -464,20 +489,29 @@ void callback(unsigned int type, const char * topic, const char * payload) {
             }
 
             if (rpnTopic == topic) {
-                auto name = rpnrules::settings::name(index);
+                const auto name = rpnrules::settings::name(index);
                 if (!name.length()) {
                     break;
                 }
 
+                auto value = process_variable(payload);
+                if (value.isNull() || value.isError()) {
+                    return;
+                }
+
                 for (auto& variable : variables) {
                     if (variable.name == name) {
-                        variable.value = rpn_value{atof(payload)};
+                        variable.value = std::move(value);
                         return;
                     }
                 }
 
-                variables.emplace_front(Variable{
-                        std::move(name), rpn_value{atof(payload)}});
+                variables.emplace_front(
+                    Variable{
+                        .name = std::move(name),
+                        .value = std::move(value),
+                    });
+
                 return;
             }
         }
@@ -1340,9 +1374,10 @@ void setup() {
 
 } // namespace
 } // namespace rpnrules
+} // namespace espurna
 
 void rpnSetup() {
-    rpnrules::setup();
+    espurna::rpnrules::setup();
 }
 
 #endif // RPN_RULES_SUPPORT

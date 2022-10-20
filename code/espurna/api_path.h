@@ -9,8 +9,9 @@ Copyright (C) 2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #pragma once
 
 #include <Arduino.h>
-
 #include <vector>
+
+#include "types.h"
 
 // -----------------------------------------------------------------------------
 
@@ -33,8 +34,8 @@ struct PathParts {
     PathParts() = delete;
     PathParts(const PathParts&) = delete;
 
-    explicit PathParts(const String& path);
-    PathParts(const String& path, Parts&& parts) :
+    explicit PathParts(espurna::StringView path);
+    PathParts(espurna::StringView path, Parts&& parts) :
         _path(path),
         _parts(std::move(parts)),
         _ok(_parts.size())
@@ -44,7 +45,7 @@ struct PathParts {
         PathParts(other._path, std::move(other._parts))
     {}
 
-    PathParts(const String& path, PathParts&& other) noexcept :
+    PathParts(espurna::StringView path, PathParts&& other) noexcept :
         _path(path),
         _parts(std::move(other._parts)),
         _ok(other._ok)
@@ -62,12 +63,19 @@ struct PathParts {
         _parts.reserve(size);
     }
 
-    String operator[](size_t index) const {
-        auto& part = _parts[index];
-        return _path.substring(part.offset, part.offset + part.length);
+    espurna::StringView operator[](size_t index) const {
+        return get(_parts[index]);
     }
 
-    const String& path() const {
+    espurna::StringView back() const {
+        return get(_parts.back());
+    }
+
+    espurna::StringView front() const {
+        return get(_parts.front());
+    }
+
+    espurna::StringView path() const {
         return _path;
     }
 
@@ -88,11 +96,20 @@ struct PathParts {
     }
 
     bool match(const PathParts& path) const;
-    bool match(const String& path) const {
+    bool match(espurna::StringView path) const {
         return match(PathParts(path));
     }
 
+    static espurna::StringView wildcard(const PathParts& pattern, const PathParts& value, int index);
+    static size_t wildcards(const PathParts& pattern);
+
 private:
+    espurna::StringView get(const PathPart& part) const {
+        return espurna::StringView(
+            _path.begin() + part.offset,
+            _path.begin() + part.offset + part.length);
+    }
+
     PathPart& emplace_back(PathPart part) {
         _parts.push_back(part);
         return _parts.back();
@@ -106,7 +123,7 @@ private:
         });
     }
 
-    const String& _path;
+    espurna::StringView _path;
     Parts _parts;
     bool _ok { false };
 };

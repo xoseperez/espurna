@@ -244,7 +244,7 @@ bool convert(const String& value) {
 
 template <>
 uint32_t convert(const String& value) {
-    return parseUnsigned(value);
+    return parseUnsigned(value).value;
 }
 
 String serialize(uint32_t value, int base) {
@@ -526,7 +526,7 @@ void moveSettings(const String& from, const String& to) {
     for (size_t index = 0; index < 100; ++index) {
         const auto keys = SettingsKeyPair{
             .from = {from, index},
-            .to = {to, index}
+            .to = {to, index},
         };
 
         const auto result = espurna::settings::get(keys.from.value());
@@ -571,24 +571,23 @@ String getSetting(const String& key) {
 }
 
 String getSetting(const __FlashStringHelper* key) {
-    return getSetting(String(key));
+    return getSetting(espurna::settings::Key(key));
 }
 
 String getSetting(const char* key) {
-    return getSetting(String(key));
+    return getSetting(espurna::settings::Key(key));
 }
 
 String getSetting(const espurna::settings::Key& key) {
-    static const String defaultValue("");
-    return getSetting(key, defaultValue);
+    return getSetting(key, espurna::StringView(""));
 }
 
 String getSetting(const espurna::settings::Key& key, const char* defaultValue) {
-    return getSetting(key, String(defaultValue));
+    return getSetting(key, espurna::StringView(defaultValue));
 }
 
 String getSetting(const espurna::settings::Key& key, const __FlashStringHelper* defaultValue) {
-    return getSetting(key, String(defaultValue));
+    return getSetting(key, espurna::StringView(defaultValue));
 }
 
 String getSetting(const espurna::settings::Key& key, const String& defaultValue) {
@@ -601,21 +600,29 @@ String getSetting(const espurna::settings::Key& key, const String& defaultValue)
 }
 
 String getSetting(const espurna::settings::Key& key, String&& defaultValue) {
+    String out;
+
     auto result = espurna::settings::get(key.value());
     if (result) {
-        return std::move(result).get();
+        out = std::move(result).get();
+    } else {
+        out = std::move(defaultValue);
     }
 
-    return std::move(defaultValue);
+    return out;
 }
 
 String getSetting(const espurna::settings::Key& key, espurna::StringView defaultValue) {
+    String out;
+
     auto result = espurna::settings::get(key.value());
     if (result) {
-        return std::move(result).get();
+        out = std::move(result).get();
+    } else {
+        out = defaultValue.toString();
     }
 
-    return String(defaultValue);
+    return out;
 }
 
 bool delSetting(const String& key) {

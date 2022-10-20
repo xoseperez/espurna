@@ -459,19 +459,24 @@ void setup() {
 namespace mqtt {
 
 void setup() {
-    mqttRegister([](unsigned int type, const char* topic, char* payload) {
+    mqttRegister([](unsigned int type, StringView topic, StringView payload) {
         if (type == MQTT_CONNECT_EVENT) {
             mqttSubscribe(MQTT_TOPIC_CMD);
             return;
         }
 
         if (type == MQTT_MESSAGE_EVENT) {
-            String t = mqttMagnitude(topic);
-            if (!t.startsWith(MQTT_TOPIC_CMD)) return;
-            if (!strlen(payload)) return;
+            auto t = mqttMagnitude(topic);
+            if (!t.startsWith(MQTT_TOPIC_CMD)) {
+                return;
+            }
 
-            auto line = String(payload);
-            if (!line.endsWith("\r\n") && !line.endsWith("\n")) {
+            if (!payload.length()) {
+                return;
+            }
+
+            auto line = payload.toString();
+            if (!payload.endsWith("\r\n") && !payload.endsWith("\n")) {
                 line += '\n';
             }
 
@@ -481,14 +486,13 @@ void setup() {
             // TODO: or, at least, make it growable on-demand and cap at MSS?
             // TODO: PrintLine<...> instead of one giant blob?
 
-            auto cmd = std::make_shared<String>(std::move(line));
-
-            espurnaRegisterOnce([cmd]() {
+            auto ptr = std::make_shared<String>(std::move(line));
+            espurnaRegisterOnce([ptr]() {
                 PrintString out(TCP_MSS);
-                api_find_and_call(*cmd, out);
+                api_find_and_call(*ptr, out);
 
                 if (out.length()) {
-                    static const auto topic = mqttTopic(MQTT_TOPIC_CMD, false);
+                    static const auto topic = mqttTopic(MQTT_TOPIC_CMD);
                     mqttSendRaw(topic.c_str(), out.c_str(), false);
                 }
             });

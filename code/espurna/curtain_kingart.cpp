@@ -349,21 +349,21 @@ void _KACurtainResult() {
 #if MQTT_SUPPORT
 
 //------------------------------------------------------------------------------
-void _curtainMQTTCallback(unsigned int type, const char* topic, char* payload) {
+void _curtainMQTTCallback(unsigned int type, espurna::StringView topic, espurna::StringView payload) {
     if (type == MQTT_CONNECT_EVENT) {
         mqttSubscribe(MQTT_TOPIC_CURTAIN);
     } else if (type == MQTT_MESSAGE_EVENT) {
         // Match topic
-        const String t = mqttMagnitude(topic);
+        const auto t = mqttMagnitude(topic);
         if (t.equals(MQTT_TOPIC_CURTAIN)) {
-            if (strcmp(payload, "pause") == 0) {
+            if (payload == "pause") {
                 _KACurtainSet(CURTAIN_BUTTON_PAUSE);
-            } else  if (strcmp(payload, "on") == 0) {
+            } else if (payload == "on") {
                 _KACurtainSet(CURTAIN_BUTTON_OPEN);
-            } else  if (strcmp(payload, "off") == 0) {
+            } else if (payload == "off") {
                 _KACurtainSet(CURTAIN_BUTTON_CLOSE);
             } else {
-                _curtain_position_set = String(payload).toInt();
+                _curtain_position_set = payload.toString().toInt();
                 _KACurtainSet(CURTAIN_BUTTON_UNKNOWN, _curtain_position_set);
             }
         }

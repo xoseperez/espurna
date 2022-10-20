@@ -1019,33 +1019,59 @@ void _lightFromHexPayload(espurna::StringView payload) {
     }
 }
 
-void _lightFromCommaSeparatedPayload(espurna::StringView payload) {
-    constexpr size_t BufferSize { 16 };
-    if (payload.length() < BufferSize) {
-        char buffer[BufferSize] = {0};
-        std::copy(payload.begin(), payload.end(), buffer);
+template <typename T>
+const char* _lightForEachToken(espurna::StringView payload, char sep, T&& callback) {
+    const auto begin = payload.begin();
+    const auto end = payload.end();
 
-        auto it = _light_channels.begin();
-        char* tok = std::strtok(buffer, ",");
+    auto it = begin;
+    for (auto last = it; it != end; ++it) {
+        last = it;
+        it = std::find(it, payload.end(), ',');
+        if (!callback(espurna::StringView(last, it))) {
+            break;
+        }
+        if (it == end) {
+            break;
+        }
+    }
 
-        while ((it != _light_channels.end()) && (tok != nullptr)) {
-            char* endp { nullptr };
-            auto value = std::strtol(tok, &endp, 10);
-            if ((endp == tok) || (*endp != '\0')) {
-                break;
+    return it;
+}
+
+template <typename Begin, typename End>
+const char* _lightApplyForEachToken(espurna::StringView payload, char sep, Begin& it, End end) {
+    return _lightForEachToken(payload, sep,
+        [&](espurna::StringView token) {
+            if (it != end) {
+                const auto result = parseUnsigned(token, 10);
+                if (result.ok) {
+                    (*it) = result.value;
+                    ++it;
+                    return true;
+                }
             }
 
-            (*it) = value;
-            ++it;
+            return false;
+        });
+}
 
-            tok = std::strtok(nullptr, ",");
-        }
+void _lightFromCommaSeparatedPayload(espurna::StringView payload) {
+    const auto end = _light_channels.end();
 
-        // same as previous versions, set the rest to zeroes
-        while (it != _light_channels.end()) {
-            (*it) = 0;
-            ++it;
-        }
+    auto it = _light_channels.begin();
+    if (it == end) {
+        return;
+    }
+
+    // every channel value is separated by a comma
+    _lightApplyForEachToken(payload, ',', it, end);
+
+    // and fill the rest with zeroes
+    while (it != end) {
+        DEBUG_MSG_P(PSTR(":set %p with zero\n"), it);
+        (*it) = 0;
+        ++it;
     }
 }
 
@@ -1072,45 +1098,29 @@ void _lightFromRgbPayload(espurna::StringView payload) {
     _lightFromCommaSeparatedPayload(payload);
 }
 
-// HSV string is expected to be "H,S,V", where:
-// - H [0...360]
-// - S [0...100]
-// - V [0...100]
-
 void _lightFromHsvPayload(espurna::StringView payload) {
-    if (!_light_has_color || !payload.length() || (payload[0] == '\0')) {
+    if (!_light_has_color || !payload.length()) {
         return;
     }
 
-    constexpr size_t BufferSize { 16 };
+    long hsv[3] {0, 0, 0};
+    auto it = std::begin(hsv);
 
-    if (payload.length() < BufferSize) {
-        char buffer[BufferSize] = {0};
-        std::copy(payload.begin(), payload.end(), buffer);
+    // HSV string is expected to be "H,S,V", where:
+    // - H [0...360]
+    // - S [0...100]
+    // - V [0...100]
+    const auto parsed = _lightApplyForEachToken(
+            payload, ',', it, std::end(hsv));
 
-        long values[3] {0, 0, 0};
-        char* tok = std::strtok(buffer, ",");
-
-        auto it = std::begin(values);
-        while ((it != std::end(values)) && (tok != nullptr)) {
-            char* endp { nullptr };
-            auto value = std::strtol(tok, &endp, 10);
-            if ((endp == tok) || (*endp != '\0')) {
-                break;
-            }
-
-            (*it) = value;
-            ++it;
-
-            tok = std::strtok(nullptr, ",");
-        }
-
-        if (it != std::end(values)) {
-            return;
-        }
-
-        lightHsv({values[0], values[1], values[2]});
+    // discard partial or uneven payloads
+    if ((parsed != payload.end()) || (it != std::end(hsv))) {
+        return;
     }
+
+    // values are expected to be 'clamped' either
+    // in the call or in ctor of the helper object
+    lightHsv({hsv[0], hsv[1], hsv[2]});
 }
 
 // Thanks to Sacha Telgenhof for sharing this code in his AiLight library
@@ -1261,17 +1271,15 @@ String _lightRgbPayload() {
     return _lightRgbPayload(_lightToInputRgb());
 }
 
-void _lightFromGroupPayload(const char* payload) {
-    if (!payload || *payload == '\0') {
+void _lightFromGroupPayload(espurna::StringView payload) {
+    if (!payload.length()) {
         return;
     }
 
     constexpr size_t BufferSize { 32 };
-    const size_t PayloadLen { strlen(payload) };
-
-    if (PayloadLen < BufferSize) {
+    if (payload.length() < BufferSize) {
         char buffer[BufferSize] = {0};
-        std::copy(payload, payload + PayloadLen, buffer);
+        std::copy(payload.begin(), payload.end(), buffer);
 
         char* tok = std::strtok(buffer, ",");
         auto it = _light_channels.begin();
@@ -2001,7 +2009,8 @@ void _lightSaveSettings() {
     }
 
     for (size_t channel = 0; channel < _light_channels.size(); ++channel) {
-        espurna::light::settings::value(channel, _light_channels[channel].inputValue);
+        espurna::light::settings::value(
+            channel, _light_channels[channel].inputValue);
     }
 
     espurna::light::settings::brightness(_light_brightness);
@@ -2038,7 +2047,7 @@ bool _lightParsePayload(espurna::StringView payload) {
 }
 
 bool _lightTryParseChannel(espurna::StringView value, size_t& id) {
-    return tryParseId(value, lightChannels, id);
+    return tryParseIdPath(value, lightChannels(), id);
 }
 
 } // namespace
@@ -2048,6 +2057,18 @@ bool _lightTryParseChannel(espurna::StringView value, size_t& id) {
 // -----------------------------------------------------------------------------
 
 namespace {
+
+bool _lightApiTransition(espurna::StringView payload) {
+    const auto result = parseUnsigned(payload, 10);
+    if (result.ok) {
+        lightTransition(
+                espurna::duration::Milliseconds(result.value),
+                _light_transition_step);
+        return true;
+    }
+
+    return false;
+}
 
 int _lightMqttReportMask() {
     return espurna::light::DefaultReport & ~(static_cast<int>(mqttForward() ? espurna::light::Report::None : espurna::light::Report::Mqtt));
@@ -2081,7 +2102,7 @@ bool _lightMqttHeartbeat(espurna::heartbeat::Mask mask) {
     return mqttConnected();
 }
 
-void _lightMqttCallback(unsigned int type, const char* topic, char* payload) {
+void _lightMqttCallback(unsigned int type, espurna::StringView topic, espurna::StringView payload) {
     String mqtt_group_color = espurna::light::settings::mqttGroup();
 
     if (type == MQTT_CONNECT_EVENT) {
@@ -2113,14 +2134,14 @@ void _lightMqttCallback(unsigned int type, const char* topic, char* payload) {
 
     if (type == MQTT_MESSAGE_EVENT) {
         // Group color
-        if ((mqtt_group_color.length() > 0) && (mqtt_group_color.equals(topic))) {
+        if ((mqtt_group_color.length() > 0) && (topic == mqtt_group_color)) {
             _lightFromGroupPayload(payload);
             _lightUpdateFromMqttGroup();
             return;
         }
 
         // Match topic
-        String t = mqttMagnitude(topic);
+        auto t = mqttMagnitude(topic);
 
         // Color temperature in mireds
         if (t.equals(MQTT_TOPIC_MIRED)) {
@@ -2149,17 +2170,9 @@ void _lightMqttCallback(unsigned int type, const char* topic, char* payload) {
             return;
         }
 
-        // Transition setting
+        // Transition setting (persist)
         if (t.equals(MQTT_TOPIC_TRANSITION)) {
-            char* endp { nullptr };
-            auto result = strtoul(payload, &endp, 10);
-            if (!endp || (endp == payload)) {
-                return;
-            }
-
-            lightTransition(
-                espurna::duration::Milliseconds(result),
-                _light_transition_step);
+            _lightApiTransition(payload);
             return;
         }
 
@@ -2173,7 +2186,7 @@ void _lightMqttCallback(unsigned int type, const char* topic, char* payload) {
         // Channel
         if (t.startsWith(MQTT_TOPIC_CHANNEL)) {
             size_t id;
-            if (_lightTryParseChannel(mqttMagnitudeTail(t, MQTT_TOPIC_CHANNEL), id)) {
+            if (_lightTryParseChannel(t, id)) {
                 _lightAdjustChannel(id, payload);
                 _lightUpdateFromMqtt();
             }
@@ -2318,21 +2331,7 @@ void _lightApiSetup() {
             return true;
         },
         [](ApiRequest& request) {
-            auto value = request.param(F("value"));
-
-            const char* p { value.c_str() };
-            char* endp { nullptr };
-
-            auto result = strtoul(p, &endp, 10);
-            if (!endp || (endp == p)) {
-                return false;
-            }
-
-            lightTransition(
-                espurna::duration::Milliseconds(result),
-                _light_transition_step);
-
-            return true;
+            return _lightApiTransition(request.param(F("value")));
         }
     );
 
@@ -2448,10 +2447,10 @@ void _lightWebSocketOnAction(uint32_t client_id, const char* action, JsonObject&
             STRING_VIEW_INLINE(Hsv, "hsv");
 
             if (data.containsKey(Rgb)) {
-                _lightFromRgbPayload(data[Rgb].as<espurna::StringView>());
+                _lightFromRgbPayload(data[Rgb].as<String>());
                 lightUpdate();
             } else if (data.containsKey(Hsv)) {
-                _lightFromHsvPayload(data[Hsv].as<espurna::StringView>());
+                _lightFromHsvPayload(data[Hsv].as<String>());
                 lightUpdate();
             }
         }

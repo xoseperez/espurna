@@ -116,11 +116,9 @@ bool StringView::equals(StringView other) const {
 
 bool StringView::equalsIgnoreCase(StringView other) const {
     if (other._len == _len) {
-        if (inFlash(_ptr) || inFlash(other._ptr)) {
-            if (_ptr == other._ptr) {
-                return true;
-            }
-
+        if (inFlash(_ptr) && inFlash(other._ptr) && (_ptr == other._ptr)) {
+            return true;
+        } else if (inFlash(_ptr) || inFlash(other._ptr)) {
             String copy;
             const char* ptr = _ptr;
             if (inFlash(_ptr)) {
@@ -132,6 +130,22 @@ bool StringView::equalsIgnoreCase(StringView other) const {
         }
 
         return __builtin_strncasecmp(_ptr, other._ptr, _len) == 0;
+    }
+
+    return false;
+}
+
+bool StringView::startsWith(StringView other) const {
+    if (other._len <= _len) {
+        return StringView(begin(), begin() + other._len).equals(other);
+    }
+
+    return false;
+}
+
+bool StringView::endsWith(StringView other) const {
+    if (other._len <= _len) {
+        return StringView(end() - other._len, end()).equals(other);
     }
 
     return false;

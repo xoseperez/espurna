@@ -531,11 +531,15 @@ bool set(ApiRequest&, JsonObject& root) {
 
 namespace schedule {
 
+bool tryParseId(StringView value, size_t& out) {
+    return ::tryParseId(value, build::max(), out);
+}
+
 bool get(ApiRequest& req, JsonObject& root) {
     const auto param = req.wildcard(0);
 
     size_t id;
-    if (tryParseId(param, build::max, id)) {
+    if (tryParseId(param, id)) {
         print(root, settings::schedule(id));
         return true;
     }
@@ -547,7 +551,7 @@ bool set(ApiRequest& req, JsonObject& root) {
     const auto param = req.wildcard(0);
 
     size_t id;
-    if (tryParseId(param, build::max, id)) {
+    if (tryParseId(param, id)) {
         return api::set(root, id);
     }
 

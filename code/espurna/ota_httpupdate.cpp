@@ -22,7 +22,6 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include <ESP8266HTTPClient.h>
 #include <ESP8266httpUpdate.h>
 
-#include "libs/URL.h"
 #include "libs/TypeChecks.h"
 #include "libs/SecureClientHelpers.h"
 
@@ -44,6 +43,7 @@ namespace {
 
 // -----------------------------------------------------------------------------
 
+namespace espurna {
 namespace ota {
 namespace httpupdate {
 namespace {
@@ -144,7 +144,7 @@ void clientFromUrl(const String& url) {
     }
 #endif
 
-    DEBUG_MSG_P(PSTR("[OTA] Incorrect URL specified\n"));
+    DEBUG_MSG_P(PSTR("[OTA] Unsupported protocol\n"));
 }
 
 void clientFromInternalUrl() {
@@ -153,8 +153,8 @@ void clientFromInternalUrl() {
 }
 
 [[gnu::unused]]
-void clientQueueUrl(String url) {
-    internal::url = std::move(url);
+void clientQueueUrl(espurna::StringView url) {
+    internal::url = url.toString();
     espurnaRegisterOnceUnique(clientFromInternalUrl);
 }
 
@@ -182,16 +182,15 @@ void terminalSetup() {
 
 #if (MQTT_SUPPORT && OTA_MQTT_SUPPORT)
 
-void mqttCallback(unsigned int type, const char* topic, char* payload) {
+void mqttCallback(unsigned int type, StringView topic, StringView payload) {
     if (type == MQTT_CONNECT_EVENT) {
         mqttSubscribe(MQTT_TOPIC_OTA);
         return;
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
-        const String t = mqttMagnitude(topic);
+        const auto t = mqttMagnitude(topic);
         if (!internal::url.length() && t.equals(MQTT_TOPIC_OTA)) {
-            DEBUG_MSG_P(PSTR("[OTA] Queuing from URL: %s\n"), payload);
             clientQueueUrl(payload);
         }
 
@@ -204,6 +203,7 @@ void mqttCallback(unsigned int type, const char* topic, char* payload) {
 } // namespace
 } // namespace httpupdate
 } // namespace ota
+} // namespace espurna
 
 // -----------------------------------------------------------------------------
 
@@ -211,11 +211,11 @@ void otaClientSetup() {
     moveSetting("otafp", "otaFP");
 
 #if TERMINAL_SUPPORT
-    ota::httpupdate::terminalSetup();
+    espurna::ota::httpupdate::terminalSetup();
 #endif
 
 #if (MQTT_SUPPORT && OTA_MQTT_SUPPORT)
-    mqttRegister(ota::httpupdate::mqttCallback);
+    mqttRegister(espurna::ota::httpupdate::mqttCallback);
 #endif
 }
 

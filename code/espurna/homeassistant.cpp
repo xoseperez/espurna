@@ -316,7 +316,7 @@ struct RelayContext {
 
 RelayContext makeRelayContext() {
     return {
-        mqttTopic(MQTT_TOPIC_STATUS, false),
+        mqttTopic(MQTT_TOPIC_STATUS),
         quote(mqttPayloadStatus(true)),
         quote(mqttPayloadStatus(false)),
         quote(relayPayload(PayloadStatus::On).toString()),
@@ -372,8 +372,8 @@ public:
             json[F("pl_off")] = _relay.payload_off.c_str();
             json[F("uniq_id")] = uniqueId();
             json[F("name")] = _ctx.name() + ' ' + _index;
-            json[F("stat_t")] = mqttTopic(MQTT_TOPIC_RELAY, _index, false);
-            json[F("cmd_t")] = mqttTopic(MQTT_TOPIC_RELAY, _index, true);
+            json[F("stat_t")] = mqttTopic(MQTT_TOPIC_RELAY, _index);
+            json[F("cmd_t")] = mqttTopicSetter(MQTT_TOPIC_RELAY, _index);
             json.printTo(_message);
         }
         return _message;
@@ -477,10 +477,10 @@ public:
 
             json[F("name")] = _ctx.name() + ' ' + F("Light");
 
-            json[F("stat_t")] = mqttTopic(MQTT_TOPIC_LIGHT_JSON, false);
-            json[F("cmd_t")] = mqttTopic(MQTT_TOPIC_LIGHT_JSON, true);
+            json[F("stat_t")] = mqttTopic(MQTT_TOPIC_LIGHT_JSON);
+            json[F("cmd_t")] = mqttTopicSetter(MQTT_TOPIC_LIGHT_JSON);
 
-            json[F("avty_t")] = mqttTopic(MQTT_TOPIC_STATUS, false);
+            json[F("avty_t")] = mqttTopic(MQTT_TOPIC_STATUS);
             json[F("pl_avail")] = quote(mqttPayloadStatus(true));
             json[F("pl_not_avail")] = quote(mqttPayloadStatus(false));
 
@@ -597,7 +597,7 @@ bool heartbeat(espurna::heartbeat::Mask mask) {
         String message;
         root.printTo(message);
 
-        String topic = mqttTopic(MQTT_TOPIC_LIGHT_JSON, false);
+        String topic = mqttTopic(MQTT_TOPIC_LIGHT_JSON);
         mqttSendRaw(topic.c_str(), message.c_str(), false);
     }
 
@@ -608,9 +608,9 @@ void publishLightJson() {
     heartbeat(static_cast<heartbeat::Mask>(heartbeat::Report::Light));
 }
 
-void receiveLightJson(char* payload) {
+void receiveLightJson(espurna::StringView payload) {
     DynamicJsonBuffer buffer(1024);
-    JsonObject& root = buffer.parseObject(payload);
+    JsonObject& root = buffer.parseObject(payload.begin());
     if (!root.success()) {
         return;
     }
@@ -719,7 +719,7 @@ public:
             json[F("uniq_id")] = uniqueId();
 
             json[F("name")] = _ctx.name() + ' ' + name() + ' ' + localId();
-            json[F("stat_t")] = mqttTopic(_info.topic, false);
+            json[F("stat_t")] = mqttTopic(_info.topic);
             json[F("unit_of_meas")] = magnitudeUnitsName(_info.units);
 
             json.printTo(_message);
@@ -1026,7 +1026,7 @@ void configure() {
     homeassistant::publishDiscovery();
 }
 
-void mqttCallback(unsigned int type, const char* topic, char* payload) {
+void mqttCallback(unsigned int type, StringView topic, StringView payload) {
     if (MQTT_DISCONNECT_EVENT == type) {
         if (internal::state == internal::State::Sent) {
             internal::state = internal::State::Pending;
@@ -1045,7 +1045,7 @@ void mqttCallback(unsigned int type, const char* topic, char* payload) {
 
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
     if (type == MQTT_MESSAGE_EVENT) {
-        String t = ::mqttMagnitude(topic);
+        auto t = ::mqttMagnitude(topic);
         if (t.equals(MQTT_TOPIC_LIGHT_JSON)) {
             receiveLightJson(payload);
         }
