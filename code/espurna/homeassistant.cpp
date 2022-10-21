@@ -6,7 +6,7 @@ Original module
 Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 Reworked queueing and RAM usage reduction
-Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
+Copyright (C) 2019-2022 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 */
 
@@ -427,6 +427,8 @@ private:
 
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
 
+static constexpr char Topic[] = MQTT_TOPIC_LIGHT_JSON;
+
 class LightDiscovery : public Discovery {
 public:
     explicit LightDiscovery(Context& ctx) :
@@ -477,8 +479,8 @@ public:
 
             json[F("name")] = _ctx.name() + ' ' + F("Light");
 
-            json[F("stat_t")] = mqttTopic(MQTT_TOPIC_LIGHT_JSON);
-            json[F("cmd_t")] = mqttTopicSetter(MQTT_TOPIC_LIGHT_JSON);
+            json[F("stat_t")] = mqttTopic(Topic);
+            json[F("cmd_t")] = mqttTopicSetter(Topic);
 
             json[F("avty_t")] = mqttTopic(MQTT_TOPIC_STATUS);
             json[F("pl_avail")] = quote(mqttPayloadStatus(true));
@@ -572,10 +574,10 @@ void heartbeat_hsv(JsonObject& root, JsonObject& color) {
     color["s"] = hsv.saturation();
 }
 
-bool heartbeat(espurna::heartbeat::Mask mask) {
+bool heartbeat(heartbeat::Mask mask) {
     // TODO: mask json payload specifically?
     // or, find a way to detach masking from the system setting / don't use heartbeat timer
-    if (mask & espurna::heartbeat::Report::Light) {
+    if (mask & heartbeat::Report::Light) {
         DynamicJsonBuffer buffer(512);
         JsonObject& root = buffer.createObject();
 
@@ -597,8 +599,9 @@ bool heartbeat(espurna::heartbeat::Mask mask) {
         String message;
         root.printTo(message);
 
-        String topic = mqttTopic(MQTT_TOPIC_LIGHT_JSON);
-        mqttSendRaw(topic.c_str(), message.c_str(), false);
+        mqttSendRaw(
+            mqttTopic(Topic).c_str(),
+            message.c_str(), false);
     }
 
     return true;
@@ -608,7 +611,7 @@ void publishLightJson() {
     heartbeat(static_cast<heartbeat::Mask>(heartbeat::Report::Light));
 }
 
-void receiveLightJson(espurna::StringView payload) {
+void receiveLightJson(StringView payload) {
     DynamicJsonBuffer buffer(1024);
     JsonObject& root = buffer.parseObject(payload.begin());
     if (!root.success()) {
@@ -771,7 +774,7 @@ private:
 
     unsigned char _magnitudes { 0u };
     unsigned char _index { 0u };
-    espurna::sensor::Info _info;
+    sensor::Info _info;
 
     String _unique_id;
     String _name;
@@ -798,8 +801,8 @@ public:
     using Entity = std::unique_ptr<Discovery>;
     using Entities = std::forward_list<Entity>;
 
-    static constexpr espurna::duration::Milliseconds WaitShort { 100 };
-    static constexpr espurna::duration::Milliseconds WaitLong { 1000 };
+    static constexpr duration::Milliseconds WaitShort { 100 };
+    static constexpr duration::Milliseconds WaitLong { 1000 };
     static constexpr int Retries { 5 };
 
     DiscoveryTask() = delete;
@@ -887,8 +890,8 @@ private:
     Context _ctx;
 };
 
-constexpr espurna::duration::Milliseconds DiscoveryTask::WaitShort;
-constexpr espurna::duration::Milliseconds DiscoveryTask::WaitLong;
+constexpr duration::Milliseconds DiscoveryTask::WaitShort;
+constexpr duration::Milliseconds DiscoveryTask::WaitLong;
 
 namespace internal {
 
@@ -920,7 +923,7 @@ void stop(bool done) {
     }
 }
 
-void schedule(espurna::duration::Milliseconds wait, TaskPtr ptr, FlagPtr flag_ptr) {
+void schedule(duration::Milliseconds wait, TaskPtr ptr, FlagPtr flag_ptr) {
     timer.schedule_once(
         wait,
         [ptr, flag_ptr]() {
@@ -1037,7 +1040,7 @@ void mqttCallback(unsigned int type, StringView topic, StringView payload) {
 
     if (MQTT_CONNECT_EVENT == type) {
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-        ::mqttSubscribe(MQTT_TOPIC_LIGHT_JSON);
+        ::mqttSubscribe(Topic);
 #endif
         ::espurnaRegisterOnce(publishDiscovery);
         return;
@@ -1046,7 +1049,7 @@ void mqttCallback(unsigned int type, StringView topic, StringView payload) {
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
     if (type == MQTT_MESSAGE_EVENT) {
         auto t = ::mqttMagnitude(topic);
-        if (t.equals(MQTT_TOPIC_LIGHT_JSON)) {
+        if (t.equals(Topic)) {
             receiveLightJson(payload);
         }
         return;
@@ -1070,7 +1073,7 @@ void onConnected(JsonObject& root) {
     root[FPSTR(settings::keys::Retain)] = settings::retain();
 }
 
-bool onKeyCheck(espurna::StringView key, const JsonVariant& value) {
+bool onKeyCheck(StringView key, const JsonVariant& value) {
     return espurna::settings::query::samePrefix(key, Prefix);
 }
 
