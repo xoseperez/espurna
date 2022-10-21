@@ -11,9 +11,9 @@ jobs:
   variables:
     runs-on: ubuntu-latest
     outputs:
-      master: ${{ steps.result.outputs.master }}
-      dev: ${{ steps.result.outputs.dev }}
       date: ${{ steps.result.outputs.date }}
+      dev: ${{ steps.result.outputs.dev }}
+      master: ${{ steps.result.outputs.master }}
     steps:
       - name: Prepare version variables
         id: result
@@ -23,14 +23,14 @@ jobs:
             git ls-remote --exit-code --heads https://github.com/xoseperez/espurna.git refs/heads/$1 | cut -d$'\t' -f1
           }
 
+          date=$(date +'%y%m%d')
+          echo "date=${date}" >> "$GITHUB_OUTPUT"
+
           dev=$(revision dev)
-          echo "::set-output name=dev::"$dev
+          echo "dev=${dev}" >> "$GITHUB_OUTPUT"
 
           master=$(revision master)
-          echo "::set-output name=master::"$master
-
-          date=$(date +'%y%m%d')
-          echo "::set-output name=date::"$date
+          echo "master=${master}" >> "$GITHUB_OUTPUT"
 
   build:
     needs: variables
