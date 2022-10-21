@@ -476,47 +476,47 @@ HeapStats heapStats() {
 namespace boot {
 
 String serialize(CustomResetReason reason) {
-    const __FlashStringHelper* ptr { nullptr };
+    const char* ptr { PSTR("None") };
+
     switch (reason) {
     case CustomResetReason::None:
-        ptr = F("None");
         break;
     case CustomResetReason::Button:
-        ptr = F("Hardware button");
+        ptr = PSTR("Hardware button");
         break;
     case CustomResetReason::Factory:
-        ptr = F("Factory reset");
+        ptr = PSTR("Factory reset");
         break;
     case CustomResetReason::Hardware:
-        ptr = F("Reboot from a Hardware request");
+        ptr = PSTR("Reboot from a Hardware request");
         break;
     case CustomResetReason::Mqtt:
-        ptr = F("Reboot from MQTT");
+        ptr = PSTR("Reboot from MQTT");
         break;
     case CustomResetReason::Ota:
-        ptr = F("Reboot after a successful OTA update");
+        ptr = PSTR("Reboot after a successful OTA update");
         break;
     case CustomResetReason::Rpc:
-        ptr = F("Reboot from a RPC action");
+        ptr = PSTR("Reboot from a RPC action");
         break;
     case CustomResetReason::Rule:
-        ptr = F("Reboot from an automation rule");
+        ptr = PSTR("Reboot from an automation rule");
         break;
     case CustomResetReason::Scheduler:
-        ptr = F("Reboot from a scheduler action");
+        ptr = PSTR("Reboot from a scheduler action");
         break;
     case CustomResetReason::Terminal:
-        ptr = F("Reboot from a terminal command");
+        ptr = PSTR("Reboot from a terminal command");
         break;
     case CustomResetReason::Web:
-        ptr = F("Reboot from web interface");
+        ptr = PSTR("Reboot from web interface");
         break;
     case CustomResetReason::Stability:
-        ptr = F("Reboot after changing stability counter");
+        ptr = PSTR("Reboot after changing stability counter");
         break;
     }
 
-    return String(ptr);
+    return ptr;
 }
 
 // The ESPLive has an ADC MUX which needs to be configured.
