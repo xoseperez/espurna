@@ -45,8 +45,6 @@ static_assert(std::is_trivially_copyable<espurna::light::MiredsRange>::value, ""
 namespace espurna {
 namespace light {
 
-// TODO: unless we are building with latest Core versions and -std=c++17, these need to be explicitly bound to at least one object file
-#if __cplusplus < 201703L
 constexpr long Rgb::Min;
 constexpr long Rgb::Max;
 
@@ -58,7 +56,6 @@ constexpr long Hsv::SaturationMax;
 
 constexpr long Hsv::ValueMin;
 constexpr long Hsv::ValueMax;
-#endif
 
 static_assert(MiredsCold < MiredsWarm, "");
 constexpr long MiredsDefault { (MiredsCold + MiredsWarm) / 2L };
@@ -1740,6 +1737,7 @@ struct LightProviderHandler {
     }
 
     void start(Duration duration) {
+        _ready = false;
         _timer.once(duration,
             [&]() {
                 _ready = true;
@@ -1760,8 +1758,6 @@ std::unique_ptr<LightTransitionHandler> _light_transition;
 auto _light_transition_time = espurna::light::build::transitionTime();
 auto _light_transition_step = espurna::light::build::transitionStep();
 bool _light_use_transitions = false;
-
-void _lightProviderSchedule(espurna::duration::Milliseconds);
 
 static_assert((espurna::light::ValueMax - espurna::light::ValueMin) != 0, "");
 
@@ -1863,16 +1859,11 @@ void _lightProviderUpdate() {
         _lightProviderHandleUpdate);
 
     if (next) {
-        _lightProviderSchedule(_light_transition->step());
+        _light_provider_update.start(_light_transition->step());
     } else {
         _light_transition.reset(nullptr);
+        _light_provider_update.stop();
     }
-
-    _light_provider_update.stop();
-}
-
-void _lightProviderSchedule(espurna::duration::Milliseconds next) {
-    _light_provider_update.start(next);
 }
 
 } // namespace
@@ -2219,14 +2210,14 @@ void lightMQTT() {
     }
 
     if (_light_use_color || _light_use_cct) {
-        mqttSend(MQTT_TOPIC_MIRED, String(_light_mireds).c_str());
+        mqttSend(MQTT_TOPIC_MIRED, String(_light_mireds, 10).c_str());
     }
 
     for (size_t channel = 0; channel < _light_channels.size(); ++channel) {
-        mqttSend(MQTT_TOPIC_CHANNEL, channel, String(_light_channels[channel].target).c_str());
+        mqttSend(MQTT_TOPIC_CHANNEL, channel, String(_light_channels[channel].target, 10).c_str());
     }
 
-    mqttSend(MQTT_TOPIC_BRIGHTNESS, String(_light_brightness).c_str());
+    mqttSend(MQTT_TOPIC_BRIGHTNESS, String(_light_brightness, 10).c_str());
 
     if (!_light_has_controls) {
         mqttSend(MQTT_TOPIC_LIGHT, _light_state ? "1" : "0");
@@ -2234,7 +2225,7 @@ void lightMQTT() {
 }
 
 void lightMQTTGroup() {
-    const String mqtt_group_color = espurna::light::settings::mqttGroup();
+    const auto mqtt_group_color = espurna::light::settings::mqttGroup();
     if (mqtt_group_color.length()) {
         mqttSendRaw(mqtt_group_color.c_str(), _lightGroupPayload().c_str());
     }
@@ -2967,7 +2958,7 @@ void _lightUpdate() {
         // Channel output values will be set by the handler class and the specified provider
         // We either set the values immediately or schedule an ongoing transition
         _light_transition = std::make_unique<LightTransitionHandler>(_light_channels, transition, _light_state);
-        _lightProviderSchedule(_light_transition->step());
+        _light_provider_update.start(_light_transition->step());
         _lightUpdateDebug(*_light_transition);
 
         // Send current state to all available 'report' targets

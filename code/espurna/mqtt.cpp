@@ -709,8 +709,6 @@ void _mqttMdnsStop();
 
 void _mqttConfigure() {
 
-    _mqtt_enabled = false;
-
     // Make sure we have both the server to connect to things are enabled
     {
         _mqttApplySetting(_mqtt_settings.server, mqtt::settings::server());
