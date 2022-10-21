@@ -341,9 +341,9 @@ void SystemTimer::start(Duration duration, Callback callback, bool repeat) {
     if (!_timer) {
         _timer.reset(new os_timer_t{});
     }
+    _armed = _timer.get();
 
     _callback = std::move(callback);
-    _armed = _timer.get();
     _repeat = repeat;
 
     os_timer_setfn(_timer.get(),
@@ -372,10 +372,14 @@ void SystemTimer::start(Duration duration, Callback callback, bool repeat) {
 void SystemTimer::stop() {
     if (_armed) {
         os_timer_disarm(_armed);
-        _armed = nullptr;
-        _callback = nullptr;
-        _tick = nullptr;
     }
+    reset();
+}
+
+void SystemTimer::reset() {
+    _armed = nullptr;
+    _callback = Callback();
+    _tick = nullptr;
 }
 
 void SystemTimer::callback() {
@@ -395,7 +399,7 @@ void SystemTimer::callback() {
         return;
     }
 
-    stop();
+    reset();
 }
 
 void SystemTimer::schedule_once(Duration duration, Callback callback) {

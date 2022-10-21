@@ -142,11 +142,13 @@ void loop() {
     // One-time callbacks, registered some time during runtime
     // Notice that callback container is LIFO, most recently added
     // callback is called first. Copy to allow container modifications.
-    decltype(internal::once_callbacks) once_callbacks;
-    once_callbacks.swap(internal::once_callbacks);
+    if (!internal::once_callbacks.empty()) {
+        decltype(internal::once_callbacks) once_callbacks;
+        once_callbacks.swap(internal::once_callbacks);
 
-    for (const auto& callback : once_callbacks) {
-        callback();
+        for (const auto& callback : once_callbacks) {
+            callback();
+        }
     }
 
     espurna::time::delay(internal::loop_delay);

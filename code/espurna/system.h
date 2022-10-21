@@ -243,6 +243,7 @@ private:
     // with current implementation we use division by 2 until we reach value less than this one
     static constexpr Duration DurationMax = Duration(6870947);
 
+    void reset();
     void start(Duration, Callback, bool repeat);
     void callback();
 
@@ -251,7 +252,8 @@ private:
         size_t count;
     };
 
-    Callback _callback { nullptr };
+    Callback _callback;
+
     os_timer_t* _armed { nullptr };
     bool _repeat { false };
 
