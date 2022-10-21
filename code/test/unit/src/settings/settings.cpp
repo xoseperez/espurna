@@ -9,22 +9,23 @@
 
 #include <espurna/settings_embedis.h>
 
-#include <array>
 #include <algorithm>
+#include <array>
 #include <numeric>
+#include <random>
 
 #include <cstdio>
 
 namespace espurna {
 namespace settings {
 namespace embedis {
+namespace {
 
 // TODO: either
 // - throw exception and print backtrace to signify which method caused the out-of-bounds read or write
 // - use a custom macro to supply (instance?) object with the correct line number
 template <typename T>
 struct StaticArrayStorage {
-
     explicit StaticArrayStorage(T& blob) :
         _blob(blob),
         _size(blob.size())
@@ -45,12 +46,9 @@ struct StaticArrayStorage {
 
     T& _blob;
     const size_t _size;
-
 };
 
-} // namespace embedis
-} // namespace settings
-} // namespace espurna
+namespace test {
 
 using espurna::settings::embedis::StaticArrayStorage;
 using espurna::settings::embedis::KeyValueStore;
@@ -74,11 +72,11 @@ struct StorageHandler {
         char sep { ' ' };
         for (const auto& c : blob) {
             ++count;
-            if (count == 8) {
+            if (count == 24) {
                 sep = '\n';
             }
             ::printf("%02X%c", c, sep);
-            if (count == 8) {
+            if (count == 24) {
                 sep = ' ';
                 count = 0;
             }
@@ -147,12 +145,11 @@ struct TestSequentialKvGenerator {
 
     Mode _mode { Mode::Indexed };
     size_t _index { 0 };
-
 };
 
 // ----------------------------------------------------------------------------
 
-using TestStorageHandler = StorageHandler<1024>;
+using TestStorageHandler = StorageHandler<2048>;
 
 template <typename T>
 void check_kv(T& instance, const String& key, const String& value) {
@@ -290,7 +287,7 @@ void test_overflow() {
 
 void test_small_gaps() {
 
-    // ensure we can intemix empty and non-empty values
+    // ensure we can intermix empty and non-empty values
     TestStorageHandler instance;
 
     TEST_ASSERT(instance.kvs.set("key", "value"));
@@ -504,16 +501,110 @@ void test_keys_iterator() {
 
 }
 
+// noticed when storing varying data that gets rotated from time to time
+// needs more capacity than general tests; force to set() and then clean
+// everything until the next round of set()
+void test_varying_values() {
+    constexpr size_t Size = 2048;
+    StorageHandler<Size> instance;
+
+    std::random_device device;
+    std::mt19937 generator(device());
+    std::uniform_int_distribution<> dist(0, 255);
+
+    long values[5] {
+        0, 0, 0, 0, 0
+    };
+
+    auto genkey = [](auto&& prefix, size_t index) {
+        return String(prefix) + String(index, 10);
+    };
+
+    auto value_key = [&](size_t index) {
+        return genkey("value", index);
+    };
+
+    auto tmp_key = [&](size_t index) {
+        return genkey("temp", index);
+    };
+
+#define TEST_ASSERT_VALUE_EQUALS(N)\
+    ({\
+        const auto key = value_key(N);\
+        auto result = instance.kvs.get(key);\
+        TEST_ASSERT(result);\
+        TEST_ASSERT_EQUAL(values[N], result.ref().toInt());\
+    })
+
+    auto assert_keys = [&]() {
+        TEST_ASSERT_VALUE_EQUALS(0);
+        TEST_ASSERT_VALUE_EQUALS(1);
+        TEST_ASSERT_VALUE_EQUALS(2);
+        TEST_ASSERT_VALUE_EQUALS(3);
+        TEST_ASSERT_VALUE_EQUALS(4);
+    };
+
+#undef TEST_ASSERT_VALUE_EQUALS
+
+    auto clean_keys = [&](size_t it) {
+        size_t offset = it;
+        do {
+            const auto key = tmp_key(it);
+            if (!instance.kvs.get(key)) {
+                break;
+            }
+
+            TEST_ASSERT(instance.kvs.del(key));
+            if (offset == 0) {
+                break;
+            }
+            --offset;
+        } while (offset < it);
+    };
+
+    static constexpr size_t Iterations { 4096 };
+    for (size_t it = 0; it < Iterations; ++it) {
+        for (size_t index = 0; index < std::size(values); ++index) {
+            values[index] = dist(generator);
+
+            auto key = value_key(index);
+            auto val = String(values[index], 10);
+
+            auto result = instance.kvs.set(key, val);
+            if (!result) {
+                goto err;
+            }
+        }
+
+err:
+        clean_keys(it);
+    }
+
+    assert_keys();
+}
+
+} // namespace test
+
+} // namespace
+} // namespace embedis
+} // namespace settings
+} // namespace espurna
+
 int main(int, char**) {
+    using namespace espurna::settings::embedis::test;
+
     UNITY_BEGIN();
-    RUN_TEST(test_storage);
-    RUN_TEST(test_keys_iterator);
+
     RUN_TEST(test_basic);
-    RUN_TEST(test_remove_randomized);
-    RUN_TEST(test_small_gaps);
+    RUN_TEST(test_keys_iterator);
+    RUN_TEST(test_longkey);
     RUN_TEST(test_overflow);
     RUN_TEST(test_perseverance);
-    RUN_TEST(test_longkey);
+    RUN_TEST(test_remove_randomized);
     RUN_TEST(test_sizes);
+    RUN_TEST(test_small_gaps);
+    RUN_TEST(test_storage);
+    RUN_TEST(test_varying_values);
+
     return UNITY_END();
 }

@@ -25,6 +25,7 @@ set(COMMON_FLAGS
     -DCORE_MOCK
     -DHOST_MOCK=1
     -DLWIP_IPV6=0
+    -Dmemcmp_P=memcmp
     -Dstrncasecmp_P=strncasecmp
 )
 
