@@ -336,22 +336,41 @@ void keys(::terminal::CommandContext&& ctx) {
 alignas(4) static constexpr char Gc[] PROGMEM = "GC";
 
 void gc(::terminal::CommandContext&& ctx) {
-    const auto keys = settings::sorted_keys();
+    struct KeyRef {
+        String key;
+        size_t length;
+    };
 
-    using KeyRefs = std::vector<const String*>;
-    KeyRefs broken;
+    using KeyRefs = std::vector<KeyRef>;
+    KeyRefs refs;
 
-    for (const auto& key : keys) {
-        for (auto it = key.begin(); it != key.end(); ++it) {
-            if (!isascii(*it)) {
-                broken.push_back(&key);
-                break;
+    kv_store.foreach([&](kvs_type::KeyValueResult&& result) {
+        refs.push_back(
+            KeyRef{
+                .key = result.key.read(),
+                .length = result.key.length(),
+            });
+    });
+
+    auto is_ascii = [](const String& value) -> bool {
+        for (const auto& c : value) {
+            if (!isascii(c)) {
+                return false;
             }
+        }
+
+        return true;
+    };
+
+    std::vector<const String*> broken;
+    for (const auto& ref : refs) {
+        if ((ref.length != ref.key.length()) || !is_ascii(ref.key)) {
+            broken.push_back(&ref.key);
         }
     }
 
     size_t count = 0;
-    for (const auto* key : broken) {
+    for (const auto& key : broken) {
         settings::del(*key);
         ++count;
     }
