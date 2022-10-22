@@ -70,18 +70,18 @@ struct pwm_phase {
  * pwm phase
  */
 typedef struct pwm_phase (pwm_phase_array)[PWM_MAX_CHANNELS + 2];
-static pwm_phase_array pwm_phases[3];
+static pwm_phase_array pwm_phases[3] = {0};
 static struct {
 	struct pwm_phase* next_set;
 	struct pwm_phase* current_set;
 	uint8_t current_phase;
 } pwm_state;
 
-static uint32_t pwm_period;
-static uint32_t pwm_period_ticks;
-static uint32_t pwm_duty[PWM_MAX_CHANNELS];
-static uint16_t gpio_mask[PWM_MAX_CHANNELS];
-static uint8_t pwm_channels;
+static uint32_t pwm_period = 0;
+static uint32_t pwm_period_ticks = 0;
+static uint32_t pwm_duty[PWM_MAX_CHANNELS] = {0};
+static uint16_t gpio_mask[PWM_MAX_CHANNELS] = {0};
+static uint8_t pwm_channels = {0};
 
 struct gpio_regs {
 	uint32_t out;         /* 0x60000300 */
