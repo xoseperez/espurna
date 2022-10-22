@@ -38,35 +38,13 @@ constexpr long BrightnessMax { LIGHT_MAX_BRIGHTNESS };
 constexpr long MiredsCold { LIGHT_COLDWHITE_MIRED };
 constexpr long MiredsWarm { LIGHT_WARMWHITE_MIRED };
 
-enum class Report {
-    None = 0,
-    Web = 1 << 0,
-    Mqtt = 1 << 1,
-    MqttGroup = 1 << 2
-};
+struct Report {
+    static constexpr int None = 0;
+    static constexpr int Web = 1 << 0;
+    static constexpr int Mqtt = 1 << 1;
+    static constexpr int MqttGroup = 1 << 2;
 
-constexpr int operator|(Report lhs, int rhs) {
-    return static_cast<int>(lhs) | rhs;
-}
-
-constexpr int operator|(int lhs, Report rhs) {
-    return lhs | static_cast<int>(rhs);
-}
-
-constexpr int operator|(Report lhs, Report rhs) {
-    return static_cast<int>(lhs) | static_cast<int>(rhs);
-}
-
-constexpr int operator&(int lhs, Report rhs) {
-    return lhs & static_cast<int>(rhs);
-}
-
-constexpr int operator&(Report lhs, int rhs) {
-    return static_cast<int>(lhs) & rhs;
-}
-
-constexpr int DefaultReport {
-    Report::Web | Report::Mqtt | Report::MqttGroup
+    static constexpr int Default { Web | Mqtt | MqttGroup };
 };
 
 struct Hsv {
@@ -79,6 +57,8 @@ struct Hsv {
     static constexpr long ValueMin { 0 };
     static constexpr long ValueMax { 100 };
 
+    using Array = std::array<long, 3>;
+
     Hsv() = default;
     Hsv(const Hsv&) = default;
     Hsv(Hsv&&) = default;
@@ -86,22 +66,32 @@ struct Hsv {
     Hsv& operator=(const Hsv&) = default;
     Hsv& operator=(Hsv&&) = default;
 
-    Hsv(long hue, long saturation, long value) :
+    constexpr explicit Hsv(Array array) noexcept :
+        _hue(array[0]),
+        _saturation(array[1]),
+        _value(array[2])
+    {}
+
+    constexpr Hsv(long hue, long saturation, long value) noexcept :
         _hue(std::clamp(hue, HueMin, HueMax)),
         _saturation(std::clamp(saturation, SaturationMin, SaturationMax)),
         _value(std::clamp(value, ValueMin, ValueMax))
     {}
 
-    long hue() const {
+    constexpr long hue() const {
         return _hue;
     }
 
-    long saturation() const {
+    constexpr long saturation() const {
         return _saturation;
     }
 
-    long value() const {
+    constexpr long value() const {
         return _value;
+    }
+
+    constexpr Array asArray() const {
+        return Array{{_hue, _saturation, _value}};
     }
 
 private:
@@ -257,7 +247,6 @@ void lightBrightnessStep(long steps, long multiplier);
 void lightChannelStep(size_t id, long steps);
 void lightChannelStep(size_t id, long steps, long multiplier);
 
-void lightUpdate(LightTransition transition, espurna::light::Report report, bool save);
 void lightUpdate(LightTransition transition, int report, bool save);
 void lightUpdate(LightTransition transition);
 void lightUpdate(bool save);

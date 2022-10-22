@@ -23,7 +23,8 @@ namespace Internals {
 
 template <>
 struct StringTraits<::espurna::StringView, void> {
-    static bool equals(::espurna::StringView lhs, const char* rhs) {
+    template <typename T>
+    static bool equals(::espurna::StringView lhs, T&& rhs) {
         return lhs == rhs;
     }
 

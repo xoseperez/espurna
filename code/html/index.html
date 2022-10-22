@@ -231,13 +231,13 @@
                                 <div id="relays"></div>
 
                                 <!-- removeIf(!light) -->
-                                <div id="color"></div>
-                                <div id="cct"></div>
-                                <!-- endRemoveIf(!light) -->
+                                <div id="light">
+                                    <div class="pure-control-group light-control">
+                                        <label>Lights</label>
+                                        <div><input type="checkbox" name="light-state"></div>
+                                    </div>
+                                </div>
 
-                                <!-- removeIf(!light) -->
-                                <div id="channels"></div>
-                                <div id="light"></div>
                                 <!-- endRemoveIf(!light) -->
 
                                 <!-- removeIf(!sensor) -->
@@ -2376,9 +2376,9 @@
 
         <!-- removeIf(!light) -->
         <template id="template-channel-control">
-            <div class="pure-control-group">
+            <div class="pure-control-group light-channel">
                 <label>Channel #</label>
-                <input type="range" min="0" max="255" class="slider channels pure-input-2-3">
+                <input type="range" min="0" max="255" class="slider pure-input-2-3">
                 <span class="slider"></span>
             </div>
         </template>

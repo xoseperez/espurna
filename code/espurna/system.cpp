@@ -403,7 +403,7 @@ void SystemTimer::callback() {
 }
 
 void SystemTimer::schedule_once(Duration duration, Callback callback) {
-    once(duration, [callback = std::move(callback)]() {
+    once(duration, [callback]() {
         espurnaRegisterOnce(callback);
     });
 }
@@ -980,7 +980,8 @@ void run() {
 
 void stop(Callback callback) {
     auto found = std::remove_if(
-        internal::runners.begin(), internal::runners.end(),
+        internal::runners.begin(),
+        internal::runners.end(),
         [&](const CallbackRunner& runner) {
             return callback == runner.callback;
         });

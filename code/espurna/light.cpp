@@ -19,6 +19,7 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include "ws.h"
 
 #include <ArduinoJson.h>
+#include "web_utils.h"
 
 #include <array>
 #include <cstring>
@@ -735,6 +736,16 @@ std::unique_ptr<LightProvider> _light_provider;
 
 namespace {
 
+void _lightBrightnessPercent(long percent) {
+    const auto fixed = std::clamp(percent, 0l, 100l);
+    const auto ratio = espurna::light::BrightnessMax * fixed;
+    lightBrightness(ratio / 100l);
+}
+
+long _lightBrightnessPercent() {
+    return (_light_brightness * 100l) / espurna::light::BrightnessMax;
+}
+
 // After the channel value was updated through the API (i.e. through changing the `inputValue`),
 // these functions are expected to be called. Which one is chosen is based on the current settings values.
 // TODO: existing mapping class handles setting `inputValue` & getting `target` value applied by the transition handler
@@ -1095,29 +1106,35 @@ void _lightFromRgbPayload(espurna::StringView payload) {
     _lightFromCommaSeparatedPayload(payload);
 }
 
-void _lightFromHsvPayload(espurna::StringView payload) {
-    if (!_light_has_color || !payload.length()) {
-        return;
-    }
-
-    long hsv[3] {0, 0, 0};
-    auto it = std::begin(hsv);
+espurna::light::Hsv _lightHsvFromPayload(espurna::StringView payload) {
+    espurna::light::Hsv::Array values;
+    auto it = std::begin(values);
 
     // HSV string is expected to be "H,S,V", where:
     // - H [0...360]
     // - S [0...100]
     // - V [0...100]
     const auto parsed = _lightApplyForEachToken(
-            payload, ',', it, std::end(hsv));
+            payload, ',', it, std::end(values));
 
     // discard partial or uneven payloads
-    if ((parsed != payload.end()) || (it != std::end(hsv))) {
+    espurna::light::Hsv out;
+    if ((parsed != payload.end()) || (it != std::end(values))) {
+        return out;
+    }
+
+    // values are expected to be 'clamped' either in the
+    // following call or in ctor of the helper object
+    out = espurna::light::Hsv(values);
+    return out;
+}
+
+void _lightFromHsvPayload(espurna::StringView payload) {
+    if (!_light_has_color || !payload.length()) {
         return;
     }
 
-    // values are expected to be 'clamped' either
-    // in the call or in ctor of the helper object
-    lightHsv({hsv[0], hsv[1], hsv[2]});
+    lightHsv(_lightHsvFromPayload(payload));
 }
 
 // Thanks to Sacha Telgenhof for sharing this code in his AiLight library
@@ -1296,25 +1313,91 @@ void _lightFromGroupPayload(espurna::StringView payload) {
     }
 }
 
-espurna::light::Hsv _lightHsv(espurna::light::Rgb rgb) {
-    auto r = static_cast<double>(rgb.red()) / espurna::light::ValueMax;
-    auto g = static_cast<double>(rgb.green()) / espurna::light::ValueMax;
-    auto b = static_cast<double>(rgb.blue()) / espurna::light::ValueMax;
+// HSV to RGB transformation
+//
+// INPUT: [0,100,57]
+// IS: [145,0,0]
+// SHOULD: [255,0,0]
 
-    auto max = std::max({r, g, b});
-    auto min = std::min({r, g, b});
+espurna::light::Rgb _lightRgb(espurna::light::Hsv hsv) {
+    constexpr auto ValueMin = static_cast<double>(espurna::light::ValueMin);
+    double r { ValueMin };
+    double g { ValueMin };
+    double b { ValueMin };
+
+    constexpr auto Scale = 100.0;
+    auto v = static_cast<double>(hsv.value()) / Scale;
+
+    if (hsv.saturation()) {
+        auto h = hsv.hue();
+        if (h < 0) {
+            h = 0;
+        } else if (h >= 360) {
+            h = 359;
+        }
+
+        auto s = static_cast<double>(hsv.saturation()) / Scale;
+
+        auto c = v * s;
+
+        auto hmod2 = fs_fmod(static_cast<double>(h) / 60.0, 2.0);
+        auto x = c * (1.0 - std::abs(hmod2 - 1.0));
+
+        auto m = v - c;
+
+        if ((0 <= h) && (h < 60)) {
+            r = c;
+            g = x;
+        } else if ((60 <= h) && (h < 120)) {
+            r = x;
+            g = c;
+        } else if ((120 <= h) && (h < 180)) {
+            g = c;
+            b = x;
+        } else if ((180 <= h) && (h < 240)) {
+            g = x;
+            b = c;
+        } else if ((240 <= h) && (h < 300)) {
+            r = x;
+            b = c;
+        } else if ((300 <= h) && (h < 360)) {
+            r = c;
+            b = x;
+        }
+
+        constexpr auto ValueMax = static_cast<double>(espurna::light::ValueMax);
+        r = (r + m) * ValueMax;
+        g = (g + m) * ValueMax;
+        b = (b + m) * ValueMax;
+    }
+
+    return espurna::light::Rgb(
+        static_cast<long>(std::nearbyint(r)),
+        static_cast<long>(std::nearbyint(g)),
+        static_cast<long>(std::nearbyint(b)));
+}
+
+espurna::light::Hsv _lightHsv(espurna::light::Rgb rgb) {
+    using namespace espurna::light;
+
+    const auto r = static_cast<double>(rgb.red()) / ValueMax;
+    const auto g = static_cast<double>(rgb.green()) / ValueMax;
+    const auto b = static_cast<double>(rgb.blue()) / ValueMax;
+
+    const auto max = std::max({r, g, b});
+    const auto min = std::min({r, g, b});
 
     auto v = max;
 
     if (min != max) {
-        auto s = (max - min) / max;
-
         auto delta = max - min;
+
+        auto s = delta / max;
         auto rc = (max - r) / delta;
         auto gc = (max - g) / delta;
         auto bc = (max - b) / delta;
 
-        double h { 0.0 };
+        double h;
         if (r == max) {
             h = bc - gc;
         } else if (g == max) {
@@ -1328,23 +1411,19 @@ espurna::light::Hsv _lightHsv(espurna::light::Rgb rgb) {
             h = 1.0 + h;
         }
 
-        return espurna::light::Hsv(
+        return Hsv(
             std::lround(h * 360.0),
             std::lround(s * 100.0),
             std::lround(v * 100.0));
     }
 
-    return espurna::light::Hsv(espurna::light::Hsv::HueMin, espurna::light::Hsv::SaturationMin, v);
-
+    return Hsv(Hsv::HueMin, Hsv::SaturationMin, v);
 }
 
-String _lightHsvPayload(espurna::light::Rgb rgb) {
+String _lightHsvPayload(espurna::light::Hsv hsv) {
     String out;
-    out.reserve(12);
 
-    auto hsv = _lightHsv(rgb);
-
-    long values[3] {hsv.hue(), hsv.saturation(), hsv.value()};
+    auto values = hsv.asArray();
     for (const auto& value : values) {
         if (out.length()) {
             out += ',';
@@ -1353,6 +1432,10 @@ String _lightHsvPayload(espurna::light::Rgb rgb) {
     }
 
     return out;
+}
+
+String _lightHsvPayload(espurna::light::Rgb rgb) {
+    return _lightHsvPayload(_lightHsv(rgb));
 }
 
 String _lightHsvPayload() {
@@ -2067,11 +2150,11 @@ bool _lightApiTransition(espurna::StringView payload) {
 }
 
 int _lightMqttReportMask() {
-    return espurna::light::DefaultReport & ~(static_cast<int>(mqttForward() ? espurna::light::Report::None : espurna::light::Report::Mqtt));
+    return espurna::light::Report::Default & ~(mqttForward() ? espurna::light::Report::None : espurna::light::Report::Mqtt);
 }
 
 int _lightMqttReportGroupMask() {
-    return _lightMqttReportMask() & ~static_cast<int>(espurna::light::Report::MqttGroup);
+    return _lightMqttReportMask() & ~espurna::light::Report::MqttGroup;
 }
 
 void _lightUpdateFromMqtt(LightTransition transition) {
@@ -2389,42 +2472,54 @@ bool _lightWebSocketOnKeyCheck(espurna::StringView key, const JsonVariant&) {
 }
 
 void _lightWebSocketStatus(JsonObject& root) {
+    JsonObject& light = root.createNestedObject("light");
+
     if (_light_use_color) {
+        const auto rgb = _lightToInputRgb();
         if (_light_use_rgb) {
-            root["rgb"] = _lightRgbHexPayload(_lightToInputRgb());
+            light["rgb"] = _lightRgbHexPayload(rgb);
         } else {
-            root["hsv"] = _lightHsvPayload(_lightToTargetRgb());
+            const auto hsv = _lightHsv(rgb);
+            light["hsv"] = _lightHsvPayload(espurna::light::Hsv(
+                hsv.hue(), hsv.saturation(), _lightBrightnessPercent()));
         }
     }
 
     if (_light_use_cct) {
-        JsonObject& mireds = root.createNestedObject("mireds");
-        mireds["value"] = _light_mireds;
-        mireds["cold"] = _light_cold_mireds;
-        mireds["warm"] = _light_warm_mireds;
-        root["useCCT"] = _light_use_cct;
+        light["mireds"] = _light_mireds;
     }
 
-    JsonArray& channels = root.createNestedArray("channels");
+    JsonArray& values = light.createNestedArray("values");
     for (auto& channel : _light_channels) {
-        channels.add(channel.inputValue);
+        values.add(channel.inputValue);
     }
 
-    root["brightness"] = _light_brightness;
-    root["lightstate"] = _light_state;
+    light["brightness"] = _light_brightness;
+    light["state"] = _light_state;
 }
 
 void _lightWebSocketOnVisible(JsonObject& root) {
     wsPayloadModule(root, PSTR("light"));
+
+    JsonObject& light = root.createNestedObject("light");
+    light["channels"] = _light_channels.size();
+    light["mode"] = _light_use_rgb ? "rgb" : "hsv";
+
+    if (_light_use_cct) {
+        JsonObject& cct = light.createNestedObject("cct");
+        cct["cold"] = _light_cold_mireds;
+        cct["warm"] = _light_warm_mireds;
+    }
 }
 
 void _lightWebSocketOnConnected(JsonObject& root) {
     root["mqttGroupColor"] = espurna::light::settings::mqttGroup();
+    root["useCCT"] = _light_use_cct;
     root["useColor"] = _light_use_color;
-    root["useWhite"] = _light_use_white;
     root["useGamma"] = _light_use_gamma;
-    root["useTransitions"] = _light_use_transitions;
     root["useRGB"] = _light_use_rgb;
+    root["useTransitions"] = _light_use_transitions;
+    root["useWhite"] = _light_use_white;
     root["ltSave"] = _light_save;
     root["ltSaveDelay"] = _light_save_delay.count();
     root["ltTime"] = _light_transition_time.count();
@@ -2435,44 +2530,60 @@ void _lightWebSocketOnConnected(JsonObject& root) {
 }
 
 void _lightWebSocketOnAction(uint32_t client_id, const char* action, JsonObject& data) {
-    STRING_VIEW_INLINE(Color, "color");
+    STRING_VIEW_INLINE(Light, "light");
+    if (Light != action) {
+        return;
+    }
 
-    if (_light_has_color) {
-        if (Color == action) {
-            STRING_VIEW_INLINE(Rgb, "rgb");
-            STRING_VIEW_INLINE(Hsv, "hsv");
+    bool update { false };
 
-            if (data.containsKey(Rgb)) {
-                _lightFromRgbPayload(data[Rgb].as<String>());
-                lightUpdate();
-            } else if (data.containsKey(Hsv)) {
-                _lightFromHsvPayload(data[Hsv].as<String>());
-                lightUpdate();
-            }
-        }
+    STRING_VIEW_INLINE(State, "state");
+    if (data.containsKey("state")) {
+        lightState(data[State].as<bool>());
+        update = true;
+    }
+
+    STRING_VIEW_INLINE(Brightness, "brightness");
+    if (data.containsKey(Brightness)) {
+        lightBrightness(data[Brightness].as<long>());
+        update = true;
+    }
+
+    STRING_VIEW_INLINE(Rgb, "rgb");
+    if (data.containsKey(Rgb)) {
+        _lightFromRgbPayload(data[Rgb].as<String>());
+        update = true;
+    }
+
+    STRING_VIEW_INLINE(Hsv, "hsv");
+    if (data.containsKey(Hsv)) {
+        lightHsv(_lightHsvFromPayload(data[Hsv].as<String>()));
+        update = true;
     }
 
     STRING_VIEW_INLINE(Mireds, "mireds");
-    STRING_VIEW_INLINE(Brightness, "brightness");
-    STRING_VIEW_INLINE(Id, "id");
-    STRING_VIEW_INLINE(Channel, "channel");
-    STRING_VIEW_INLINE(Value, "value");
+    if (data.containsKey(Mireds)) {
+        _fromMireds(data[Mireds].as<long>());
+        update = true;
+    }
 
-    if (Mireds == action) {
-        if (data.containsKey(Mireds)) {
-            _fromMireds(data[Mireds].as<long>());
-            lightUpdate();
+    STRING_VIEW_INLINE(Channel, "channel");
+    JsonObject& channel = data[Channel];
+
+    if (channel.success()) {
+        for (auto& kv : channel) {
+            const auto id = parseUnsigned(kv.key, 10);
+            if (!id.ok) {
+                break;
+            }
+
+            lightChannel(id.value, kv.value.as<long>());
+            update = true;
         }
-    } else if (Channel == action) {
-        if (data.containsKey(Id) && data.containsKey(Value)) {
-            lightChannel(data[Id].as<size_t>(), data[Value].as<long>());
-            lightUpdate();
-        }
-    } else if (Brightness == action) {
-        if (data.containsKey(Value)) {
-            lightBrightness(data[Value].as<long>());
-            lightUpdate();
-        }
+    }
+
+    if (update) {
+        lightUpdate();
     }
 }
 
@@ -2611,7 +2722,8 @@ static void _lightCommand(::terminal::CommandContext&& ctx) {
         lightUpdate();
     }
 
-    ctx.output.printf("%s\n", _light_state ? "ON" : "OFF");
+    ctx.output.printf_P(PSTR("%s\n"),
+        _light_state ? PSTR("ON") : PSTR("OFF"));
     terminalOK(ctx);
 }
 
@@ -2622,7 +2734,7 @@ static void _lightCommandBrightness(::terminal::CommandContext&& ctx) {
         _lightAdjustBrightness(ctx.argv[1]);
         lightUpdate();
     }
-    ctx.output.printf("%ld\n", _light_brightness);
+    ctx.output.printf_P(PSTR("%ld\n"), _light_brightness);
     terminalOK(ctx);
 }
 
@@ -2666,15 +2778,23 @@ static void _lightCommandChannel(::terminal::CommandContext&& ctx) {
 
 alignas(4) static constexpr char LightCommandRgb[] PROGMEM = "RGB";
 
+static void _lightCommandColors(const ::terminal::CommandContext& ctx) {
+    const auto rgb = _lightToTargetRgb();
+    ctx.output.printf_P(PSTR("hsv %s\n"),
+        _lightHsvPayload(rgb).c_str());
+    ctx.output.printf_P(PSTR("rgb %s\n"),
+        _lightRgbPayload(rgb).c_str());
+
+    terminalOK(ctx);
+}
+
 static void _lightCommandRgb(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() > 1) {
         _lightFromRgbPayload(ctx.argv[1]);
         lightUpdate();
     }
 
-    ctx.output.printf_P(PSTR("rgb %s\n"),
-        _lightRgbPayload(_lightToTargetRgb()).c_str());
-    terminalOK(ctx);
+    _lightCommandColors(ctx);
 }
 
 alignas(4) static constexpr char LightCommandHsv[] PROGMEM = "HSV";
@@ -2685,9 +2805,7 @@ static void _lightCommandHsv(::terminal::CommandContext&& ctx) {
         lightUpdate();
     }
 
-    ctx.output.printf_P(PSTR("hsv %s\n"),
-        _lightHsvPayload().c_str());
-    terminalOK(ctx);
+    _lightCommandColors(ctx);
 }
 
 alignas(4) static constexpr char LightCommandKelvin[] PROGMEM = "KELVIN";
@@ -2773,68 +2891,16 @@ void lightRgb(espurna::light::Rgb rgb) {
     _light_mapping.blue(rgb.blue());
 }
 
-// HSV to RGB transformation -----------------------------------------------
-//
-// INPUT: [0,100,57]
-// IS: [145,0,0]
-// SHOULD: [255,0,0]
-
-void lightHsv(espurna::light::Hsv hsv) {
-    double r { 0.0 };
-    double g { 0.0 };
-    double b { 0.0 };
-
-    auto v = static_cast<double>(hsv.value()) / 100.0;
-
-    if (hsv.saturation()) {
-        auto h = hsv.hue();
-        if (h < 0) {
-            h = 0;
-        } else if (h >= 360) {
-            h = 359;
-        }
-
-        auto s = static_cast<double>(hsv.saturation()) / 100.0;
-
-        auto c = v * s;
-
-        auto hmod2 = fs_fmod(static_cast<double>(h) / 60.0, 2.0);
-        auto x = c * (1.0 - std::abs(hmod2 - 1.0));
-
-        auto m = v - c;
-
-        if ((0 <= h) && (h < 60)) {
-            r = c;
-            g = x;
-        } else if ((60 <= h) && (h < 120)) {
-            r = x;
-            g = c;
-        } else if ((120 <= h) && (h < 180)) {
-            g = c;
-            b = x;
-        } else if ((180 <= h) && (h < 240)) {
-            g = x;
-            b = c;
-        } else if ((240 <= h) && (h < 300)) {
-            r = x;
-            b = c;
-        } else if ((300 <= h) && (h < 360)) {
-            r = c;
-            b = x;
-        }
-
-        r = (r + m) * 255.0;
-        g = (g + m) * 255.0;
-        b = (b + m) * 255.0;
-    }
-
-    _light_mapping.red(std::lround(r));
-    _light_mapping.green(std::lround(g));
-    _light_mapping.blue(std::lround(b));
+void lightHs(long hue, long saturation) {
+    lightRgb(_lightRgb(
+        espurna::light::Hsv(
+            hue, saturation,
+            espurna::light::Hsv::ValueMax)));
 }
 
-void lightHs(long hue, long saturation) {
-    lightHsv({hue, saturation, espurna::light::Hsv::ValueMax});
+void lightHsv(espurna::light::Hsv hsv) {
+    lightHs(hsv.hue(), hsv.saturation());
+    lightBrightnessPercent(hsv.value());
 }
 
 espurna::light::Hsv lightHsv() {
@@ -2993,16 +3059,12 @@ void _lightUpdate(LightTransition transition, int report, bool save) {
     _lightUpdate(transition, report, save, false);
 }
 
-void _lightUpdate(LightTransition transition, espurna::light::Report report, bool save) {
-    _lightUpdate(transition, static_cast<int>(report), save, false);
-}
-
 void _lightUpdate(LightTransition transition) {
-    _lightUpdate(transition, espurna::light::DefaultReport, _light_save, false);
+    _lightUpdate(transition, espurna::light::Report::Default, _light_save, false);
 }
 
 void _lightUpdate(bool save) {
-    _lightUpdate(lightTransition(), espurna::light::DefaultReport, save, false);
+    _lightUpdate(lightTransition(), espurna::light::Report::Default, save, false);
 }
 
 } // namespace
@@ -3012,14 +3074,10 @@ void lightSequence(LightSequenceCallbacks callbacks) {
 }
 
 void lightUpdateSequence(LightTransition transition) {
-    _lightUpdate(transition, 0, false, true);
+    _lightUpdate(transition, espurna::light::Report::None, false, true);
 }
 
 void lightUpdate(LightTransition transition, int report, bool save) {
-    _lightUpdate(transition, report, save);
-}
-
-void lightUpdate(LightTransition transition, espurna::light::Report report, bool save) {
     _lightUpdate(transition, report, save);
 }
 
@@ -3159,7 +3217,7 @@ long lightBrightness() {
 }
 
 void lightBrightnessPercent(long percent) {
-    lightBrightness((percent / 100l) * espurna::light::BrightnessMax);
+    _lightBrightnessPercent(percent);
 }
 
 void lightBrightness(long brightness) {
