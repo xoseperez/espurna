@@ -650,7 +650,7 @@ struct LightTimerValue {
     void wait_set(Duration duration, T value) {
         _timer.once(
             duration,
-            [&]() {
+            [this, value]() {
                 _value = value;
             });
     }
