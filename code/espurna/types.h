@@ -208,7 +208,11 @@ private:
 };
 
 struct StringView {
-    StringView() noexcept = default;
+    constexpr StringView() noexcept :
+        _ptr(nullptr),
+        _len(0)
+    {}
+
     ~StringView() = default;
 
     StringView(std::nullptr_t) = delete;
