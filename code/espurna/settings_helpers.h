@@ -289,11 +289,7 @@ private:
 namespace query {
 
 inline bool samePrefix(StringView key, StringView prefix) {
-    if (key.length() > prefix.length()) {
-        return strncmp_P(key.c_str(), prefix.c_str(), prefix.length()) == 0;
-    }
-
-    return false;
+    return key.startsWith(prefix);
 }
 
 struct StringViewIterator {

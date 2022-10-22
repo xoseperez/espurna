@@ -622,11 +622,11 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 }
 
 bool _wsOnKeyCheck(espurna::StringView key, const JsonVariant&) {
-    return espurna::settings::query::samePrefix(key, STRING_VIEW("ws"))
-        || espurna::settings::query::samePrefix(key, STRING_VIEW("adminPass"))
-        || espurna::settings::query::samePrefix(key, STRING_VIEW("hostname"))
-        || espurna::settings::query::samePrefix(key, STRING_VIEW("desc"))
-        || espurna::settings::query::samePrefix(key, STRING_VIEW("webPort"));
+    return (key == STRING_VIEW("adminPass"))
+        || (key == STRING_VIEW("hostname"))
+        || (key == STRING_VIEW("desc"))
+        || (key == STRING_VIEW("webPort"))
+        || key.startsWith(STRING_VIEW("ws"));
 }
 
 void _wsOnConnected(JsonObject& root) {
