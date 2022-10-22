@@ -2780,7 +2780,6 @@ void lightHsv(espurna::light::Hsv hsv) {
     double b { 0.0 };
 
     auto v = static_cast<double>(hsv.value()) / 100.0;
-    long brightness { std::lround(v * static_cast<double>(espurna::light::BrightnessMax)) };
 
     if (hsv.saturation()) {
         auto h = hsv.hue();
@@ -2822,16 +2821,11 @@ void lightHsv(espurna::light::Hsv hsv) {
         r = (r + m) * 255.0;
         g = (g + m) * 255.0;
         b = (b + m) * 255.0;
-    } else {
-        r = brightness;
-        g = brightness;
-        b = brightness;
     }
 
     _light_mapping.red(std::lround(r));
     _light_mapping.green(std::lround(g));
     _light_mapping.blue(std::lround(b));
-    lightBrightness(brightness);
 }
 
 void lightHs(long hue, long saturation) {
