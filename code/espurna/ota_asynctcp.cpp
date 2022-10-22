@@ -243,7 +243,7 @@ void clientFromUrl(StringView payload) {
 }
 
 #if TERMINAL_SUPPORT
-alignas(4) static constexpr char OtaCommand[] PROGMEM = "OTA";
+PROGMEM_STRING(OtaCommand, "OTA");
 
 static void otaCommand(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() != 2) {

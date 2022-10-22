@@ -18,12 +18,12 @@ namespace espurna {
 namespace rpc {
 namespace {
 
-alignas(4) static constexpr char Reboot[] PROGMEM = "reboot";
-alignas(4) static constexpr char Heartbeat[] PROGMEM = "heartbeat";
+PROGMEM_STRING(Reboot, "reboot");
+PROGMEM_STRING(Heartbeat, "heartbeat");
 
-alignas(4) static constexpr char On[] PROGMEM = "on";
-alignas(4) static constexpr char Off[] PROGMEM = "off";
-alignas(4) static constexpr char Toggle[] PROGMEM = "toggle";
+PROGMEM_STRING(On, "on");
+PROGMEM_STRING(Off, "off");
+PROGMEM_STRING(Toggle, "toggle");
 
 void rpcPrepareReset() {
     prepareReset(CustomResetReason::Rpc);

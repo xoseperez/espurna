@@ -45,9 +45,9 @@ namespace {
 namespace settings {
 namespace options {
 
-alignas(4) static constexpr char None[] PROGMEM = "none";
-alignas(4) static constexpr char Once[] PROGMEM = "once";
-alignas(4) static constexpr char Repeat[] PROGMEM = "repeat";
+PROGMEM_STRING(None, "none");
+PROGMEM_STRING(Once, "once");
+PROGMEM_STRING(Repeat, "repeat");
 
 static constexpr espurna::settings::options::Enumeration<heartbeat::Mode> HeartbeatModeOptions[] PROGMEM {
     {heartbeat::Mode::None, None},
@@ -59,9 +59,9 @@ static constexpr espurna::settings::options::Enumeration<heartbeat::Mode> Heartb
 
 namespace keys {
 
-alignas(4) static constexpr char Hostname[] PROGMEM = "hostname";
-alignas(4) static constexpr char Description[] PROGMEM = "desc";
-alignas(4) static constexpr char Password[] PROGMEM = "adminPass";
+PROGMEM_STRING(Hostname, "hostname");
+PROGMEM_STRING(Description, "desc");
+PROGMEM_STRING(Password, "adminPass");
 
 } // namespace keys
 
@@ -133,8 +133,8 @@ namespace {
 
 namespace internal {
 
-alignas(4) static constexpr char Hostname[] PROGMEM = HOSTNAME;
-alignas(4) static constexpr char Password[] PROGMEM = ADMIN_PASS;
+PROGMEM_STRING(Hostname, HOSTNAME);
+PROGMEM_STRING(Password, ADMIN_PASS);
 
 } // namespace internal
 
@@ -875,9 +875,9 @@ constexpr Mask value() {
 namespace settings {
 namespace keys {
 
-alignas(4) static constexpr char Mode[] PROGMEM = "hbMode";
-alignas(4) static constexpr char Interval[] PROGMEM = "hbInterval";
-alignas(4) static constexpr char Report[] PROGMEM = "hbReport";
+PROGMEM_STRING(Mode, "hbMode");
+PROGMEM_STRING(Interval, "hbInterval");
+PROGMEM_STRING(Report, "hbReport");
 
 } // namespace keys
 

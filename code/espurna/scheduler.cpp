@@ -112,10 +112,10 @@ namespace settings {
 namespace options {
 namespace {
 
-alignas(4) static constexpr char None[] PROGMEM = "none";
-alignas(4) static constexpr char Relay[] PROGMEM = "relay";
-alignas(4) static constexpr char Channel[] PROGMEM = "channel";
-alignas(4) static constexpr char Curtain[] PROGMEM = "curtain";
+PROGMEM_STRING(None, "none");
+PROGMEM_STRING(Relay, "relay");
+PROGMEM_STRING(Channel, "channel");
+PROGMEM_STRING(Curtain, "curtain");
 
 static constexpr std::array<Enumeration<scheduler::Type>, 4> SchedulerTypeOptions PROGMEM {
     {{scheduler::Type::None, None},
@@ -262,15 +262,15 @@ namespace settings {
 namespace keys {
 namespace {
 
-alignas(4) static constexpr char Enabled[] PROGMEM = "schEnabled";
-alignas(4) static constexpr char Target[] PROGMEM = "schTarget";
-alignas(4) static constexpr char Type[] PROGMEM = "schType";
-alignas(4) static constexpr char Action[] PROGMEM = "schAction";
-alignas(4) static constexpr char Restore[] PROGMEM = "schRestore";
-alignas(4) static constexpr char UseUTC[] PROGMEM = "schUTC";
-alignas(4) static constexpr char Weekdays[] PROGMEM = "schWDs";
-alignas(4) static constexpr char Hour[] PROGMEM = "schHour";
-alignas(4) static constexpr char Minute[] PROGMEM = "schMinute";
+PROGMEM_STRING(Enabled, "schEnabled");
+PROGMEM_STRING(Target, "schTarget");
+PROGMEM_STRING(Type, "schType");
+PROGMEM_STRING(Action, "schAction");
+PROGMEM_STRING(Restore, "schRestore");
+PROGMEM_STRING(UseUTC, "schUTC");
+PROGMEM_STRING(Weekdays, "schWDs");
+PROGMEM_STRING(Hour, "schHour");
+PROGMEM_STRING(Minute, "schMinute");
 
 } // namespace
 } // namespace keys
@@ -414,7 +414,7 @@ void migrate(int version) {
 namespace query {
 
 bool checkSamePrefix(StringView key) {
-    alignas(4) static constexpr char Prefix[] PROGMEM = "sch";
+    PROGMEM_STRING(Prefix, "sch");
     return espurna::settings::query::samePrefix(key, Prefix);
 }
 
@@ -438,15 +438,15 @@ void setup() {
 namespace api {
 namespace keys {
 
-alignas(4) static constexpr char Enabled[] PROGMEM = "enabled";
-alignas(4) static constexpr char Target[] PROGMEM = "enabled";
-alignas(4) static constexpr char Type[] PROGMEM = "type";
-alignas(4) static constexpr char Action[] PROGMEM = "action";
-alignas(4) static constexpr char Restore[] PROGMEM = "restore";
-alignas(4) static constexpr char UseUTC[] PROGMEM = "utc";
-alignas(4) static constexpr char Weekdays[] PROGMEM = "weekdays";
-alignas(4) static constexpr char Hour[] PROGMEM = "hour";
-alignas(4) static constexpr char Minute[] PROGMEM = "minute";
+PROGMEM_STRING(Enabled, "enabled");
+PROGMEM_STRING(Target, "enabled");
+PROGMEM_STRING(Type, "type");
+PROGMEM_STRING(Action, "action");
+PROGMEM_STRING(Restore, "restore");
+PROGMEM_STRING(UseUTC, "utc");
+PROGMEM_STRING(Weekdays, "weekdays");
+PROGMEM_STRING(Hour, "hour");
+PROGMEM_STRING(Minute, "minute");
 
 } // namespace keys
 

@@ -36,9 +36,9 @@ namespace {
 
 using espurna::settings::options::Enumeration;
 
-alignas(4) static constexpr char Disabled[] PROGMEM = "off";
-alignas(4) static constexpr char Enabled[] PROGMEM = "on";
-alignas(4) static constexpr char SkipBoot[] PROGMEM = "skip-boot";
+PROGMEM_STRING(Disabled, "off");
+PROGMEM_STRING(Enabled, "on");
+PROGMEM_STRING(SkipBoot, "skip-boot");
 
 static constexpr Enumeration<DebugLogMode> DebugLogModeOptions[] PROGMEM {
     {DebugLogMode::Disabled, Disabled},
@@ -52,13 +52,13 @@ static constexpr Enumeration<DebugLogMode> DebugLogModeOptions[] PROGMEM {
 namespace keys {
 namespace {
 
-alignas(4) static constexpr char SdkDebug[] PROGMEM = "dbgSDK";
-alignas(4) static constexpr char Mode[] PROGMEM = "dbgLogMode";
-alignas(4) static constexpr char Buffer[] PROGMEM = "dbgLogBuf";
-alignas(4) static constexpr char BufferSize[] PROGMEM = "dbgLogBufSize";
+PROGMEM_STRING(SdkDebug, "dbgSDK");
+PROGMEM_STRING(Mode, "dbgLogMode");
+PROGMEM_STRING(Buffer, "dbgLogBuf");
+PROGMEM_STRING(BufferSize, "dbgLogBufSize");
 
-alignas(4) static constexpr char HeartbeatMode[] PROGMEM = "dbgHbMode";
-alignas(4) static constexpr char HeartbeatInterval[] PROGMEM = "dbgHbIntvl";
+PROGMEM_STRING(HeartbeatMode, "dbgHbMode");
+PROGMEM_STRING(HeartbeatInterval, "dbgHbIntvl");
 
 } // namespace
 } // namespace keys
@@ -660,7 +660,7 @@ void onBoot() {
 #if TERMINAL_SUPPORT
 namespace terminal {
 
-alignas(4) static constexpr char DebugBuffer[] PROGMEM = "DEBUG.BUFFER";
+PROGMEM_STRING(DebugBuffer, "DEBUG.BUFFER");
 
 void debug_buffer(::terminal::CommandContext&& ctx) {
     debug::buffer::disable();

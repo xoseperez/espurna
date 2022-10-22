@@ -279,7 +279,7 @@ bool _idbHeartbeat(espurna::heartbeat::Mask mask) {
 }
 
 #if TERMINAL_SUPPORT
-alignas(4) static constexpr char IdbSend[] PROGMEM = "IDB.SEND";
+PROGMEM_STRING(IdbSend, "IDB.SEND");
 
 static void idbTerminalSend(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() != 4) {

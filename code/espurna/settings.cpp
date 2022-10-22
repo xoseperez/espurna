@@ -300,7 +300,7 @@ void dump(const ::terminal::CommandContext& ctx, const query::IndexedSetting* be
 
 namespace commands {
 
-alignas(4) static constexpr char Config[] PROGMEM = "CONFIG";
+PROGMEM_STRING(Config, "CONFIG");
 
 void config(::terminal::CommandContext&& ctx) {
     DynamicJsonBuffer jsonBuffer(1024);
@@ -310,7 +310,7 @@ void config(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char Keys[] PROGMEM = "KEYS";
+PROGMEM_STRING(Keys, "KEYS");
 
 void keys(::terminal::CommandContext&& ctx) {
     const auto keys = settings::sorted_keys();
@@ -333,7 +333,7 @@ void keys(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char Gc[] PROGMEM = "GC";
+PROGMEM_STRING(Gc, "GC");
 
 void gc(::terminal::CommandContext&& ctx) {
     struct KeyRef {
@@ -379,7 +379,7 @@ void gc(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char Del[] PROGMEM = "DEL";
+PROGMEM_STRING(Del, "DEL");
 
 void del(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() < 2) {
@@ -399,7 +399,7 @@ void del(::terminal::CommandContext&& ctx) {
     }
 }
 
-alignas(4) static constexpr char Set[] PROGMEM = "SET";
+PROGMEM_STRING(Set, "SET");
 
 void set(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() != 3) {
@@ -415,7 +415,7 @@ void set(::terminal::CommandContext&& ctx) {
     terminalError(ctx, F("could not set the key"));
 }
 
-alignas(4) static constexpr char Get[] PROGMEM = "GET";
+PROGMEM_STRING(Get, "GET");
 
 void get(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() < 2) {
@@ -442,14 +442,14 @@ void get(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char Reload[] PROGMEM = "RELOAD";
+PROGMEM_STRING(Reload, "RELOAD");
 
 void reload(::terminal::CommandContext&& ctx) {
     espurnaReload();
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char FactoryReset[] PROGMEM = "FACTORY.RESET";
+PROGMEM_STRING(FactoryReset, "FACTORY.RESET");
 
 void factory_reset(::terminal::CommandContext&& ctx) {
     factoryReset();
@@ -457,7 +457,7 @@ void factory_reset(::terminal::CommandContext&& ctx) {
 }
 
 [[gnu::unused]]
-alignas(4) static constexpr char Save[] PROGMEM = "SAVE";
+PROGMEM_STRING(Save, "SAVE");
 
 [[gnu::unused]]
 void save(::terminal::CommandContext&& ctx) {

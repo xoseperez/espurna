@@ -47,8 +47,8 @@ static constexpr auto FlushInterval = espurna::duration::Milliseconds(THINGSPEAK
 static constexpr size_t Retries { THINGSPEAK_TRIES };
 static constexpr size_t BufferSize { 256 };
 
-alignas(4) static constexpr char ApiKey[] PROGMEM = THINGSPEAK_APIKEY;
-alignas(4) static constexpr char Address[] PROGMEM = THINGSPEAK_ADDRESS;
+PROGMEM_STRING(ApiKey, THINGSPEAK_APIKEY);
+PROGMEM_STRING(Address, THINGSPEAK_ADDRESS);
 
 constexpr bool enabled() {
     return 1 == THINGSPEAK_ENABLED;
@@ -63,18 +63,18 @@ constexpr bool clearCache() {
 namespace settings {
 namespace keys {
 
-alignas(4) static constexpr char Enabled[] PROGMEM = "tspkEnabled";
-alignas(4) static constexpr char ApiKey[] PROGMEM = "tspkKey";
-alignas(4) static constexpr char ClearCache[] PROGMEM = "tspkClear";
-alignas(4) static constexpr char Address[] PROGMEM = "tspkAddress";
+PROGMEM_STRING(Enabled, "tspkEnabled");
+PROGMEM_STRING(ApiKey, "tspkKey");
+PROGMEM_STRING(ClearCache, "tspkClear");
+PROGMEM_STRING(Address, "tspkAddress");
 
-alignas(4) static constexpr char Relay[] PROGMEM = "tspkRelay";
-alignas(4) static constexpr char Magnitude[] PROGMEM = "tspkMagnitude";
+PROGMEM_STRING(Relay, "tspkRelay");
+PROGMEM_STRING(Magnitude, "tspkMagnitude");
 
 #if THINGSPEAK_USE_SSL && (SECURE_CLIENT != SECURE_CLIENT_NONE)
-alignas(4) static constexpr char Check[] PROGMEM = "tspkScCheck";
-alignas(4) static constexpr char Fingerprint[] PROGMEM = "tspkFP";
-alignas(4) static constexpr char Mfln[] PROGMEM = "tspkMfln";
+PROGMEM_STRING(Check, "tspkScCheck");
+PROGMEM_STRING(Fingerprint, "tspkFP");
+PROGMEM_STRING(Mfln, "tspkMfln");
 #endif
 
 } // namespace keys
@@ -222,8 +222,8 @@ namespace {
 static constexpr int Check { THINGSPEAK_SECURE_CLIENT_CHECK };
 static constexpr uint16_t Mfln { THINGSPEAK_SECURE_CLIENT_MFLN };
 
-alignas(4) static constexpr char Tag[] PROGMEM = "THINGSPEAK";
-alignas(4) static constexpr char Fingerprint[] PROGMEM = THINGSPEAK_FINGERPRINT;
+PROGMEM_STRING(Tag, "THINGSPEAK");
+PROGMEM_STRING(Fingerprint, THINGSPEAK_FINGERPRINT);
 
 SecureClientConfig secure_config {
     .tag = Tag,
@@ -471,8 +471,8 @@ private:
             return;
         }
 
-        alignas(4) static constexpr char Status[] PROGMEM = "HTTP/1.1 200 OK";
-        alignas(4) static constexpr char Break[] PROGMEM = "\r\n\r\n";
+        PROGMEM_STRING(Status, "HTTP/1.1 200 OK");
+        PROGMEM_STRING(Break, "\r\n\r\n");
 
         auto begin = reinterpret_cast<const char*>(data);
         auto end = begin + len;
@@ -679,7 +679,7 @@ void loop() {
 namespace web {
 namespace {
 
-alignas(4) static constexpr char Prefix[] PROGMEM = "tspk";
+PROGMEM_STRING(Prefix, "tspk");
 
 bool onKeyCheck(StringView key, const JsonVariant&) {
     return espurna::settings::query::samePrefix(key, Prefix);

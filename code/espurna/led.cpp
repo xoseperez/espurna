@@ -365,11 +365,11 @@ bool Led::toggle() {
 namespace settings {
 namespace keys {
 
-alignas(4) static constexpr char Gpio[] PROGMEM = "ledGpio";
-alignas(4) static constexpr char Inverse[] PROGMEM = "ledInv";
-alignas(4) static constexpr char Mode[] PROGMEM = "ledMode";
-alignas(4) static constexpr char Relay[] PROGMEM = "ledRelay";
-alignas(4) static constexpr char Pattern[] PROGMEM = "ledPattern";
+PROGMEM_STRING(Gpio, "ledGpio");
+PROGMEM_STRING(Inverse, "ledInv");
+PROGMEM_STRING(Mode, "ledMode");
+PROGMEM_STRING(Relay, "ledRelay");
+PROGMEM_STRING(Pattern, "ledPattern");
 
 } // namespace keys
 
@@ -377,20 +377,20 @@ namespace options {
 
 using espurna::settings::options::Enumeration;
 
-alignas(4) static constexpr char Manual[] PROGMEM = "manual";
-alignas(4) static constexpr char WiFi[] PROGMEM = "wifi";
-alignas(4) static constexpr char On[] PROGMEM = "on";
-alignas(4) static constexpr char Off[] PROGMEM = "off";
+PROGMEM_STRING(Manual, "manual");
+PROGMEM_STRING(WiFi, "wifi");
+PROGMEM_STRING(On, "on");
+PROGMEM_STRING(Off, "off");
 
 #if RELAY_SUPPORT
-alignas(4) static constexpr char Relay[] PROGMEM = "relay";
-alignas(4) static constexpr char RelayInverse[] PROGMEM = "relay-inverse";
+PROGMEM_STRING(Relay, "relay");
+PROGMEM_STRING(RelayInverse, "relay-inverse");
 
-alignas(4) static constexpr char FindMe[] PROGMEM = "findme";
-alignas(4) static constexpr char FindMeWiFi[] PROGMEM = "findme-wifi";
+PROGMEM_STRING(FindMe, "findme");
+PROGMEM_STRING(FindMeWiFi, "findme-wifi");
 
-alignas(4) static constexpr char Relays[] PROGMEM = "relays";
-alignas(4) static constexpr char RelaysWiFi[] PROGMEM = "relays-wifi";
+PROGMEM_STRING(Relays, "relays");
+PROGMEM_STRING(RelaysWiFi, "relays-wifi");
 #endif
 
 static constexpr Enumeration<LedMode> LedModeOptions[] PROGMEM {
@@ -991,7 +991,7 @@ void onConnected(JsonObject& root) {
 #if TERMINAL_SUPPORT
 namespace terminal {
 
-alignas(4) static constexpr char Led[] PROGMEM = "LED";
+PROGMEM_STRING(Led, "LED");
 
 void led(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() > 1) {

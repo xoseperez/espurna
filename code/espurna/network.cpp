@@ -103,7 +103,7 @@ void start(String hostname, IpFoundCallback callback) {
 namespace terminal {
 namespace commands {
 
-alignas(4) static constexpr char Host[] PROGMEM = "HOST";
+PROGMEM_STRING(Host, "HOST");
 
 void host(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() != 2) {
@@ -127,7 +127,7 @@ void host(::terminal::CommandContext&& ctx) {
     }
 }
 
-alignas(4) static constexpr char Netstat[] PROGMEM = "NETSTAT";
+PROGMEM_STRING(Netstat, "NETSTAT");
 
 void netstat(::terminal::CommandContext&& ctx) {
     const struct tcp_pcb* pcbs[] {
@@ -149,7 +149,7 @@ void netstat(::terminal::CommandContext&& ctx) {
 }
 
 #if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
-alignas(4) static constexpr char MflnProbe[] PROGMEM = "MFLN.PROBE";
+PROGMEM_STRING(MflnProbe, "MFLN.PROBE");
 
 void mfln_probe(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() != 3) {

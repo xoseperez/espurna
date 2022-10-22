@@ -66,14 +66,14 @@ bool status() {
 #if TERMINAL_SUPPORT
 namespace terminal {
 
-alignas(4) static constexpr char Init[] PROGMEM = "RTCMEM.INIT";
+PROGMEM_STRING(Init, "RTCMEM.INIT");
 
 void init(::terminal::CommandContext&& ctx) {
     rtc::init();
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char Dump[] PROGMEM = "RTCMEM.DUMP";
+PROGMEM_STRING(Dump, "RTCMEM.DUMP");
 
 void dump(::terminal::CommandContext&& ctx) {
     ctx.output.printf_P(PSTR("boot_status=%s status=%s capacity=%u\n"),

@@ -60,8 +60,8 @@ constexpr size_t serialPort() {
 
 namespace commands {
 
-alignas(4) static constexpr char Commands[] PROGMEM = "COMMANDS";
-alignas(4) static constexpr char Help[] PROGMEM = "HELP";
+PROGMEM_STRING(Commands, "COMMANDS");
+PROGMEM_STRING(Help, "HELP");
 
 void help(CommandContext&& ctx) {
     auto names = terminal::names();
@@ -83,14 +83,14 @@ void help(CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char Reset[] PROGMEM = "RESET";
+PROGMEM_STRING(Reset, "RESET");
 
 void reset(CommandContext&& ctx) {
     prepareReset(CustomResetReason::Terminal);
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char EraseConfig[] PROGMEM = "ERASE.CONFIG";
+PROGMEM_STRING(EraseConfig, "ERASE.CONFIG");
 
 void erase_config(CommandContext&& ctx) {
     terminalOK(ctx);
@@ -98,7 +98,7 @@ void erase_config(CommandContext&& ctx) {
     forceEraseSDKConfig();
 }
 
-alignas(4) static constexpr char Heap[] PROGMEM = "HEAP";
+PROGMEM_STRING(Heap, "HEAP");
 
 void heap(CommandContext&& ctx) {
     const auto stats = systemHeapStats();
@@ -108,7 +108,7 @@ void heap(CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char Uptime[] PROGMEM = "UPTIME";
+PROGMEM_STRING(Uptime, "UPTIME");
 
 void uptime(CommandContext&& ctx) {
     ctx.output.printf_P(PSTR("uptime %s\n"),
@@ -116,7 +116,7 @@ void uptime(CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char Info[] PROGMEM = "INFO";
+PROGMEM_STRING(Info, "INFO");
 
 void info(CommandContext&& ctx) {
     const auto app = buildApp();
@@ -276,7 +276,7 @@ StringView flash_chip_mode() {
     return out;
 }
 
-alignas(4) static constexpr char Storage[] PROGMEM = "STORAGE";
+PROGMEM_STRING(Storage, "STORAGE");
 
 void storage(CommandContext&& ctx) {
     ctx.output.printf_P(PSTR("flash chip ID: 0x%06X\n"), ESP.getFlashChipId());
@@ -317,7 +317,7 @@ void storage(CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char Adc[] PROGMEM = "ADC";
+PROGMEM_STRING(Adc, "ADC");
 
 void adc(CommandContext&& ctx) {
     const int pin = (ctx.argv.size() == 2)
@@ -329,21 +329,21 @@ void adc(CommandContext&& ctx) {
 }
 
 #if SYSTEM_CHECK_ENABLED
-alignas(4) static constexpr char Stable[] PROGMEM = "STABLE";
+PROGMEM_STRING(Stable, "STABLE");
 
 void stable(CommandContext&& ctx) {
     systemForceStable();
     prepareReset(CustomResetReason::Stability);
 }
 
-alignas(4) static constexpr char Unstable[] PROGMEM = "UNSTABLE";
+PROGMEM_STRING(Unstable, "UNSTABLE");
 
 void unstable(CommandContext&& ctx) {
     systemForceUnstable();
     prepareReset(CustomResetReason::Stability);
 }
 
-alignas(4) static constexpr char Trap[] PROGMEM = "TRAP";
+PROGMEM_STRING(Trap, "TRAP");
 
 void trap(CommandContext&& ctx) {
     __builtin_trap();
@@ -606,12 +606,12 @@ void onVisible(JsonObject& root) {
 }
 
 void onAction(uint32_t client_id, const char* action, JsonObject& data) {
-    alignas(4) static constexpr char Cmd[] PROGMEM = "cmd";
+    PROGMEM_STRING(Cmd, "cmd");
     if (strncmp_P(action, &Cmd[0], __builtin_strlen(Cmd)) != 0) {
         return;
     }
 
-    alignas(4) static constexpr char Line[] PROGMEM = "line";
+    PROGMEM_STRING(Line, "line");
     if (!data.containsKey(FPSTR(Line)) || !data[FPSTR(Line)].is<String>()) {
         return;
     }

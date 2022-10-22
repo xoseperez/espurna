@@ -57,8 +57,8 @@ namespace settings {
 namespace keys {
 namespace {
 
-alignas(4) static constexpr char Time[] PROGMEM = "relayFloodTime";
-alignas(4) static constexpr char Changes[] PROGMEM = "relayFloodChanges";
+PROGMEM_STRING(Time, "relayFloodTime");
+PROGMEM_STRING(Changes, "relayFloodChanges");
 
 } // namespace
 } // namespace keys
@@ -217,9 +217,9 @@ constexpr RelayMqttTopicMode mqttTopicMode(size_t index) {
     );
 }
 
-alignas(4) static constexpr char PayloadOn[] PROGMEM = RELAY_MQTT_ON;
-alignas(4) static constexpr char PayloadOff[] PROGMEM = RELAY_MQTT_OFF;
-alignas(4) static constexpr char PayloadToggle[] PROGMEM = RELAY_MQTT_TOGGLE;
+PROGMEM_STRING(PayloadOn, RELAY_MQTT_ON);
+PROGMEM_STRING(PayloadOff, RELAY_MQTT_OFF);
+PROGMEM_STRING(PayloadToggle, RELAY_MQTT_TOGGLE);
 
 const StringView mqttTopicSub(size_t index) {
     return (
@@ -328,8 +328,8 @@ namespace settings {
 namespace keys {
 namespace {
 
-alignas(4) static constexpr char Time[] PROGMEM = "relayTime";
-alignas(4) static constexpr char Mode[] PROGMEM = "relayPulse";
+PROGMEM_STRING(Time, "relayTime");
+PROGMEM_STRING(Mode, "relayPulse");
 
 } // namespace
 } // namespace keys
@@ -517,9 +517,9 @@ namespace {
 
 using espurna::settings::options::Enumeration;
 
-alignas(4) static constexpr char TristateNone[] PROGMEM = "none";
-alignas(4) static constexpr char TristateOff[] PROGMEM = "off";
-alignas(4) static constexpr char TristateOn[] PROGMEM = "on";
+PROGMEM_STRING(TristateNone, "none");
+PROGMEM_STRING(TristateOff, "off");
+PROGMEM_STRING(TristateOn, "on");
 
 template <typename T>
 struct RelayTristateHelper {
@@ -541,10 +541,10 @@ struct RelayTristateHelper {
 template <typename T>
 constexpr std::array<Enumeration<T>, 3> RelayTristateHelper<T>::Options;
 
-alignas(4) static constexpr char PayloadStatusOff[] PROGMEM = "off";
-alignas(4) static constexpr char PayloadStatusOn[] PROGMEM = "on";
-alignas(4) static constexpr char PayloadStatusToggle[] PROGMEM = "toggle";
-alignas(4) static constexpr char PayloadStatusUnknown[] PROGMEM = "unknown";
+PROGMEM_STRING(PayloadStatusOff, "off");
+PROGMEM_STRING(PayloadStatusOn, "on");
+PROGMEM_STRING(PayloadStatusToggle, "toggle");
+PROGMEM_STRING(PayloadStatusUnknown, "unknown");
 
 static constexpr std::array<Enumeration<PayloadStatus>, 4> PayloadStatusOptions PROGMEM {
     {{PayloadStatus::Off, PayloadStatusOff},
@@ -553,20 +553,20 @@ static constexpr std::array<Enumeration<PayloadStatus>, 4> PayloadStatusOptions 
      {PayloadStatus::Unknown, PayloadStatusUnknown}}
 };
 
-alignas(4) static constexpr char Normal[] PROGMEM = "normal";
-alignas(4) static constexpr char Inverse[] PROGMEM = "inverse";
+PROGMEM_STRING(Normal, "normal");
+PROGMEM_STRING(Inverse, "inverse");
 
 static constexpr std::array<Enumeration<RelayMqttTopicMode>, 2> RelayMqttTopicModeOptions PROGMEM {
     {{RelayMqttTopicMode::Normal, Normal},
      {RelayMqttTopicMode::Inverse, Inverse}}
 };
 
-alignas(4) static constexpr char RelayBootOff[] PROGMEM = "off";
-alignas(4) static constexpr char RelayBootOn[] PROGMEM = "on";
-alignas(4) static constexpr char RelayBootSame[] PROGMEM = "same";
-alignas(4) static constexpr char RelayBootToggle[] PROGMEM = "toggle";
-alignas(4) static constexpr char RelayBootLockedOff[] PROGMEM = "locked-off";
-alignas(4) static constexpr char RelayBootLockedOn[] PROGMEM = "locked-on";
+PROGMEM_STRING(RelayBootOff, "off");
+PROGMEM_STRING(RelayBootOn, "on");
+PROGMEM_STRING(RelayBootSame, "same");
+PROGMEM_STRING(RelayBootToggle, "toggle");
+PROGMEM_STRING(RelayBootLockedOff, "locked-off");
+PROGMEM_STRING(RelayBootLockedOn, "locked-on");
 
 static constexpr std::array<Enumeration<RelayBoot>, 6> RelayBootOptions PROGMEM {
     {{RelayBoot::Off, RelayBootOff},
@@ -577,11 +577,11 @@ static constexpr std::array<Enumeration<RelayBoot>, 6> RelayBootOptions PROGMEM 
      {RelayBoot::LockedOn, RelayBootLockedOn}}
 };
 
-alignas(4) static constexpr char RelayProviderNone[] PROGMEM = "none";
-alignas(4) static constexpr char RelayProviderDummy[] PROGMEM = "dummy";
-alignas(4) static constexpr char RelayProviderGpio[] PROGMEM = "gpio";
-alignas(4) static constexpr char RelayProviderDual[] PROGMEM = "dual";
-alignas(4) static constexpr char RelayProviderStm[] PROGMEM = "stm";
+PROGMEM_STRING(RelayProviderNone, "none");
+PROGMEM_STRING(RelayProviderDummy, "dummy");
+PROGMEM_STRING(RelayProviderGpio, "gpio");
+PROGMEM_STRING(RelayProviderDual, "dual");
+PROGMEM_STRING(RelayProviderStm, "stm");
 
 static constexpr std::array<Enumeration<RelayProvider>, 5> RelayProviderOptions PROGMEM {
     {{RelayProvider::None, RelayProviderNone},
@@ -591,10 +591,10 @@ static constexpr std::array<Enumeration<RelayProvider>, 5> RelayProviderOptions 
      {RelayProvider::Stm, RelayProviderStm}}
 };
 
-alignas(4) constexpr static char RelayTypeNormal[] PROGMEM = "normal";
-alignas(4) constexpr static char RelayTypeInverse[] PROGMEM = "inverse";
-alignas(4) constexpr static char RelayTypeLatched[] PROGMEM = "latched";
-alignas(4) constexpr static char RelayTypeLatchedInverse[] PROGMEM = "latched-inverse";
+PROGMEM_STRING(RelayTypeNormal, "normal");
+PROGMEM_STRING(RelayTypeInverse, "inverse");
+PROGMEM_STRING(RelayTypeLatched, "latched");
+PROGMEM_STRING(RelayTypeLatchedInverse, "latched-inverse");
 
 static constexpr std::array<Enumeration<RelayType>, 4> RelayTypeOptions PROGMEM {
     {{RelayType::Normal, RelayTypeNormal},
@@ -603,11 +603,11 @@ static constexpr std::array<Enumeration<RelayType>, 4> RelayTypeOptions PROGMEM 
      {RelayType::LatchedInverse, RelayTypeLatchedInverse}}
 };
 
-alignas(4) constexpr static char None[] PROGMEM = "none";
-alignas(4) constexpr static char ZeroOrOne[] PROGMEM = "zero-or-one";
-alignas(4) constexpr static char JustOne[] PROGMEM = "just-one";
-alignas(4) constexpr static char All[] PROGMEM = "all";
-alignas(4) constexpr static char First[] PROGMEM = "first";
+PROGMEM_STRING(None, "none");
+PROGMEM_STRING(ZeroOrOne, "zero-or-one");
+PROGMEM_STRING(JustOne, "just-one");
+PROGMEM_STRING(All, "all");
+PROGMEM_STRING(First, "first");
 
 static constexpr std::array<Enumeration<RelaySync>, 5> RelaySyncOptions PROGMEM {
     {{RelaySync::None, None},
@@ -769,31 +769,31 @@ namespace settings {
 namespace keys {
 namespace {
 
-alignas(4) static constexpr char Name[] PROGMEM = "relayName";
-alignas(4) static constexpr char Provider[] PROGMEM = "relayProv";
-alignas(4) static constexpr char Type[] PROGMEM = "relayType";
-alignas(4) static constexpr char GpioType[] PROGMEM = "relayGpioType";
-alignas(4) static constexpr char Gpio[] PROGMEM = "relayGpio";
-alignas(4) static constexpr char ResetGpio[] PROGMEM = "relayResetGpio";
-alignas(4) static constexpr char Boot[] PROGMEM = "relayBoot";
-alignas(4) static constexpr char DelayOn[] PROGMEM = "relayDelayOn";
-alignas(4) static constexpr char DelayOff[] PROGMEM = "relayDelayOff";
+PROGMEM_STRING(Name, "relayName");
+PROGMEM_STRING(Provider, "relayProv");
+PROGMEM_STRING(Type, "relayType");
+PROGMEM_STRING(GpioType, "relayGpioType");
+PROGMEM_STRING(Gpio, "relayGpio");
+PROGMEM_STRING(ResetGpio, "relayResetGpio");
+PROGMEM_STRING(Boot, "relayBoot");
+PROGMEM_STRING(DelayOn, "relayDelayOn");
+PROGMEM_STRING(DelayOff, "relayDelayOff");
 
 #if MQTT_SUPPORT
-alignas(4) static constexpr char TopicPub[] PROGMEM = "relayTopicPub";
-alignas(4) static constexpr char TopicSub[] PROGMEM = "relayTopicSub";
-alignas(4) static constexpr char TopicMode[] PROGMEM = "relayTopicMode";
-alignas(4) static constexpr char MqttDisconnection[] PROGMEM = "relayMqttDisc";
+PROGMEM_STRING(TopicPub, "relayTopicPub");
+PROGMEM_STRING(TopicSub, "relayTopicSub");
+PROGMEM_STRING(TopicMode, "relayTopicMode");
+PROGMEM_STRING(MqttDisconnection, "relayMqttDisc");
 #endif
 
-alignas(4) static constexpr char Dummy[] PROGMEM = "relayDummy";
-alignas(4) static constexpr char BootMask[] PROGMEM = "relayBootMask";
-alignas(4) static constexpr char Interlock[] PROGMEM = "relayIlkDelay";
-alignas(4) static constexpr char Sync[] PROGMEM = "relaySync";
+PROGMEM_STRING(Dummy, "relayDummy");
+PROGMEM_STRING(BootMask, "relayBootMask");
+PROGMEM_STRING(Interlock, "relayIlkDelay");
+PROGMEM_STRING(Sync, "relaySync");
 
-alignas(4) static constexpr char PayloadOn[] PROGMEM = "relayPayloadOn";
-alignas(4) static constexpr char PayloadOff[] PROGMEM = "relayPayloadOff";
-alignas(4) static constexpr char PayloadToggle[] PROGMEM = "relayPayloadOff";
+PROGMEM_STRING(PayloadOn, "relayPayloadOn");
+PROGMEM_STRING(PayloadOff, "relayPayloadOff");
+PROGMEM_STRING(PayloadToggle, "relayPayloadOff");
 
 } // namespace
 } // namespace keys
@@ -2561,7 +2561,7 @@ void _relayPrint(Print& out, size_t start, size_t stop) {
     }
 }
 
-alignas(4) static constexpr char RelayCommand[] PROGMEM = "RELAY";
+PROGMEM_STRING(RelayCommand, "RELAY");
 
 static void _relayCommand(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() == 1) {
@@ -2595,7 +2595,7 @@ static void _relayCommand(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char PulseCommand[] PROGMEM = "PULSE";
+PROGMEM_STRING(PulseCommand, "PULSE");
 
 static void _relayCommandPulse(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() < 3) {
@@ -2860,7 +2860,7 @@ namespace query {
 namespace {
 
 bool checkSamePrefix(StringView key) {
-    alignas(4) static constexpr char Prefix[] PROGMEM = "relay";
+    PROGMEM_STRING(Prefix, "relay");
     return espurna::settings::query::samePrefix(key, Prefix);
 }
 

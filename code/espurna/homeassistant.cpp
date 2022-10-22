@@ -32,7 +32,7 @@ namespace {
 
 namespace build {
 
-alignas(4) static constexpr char Prefix[] PROGMEM = HOMEASSISTANT_PREFIX;
+PROGMEM_STRING(Prefix, HOMEASSISTANT_PREFIX);
 
 constexpr StringView prefix() {
     return Prefix;
@@ -51,9 +51,9 @@ constexpr bool retain() {
 namespace settings {
 namespace keys {
 
-alignas(4) static constexpr char Prefix[] PROGMEM = "haPrefix";
-alignas(4) static constexpr char Enabled[] PROGMEM = "haEnabled";
-alignas(4) static constexpr char Retain[] PROGMEM = "haRetain";
+PROGMEM_STRING(Prefix, "haPrefix");
+PROGMEM_STRING(Enabled, "haEnabled");
+PROGMEM_STRING(Retain, "haRetain");
 
 } // namespace keys
 
@@ -1061,7 +1061,7 @@ namespace web {
 
 #if WEB_SUPPORT
 
-alignas(4) static constexpr char Prefix[] PROGMEM = "ha";
+PROGMEM_STRING(Prefix, "ha");
 
 void onVisible(JsonObject& root) {
     wsPayloadModule(root, Prefix);
@@ -1084,7 +1084,7 @@ bool onKeyCheck(StringView key, const JsonVariant& value) {
 #if TERMINAL_SUPPORT
 namespace terminal {
 
-alignas(4) static constexpr char Send[] PROGMEM = "HA.SEND";
+PROGMEM_STRING(Send, "HA.SEND");
 
 void send(::terminal::CommandContext&& ctx) {
     internal::state = internal::State::Pending;

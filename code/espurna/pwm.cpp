@@ -48,9 +48,9 @@ constexpr float limit() {
 namespace settings {
 namespace keys {
 
-alignas(4) static constexpr char Frequency[] PROGMEM = "pwmFreq";
-alignas(4) static constexpr char Resolution[] PROGMEM = "pwmRes";
-alignas(4) static constexpr char Limit[] PROGMEM = "pwmLimit";
+PROGMEM_STRING(Frequency, "pwmFreq");
+PROGMEM_STRING(Resolution, "pwmRes");
+PROGMEM_STRING(Limit, "pwmLimit");
 
 } // namespace keys
 
@@ -437,7 +437,7 @@ using namespace generic;
 #if TERMINAL_SUPPORT
 namespace terminal {
 
-alignas(4) static constexpr char PwmWrite[] PROGMEM = "PWM.WRITE";
+PROGMEM_STRING(PwmWrite, "PWM.WRITE");
 
 void pwm_write(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() == 3) {

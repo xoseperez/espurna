@@ -69,8 +69,8 @@ Sdk get() {
 namespace hardware {
 namespace internal {
 
-alignas(4) static constexpr char Manufacturer[] PROGMEM = MANUFACTURER;
-alignas(4) static constexpr char Device[] PROGMEM = DEVICE;
+PROGMEM_STRING(Manufacturer, MANUFACTURER);
+PROGMEM_STRING(Device, DEVICE);
 
 } // namespace internal
 
@@ -94,7 +94,7 @@ constexpr Hardware get() {
 namespace app {
 namespace internal {
 
-alignas(4) static constexpr char Modules[] PROGMEM =
+alignas(4) static constexpr char Modules[] PROGMEM_STRING_ATTR =
 #if ALEXA_SUPPORT
     "ALEXA "
 #endif
@@ -240,13 +240,13 @@ alignas(4) static constexpr char Modules[] PROGMEM =
 #endif
     "";
 
-alignas(4) static constexpr char Name[] PROGMEM = APP_NAME;
-alignas(4) static constexpr char Version[] PROGMEM = APP_VERSION;
-alignas(4) static constexpr char Author[] PROGMEM = APP_AUTHOR;
-alignas(4) static constexpr char Website[] PROGMEM = APP_WEBSITE;
+PROGMEM_STRING(Name, APP_NAME);
+PROGMEM_STRING(Version, APP_VERSION);
+PROGMEM_STRING(Author, APP_AUTHOR);
+PROGMEM_STRING(Website, APP_WEBSITE);
 
-alignas(4) static constexpr char BuildDate[] PROGMEM = __DATE__;
-alignas(4) static constexpr char BuildTime[] PROGMEM = __TIME__;
+PROGMEM_STRING(BuildDate, __DATE__);
+PROGMEM_STRING(BuildTime, __TIME__);
 
 } // namespace internal
 

@@ -604,7 +604,7 @@ error:
 #endif
 
 #if TERMINAL_SUPPORT
-    alignas(4) static constexpr char TuyaShow[] PROGMEM = "TUYA.SHOW";
+    PROGMEM_STRING(TuyaShow, "TUYA.SHOW");
 
     static void terminalShow(::terminal::CommandContext&& ctx) {
         ctx.output.printf_P(PSTR("Product: %s\n"), product.length() ? product.c_str() : "(unknown)");
@@ -636,7 +636,7 @@ error:
         }
     }
 
-    alignas(4) static constexpr char TuyaSave[] PROGMEM = "TUYA.SAVE";
+    PROGMEM_STRING(TuyaSave, "TUYA.SAVE");
 
     static void terminalSave(::terminal::CommandContext&& ctx) {
         for (auto& kv : config) {

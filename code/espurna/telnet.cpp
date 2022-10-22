@@ -75,11 +75,11 @@ constexpr bool authentication() {
 namespace settings {
 namespace keys {
 
-alignas(4) static constexpr char Prefix[] PROGMEM = "telnet";
+PROGMEM_STRING(Prefix, "telnet");
 
-alignas(4) static constexpr char Station[] PROGMEM = "telnetSTA";
-alignas(4) static constexpr char Authentication[] PROGMEM = "telnetAuth";
-alignas(4) static constexpr char Port[] PROGMEM = "telnetPort";
+PROGMEM_STRING(Station, "telnetSTA");
+PROGMEM_STRING(Authentication, "telnetAuth");
+PROGMEM_STRING(Port, "telnetPort");
 
 } // namespace keys
 
@@ -268,9 +268,9 @@ private:
 
 namespace message {
 
-alignas(4) static constexpr char PasswordRequest[] = "Password (disconnects after 1 failed attempt): ";
-alignas(4) static constexpr char InvalidPassword[] = "-ERROR: Invalid password\n";
-alignas(4) static constexpr char OkPassword[] = "+OK\n";
+PROGMEM_STRING(PasswordRequest, "Password (disconnects after 1 failed attempt): ");
+PROGMEM_STRING(InvalidPassword, "-ERROR: Invalid password\n");
+PROGMEM_STRING(OkPassword, "+OK\n");
 
 } // namespace message
 
@@ -864,7 +864,7 @@ bool connect(Address address) {
 namespace terminal {
 namespace commands {
 
-alignas(4) static constexpr char Reverse[] PROGMEM = "TELNET.REVERSE";
+PROGMEM_STRING(Reverse, "TELNET.REVERSE");
 
 void reverse(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() != 3) {

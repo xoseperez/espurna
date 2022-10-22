@@ -314,7 +314,7 @@ void init() {
 #if TERMINAL_SUPPORT
 namespace terminal {
 
-alignas(4) static constexpr char Locked[] PROGMEM = "I2C.LOCKED";
+PROGMEM_STRING(Locked, "I2C.LOCKED");
 
 void locked(::terminal::CommandContext&& ctx) {
     for (size_t address = 0; address < lock::storage.size(); ++address) {
@@ -326,7 +326,7 @@ void locked(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char Scan[] PROGMEM = "I2C.SCAN";
+PROGMEM_STRING(Scan, "I2C.SCAN");
 
 void scan(::terminal::CommandContext&& ctx) {
     size_t devices { 0 };
@@ -344,7 +344,7 @@ void scan(::terminal::CommandContext&& ctx) {
     terminalError(ctx, F("no devices found"));
 }
 
-alignas(4) static constexpr char Clear[] PROGMEM = "I2C.CLEAR";
+PROGMEM_STRING(Clear, "I2C.CLEAR");
 
 void clear(::terminal::CommandContext&& ctx) {
     ctx.output.printf_P(PSTR("result %d\n"), i2c::clear());

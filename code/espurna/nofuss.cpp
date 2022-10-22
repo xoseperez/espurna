@@ -98,7 +98,7 @@ void _nofussLoop() {
 }
 
 #if TERMINAL_SUPPORT
-alignas(4) static constexpr char NofussCommand[] PROGMEM = "NOFUSS";
+PROGMEM_STRING(NofussCommand, "NOFUSS");
 
 static void _nofussCommand(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);

@@ -589,8 +589,8 @@ namespace internal {
 
 template <>
 my92xx_model_t convert(const String& value) {
-    alignas(4) static constexpr char MY9291[] PROGMEM = "9291";
-    alignas(4) static constexpr char MY9231[] PROGMEM = "9231";
+    PROGMEM_STRING(MY9291, "9291");
+    PROGMEM_STRING(MY9231, "9231");
 
     using Options = std::array<espurna::settings::options::Enumeration<my92xx_model_t>, 2>;
     static constexpr Options options {
@@ -2642,7 +2642,7 @@ void _lightNotificationInit(size_t channel) {
     lightState(true);
 }
 
-alignas(4) static constexpr char LightCommandNotify[] PROGMEM = "NOTIFY";
+PROGMEM_STRING(LightCommandNotify, "NOTIFY");
 
 static void _lightCommandNotify(::terminal::CommandContext&& ctx) {
     static constexpr auto NotifyTransition = LightTransition{
@@ -2711,7 +2711,7 @@ static void _lightCommandNotify(::terminal::CommandContext&& ctx) {
     lightSequence(std::move(callbacks));
 }
 
-alignas(4) static constexpr char LightCommand[] PROGMEM = "LIGHT";
+PROGMEM_STRING(LightCommand, "LIGHT");
 
 static void _lightCommand(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() > 1) {
@@ -2727,7 +2727,7 @@ static void _lightCommand(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char LightCommandBrightness[] PROGMEM = "BRIGHTNESS";
+PROGMEM_STRING(LightCommandBrightness, "BRIGHTNESS");
 
 static void _lightCommandBrightness(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() > 1) {
@@ -2738,7 +2738,7 @@ static void _lightCommandBrightness(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char LightCommandChannel[] PROGMEM = "CHANNEL";
+PROGMEM_STRING(LightCommandChannel, "CHANNEL");
 
 static void _lightCommandChannel(::terminal::CommandContext&& ctx) {
     const size_t Channels { _light_channels.size() };
@@ -2776,7 +2776,7 @@ static void _lightCommandChannel(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char LightCommandRgb[] PROGMEM = "RGB";
+PROGMEM_STRING(LightCommandRgb, "RGB");
 
 static void _lightCommandColors(const ::terminal::CommandContext& ctx) {
     const auto rgb = _lightToTargetRgb();
@@ -2797,7 +2797,7 @@ static void _lightCommandRgb(::terminal::CommandContext&& ctx) {
     _lightCommandColors(ctx);
 }
 
-alignas(4) static constexpr char LightCommandHsv[] PROGMEM = "HSV";
+PROGMEM_STRING(LightCommandHsv, "HSV");
 
 static void _lightCommandHsv(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() > 1) {
@@ -2808,7 +2808,7 @@ static void _lightCommandHsv(::terminal::CommandContext&& ctx) {
     _lightCommandColors(ctx);
 }
 
-alignas(4) static constexpr char LightCommandKelvin[] PROGMEM = "KELVIN";
+PROGMEM_STRING(LightCommandKelvin, "KELVIN");
 
 static void _lightCommandKelvin(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() > 1) {
@@ -2821,7 +2821,7 @@ static void _lightCommandKelvin(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char LightCommandMired[] PROGMEM = "MIRED";
+PROGMEM_STRING(LightCommandMired, "MIRED");
 
 static void _lightCommandMired(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() > 1) {

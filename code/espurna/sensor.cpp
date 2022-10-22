@@ -891,11 +891,11 @@ namespace settings {
 namespace filters {
 namespace {
 
-alignas(4) static constexpr char Last[] PROGMEM = "last";
-alignas(4) static constexpr char Max[] PROGMEM = "max";
-alignas(4) static constexpr char Median[] PROGMEM = "median";
-alignas(4) static constexpr char MovingAverage[] PROGMEM = "moving-average";
-alignas(4) static constexpr char Sum[] PROGMEM = "sum";
+PROGMEM_STRING(Last, "last");
+PROGMEM_STRING(Max, "max");
+PROGMEM_STRING(Median, "median");
+PROGMEM_STRING(MovingAverage, "moving-average");
+PROGMEM_STRING(Sum, "sum");
 
 static constexpr espurna::settings::options::Enumeration<Filter> Options[] PROGMEM {
     {Filter::Last, Last},
@@ -911,33 +911,33 @@ static constexpr espurna::settings::options::Enumeration<Filter> Options[] PROGM
 namespace units {
 namespace {
 
-alignas(4) static constexpr char Farenheit[] PROGMEM = "°F";
-alignas(4) static constexpr char Celcius[] PROGMEM = "°C";
-alignas(4) static constexpr char Kelvin[] PROGMEM = "K";
-alignas(4) static constexpr char Percentage[] PROGMEM = "%";
-alignas(4) static constexpr char Hectopascal[] PROGMEM = "hPa";
-alignas(4) static constexpr char Ampere[] PROGMEM = "A";
-alignas(4) static constexpr char Volt[] PROGMEM = "V";
-alignas(4) static constexpr char Watt[] PROGMEM = "W";
-alignas(4) static constexpr char Kilowatt[] PROGMEM = "kW";
-alignas(4) static constexpr char Voltampere[] PROGMEM = "VA";
-alignas(4) static constexpr char Kilovoltampere[] PROGMEM = "kVA";
-alignas(4) static constexpr char VoltampereReactive[] PROGMEM = "VAR";
-alignas(4) static constexpr char KilovoltampereReactive[] PROGMEM = "kVAR";
-alignas(4) static constexpr char Joule[] PROGMEM = "J";
-alignas(4) static constexpr char KilowattHour[] PROGMEM = "kWh";
-alignas(4) static constexpr char MicrogrammPerCubicMeter[] PROGMEM = "µg/m³";
-alignas(4) static constexpr char PartsPerMillion[] PROGMEM = "ppm";
-alignas(4) static constexpr char Lux[] PROGMEM = "lux";
-alignas(4) static constexpr char UltravioletIndex[] PROGMEM = "UVindex";
-alignas(4) static constexpr char Ohm[] PROGMEM = "ohm";
-alignas(4) static constexpr char MilligrammPerCubicMeter[] PROGMEM = "mg/m³";
-alignas(4) static constexpr char CountsPerMinute[] PROGMEM = "cpm";
-alignas(4) static constexpr char MicrosievertPerHour[] PROGMEM = "µSv/h";
-alignas(4) static constexpr char Meter[] PROGMEM = "m";
-alignas(4) static constexpr char Hertz[] PROGMEM = "Hz";
-alignas(4) static constexpr char Ph[] PROGMEM = "pH";
-alignas(4) static constexpr char None[] PROGMEM = "none";
+PROGMEM_STRING(Farenheit, "°F");
+PROGMEM_STRING(Celcius, "°C");
+PROGMEM_STRING(Kelvin, "K");
+PROGMEM_STRING(Percentage, "%");
+PROGMEM_STRING(Hectopascal, "hPa");
+PROGMEM_STRING(Ampere, "A");
+PROGMEM_STRING(Volt, "V");
+PROGMEM_STRING(Watt, "W");
+PROGMEM_STRING(Kilowatt, "kW");
+PROGMEM_STRING(Voltampere, "VA");
+PROGMEM_STRING(Kilovoltampere, "kVA");
+PROGMEM_STRING(VoltampereReactive, "VAR");
+PROGMEM_STRING(KilovoltampereReactive, "kVAR");
+PROGMEM_STRING(Joule, "J");
+PROGMEM_STRING(KilowattHour, "kWh");
+PROGMEM_STRING(MicrogrammPerCubicMeter, "µg/m³");
+PROGMEM_STRING(PartsPerMillion, "ppm");
+PROGMEM_STRING(Lux, "lux");
+PROGMEM_STRING(UltravioletIndex, "UVindex");
+PROGMEM_STRING(Ohm, "ohm");
+PROGMEM_STRING(MilligrammPerCubicMeter, "mg/m³");
+PROGMEM_STRING(CountsPerMinute, "cpm");
+PROGMEM_STRING(MicrosievertPerHour, "µSv/h");
+PROGMEM_STRING(Meter, "m");
+PROGMEM_STRING(Hertz, "Hz");
+PROGMEM_STRING(Ph, "pH");
+PROGMEM_STRING(None, "none");
 
 static constexpr espurna::settings::options::Enumeration<Unit> Options[] PROGMEM {
     {Unit::Farenheit, Farenheit},
@@ -976,49 +976,49 @@ static constexpr espurna::settings::options::Enumeration<Unit> Options[] PROGMEM
 namespace prefix {
 namespace {
 
-alignas(4) static constexpr char Sensor[] PROGMEM = "sns";
-alignas(4) static constexpr char Power[] PROGMEM = "pwr";
+PROGMEM_STRING(Sensor, "sns");
+PROGMEM_STRING(Power, "pwr");
 
-alignas(4) static constexpr char Temperature[] PROGMEM = "tmp";
-alignas(4) static constexpr char Humidity[] PROGMEM = "hum";
-alignas(4) static constexpr char Pressure[] PROGMEM = "press";
-alignas(4) static constexpr char Current[] PROGMEM = "curr";
-alignas(4) static constexpr char Voltage[] PROGMEM = "volt";
-alignas(4) static constexpr char PowerActive[] PROGMEM = "pwrP";
-alignas(4) static constexpr char PowerApparent[] PROGMEM = "pwrQ";
-alignas(4) static constexpr char PowerReactive[] PROGMEM = "pwrModS";
-alignas(4) static constexpr char PowerFactor[] PROGMEM = "pwrPF";
-alignas(4) static constexpr char Energy[] PROGMEM = "ene";
-alignas(4) static constexpr char EnergyDelta[] PROGMEM = "eneDelta";
-alignas(4) static constexpr char Analog[] PROGMEM = "analog";
-alignas(4) static constexpr char Digital[] PROGMEM = "digital";
-alignas(4) static constexpr char Event[] PROGMEM = "event";
-alignas(4) static constexpr char Pm1Dot0[] PROGMEM = "pm1dot0";
-alignas(4) static constexpr char Pm2Dot5[] PROGMEM = "pm2dot5";
-alignas(4) static constexpr char Pm10[] PROGMEM = "pm10";
-alignas(4) static constexpr char Co2[] PROGMEM = "co2";
-alignas(4) static constexpr char Voc[] PROGMEM = "voc";
-alignas(4) static constexpr char Iaq[] PROGMEM = "iaq";
-alignas(4) static constexpr char IaqAccuracy[] PROGMEM = "iaqAccuracy";
-alignas(4) static constexpr char IaqStatic[] PROGMEM = "iaqStatic";
-alignas(4) static constexpr char Lux[] PROGMEM = "lux";
-alignas(4) static constexpr char Uva[] PROGMEM = "uva";
-alignas(4) static constexpr char Uvb[] PROGMEM = "uvb";
-alignas(4) static constexpr char Uvi[] PROGMEM = "uvi";
-alignas(4) static constexpr char Distance[] PROGMEM = "distance";
-alignas(4) static constexpr char Hcho[] PROGMEM = "hcho";
-alignas(4) static constexpr char GeigerCpm[] PROGMEM = "gcpm";
-alignas(4) static constexpr char GeigerSievert[] PROGMEM = "gsiev";
-alignas(4) static constexpr char Count[] PROGMEM = "count";
-alignas(4) static constexpr char No2[] PROGMEM = "no2";
-alignas(4) static constexpr char Co[] PROGMEM = "co";
-alignas(4) static constexpr char Resistance[] PROGMEM = "res";
-alignas(4) static constexpr char Ph[] PROGMEM = "ph";
-alignas(4) static constexpr char Frequency[] PROGMEM = "freq";
-alignas(4) static constexpr char Tvoc[] PROGMEM = "tvoc";
-alignas(4) static constexpr char Ch2o[] PROGMEM = "ch2o";
+PROGMEM_STRING(Temperature, "tmp");
+PROGMEM_STRING(Humidity, "hum");
+PROGMEM_STRING(Pressure, "press");
+PROGMEM_STRING(Current, "curr");
+PROGMEM_STRING(Voltage, "volt");
+PROGMEM_STRING(PowerActive, "pwrP");
+PROGMEM_STRING(PowerApparent, "pwrQ");
+PROGMEM_STRING(PowerReactive, "pwrModS");
+PROGMEM_STRING(PowerFactor, "pwrPF");
+PROGMEM_STRING(Energy, "ene");
+PROGMEM_STRING(EnergyDelta, "eneDelta");
+PROGMEM_STRING(Analog, "analog");
+PROGMEM_STRING(Digital, "digital");
+PROGMEM_STRING(Event, "event");
+PROGMEM_STRING(Pm1Dot0, "pm1dot0");
+PROGMEM_STRING(Pm2Dot5, "pm2dot5");
+PROGMEM_STRING(Pm10, "pm10");
+PROGMEM_STRING(Co2, "co2");
+PROGMEM_STRING(Voc, "voc");
+PROGMEM_STRING(Iaq, "iaq");
+PROGMEM_STRING(IaqAccuracy, "iaqAccuracy");
+PROGMEM_STRING(IaqStatic, "iaqStatic");
+PROGMEM_STRING(Lux, "lux");
+PROGMEM_STRING(Uva, "uva");
+PROGMEM_STRING(Uvb, "uvb");
+PROGMEM_STRING(Uvi, "uvi");
+PROGMEM_STRING(Distance, "distance");
+PROGMEM_STRING(Hcho, "hcho");
+PROGMEM_STRING(GeigerCpm, "gcpm");
+PROGMEM_STRING(GeigerSievert, "gsiev");
+PROGMEM_STRING(Count, "count");
+PROGMEM_STRING(No2, "no2");
+PROGMEM_STRING(Co, "co");
+PROGMEM_STRING(Resistance, "res");
+PROGMEM_STRING(Ph, "ph");
+PROGMEM_STRING(Frequency, "freq");
+PROGMEM_STRING(Tvoc, "tvoc");
+PROGMEM_STRING(Ch2o, "ch2o");
 
-alignas(4) static constexpr char Unknown[] PROGMEM = "unknown";
+PROGMEM_STRING(Unknown, "unknown");
 
 constexpr StringView get(unsigned char type) {
     return (type == MAGNITUDE_TEMPERATURE) ? Temperature :
@@ -1068,19 +1068,19 @@ constexpr StringView get(unsigned char type) {
 namespace suffix {
 namespace {
 
-alignas(4) static constexpr char Units[] PROGMEM = "Units";
-alignas(4) static constexpr char Ratio[] PROGMEM = "Ratio";
-alignas(4) static constexpr char Correction[] PROGMEM = "Correction";
-alignas(4) static constexpr char ZeroThreshold[] PROGMEM = "ZeroThreshold";
-alignas(4) static constexpr char MinDelta[] PROGMEM = "MinDelta";
-alignas(4) static constexpr char MaxDelta[] PROGMEM = "MaxDelta";
+PROGMEM_STRING(Units, "Units");
+PROGMEM_STRING(Ratio, "Ratio");
+PROGMEM_STRING(Correction, "Correction");
+PROGMEM_STRING(ZeroThreshold, "ZeroThreshold");
+PROGMEM_STRING(MinDelta, "MinDelta");
+PROGMEM_STRING(MaxDelta, "MaxDelta");
 
-alignas(4) static constexpr char Mains[] PROGMEM = "Mains";
-alignas(4) static constexpr char Reference[] PROGMEM = "Reference";
+PROGMEM_STRING(Mains, "Mains");
+PROGMEM_STRING(Reference, "Reference");
 
-alignas(4) static constexpr char Total[] PROGMEM = "Total";
+PROGMEM_STRING(Total, "Total");
 
-alignas(4) static constexpr char Filter[] PROGMEM = "Filter";
+PROGMEM_STRING(Filter, "Filter");
 
 } // namespace
 } // namespace suffix
@@ -1088,11 +1088,11 @@ alignas(4) static constexpr char Filter[] PROGMEM = "Filter";
 namespace keys {
 namespace {
 
-alignas(4) static constexpr char ReadInterval[] PROGMEM = "snsRead";
-alignas(4) static constexpr char InitInterval[] PROGMEM = "snsInit";
-alignas(4) static constexpr char ReportEvery[] PROGMEM = "snsReport";
-alignas(4) static constexpr char SaveEvery[] PROGMEM = "snsSave";
-alignas(4) static constexpr char RealTimeValues[] PROGMEM = "snsRealTime";
+PROGMEM_STRING(ReadInterval, "snsRead");
+PROGMEM_STRING(InitInterval, "snsInit");
+PROGMEM_STRING(ReportEvery, "snsReport");
+PROGMEM_STRING(SaveEvery, "snsSave");
+PROGMEM_STRING(RealTimeValues, "snsRealTime");
 
 espurna::settings::Key get(espurna::StringView prefix, espurna::StringView suffix, size_t index) {
     String key;
@@ -1138,7 +1138,7 @@ bool realTimeValues() {
 } // namespace
 } // namespace settings
 
-alignas(4) static constexpr char List[] PROGMEM =
+alignas(4) static constexpr char List[] PROGMEM_STRING_ATTR =
 #if ADE7953_SUPPORT
     "ADE7953 "
 #endif
@@ -3664,7 +3664,7 @@ namespace {
 
 namespace commands {
 
-alignas(4) static constexpr char Magnitudes[] PROGMEM = "MAGNITUDES";
+PROGMEM_STRING(Magnitudes, "MAGNITUDES");
 
 void magnitudes(::terminal::CommandContext&& ctx) {
     if (!magnitude::count()) {
@@ -3685,7 +3685,7 @@ void magnitudes(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char Expected[] PROGMEM = "EXPECTED";
+PROGMEM_STRING(Expected, "EXPECTED");
 
 void expected(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() == 3) {
@@ -3709,14 +3709,14 @@ void expected(::terminal::CommandContext&& ctx) {
     terminalError(ctx, F("EXPECTED <ID> <VALUE>"));
 }
 
-alignas(4) static constexpr char ResetRatios[] PROGMEM = "RESET.RATIOS";
+PROGMEM_STRING(ResetRatios, "RESET.RATIOS");
 
 void reset_ratios(::terminal::CommandContext&& ctx) {
     energy::reset();
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char Energy[] PROGMEM = "ENERGY";
+PROGMEM_STRING(Energy, "ENERGY");
 
 void energy(::terminal::CommandContext&& ctx) {
     using IndexType = decltype(Magnitude::index_global);

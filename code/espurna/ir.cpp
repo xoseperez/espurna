@@ -1567,7 +1567,7 @@ void process(rx::DecodeResult& result) {
     }
 }
 
-alignas(4) static constexpr char IrSend[] PROGMEM = "IR.SEND";
+PROGMEM_STRING(IrSend, "IR.SEND");
 
 void send(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() == 2) {

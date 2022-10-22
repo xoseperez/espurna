@@ -487,7 +487,7 @@ void report(Print& out) {
 
 namespace commands {
 
-alignas(4) static constexpr char Ntp[] PROGMEM = "NTP";
+PROGMEM_STRING(Ntp, "NTP");
 
 void ntp(::terminal::CommandContext&& ctx) {
     if (synced()) {
@@ -499,7 +499,7 @@ void ntp(::terminal::CommandContext&& ctx) {
     terminalError(ctx, F("NTP not synced"));
 }
 
-alignas(4) static constexpr char Sync[] PROGMEM = "NTP.SYNC";
+PROGMEM_STRING(Sync, "NTP.SYNC");
 
 void sync(::terminal::CommandContext&& ctx) {
     if (synced()) {
@@ -512,7 +512,7 @@ void sync(::terminal::CommandContext&& ctx) {
     terminalError(ctx, F("NTP waiting for initial sync"));
 }
 
-alignas(4) static constexpr char Set[] PROGMEM = "NTP.SET";
+PROGMEM_STRING(Set, "NTP.SET");
 
 [[gnu::unused]]
 void set_simple(::terminal::CommandContext&& ctx) {

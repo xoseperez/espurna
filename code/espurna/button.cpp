@@ -35,32 +35,32 @@ namespace settings {
 namespace keys {
 namespace {
 
-alignas(4) static constexpr char Gpio[] PROGMEM = "btnGpio";
-alignas(4) static constexpr char GpioType[] PROGMEM = "btnGpioType";
-alignas(4) static constexpr char Provider[] PROGMEM = "btnProv";
-alignas(4) static constexpr char Mode[] PROGMEM = "btnMode";
-alignas(4) static constexpr char DefaultValue[] PROGMEM = "btnDefVal";
-alignas(4) static constexpr char PinMode[] PROGMEM = "btnPinMode";
+PROGMEM_STRING(Gpio, "btnGpio");
+PROGMEM_STRING(GpioType, "btnGpioType");
+PROGMEM_STRING(Provider, "btnProv");
+PROGMEM_STRING(Mode, "btnMode");
+PROGMEM_STRING(DefaultValue, "btnDefVal");
+PROGMEM_STRING(PinMode, "btnPinMode");
 
-alignas(4) static constexpr char Release[] PROGMEM = "btnRlse";
-alignas(4) static constexpr char Press[] PROGMEM = "btnPress";
-alignas(4) static constexpr char Click[] PROGMEM = "btnClick";
-alignas(4) static constexpr char DoubleClick[] PROGMEM = "btnDclk";
-alignas(4) static constexpr char TripleClick[] PROGMEM = "btnTclk";
-alignas(4) static constexpr char LongClick[] PROGMEM = "btnLclk";
-alignas(4) static constexpr char LongLongClick[] PROGMEM = "btnLLclk";
+PROGMEM_STRING(Release, "btnRlse");
+PROGMEM_STRING(Press, "btnPress");
+PROGMEM_STRING(Click, "btnClick");
+PROGMEM_STRING(DoubleClick, "btnDclk");
+PROGMEM_STRING(TripleClick, "btnTclk");
+PROGMEM_STRING(LongClick, "btnLclk");
+PROGMEM_STRING(LongLongClick, "btnLLclk");
 
-alignas(4) static constexpr char DebounceDelay[] PROGMEM = "btnDebDel";
-alignas(4) static constexpr char LongClickDelay[] PROGMEM = "btnLclkDel";
-alignas(4) static constexpr char LongLongClickDelay[] PROGMEM = "btnLLclkDel";
-alignas(4) static constexpr char RepeatDelay[] PROGMEM = "btnRepDel";
+PROGMEM_STRING(DebounceDelay, "btnDebDel");
+PROGMEM_STRING(LongClickDelay, "btnLclkDel");
+PROGMEM_STRING(LongLongClickDelay, "btnLLclkDel");
+PROGMEM_STRING(RepeatDelay, "btnRepDel");
 
-alignas(4) static constexpr char Relay[] PROGMEM = "btnRelay";
+PROGMEM_STRING(Relay, "btnRelay");
 
-alignas(4) static constexpr char MqttSendAll[] PROGMEM = "btnMqttSendAll";
-alignas(4) static constexpr char MqttRetain[] PROGMEM = "btnMqttRetain";
+PROGMEM_STRING(MqttSendAll, "btnMqttSendAll");
+PROGMEM_STRING(MqttRetain, "btnMqttRetain");
 
-[[gnu::unused]] alignas(4) static constexpr char AnalogLevel[] PROGMEM = "btnLevel";
+[[gnu::unused]] PROGMEM_STRING(AnalogLevel, "btnLevel");
 
 } // namespace
 } // namespace keys
@@ -70,17 +70,17 @@ namespace {
 
 using espurna::settings::options::Enumeration;
 
-alignas(4) static constexpr char Switch[] PROGMEM = "switch";
-alignas(4) static constexpr char Pushbutton[] PROGMEM = "pushbutton";
+PROGMEM_STRING(Switch, "switch");
+PROGMEM_STRING(Pushbutton, "pushbutton");
 
 static constexpr std::array<Enumeration<debounce_event::types::Mode>, 2> DebounceEventMode PROGMEM {
     {{debounce_event::types::Mode::Switch, Switch},
      {debounce_event::types::Mode::Pushbutton, Pushbutton}}
 };
 
-alignas(4) static constexpr char Low[] PROGMEM = "low";
-alignas(4) static constexpr char High[] PROGMEM = "high";
-alignas(4) static constexpr char Initial[] PROGMEM = "initial";
+PROGMEM_STRING(Low, "low");
+PROGMEM_STRING(High, "high");
+PROGMEM_STRING(Initial, "initial");
 
 static constexpr std::array<Enumeration<debounce_event::types::PinValue>, 3> DebounceEventPinValue PROGMEM {
     {{debounce_event::types::PinValue::Low, Low},
@@ -88,9 +88,9 @@ static constexpr std::array<Enumeration<debounce_event::types::PinValue>, 3> Deb
      {debounce_event::types::PinValue::Initial, Initial}}
 };
 
-alignas(4) static constexpr char Input[] PROGMEM = "default";
-alignas(4) static constexpr char InputPullup[] PROGMEM = "pull-up";
-alignas(4) static constexpr char InputPulldown[] PROGMEM = "pull-down";
+PROGMEM_STRING(Input, "default");
+PROGMEM_STRING(InputPullup, "pull-up");
+PROGMEM_STRING(InputPulldown, "pull-down");
 
 static constexpr std::array<Enumeration<debounce_event::types::PinMode>, 3> DebounceEventPinMode PROGMEM {
     {{debounce_event::types::PinMode::Input, Input},
@@ -98,9 +98,9 @@ static constexpr std::array<Enumeration<debounce_event::types::PinMode>, 3> Debo
      {debounce_event::types::PinMode::InputPulldown, InputPulldown}}
 };
 
-alignas(4) static constexpr char None[] PROGMEM = "none";
-alignas(4) static constexpr char Gpio[] PROGMEM = "gpio";
-alignas(4) static constexpr char Analog[] PROGMEM = "analog";
+PROGMEM_STRING(None, "none");
+PROGMEM_STRING(Gpio, "gpio");
+PROGMEM_STRING(Analog, "analog");
 
 static constexpr std::array<Enumeration<ButtonProvider>, 3> ButtonProviderOptions PROGMEM {
     {{ButtonProvider::None, None},
@@ -108,24 +108,24 @@ static constexpr std::array<Enumeration<ButtonProvider>, 3> ButtonProviderOption
      {ButtonProvider::Analog, Analog}}
 };
 
-[[gnu::unused]] alignas(4) static constexpr char Toggle[] PROGMEM = "relay-toggle";
-[[gnu::unused]] alignas(4) static constexpr char On[] PROGMEM = "relay-on";
-[[gnu::unused]] alignas(4) static constexpr char Off[] PROGMEM = "relay-off";
+[[gnu::unused]] PROGMEM_STRING(Toggle, "relay-toggle");
+[[gnu::unused]] PROGMEM_STRING(On, "relay-on");
+[[gnu::unused]] PROGMEM_STRING(Off, "relay-off");
 
-alignas(4) static constexpr char AccessPoint[] PROGMEM = "wifi-ap";
-alignas(4) static constexpr char Reset[] PROGMEM = "reset";
-alignas(4) static constexpr char FactoryReset[] PROGMEM = "factory";
+PROGMEM_STRING(AccessPoint, "wifi-ap");
+PROGMEM_STRING(Reset, "reset");
+PROGMEM_STRING(FactoryReset, "factory");
 
-[[gnu::unused]] alignas(4) static constexpr char BrightnessIncrease[] PROGMEM = "bri-inc";
-[[gnu::unused]] alignas(4) static constexpr char BrightnessDecrease[] PROGMEM = "bri-dec";
+[[gnu::unused]] PROGMEM_STRING(BrightnessIncrease, "bri-inc");
+[[gnu::unused]] PROGMEM_STRING(BrightnessDecrease, "bri-dec");
 
-[[gnu::unused]] alignas(4) static constexpr char DisplayOn[] PROGMEM = "display-on";
+[[gnu::unused]] PROGMEM_STRING(DisplayOn, "display-on");
 
-alignas(4) static constexpr char Custom[] PROGMEM = "custom";
+PROGMEM_STRING(Custom, "custom");
 
-[[gnu::unused]] alignas(4) static constexpr char FanLow[] PROGMEM = "fan-low";
-[[gnu::unused]] alignas(4) static constexpr char FanMedium[] PROGMEM = "fan-medium";
-[[gnu::unused]] alignas(4) static constexpr char FanHigh[] PROGMEM = "fan-high";
+[[gnu::unused]] PROGMEM_STRING(FanLow, "fan-low");
+[[gnu::unused]] PROGMEM_STRING(FanMedium, "fan-medium");
+[[gnu::unused]] PROGMEM_STRING(FanHigh, "fan-high");
 
 static constexpr Enumeration<ButtonAction> ButtonActionOptions[] PROGMEM {
     {ButtonAction::None, None},
@@ -793,7 +793,7 @@ void button(::terminal::CommandContext&& ctx) {
     }
 }
 
-alignas(4) static constexpr char Button[] PROGMEM = "BUTTON";
+PROGMEM_STRING(Button, "BUTTON");
 
 static constexpr ::terminal::Command Commands[] PROGMEM {
     {Button, button},

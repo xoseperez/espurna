@@ -45,9 +45,9 @@ namespace settings {
 namespace internal {
 namespace {
 
-alignas(4) static constexpr char ParityNone[] PROGMEM = "none";
-alignas(4) static constexpr char ParityEven[] PROGMEM = "even";
-alignas(4) static constexpr char ParityOdd[] PROGMEM = "odd";
+PROGMEM_STRING(ParityNone, "none");
+PROGMEM_STRING(ParityEven, "even");
+PROGMEM_STRING(ParityOdd, "odd");
 
 static constexpr std::array<settings::options::Enumeration<driver::uart::Parity>, 3> ParityOptions PROGMEM {
     {{driver::uart::Parity::None, ParityNone},
@@ -183,16 +183,16 @@ constexpr ::SerialConfig from_config(Config config) {
 namespace settings {
 namespace keys {
 
-alignas(4) static constexpr char TxPin[] PROGMEM = "uartTx";
-alignas(4) static constexpr char RxPin[] PROGMEM = "uartRx";
+PROGMEM_STRING(TxPin, "uartTx");
+PROGMEM_STRING(RxPin, "uartRx");
 
-alignas(4) static constexpr char Baudrate[] PROGMEM = "uartBaud";
+PROGMEM_STRING(Baudrate, "uartBaud");
 
-alignas(4) static constexpr char DataBits[] PROGMEM = "uartDataBits";
-alignas(4) static constexpr char StopBits[] PROGMEM = "uartStopBits";
-alignas(4) static constexpr char Parity[] PROGMEM = "uartParity";
+PROGMEM_STRING(DataBits, "uartDataBits");
+PROGMEM_STRING(StopBits, "uartStopBits");
+PROGMEM_STRING(Parity, "uartParity");
 
-alignas(4) static constexpr char Invert[] PROGMEM = "uartInv";
+PROGMEM_STRING(Invert, "uartInv");
 
 } // namespace keys
 
@@ -426,7 +426,7 @@ static constexpr espurna::settings::query::IndexedSetting IndexedSettings[] PROG
 };
 
 bool checkSamePrefix(StringView key) {
-    alignas(4) static constexpr char Prefix[] PROGMEM = "uart";
+    PROGMEM_STRING(Prefix, "uart");
     return espurna::settings::query::samePrefix(key, Prefix);
 }
 
@@ -502,7 +502,7 @@ void uart(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char Uart[] PROGMEM = "UART";
+PROGMEM_STRING(Uart, "UART");
 
 static constexpr ::terminal::Command List[] PROGMEM {
     {Uart, commands::uart},

@@ -24,7 +24,7 @@ namespace schema {
 // Configuration version for the internal key-value storage
 // Represented as a 32bit int, updates every time things change
 constexpr static int Version PROGMEM { CFG_VERSION };
-alignas(4) static constexpr char Key[] PROGMEM = "cfg";
+PROGMEM_STRING(Key, "cfg");
 
 int version() {
     return getSetting(Key, Version);

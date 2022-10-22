@@ -132,7 +132,7 @@ static constexpr espurna::duration::Milliseconds ReconnectStep { MQTT_RECONNECT_
 
 static constexpr size_t MessageLogMax { 128ul };
 
-alignas(4) static constexpr char Server[] PROGMEM = MQTT_SERVER;
+PROGMEM_STRING(Server, MQTT_SERVER);
 
 constexpr uint16_t port() {
     return MQTT_PORT;
@@ -146,12 +146,12 @@ constexpr bool autoconnect() {
     return 1 == MQTT_AUTOCONNECT;
 }
 
-alignas(4) static constexpr char Topic[] PROGMEM = MQTT_TOPIC;
-alignas(4) static constexpr char Getter[] PROGMEM = MQTT_GETTER;
-alignas(4) static constexpr char Setter[] PROGMEM = MQTT_SETTER;
+PROGMEM_STRING(Topic, MQTT_TOPIC);
+PROGMEM_STRING(Getter, MQTT_GETTER);
+PROGMEM_STRING(Setter, MQTT_SETTER);
 
-alignas(4) static constexpr char User[] PROGMEM = MQTT_USER;
-alignas(4) static constexpr char Password[] PROGMEM = MQTT_PASS;
+PROGMEM_STRING(User, MQTT_USER);
+PROGMEM_STRING(Password, MQTT_PASS);
 
 constexpr int qos() {
     return MQTT_QOS;
@@ -171,21 +171,21 @@ constexpr KeepAlive keepalive() {
 static_assert(keepalive() >= KeepaliveMin, "");
 static_assert(keepalive() <= KeepaliveMax, "");
 
-alignas(4) static constexpr char TopicWill[] PROGMEM = MQTT_TOPIC_STATUS;
+PROGMEM_STRING(TopicWill, MQTT_TOPIC_STATUS);
 
 constexpr bool json() {
     return 1 == MQTT_USE_JSON;
 }
 
 static constexpr auto JsonDelay = espurna::duration::Milliseconds(MQTT_USE_JSON_DELAY);
-alignas(4) static constexpr char TopicJson[] PROGMEM = MQTT_TOPIC_JSON;
+PROGMEM_STRING(TopicJson, MQTT_TOPIC_JSON);
 
 constexpr espurna::duration::Milliseconds skipTime() {
     return espurna::duration::Milliseconds(MQTT_SKIP_TIME);
 }
 
-alignas(4) static constexpr char PayloadOnline[] PROGMEM = MQTT_STATUS_ONLINE;
-alignas(4) static constexpr char PayloadOffline[] PROGMEM = MQTT_STATUS_OFFLINE;
+PROGMEM_STRING(PayloadOnline, MQTT_STATUS_ONLINE);
+PROGMEM_STRING(PayloadOffline, MQTT_STATUS_OFFLINE);
 
 constexpr bool secure() {
     return 1 == MQTT_SSL_ENABLED;
@@ -195,7 +195,7 @@ int secureClientCheck() {
     return MQTT_SECURE_CLIENT_CHECK;
 }
 
-alignas(4) static constexpr char Fingerprint[] PROGMEM = MQTT_SSL_FINGERPRINT;
+PROGMEM_STRING(Fingerprint, MQTT_SSL_FINGERPRINT);
 
 constexpr uint16_t mfln() {
     return MQTT_SECURE_CLIENT_MFLN;
@@ -208,38 +208,38 @@ namespace settings {
 namespace keys {
 namespace {
 
-alignas(4) static constexpr char Server[] PROGMEM = "mqttServer";
-alignas(4) static constexpr char Port[] PROGMEM = "mqttPort";
+PROGMEM_STRING(Server, "mqttServer");
+PROGMEM_STRING(Port, "mqttPort");
 
-alignas(4) static constexpr char Enabled[] PROGMEM = "mqttEnabled";
-alignas(4) static constexpr char Autoconnect[] PROGMEM = "mqttAutoconnect";
+PROGMEM_STRING(Enabled, "mqttEnabled");
+PROGMEM_STRING(Autoconnect, "mqttAutoconnect");
 
-alignas(4) static constexpr char Topic[] PROGMEM = "mqttTopic";
-alignas(4) static constexpr char Getter[] PROGMEM = "mqttGetter";
-alignas(4) static constexpr char Setter[] PROGMEM = "mqttSetter";
+PROGMEM_STRING(Topic, "mqttTopic");
+PROGMEM_STRING(Getter, "mqttGetter");
+PROGMEM_STRING(Setter, "mqttSetter");
 
-alignas(4) static constexpr char User[] PROGMEM = "mqttUser";
-alignas(4) static constexpr char Password[] PROGMEM = "mqttPassword";
-alignas(4) static constexpr char QoS[] PROGMEM = "mqttQoS";
-alignas(4) static constexpr char Retain[] PROGMEM = "mqttRetain";
-alignas(4) static constexpr char Keepalive[] PROGMEM = "mqttKeep";
-alignas(4) static constexpr char ClientId[] PROGMEM = "mqttClientID";
-alignas(4) static constexpr char TopicWill[] PROGMEM = "mqttWill";
+PROGMEM_STRING(User, "mqttUser");
+PROGMEM_STRING(Password, "mqttPassword");
+PROGMEM_STRING(QoS, "mqttQoS");
+PROGMEM_STRING(Retain, "mqttRetain");
+PROGMEM_STRING(Keepalive, "mqttKeep");
+PROGMEM_STRING(ClientId, "mqttClientID");
+PROGMEM_STRING(TopicWill, "mqttWill");
 
-alignas(4) static constexpr char UseJson[] PROGMEM = "mqttUseJson";
-alignas(4) static constexpr char TopicJson[] PROGMEM = "mqttJson";
+PROGMEM_STRING(UseJson, "mqttUseJson");
+PROGMEM_STRING(TopicJson, "mqttJson");
 
-alignas(4) static constexpr char HeartbeatMode[] PROGMEM = "mqttHbMode";
-alignas(4) static constexpr char HeartbeatInterval[] PROGMEM = "mqttHbIntvl";
-alignas(4) static constexpr char SkipTime[] PROGMEM = "mqttSkipTime";
+PROGMEM_STRING(HeartbeatMode, "mqttHbMode");
+PROGMEM_STRING(HeartbeatInterval, "mqttHbIntvl");
+PROGMEM_STRING(SkipTime, "mqttSkipTime");
 
-alignas(4) static constexpr char PayloadOnline[] PROGMEM = "mqttPayloadOnline";
-alignas(4) static constexpr char PayloadOffline[] PROGMEM = "mqttPayloadOffline";
+PROGMEM_STRING(PayloadOnline, "mqttPayloadOnline");
+PROGMEM_STRING(PayloadOffline, "mqttPayloadOffline");
 
-alignas(4) static constexpr char Secure[] PROGMEM = "mqttUseSSL";
-alignas(4) static constexpr char Fingerprint[] PROGMEM = "mqttFP";
-alignas(4) static constexpr char SecureClientCheck[] PROGMEM = "mqttScCheck";
-alignas(4) static constexpr char SecureClientMfln[] PROGMEM = "mqttScMFLN";
+PROGMEM_STRING(Secure, "mqttUseSSL");
+PROGMEM_STRING(Fingerprint, "mqttFP");
+PROGMEM_STRING(SecureClientCheck, "mqttScCheck");
+PROGMEM_STRING(SecureClientMfln, "mqttScMFLN");
 
 } // namespace
 } // namespace keys
@@ -842,7 +842,7 @@ void _mqttBackwards() {
 const char* _mqttBuildInfo() {
 #define __MQTT_INFO_STR(X) #X
 #define _MQTT_INFO_STR(X) __MQTT_INFO_STR(X)
-    alignas(4) static constexpr char out[] PROGMEM {
+    alignas(4) static constexpr char out[] PROGMEM_STRING_ATTR {
 #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
         "AsyncMqttClient"
 #elif MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT
@@ -958,7 +958,7 @@ void _mqttWebSocketOnConnected(JsonObject& root) {
 #if TERMINAL_SUPPORT
 namespace {
 
-alignas(4) static constexpr char MqttCommand[] PROGMEM = "MQTT";
+PROGMEM_STRING(MqttCommand, "MQTT");
 
 static void _mqttCommand(::terminal::CommandContext&& ctx) {
     ctx.output.printf_P(PSTR("%s\n"), _mqttBuildInfo());
@@ -967,7 +967,7 @@ static void _mqttCommand(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char MqttCommandReset[] PROGMEM = "MQTT.RESET";
+PROGMEM_STRING(MqttCommandReset, "MQTT.RESET");
 
 static void _mqttCommandReset(::terminal::CommandContext&& ctx) {
     _mqttConfigure();
@@ -975,7 +975,7 @@ static void _mqttCommandReset(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char MqttCommandSend[] PROGMEM = "MQTT.SEND";
+PROGMEM_STRING(MqttCommandSend, "MQTT.SEND");
 
 static void _mqttCommandSend(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() == 3) {

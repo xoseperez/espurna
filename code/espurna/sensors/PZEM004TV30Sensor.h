@@ -608,7 +608,7 @@ constexpr espurna::duration::Milliseconds PZEM004TV30Sensor::DefaultUpdateInterv
 
 PZEM004TV30Sensor::Instance PZEM004TV30Sensor::_instance{};
 
-alignas(4) static constexpr char PzemV3Address[] PROGMEM = "PZ.ADDRESS";
+PROGMEM_STRING(PzemV3Address, "PZ.ADDRESS");
 
 void PZEM004TV30Sensor::command_address(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() != 2) {

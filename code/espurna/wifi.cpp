@@ -68,9 +68,9 @@ namespace ap {
 namespace settings {
 namespace options {
 
-alignas(4) static constexpr char Disabled[] PROGMEM = "off";
-alignas(4) static constexpr char Enabled[] PROGMEM = "on";
-alignas(4) static constexpr char Fallback[] PROGMEM = "fallback";
+PROGMEM_STRING(Disabled, "off");
+PROGMEM_STRING(Enabled, "on");
+PROGMEM_STRING(Fallback, "fallback");
 
 static constexpr espurna::settings::options::Enumeration<wifi::ApMode> ApModeOptions[] PROGMEM {
     {wifi::ApMode::Disabled, Disabled},
@@ -85,9 +85,9 @@ static constexpr espurna::settings::options::Enumeration<wifi::ApMode> ApModeOpt
 namespace settings {
 namespace options {
 
-alignas(4) static constexpr char None[] PROGMEM = "none";
-alignas(4) static constexpr char Modem[] PROGMEM = "modem";
-alignas(4) static constexpr char Light[] PROGMEM = "light";
+PROGMEM_STRING(None, "none");
+PROGMEM_STRING(Modem, "modem");
+PROGMEM_STRING(Light, "light");
 
 static constexpr espurna::settings::options::Enumeration<WiFiSleepType_t> WiFiSleepTypeOptions[] PROGMEM {
     {WIFI_NONE_SLEEP, None},
@@ -465,8 +465,8 @@ String opmode(uint8_t mode) {
 namespace settings {
 namespace keys {
 
-alignas(4) static constexpr char TxPower[] PROGMEM = "wifiTxPwr";
-alignas(4) static constexpr char Sleep[] PROGMEM = "wifiSleep";
+PROGMEM_STRING(TxPower, "wifiTxPwr");
+PROGMEM_STRING(Sleep, "wifiSleep");
 
 } // namespace keys
 
@@ -898,18 +898,18 @@ constexpr uint8_t channel(size_t index) {
 namespace settings {
 namespace keys {
 
-alignas(4) static constexpr char Mode[] PROGMEM = "wifiStaMode";
+PROGMEM_STRING(Mode, "wifiStaMode");
 
-alignas(4) static constexpr char Ssid[] PROGMEM = "ssid";
-alignas(4) static constexpr char Passphrase[] PROGMEM = "pass";
+PROGMEM_STRING(Ssid, "ssid");
+PROGMEM_STRING(Passphrase, "pass");
 
-alignas(4) static constexpr char Ip[] PROGMEM = "ip";
-alignas(4) static constexpr char Gateway[] PROGMEM = "gw";
-alignas(4) static constexpr char Netmask[] PROGMEM = "mask";
-alignas(4) static constexpr char Dns[] PROGMEM = "dns";
+PROGMEM_STRING(Ip, "ip");
+PROGMEM_STRING(Gateway, "gw");
+PROGMEM_STRING(Netmask, "mask");
+PROGMEM_STRING(Dns, "dns");
 
-alignas(4) static constexpr char Bssid[] PROGMEM = "bssid";
-alignas(4) static constexpr char Channel[] PROGMEM = "chan";
+PROGMEM_STRING(Bssid, "bssid");
+PROGMEM_STRING(Channel, "chan");
 
 } // namespace keys
 
@@ -1159,7 +1159,7 @@ namespace scan {
 namespace settings {
 namespace keys {
 
-alignas(4) static constexpr char Enabled[] PROGMEM = "wifiScan";
+PROGMEM_STRING(Enabled, "wifiScan");
 
 } // namespace keys
 } // namespace settings
@@ -1708,7 +1708,7 @@ constexpr int8_t threshold() {
 namespace settings {
 namespace keys {
 
-alignas(4) static constexpr char Threshold[] PROGMEM = "wifiScanRssi";
+PROGMEM_STRING(Threshold, "wifiScanRssi");
 
 } // namespace keys
 
@@ -1913,14 +1913,14 @@ constexpr uint8_t channel() {
 namespace settings {
 namespace keys {
 
-alignas(4) static constexpr char Mode[] PROGMEM = "wifiApMode";
+PROGMEM_STRING(Mode, "wifiApMode");
 
-alignas(4) static constexpr char Ssid[] PROGMEM = "wifiApSsid";
-alignas(4) static constexpr char Passphrase[] PROGMEM = "wifiApPass";
+PROGMEM_STRING(Ssid, "wifiApSsid");
+PROGMEM_STRING(Passphrase, "wifiApPass");
 
-alignas(4) static constexpr char Channel[] PROGMEM = "wifiApChan";
+PROGMEM_STRING(Channel, "wifiApChan");
 
-[[gnu::unused]] alignas(4) static constexpr char Captive[] PROGMEM = "wifiApCaptive";
+[[gnu::unused]] PROGMEM_STRING(Captive, "wifiApCaptive");
 
 } // namespace keys
 
@@ -2181,7 +2181,7 @@ bool checkIndexedPrefix(StringView key) {
 
 // generic 'ap' and 'modem' configuration
 bool checkExactPrefix(StringView key) {
-    alignas(4) static constexpr char Prefix[] PROGMEM = "wifi";
+    PROGMEM_STRING(Prefix, "wifi");
     if (espurna::settings::query::samePrefix(key, Prefix)) {
         return true;
     }
@@ -2235,7 +2235,7 @@ void configure() {
 namespace terminal {
 namespace commands {
 
-alignas(4) static constexpr char Stations[] PROGMEM = "WIFI.STATIONS";
+PROGMEM_STRING(Stations, "WIFI.STATIONS");
 
 void stations(::terminal::CommandContext&& ctx) {
     size_t stations { 0ul };
@@ -2255,7 +2255,7 @@ void stations(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char Network[] PROGMEM = "NETWORK";
+PROGMEM_STRING(Network, "NETWORK");
 
 void network(::terminal::CommandContext&& ctx) {
     for (auto& addr : addrList) {
@@ -2294,7 +2294,7 @@ void network(::terminal::CommandContext&& ctx) {
     }
 }
 
-alignas(4) static constexpr char Wifi[] PROGMEM = "WIFI";
+PROGMEM_STRING(Wifi, "WIFI");
 
 void wifi(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() == 2) {
@@ -2341,7 +2341,7 @@ void wifi(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char Reset[] PROGMEM = "WIFI.RESET";
+PROGMEM_STRING(Reset, "WIFI.RESET");
 
 void reset(::terminal::CommandContext&& ctx) {
     wifi::sta::disconnect();
@@ -2349,21 +2349,21 @@ void reset(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char Station[] PROGMEM = "WIFI.STA";
+PROGMEM_STRING(Station, "WIFI.STA");
 
 void station(::terminal::CommandContext&& ctx) {
     wifi::sta::toggle();
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char AccessPoint[] PROGMEM = "WIFI.AP";
+PROGMEM_STRING(AccessPoint, "WIFI.AP");
 
 void access_point(::terminal::CommandContext&& ctx) {
     wifi::ap::toggle();
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char Scan[] PROGMEM = "WIFI.SCAN";
+PROGMEM_STRING(Scan, "WIFI.SCAN");
 
 void scan(::terminal::CommandContext&& ctx) {
     wifi::sta::scan::wait(

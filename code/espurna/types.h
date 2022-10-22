@@ -341,13 +341,19 @@ inline String operator+=(String& lhs, StringView rhs) {
     return lhs;
 }
 
+#define PROGMEM_STRING_ATTR __attribute__((section( "\".irom0.pstr." __FILE__ "." __STRINGIZE(__LINE__) "."  __STRINGIZE(__COUNTER__) "\", \"aSM\", @progbits, 1 #")))
+
+#define PROGMEM_STRING(NAME, X)\
+        alignas(4) static constexpr char NAME[] PROGMEM_STRING_ATTR = (X)
+
+
 #define STRING_VIEW(X) ({\
-        alignas(4) static constexpr char __pstr__[] PROGMEM = (X);\
+        alignas(4) static constexpr char __pstr__[] PROGMEM_STRING_ATTR = (X);\
         ::espurna::StringView{__pstr__};\
     })
 
 #define STRING_VIEW_INLINE(NAME, X)\
-        alignas(4) static constexpr char __pstr__ ## NAME ##  __ [] PROGMEM = (X);\
+        alignas(4) static constexpr char __pstr__ ## NAME ##  __ [] PROGMEM_STRING_ATTR = (X);\
         constexpr auto NAME = ::espurna::StringView(__pstr__ ## NAME ## __)
 
 } // namespace espurna

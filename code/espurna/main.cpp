@@ -52,7 +52,7 @@ constexpr espurna::duration::Milliseconds loopDelay() {
 namespace settings {
 namespace keys {
 
-alignas(4) static constexpr char LoopDelay[] PROGMEM = "loopDelay";
+PROGMEM_STRING(LoopDelay, "loopDelay");
 
 } // namespace keys
 

@@ -29,10 +29,10 @@ namespace settings {
 namespace options {
 namespace {
 
-alignas(4) static constexpr char Off[] PROGMEM = "off";
-alignas(4) static constexpr char Low[] PROGMEM = "low";
-alignas(4) static constexpr char Medium[] PROGMEM = "medium";
-alignas(4) static constexpr char High[] PROGMEM = "high";
+PROGMEM_STRING(Off, "off");
+PROGMEM_STRING(Low, "low");
+PROGMEM_STRING(Medium, "medium");
+PROGMEM_STRING(High, "high");
 
 static constexpr std::array<espurna::settings::options::Enumeration<FanSpeed>, 4> FanSpeedOptions PROGMEM {
     {{FanSpeed::Off, Off},
@@ -285,7 +285,7 @@ private:
 #if TERMINAL_SUPPORT
 namespace terminal {
 
-alignas(4) static constexpr char Speed[] PROGMEM = "SPEED";
+PROGMEM_STRING(Speed, "SPEED");
 
 void speed(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() == 2) {

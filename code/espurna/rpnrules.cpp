@@ -111,12 +111,12 @@ constexpr unsigned long delay() {
 namespace settings {
 namespace keys {
 
-alignas(4) static constexpr char Sticky[] PROGMEM = "rpnSticky";
-alignas(4) static constexpr char Delay[] PROGMEM = "rpnDelay";
-alignas(4) static constexpr char Rule[] PROGMEM = "rpnRule";
+PROGMEM_STRING(Sticky, "rpnSticky");
+PROGMEM_STRING(Delay, "rpnDelay");
+PROGMEM_STRING(Rule, "rpnRule");
 
-alignas(4) static constexpr char Topic[] PROGMEM = "rpnTopic";
-alignas(4) static constexpr char Name[] PROGMEM = "rpnName";
+PROGMEM_STRING(Topic, "rpnTopic");
+PROGMEM_STRING(Name, "rpnName");
 
 } // namespace keys
 
@@ -288,7 +288,7 @@ void showStack(Print& output) {
     output.print(F("      (empty)\n"));
 }
 
-alignas(4) static constexpr char Runners[] PROGMEM = "RPN.RUNNERS";
+PROGMEM_STRING(Runners, "RPN.RUNNERS");
 
 void runners(::terminal::CommandContext&& ctx) {
     if (internal::runners.empty()) {
@@ -311,7 +311,7 @@ void runners(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char Variables[] PROGMEM = "RPN.VARS";
+PROGMEM_STRING(Variables, "RPN.VARS");
 
 void variables(::terminal::CommandContext&& ctx) {
     rpn_variables_foreach(internal::context,
@@ -325,7 +325,7 @@ void variables(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char Operators[] PROGMEM = "RPN.OPS";
+PROGMEM_STRING(Operators, "RPN.OPS");
 
 void operators(::terminal::CommandContext&& ctx) {
     rpn_operators_foreach(internal::context,
@@ -339,7 +339,7 @@ void operators(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char Test[] PROGMEM = "RPN.TEST";
+PROGMEM_STRING(Test, "RPN.TEST");
 
 void test(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() != 2) {
@@ -853,9 +853,9 @@ constexpr uint32_t StaleDelay { 10000ul };
 namespace settings {
 namespace keys {
 
-alignas(4) static constexpr char RepeatWindow[] PROGMEM = "rfbRepeatWindow";
-alignas(4) static constexpr char MatchWindow[] PROGMEM = "rfbWatchWindow";
-alignas(4) static constexpr char StaleDelay[] PROGMEM = "rfbStaleDelay";
+PROGMEM_STRING(RepeatWindow, "rfbRepeatWindow");
+PROGMEM_STRING(MatchWindow, "rfbWatchWindow");
+PROGMEM_STRING(StaleDelay, "rfbStaleDelay");
 
 } // namespace keys
 
@@ -1048,7 +1048,7 @@ void codeHandler(unsigned char protocol, const char* raw_code) {
     schedule();
 }
 
-alignas(4) static constexpr char RfbCodes[] PROGMEM = "RFB.CODES";
+PROGMEM_STRING(RfbCodes, "RFB.CODES");
 
 void rfb_codes(::terminal::CommandContext&& ctx) {
     for (auto& code : internal::codes) {

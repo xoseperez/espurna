@@ -215,7 +215,7 @@ size_t AsyncWebPrint::write(const uint8_t* data, size_t size) {
 
 namespace {
 
-alignas(4) static constexpr char LastModified[] PROGMEM = __DATE__ " " __TIME__ " GMT";
+PROGMEM_STRING(LastModified, __DATE__ " " __TIME__ " GMT");
 static constexpr size_t WebConfigBufferMax { 4096 };
 
 // server instance can't (yet) be static, port is the ctor argument :/
@@ -467,7 +467,7 @@ void _onAPCaptiveRequest(AsyncWebServerRequest* request) {
 #endif
 
 #if WEB_EMBEDDED
-alignas(4) static constexpr char IfModifiedSince[] PROGMEM = "If-Modified-Since";
+PROGMEM_STRING(IfModifiedSince, "If-Modified-Since");
 
 void _onHome(AsyncWebServerRequest *request) {
     if (!_isAPModeRequest(request) && !_authenticateRequest(request)) {

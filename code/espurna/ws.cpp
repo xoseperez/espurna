@@ -34,7 +34,7 @@ namespace {
 
 namespace internal {
 
-alignas(4) static constexpr char SchemaKey[] PROGMEM = "schema";
+PROGMEM_STRING(SchemaKey, "schema");
 
 } // namespace internal
 
@@ -822,7 +822,7 @@ bool wsConnected(uint32_t client_id) {
 }
 
 void wsPayloadModule(JsonObject& root, const char* name) {
-    alignas(4) static constexpr char Key[] PROGMEM = "modulesVisible";
+    PROGMEM_STRING(Key, "modulesVisible");
     JsonArray& modules = root.containsKey(FPSTR(Key))
         ? root[FPSTR(Key)]
         : root.createNestedArray(FPSTR(Key));

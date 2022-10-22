@@ -161,14 +161,14 @@ void _lightfoxWebSocketOnAction(uint32_t client_id, const char * action, JsonObj
 // -----------------------------------------------------------------------------
 
 #if TERMINAL_SUPPORT
-alignas(4) static constexpr char LightfoxCommandLearn[] PROGMEM = "LIGHTFOX.LEARN";
+PROGMEM_STRING(LightfoxCommandLearn, "LIGHTFOX.LEARN");
 
 static void _lightfoxCommandLearn(::terminal::CommandContext&& ctx) {
     lightfoxLearn();
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char LightfoxCommandClear[] PROGMEM = "LIGHTFOX.LEARN";
+PROGMEM_STRING(LightfoxCommandClear, "LIGHTFOX.LEARN");
 
 static void _lightfoxCommandClear(::terminal::CommandContext&& ctx) {
     lightfoxClear();

@@ -71,7 +71,7 @@ void eepromBackup(uint32_t index){
 }
 
 #if TERMINAL_SUPPORT
-alignas(4) static constexpr char EepromCommand[] PROGMEM = "EEPROM";
+PROGMEM_STRING(EepromCommand, "EEPROM");
 
 static void _eepromCommand(::terminal::CommandContext&& ctx) {
     ctx.output.printf_P(PSTR("Sectors: %s, current: %lu\n"),
@@ -83,21 +83,21 @@ static void _eepromCommand(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char EepromCommit[] PROGMEM = "EEPROM.COMMIT";
+PROGMEM_STRING(EepromCommit, "EEPROM.COMMIT");
 
 static void _eepromCommandCommit(::terminal::CommandContext&& ctx) {
     _eepromCommit();
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char EepromDump[] PROGMEM = "EEPROM.DUMP";
+PROGMEM_STRING(EepromDump, "EEPROM.DUMP");
 
 static void _eepromCommandDump(::terminal::CommandContext&& ctx) {
     EEPROMr.dump(static_cast<Stream&>(ctx.output)); // XXX: only Print interface is used
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char FlashDump[] PROGMEM = "FLASH.DUMP";
+PROGMEM_STRING(FlashDump, "FLASH.DUMP");
 
 static void _flashCommandDump(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() < 2) {

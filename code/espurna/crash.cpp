@@ -223,7 +223,7 @@ void dump(Print& print) {
 }
 
 #if TERMINAL_SUPPORT
-alignas(4) static constexpr char Name[] PROGMEM = "CRASH";
+PROGMEM_STRING(Name, "CRASH");
 
 void command(::terminal::CommandContext&& ctx) {
     debug::crash::forceDump(ctx.output);

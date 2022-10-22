@@ -116,20 +116,20 @@ constexpr bool enabled() {
 namespace settings {
 namespace keys {
 
-alignas(4) static constexpr char Enabled[] PROGMEM = "dczEnabled";
-alignas(4) static constexpr char TopicOut[] PROGMEM = "dczTopicOut";
-alignas(4) static constexpr char TopicIn[] PROGMEM = "dczTopicIn";
+PROGMEM_STRING(Enabled, "dczEnabled");
+PROGMEM_STRING(TopicOut, "dczTopicOut");
+PROGMEM_STRING(TopicIn, "dczTopicIn");
 
 #if RELAY_SUPPORT
-alignas(4) static constexpr char RelayIdx[] PROGMEM = "dczTopicIn";
+PROGMEM_STRING(RelayIdx, "dczTopicIn");
 #endif
 
 #if SENSOR_SUPPORT
-alignas(4) static constexpr char MagnitudeIdx[] PROGMEM = "dczTopicIn";
+PROGMEM_STRING(MagnitudeIdx, "dczTopicIn");
 #endif
 
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-alignas(4) static constexpr char LightIdx[] PROGMEM = "dczLightIdx";
+PROGMEM_STRING(LightIdx, "dczLightIdx");
 #endif
 
 } // namespace keys
@@ -430,7 +430,7 @@ void send(unsigned char index, const espurna::sensor::Value& value) {
 namespace web {
 namespace {
 
-alignas(4) static constexpr char Prefix[] PROGMEM = "dcz";
+PROGMEM_STRING(Prefix, "dcz");
 
 bool onKeyCheck(espurna::StringView key, const JsonVariant&) {
     return espurna::settings::query::samePrefix(key, Prefix);

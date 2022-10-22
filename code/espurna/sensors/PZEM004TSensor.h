@@ -591,7 +591,7 @@ constexpr BaseEmonSensor::Magnitude PZEM004TSensor::Magnitudes[];
 #endif
 
 #if TERMINAL_SUPPORT
-alignas(4) static constexpr char PzemDevices[] PROGMEM = "PZ.DEVICES";
+PROGMEM_STRING(PzemDevices, "PZ.DEVICES");
 
 void PZEM004TSensor::command_devices(::terminal::CommandContext&& ctx) {
     foreach([&](const PZEM004TSensor&, const IPAddress& address) {
@@ -600,7 +600,7 @@ void PZEM004TSensor::command_devices(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char PzemPorts[] PROGMEM = "PZ.PORTS";
+PROGMEM_STRING(PzemPorts, "PZ.PORTS");
 
 void PZEM004TSensor::command_ports(::terminal::CommandContext&& ctx) {
     auto it = _ports.begin();
@@ -646,7 +646,7 @@ void PZEM004TSensor::command_ports(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char PzemAddress[] PROGMEM = "PZ.ADDRESS";
+PROGMEM_STRING(PzemAddress, "PZ.ADDRESS");
 
 // Set the *currently connected* device address
 // (ref. comment at the top, shouldn't do this when multiple devices are connected)

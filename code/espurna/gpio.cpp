@@ -410,11 +410,11 @@ namespace options {
 
 using espurna::settings::options::Enumeration;
 
-alignas(4) static constexpr char None[] PROGMEM = "none";
-alignas(4) static constexpr char Hardware[] PROGMEM = "hardware";
+PROGMEM_STRING(None, "none");
+PROGMEM_STRING(Hardware, "hardware");
 
 #if MCP23S08_SUPPORT
-alignas(4) static constexpr char Mcp23s08[] PROGMEM = "mcp23s08";
+PROGMEM_STRING(Mcp23s08, "mcp23s08");
 #endif
 
 static constexpr Enumeration<GpioType> GpioTypeOptions[] PROGMEM {
@@ -607,7 +607,7 @@ void add(Origin origin) {
 #if TERMINAL_SUPPORT
 namespace terminal {
 
-alignas(4) static constexpr char GpioLocks[] PROGMEM = "GPIO.LOCKS";
+PROGMEM_STRING(GpioLocks, "GPIO.LOCKS");
 
 void gpio_list_origins(::terminal::CommandContext&& ctx) {
     for (const auto& origin : origin::internal::origins) {
@@ -620,7 +620,7 @@ void gpio_list_origins(::terminal::CommandContext&& ctx) {
     }
 }
 
-alignas(4) static constexpr char Gpio[] PROGMEM = "GPIO";
+PROGMEM_STRING(Gpio, "GPIO");
 
 void gpio_read_write(::terminal::CommandContext&& ctx) {
     const int pin = (ctx.argv.size() >= 2)
@@ -696,7 +696,7 @@ void gpio_read_write(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
-alignas(4) static constexpr char RegRead[] PROGMEM = "REG.READ";
+PROGMEM_STRING(RegRead, "REG.READ");
 
 void reg_read(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() == 2) {
@@ -712,7 +712,7 @@ void reg_read(::terminal::CommandContext&& ctx) {
     terminalError(ctx, F("REG.READ <ADDRESS>"));
 }
 
-alignas(4) static constexpr char RegWrite[] PROGMEM = "REG.WRITE";
+PROGMEM_STRING(RegWrite, "REG.WRITE");
 
 void reg_write(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() == 3) {

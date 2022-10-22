@@ -338,8 +338,8 @@ namespace rfbridge {
 namespace settings {
 namespace keys {
 
-alignas(4) static constexpr char On[] PROGMEM = "rfbON";
-alignas(4) static constexpr char Off[] PROGMEM = "rfbOFF";
+PROGMEM_STRING(On, "rfbON");
+PROGMEM_STRING(Off, "rfbOFF");
 
 } // namespace keys
 
@@ -1174,7 +1174,7 @@ void _rfbCommandStatusDispatch(::terminal::CommandContext&& ctx, size_t id, Rela
     }
 }
 
-alignas(4) static constexpr char RfbCommandSend[] PROGMEM = "RFB.SEND";
+PROGMEM_STRING(RfbCommandSend, "RFB.SEND");
 
 static void _rfbCommandSend(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() == 2) {
@@ -1186,7 +1186,7 @@ static void _rfbCommandSend(::terminal::CommandContext&& ctx) {
 }
 
 #if RELAY_SUPPORT
-alignas(4) static constexpr char RfbCommandLearn[] PROGMEM = "RFB.LEARN";
+PROGMEM_STRING(RfbCommandLearn, "RFB.LEARN");
 
 static void _rfbCommandLearn(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() != 3) {
@@ -1203,7 +1203,7 @@ static void _rfbCommandLearn(::terminal::CommandContext&& ctx) {
     _rfbCommandStatusDispatch(std::move(ctx), id, rfbLearn);
 }
 
-alignas(4) static constexpr char RfbCommandForget[] PROGMEM = "RFB.FORGET";
+PROGMEM_STRING(RfbCommandForget, "RFB.FORGET");
 
 static void _rfbCommandForget(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() < 2) {
@@ -1230,7 +1230,7 @@ static void _rfbCommandForget(::terminal::CommandContext&& ctx) {
 #endif // if RELAY_SUPPORT
 
 #if RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
-alignas(4) static constexpr char RfbCommandWrite[] PROGMEM = "RFB.WRITE";
+PROGMEM_STRING(RfbCommandWrite, "RFB.WRITE");
 
 static void _rfbCommandWrite(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() != 2) {
