@@ -1736,9 +1736,14 @@ struct LightProviderHandler {
         _timer.stop();
     }
 
+    void reset() {
+        _ready = false;
+    }
+
     void start(Duration duration) {
         _ready = false;
-        _timer.once(duration,
+        _timer.repeat(
+            duration,
             [&]() {
                 _ready = true;
             });
@@ -1858,12 +1863,12 @@ void _lightProviderUpdate() {
         _lightProviderHandleValue,
         _lightProviderHandleUpdate);
 
-    if (next) {
-        _light_provider_update.start(_light_transition->step());
-    } else {
+    if (!next) {
         _light_transition.reset(nullptr);
         _light_provider_update.stop();
     }
+
+    _light_provider_update.reset();
 }
 
 } // namespace
