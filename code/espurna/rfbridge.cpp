@@ -727,7 +727,10 @@ void _rfbParse(uint8_t code, const std::vector<uint8_t>& payload) {
 #endif
 
             for (auto& handler : _rfb_code_handlers) {
-                handler(RfbDefaultProtocol, buffer + 12);
+                const auto begin = std::begin(buffer) + 12;
+                const auto end = std::end(buffer);
+                handler(RfbDefaultProtocol,
+                    espurna::StringView(begin, end));
             }
         }
         break;
@@ -748,7 +751,10 @@ void _rfbParse(uint8_t code, const std::vector<uint8_t>& payload) {
 
             // ref. https://github.com/Portisch/RF-Bridge-EFM8BB1/wiki/0xA6#example-of-a-received-decoded-protocol
             for (auto& handler : _rfb_code_handlers) {
-                handler(payload[0], buffer + 2);
+                const auto begin = std::begin(buffer) + 2;
+                const auto end = std::end(buffer);
+                handler(payload[0],
+                    espurna::StringView(begin, end));
             }
         } else {
             DEBUG_MSG_P(PSTR("[RF] Received 0x%02X (%u bytes)\n"), code, payload.size());
@@ -976,7 +982,10 @@ void _rfbReceiveImpl() {
 #endif
 
         for (auto& handler : _rfb_code_handlers) {
-            handler(message[1], buffer + 10);
+            const auto begin = std::begin(buffer) + 10;
+            const auto end = std::end(buffer);
+            handler(message[1],
+                espurna::StringView(begin, end));
         }
     }
 
