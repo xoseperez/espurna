@@ -23,6 +23,51 @@ namespace Internals {
 
 template <>
 struct StringTraits<::espurna::StringView, void> {
+    // c/p from std stream / Stream adapters
+    // allow to pass the view as-is to the parser
+    struct Reader {
+        Reader(espurna::StringView value) :
+            _value(value),
+            _it(_value.begin())
+        {}
+
+        void move() {
+            _current = _next;
+            _next = '\0';
+        }
+
+        char current() {
+            if (!_current) {
+                _current = read();
+            }
+            return _current;
+        }
+
+        char next() {
+            if (!_next) {
+                _next = read();
+            }
+            return _next;
+        }
+
+    private:
+        char read() {
+            if (_it != _value.end()) {
+                const auto c = (*_it);
+                ++_it;
+                return c;
+            }
+
+            return '\0';
+        }
+
+        espurna::StringView _value;
+        const char* _it;
+
+        char _current = 0;
+        char _next = 0;
+    };
+
     template <typename T>
     static bool equals(::espurna::StringView lhs, T&& rhs) {
         return lhs == rhs;
