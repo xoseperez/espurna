@@ -527,7 +527,7 @@ RfbRelayMatch _rfbMatch(espurna::StringView code) {
             }
 
             size_t id;
-            if (!tryParseId(id_view, relayCount, id)) {
+            if (!tryParseId(id_view, relayCount(), id)) {
                 return;
             }
 
@@ -612,7 +612,7 @@ void _rfbLearnStartFromPayload(espurna::StringView payload) {
     std::copy(payload.begin(), it, relay);
 
     size_t id;
-    if (!tryParseId(relay, relayCount, id)) {
+    if (!tryParseId(relay, relayCount(), id)) {
         DEBUG_MSG_P(PSTR("[RF] Invalid relay ID (%u)\n"), id);
         return;
     }
@@ -1195,7 +1195,7 @@ static void _rfbCommandLearn(::terminal::CommandContext&& ctx) {
     }
 
     size_t id;
-    if (!tryParseId(ctx.argv[1], relayCount, id)) {
+    if (!tryParseId(ctx.argv[1], relayCount(), id)) {
         terminalError(ctx, F("Invalid relay ID"));
         return;
     }
@@ -1212,7 +1212,7 @@ static void _rfbCommandForget(::terminal::CommandContext&& ctx) {
     }
 
     size_t id;
-    if (!tryParseId(ctx.argv[1], relayCount, id)) {
+    if (!tryParseId(ctx.argv[1], relayCount(), id)) {
         terminalError(ctx, F("Invalid relay ID"));
         return;
     }

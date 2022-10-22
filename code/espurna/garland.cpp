@@ -418,7 +418,7 @@ void garlandMqttCallback(unsigned int type, espurna::StringView topic, espurna::
         auto t = mqttMagnitude(topic);
         if (t.equals(MQTT_TOPIC_GARLAND)) {
             DynamicJsonBuffer jsonBuffer;
-            JsonObject& root = jsonBuffer.parseObject(payload);
+            JsonObject& root = jsonBuffer.parseObject(payload.begin());
             if (!root.success()) {
                 DEBUG_MSG_P(PSTR("[GARLAND] Error parsing mqtt data\n"));
                 return;

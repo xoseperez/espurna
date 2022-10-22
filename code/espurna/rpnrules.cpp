@@ -542,7 +542,7 @@ namespace operators {
 namespace runners {
 
 rpn_operator_error handle(rpn_context& ctxt, Runner::Policy policy, unsigned long time) {
-    for (auto& runner : ::rpnrules::internal::runners) {
+    for (auto& runner : internal::runners) {
         if (runner.match(policy, time)) {
             return static_cast<bool>(runner)
                 ? rpn_operator_error::Ok
@@ -550,7 +550,7 @@ rpn_operator_error handle(rpn_context& ctxt, Runner::Policy policy, unsigned lon
         }
     }
 
-    ::rpnrules::internal::runners.emplace_front(policy, time);
+    internal::runners.emplace_front(policy, time);
     return rpn_operator_error::CannotContinue;
 }
 
@@ -880,10 +880,11 @@ namespace internal {
 using Codes = std::list<Code>;
 Codes codes;
 
-Codes::iterator find(Codes& container, unsigned char protocol, const String& match) {
-    return std::find_if(container.begin(), container.end(), [protocol, &match](const Code& code) {
-        return (code.protocol == protocol) && (code.raw == match);
-    });
+Codes::iterator find(Codes& container, unsigned char protocol, StringView match) {
+    return std::find_if(container.begin(), container.end(),
+        [protocol, &match](const Code& code) {
+            return (code.protocol == protocol) && (code.raw == match);
+        });
 }
 
 uint32_t repeat_window { build::RepeatWindow };
@@ -990,7 +991,7 @@ rpn_error matchAndWait(rpn_context& ctxt) {
     }
 
     // purge code to avoid matching again on the next rules run
-    if (rpn_operator_error::Ok == ::rpnrules::operators::runners::handle(ctxt, Runner::Policy::OneShot, time.toUint())) {
+    if (rpn_operator_error::Ok == operators::runners::handle(ctxt, Runner::Policy::OneShot, time.toUint())) {
         internal::codes.erase(result);
         return rpn_operator_error::Ok;
     }
@@ -1022,7 +1023,7 @@ rpn_error match(rpn_context& ctxt) {
     return rpn_operator_error::CannotContinue;
 }
 
-void codeHandler(unsigned char protocol, const char* raw_code) {
+void codeHandler(unsigned char protocol, StringView raw_code) {
     // remove really old codes that we have not seen in a while to avoid memory exhaustion
     auto ts = millis();
     auto old = std::remove_if(internal::codes.begin(), internal::codes.end(), [ts](Code& code) {
@@ -1042,7 +1043,7 @@ void codeHandler(unsigned char protocol, const char* raw_code) {
         (*result).last = millis();
         (*result).count += 1u;
     } else {
-        internal::codes.push_back({protocol, raw_code, 1u, millis()});
+        internal::codes.push_back({protocol, raw_code.toString(), 1u, millis()});
     }
 
     schedule();

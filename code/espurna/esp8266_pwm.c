@@ -70,7 +70,7 @@ struct pwm_phase {
  * pwm phase
  */
 typedef struct pwm_phase (pwm_phase_array)[PWM_MAX_CHANNELS + 2];
-static pwm_phase_array pwm_phases[3] = {0};
+static pwm_phase_array pwm_phases[3];
 static struct {
 	struct pwm_phase* next_set;
 	struct pwm_phase* current_set;

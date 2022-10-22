@@ -66,7 +66,10 @@ struct Hsv {
     Hsv& operator=(const Hsv&) = default;
     Hsv& operator=(Hsv&&) = default;
 
-    constexpr explicit Hsv(Array array) noexcept :
+#if __cplusplus > 201103L
+    constexpr
+#endif
+    explicit Hsv(Array array) noexcept :
         _hue(array[0]),
         _saturation(array[1]),
         _value(array[2])

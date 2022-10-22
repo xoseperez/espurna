@@ -671,11 +671,10 @@ void setup() {
                 return false;
             }
 
+            auto cmd = std::make_shared<String>(line.toString());
             if (!line.endsWith("\r\n") && !line.endsWith("\n")) {
-                line += '\n';
+                (*cmd) += '\n';
             }
-
-            auto cmd = std::make_shared<String>(std::move(line));
 
             api.handle([&](AsyncWebServerRequest* request) {
                 AsyncWebPrint::scheduleFromRequest(request,
