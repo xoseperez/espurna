@@ -8,7 +8,7 @@
   ],
   "license": "GPL-3.0",
   "devDependencies": {
-    "eslint": "^7.30.0",
+    "eslint": "^8.26.0",
     "gulp": "^4.0.2",
     "gulp-csslint": "^1.0.0",
     "gulp-gzip": "^1.4.0",
