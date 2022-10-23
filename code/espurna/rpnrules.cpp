@@ -479,11 +479,12 @@ void callback(unsigned int type, StringView topic, StringView payload) {
             return;
         }
 
-        size_t index { 0 };
+        size_t count { 0 };
         String rpnTopic;
 
         for (;;) {
-            rpnTopic = rpnrules::settings::topic(index++);
+            const auto index = count++;
+            rpnTopic = rpnrules::settings::topic(index);
             if (!rpnTopic.length()) {
                 break;
             }
