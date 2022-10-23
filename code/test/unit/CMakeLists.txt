@@ -22,6 +22,7 @@ set(COMMON_FLAGS
     -g
     -fno-common
     -funsigned-char
+    -DPROGMEM_STRING_ATTR=
     -DCORE_MOCK
     -DHOST_MOCK=1
     -DLWIP_IPV6=0
