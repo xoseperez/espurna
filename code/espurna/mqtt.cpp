@@ -777,9 +777,8 @@ void _mqttConfigure() {
 
     // MQTT JSON
     _mqttApplySetting(_mqtt_use_json, mqtt::settings::json());
-    if (_mqtt_use_json) {
-        _mqttApplyValidTopicString(_mqtt_settings.topic_json, mqtt::settings::topicJson());
-    }
+    _mqttApplyValidTopicString(_mqtt_settings.topic_json,
+        mqttTopic(mqtt::settings::topicJson()));
 
     // Heartbeat messages
     _mqttApplySetting(_mqtt_heartbeat_mode, mqtt::settings::heartbeatMode());
