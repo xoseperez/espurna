@@ -2126,7 +2126,12 @@ bool _lightParsePayload(espurna::StringView payload) {
 }
 
 bool _lightTryParseChannel(espurna::StringView value, size_t& id) {
-    return tryParseIdPath(value, lightChannels(), id);
+    const auto channels = _light_channels.size();
+    if (std::find(value.begin(), value.end(), '/') != value.end()) {
+        return tryParseIdPath(value, channels, id);
+    }
+
+    return tryParseId(value, channels, id);
 }
 
 } // namespace
