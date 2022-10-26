@@ -212,6 +212,13 @@ alignas(4) static constexpr char Modules[] PROGMEM_STRING_ATTR =
 #if THINGSPEAK_SUPPORT
     "THINGSPEAK "
 #endif
+#if UART_SUPPORT
+#if UART_SUPPORT_SOFTWARE
+    "UART+SW "
+#else
+    "UART "
+#endif
+#endif
 #if UART_MQTT_SUPPORT
     "UART_MQTT "
 #endif
