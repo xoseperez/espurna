@@ -1766,6 +1766,7 @@
     #define UART1_TX_PIN        GPIO_NONE
     #define UART1_RX_PIN        3
     #define UART1_INVERT        1
+    #define UART1_PARITY        Odd
 
     #define V9261F_PORT         1
 
