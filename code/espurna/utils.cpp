@@ -92,7 +92,7 @@ static ParseUnsignedResult parseUnsignedImpl(espurna::StringView value, int base
         }
 
         const auto value = out.value;
-        out.value = (out.value * uint32_t(base)) + digit;
+        out.value = (out.value * uint32_t(base)) + uint32_t(digit);
         // TODO explicitly set the output bit width?
         if (value > out.value) {
             out.ok = false;
@@ -302,27 +302,22 @@ ParseUnsignedResult parseUnsigned(espurna::StringView value, int base) {
     return parseUnsignedImpl(value, base);
 }
 
+static constexpr int base_from_char(char c) {
+    return (c == 'b') ? 2 :
+        (c == 'o') ? 8 :
+        (c == 'x') ? 16 : 0;
+}
+
 ParseUnsignedResult parseUnsigned(espurna::StringView value) {
     int base = 10;
 
     if (value.length() && (value.length() > 2)) {
-        const auto* ptr = value.begin();
-        if (*ptr == '0') {
-            switch (*(ptr + 1)) {
-            case 'b':
-                base = 2;
-                break;
-            case 'o':
-                base = 8;
-                break;
-            case 'x':
-                base = 16;
-                break;
-            }
+        const auto from_base = base_from_char(value[1]);
+        if ((value[0] == '0') && (from_base != 0)) {
+            base = from_base;
+            value = espurna::StringView(
+                value.begin() + 2, value.end());
         }
-
-        value = espurna::StringView(
-            value.begin() + 2, value.end());
     }
 
     return parseUnsignedImpl(value, base);
