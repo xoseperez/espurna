@@ -19,7 +19,6 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include "ws.h"
 
 #include <ArduinoJson.h>
-#include "web_utils.h"
 
 #include <array>
 #include <cstring>

@@ -31,7 +31,6 @@ Updated to use WiFiServer and support reverse connections by Niek van der Maas <
 #include "mqtt.h"
 #include "telnet.h"
 #include "terminal.h"
-#include "web_utils.h"
 #include "wifi.h"
 #include "ws.h"
 

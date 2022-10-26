@@ -18,6 +18,8 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <list>
 #include <vector>
 
+#include "web_utils.h"
+
 struct AsyncWebPrintConfig {
     struct Backlog {
         size_t count;
