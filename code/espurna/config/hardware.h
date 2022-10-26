@@ -1754,21 +1754,23 @@
     // Info
     #define MANUFACTURER        "GENERIC"
     #define DEVICE              "V9261F"
-    #define ALEXA_SUPPORT       0
 
     // V9261F
-    #define V9261F_SUPPORT      1
+    #define V9261F_SUPPORT          1
 
     // UART only reads data
-    #define UART_SUPPORT        1
+    #define UART_SUPPORT            1
+    #define UART_SOFTWARE_SUPPORT   1
 
-    #define UART1_BAUDRATE      4800
-    #define UART1_TX_PIN        GPIO_NONE
-    #define UART1_RX_PIN        3
-    #define UART1_INVERT        1
-    #define UART1_PARITY        Odd
+    #define UART1_BAUDRATE          4800
+    #define UART1_TX_PIN            GPIO_NONE
+    #define UART1_RX_PIN            3
+    #define UART1_INVERT            1
+    #define UART1_PARITY            Odd
 
-    #define V9261F_PORT         1
+    #define V9261F_PORT             1
+
+    #define ALEXA_SUPPORT           0
 
 // -----------------------------------------------------------------------------
 // ECH1560
@@ -1799,6 +1801,15 @@
 
     #define PZEM004T_SUPPORT            1
 
+    #define UART_SUPPORT                1
+    #define UART_SOFTWARE_SUPPORT       1
+
+    #define UART1_BAUDRATE              9600
+    #define UART1_TX_PIN                1
+    #define UART1_RX_PIN                3
+
+    #define PZEM004_PORT                1
+
     #define ALEXA_SUPPORT               0
 
 // -----------------------------------------------------------------------------
@@ -1812,6 +1823,15 @@
     #define DEVICE              "PZEM004TV30"
 
     #define PZEM004TV30_SUPPORT         1
+
+    #define UART_SUPPORT                1
+    #define UART_SOFTWARE_SUPPORT       1
+
+    #define PZEM004TV30_PORT            1
+
+    #define UART1_BAUDRATE              9600
+    #define UART1_TX_PIN                1
+    #define UART1_RX_PIN                3
 
     #define ALEXA_SUPPORT               0
 
