@@ -237,6 +237,13 @@ struct BasePort {
 
 using BasePortPtr = std::unique_ptr<BasePort>;
 
+namespace internal {
+
+BasePortPtr ports[build::PortsMax];
+bool used_hardware_ports[2] = {false, false};
+
+} // namespace internal
+
 BasePortPtr hardware_port(
         uint32_t baudrate, uint8_t tx, uint8_t rx, Config config, bool invert)
 {
@@ -248,7 +255,8 @@ BasePortPtr hardware_port(
         build::uart1_normal(tx, rx)
             ? 1
             : -1;
-    if (number < 0) {
+
+    if ((number < 0) || (internal::used_hardware_ports[number])) {
         return nullptr;
     }
 
@@ -263,6 +271,8 @@ BasePortPtr hardware_port(
     if (mode < 0) {
         return nullptr;
     }
+
+    internal::used_hardware_ports[number] = true;
 
     auto* ptr = new HardwareSerial(number);
     ptr->begin(baudrate,
@@ -369,20 +379,15 @@ BasePortPtr make_port(size_t index) {
     {
         out = hardware_port(baudrate, tx, rx, config, invert);
     }
+
 #if UART_SOFTWARE_SUPPORT
-    else {
+    if (!out) {
         out = software_serial_port(baudrate, tx, rx, config, invert);
     }
 #endif
         
     return out;
 }
-
-namespace internal {
-
-BasePortPtr ports[build::PortsMax];
-
-} // namespace internal
 
 size_t ports() {
     size_t out = 0;
@@ -486,14 +491,17 @@ void uart(::terminal::CommandContext&& ctx) {
         }
 
     } else if (ctx.argv.size() == 2) {
-        const auto parse_id = espurna::settings::internal::convert<size_t>;
-        const auto id = parse_id(ctx.argv[1]);
-        if (id >= ports()) {
+        const auto result = parseUnsigned(ctx.argv[1], 10);
+        if (!result.ok) {
             terminalError(ctx, F("Invalid ID"));
             return;
         }
 
-        settingsDump(ctx, settings::query::IndexedSettings, id);
+        if (result.value >= ports()) {
+            ctx.output.print(F("(Not active)"));
+        }
+
+        settingsDump(ctx, settings::query::IndexedSettings, result.value);
     } else {
         terminalError(ctx, F("UART [<ID>]"));
         return;
