@@ -13,12 +13,12 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-python@v2
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
       with:
         python-version: '3.x'
     - name: Cache CMake
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: code/test/unit/cache
         key: ${{ runner.os }}-cmake-${{ hashFiles('code/test/unit/CMakeLists.txt') }}
@@ -30,12 +30,12 @@ jobs:
   webui:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-node@v2
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
       with:
         node-version: '14'
     - name: Cache Node
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: ~/.npm
         key: ${{ runner.os }}-npm-${{ hashFiles('code/package-lock.json', 'code/package.json') }}
@@ -50,17 +50,17 @@ jobs:
       matrix:
         env: [nodemcu-lolin, esp8266-4m-base, esp8266-4m-latest-base]
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-python@v2
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
       with:
         python-version: '3.x'
     - name: Cache pip
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: ~/.cache/pip
         key: ${{ runner.os }}-pip-${{ hashFiles('ci_install.sh') }}
     - name: Cache PlatformIO
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: ~/.platformio
         key: ${{ runner.os }}-build-${{ matrix.env }}-${{ hashFiles('code/platformio.ini') }}
@@ -68,7 +68,7 @@ jobs:
           ${{ runner.os }}-build-${{ matrix.env }}-
           ${{ runner.os }}-build-
     - name: Cache libraries
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: libraries/
         key: ${{ runner.os }}-libraries-${{ hashFiles('code/platformio.ini') }}
