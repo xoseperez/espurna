@@ -28,6 +28,10 @@ case "$1" in
     git --no-pager diff --stat
     ;;
 ("build")
+    # simply build the given environment
+    pio run -e $2
+    ;;
+("test")
     # run generic build test with the specified environment as base
     scripts/test_build.py -e $2
     ;;

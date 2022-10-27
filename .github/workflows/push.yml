@@ -48,7 +48,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        env: [esp8266-4m-base, esp8266-4m-latest-base]
+        env: [nodemcu-lolin, esp8266-4m-base, esp8266-4m-latest-base]
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-python@v2
@@ -63,10 +63,26 @@ jobs:
       uses: actions/cache@v2
       with:
         path: ~/.platformio
-        key: ${{ runner.os }}-${{ matrix.env }}-${{ hashFiles('code/platformio.ini') }}
+        key: ${{ runner.os }}-build-${{ matrix.env }}-${{ hashFiles('code/platformio.ini') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ matrix.env }}-
+          ${{ runner.os }}-build-
+    - name: Cache libraries
+      uses: actions/cache@v2
+      with:
+        path: libraries/
+        key: ${{ runner.os }}-libraries-${{ hashFiles('code/platformio.ini') }}
+        restore-keys: |
+          ${{ runner.os }}-libraries-
     - name: PlatformIO prepare
       run: |
         git config --global advice.detachedHead false
-        ./ci_install.sh build
-    - run: |
+        ./ci_install.sh build ${{ matrix.env }}
+    - if: ${{ matrix.env }} == 'nodemcu-lolin'
+      name: Basic build
+      run: |
         ./ci_script.sh build ${{ matrix.env }}
+    - if: ${{ matrix.env }} != 'nodemcu-lolin'
+      name: Test build
+      run: |
+        ./ci_script.sh test ${{ matrix.env }}
