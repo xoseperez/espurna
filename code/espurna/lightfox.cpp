@@ -10,47 +10,69 @@ Copyright (C) 2019 by Andrey F. Kupreychik <foxle@quickfox.ru>
 
 #ifdef FOXEL_LIGHTFOX_DUAL
 
+static_assert(1 == (RELAY_SUPPORT), "");
+static_assert(1 == (BUTTON_SUPPORT), "");
+
 #include "button.h"
 #include "lightfox.h"
 #include "relay.h"
 #include "terminal.h"
 #include "ws.h"
 
-#include <bitset>
+#include <array>
 #include <vector>
-
-static_assert(1 == (RELAY_SUPPORT), "");
-static_assert(1 == (BUTTON_SUPPORT), "");
 
 #ifndef LIGHTFOX_BUTTONS
 #define LIGHTFOX_BUTTONS 4
 #endif
 
-constexpr size_t _lightfoxBuildButtons() {
-    return LIGHTFOX_BUTTONS;
-}
-
 #ifndef LIGHTFOX_RELAYS
 #define LIGHTFOX_RELAYS 2
 #endif
 
-constexpr size_t _lightfoxBuildRelays() {
+#ifndef LIGHTFOX_PORT
+#define LIGHTFOX_PORT 1
+#endif
+
+namespace espurna {
+namespace hardware {
+namespace lightfox {
+namespace {
+
+namespace build {
+
+constexpr size_t buttons() {
+    return LIGHTFOX_BUTTONS;
+}
+
+constexpr size_t relays() {
     return LIGHTFOX_RELAYS;
 }
 
-static Stream* _lightfox_port { nullptr };
+constexpr size_t port() {
+    return LIGHTFOX_PORT - 1;
+}
+
+} // namespace build
 
 // -----------------------------------------------------------------------------
-// PROTOCOL
-// -----------------------------------------------------------------------------
+
+namespace internal {
+
+Stream* port { nullptr };
+
+size_t button_offset { 0 };
+size_t buttons { 0 };
+
+} // namespace internal
 
 constexpr uint8_t CodeStart { 0xa0 };
 constexpr uint8_t CodeLearn { 0xf1 };
 constexpr uint8_t CodeClear { 0xf2 };
 constexpr uint8_t CodeStop { 0xa1 };
 
-void _lightfoxSend(uint8_t code) {
-    uint8_t data[6] {
+void send(uint8_t code) {
+    const std::array<uint8_t, 6> data {
         CodeStart,
         code,
         0x00,
@@ -58,29 +80,30 @@ void _lightfoxSend(uint8_t code) {
         static_cast<uint8_t>('\r'),
         static_cast<uint8_t>('\n')
     };
-    _lightfox_port->write(data, sizeof(data));
-    _lightfox_port->flush();
-    DEBUG_MSG_P(PSTR("[LIGHTFOX] Code %02X sent\n"), code);
+
+    DEBUG_MSG_P(PSTR("[LIGHTFOX] Send %02X\n"), code);
+    internal::port->write(data.begin(), data.size());
+    internal::port->flush();
 }
 
-void lightfoxLearn() {
-    _lightfoxSend(CodeLearn);
+void learn() {
+    send(CodeLearn);
 }
 
-void lightfoxClear() {
-    _lightfoxSend(CodeClear);
+void clear() {
+    send(CodeClear);
 }
 
-class LightfoxProvider : public RelayProviderBase {
+class RelayProvider : public RelayProviderBase {
 public:
-    LightfoxProvider() = delete;
-    explicit LightfoxProvider(size_t id) :
+    RelayProvider() = delete;
+    explicit RelayProvider(size_t id) :
         _id(id)
     {
         _instances.push_back(this);
     }
 
-    ~LightfoxProvider() {
+    ~RelayProvider() override {
         _instances.erase(
             std::remove(_instances.begin(), _instances.end(), this),
             _instances.end());
@@ -94,108 +117,113 @@ public:
         return true;
     }
 
+    // we apply relay statuses in bulk
     void change(bool) override {
-        static bool scheduled { false };
-        if (!scheduled) {
-            schedule_function([]() {
-                flush();
-                scheduled = false;
-            });
-        }
+        espurnaRegisterOnce(flush);
     }
 
     size_t relayId() const {
         return _id;
     }
 
-    static std::vector<LightfoxProvider*>& instances() {
+    static std::vector<RelayProvider*>& instances() {
         return _instances;
     }
 
-    static void flush() {
-        size_t mask { 0ul };
-        for (size_t index = 0; index < _instances.size(); ++index) {
-            bool status { relayStatus(_instances[index]->relayId()) };
-            mask |= (status ? 1ul : 0ul << index);
-        }
-
-        DEBUG_MSG_P(PSTR("[LIGHTFOX] Sending DUAL mask: 0x%02X\n"), mask);
-
-        uint8_t buffer[4] { 0xa0, 0x04, static_cast<uint8_t>(mask), 0xa1 };
-        _lightfox_port->write(buffer, sizeof(buffer));
-        _lightfox_port->flush();
-    }
+    static void flush();
 
 private:
     size_t _id;
-    static std::vector<LightfoxProvider*> _instances;
+    static std::vector<RelayProvider*> _instances;
 };
 
-std::vector<LightfoxProvider*> LightfoxProvider::_instances;
+std::vector<RelayProvider*> RelayProvider::_instances;
 
-size_t _lightfox_button_offset { 0 };
-size_t _lightfox_buttons { 0 };
+void RelayProvider::flush() {
+    size_t mask { 0ul };
+    for (size_t index = 0; index < _instances.size(); ++index) {
+        bool status { relayStatus(_instances[index]->relayId()) };
+        mask |= (status ? 1ul : 0ul << index);
+    }
 
-// -----------------------------------------------------------------------------
-// WEB
+    DEBUG_MSG_P(PSTR("[LIGHTFOX] DUAL mask: 0x%02X\n"), mask);
+    uint8_t buffer[4] { 0xa0, 0x04, static_cast<uint8_t>(mask), 0xa1 };
+    internal::port->write(buffer, sizeof(buffer));
+    internal::port->flush();
+}
+
 // -----------------------------------------------------------------------------
 
 #if WEB_SUPPORT
+namespace web {
 
-void _lightfoxWebSocketOnVisible(JsonObject& root) {
-    wsPayloadModule(root, PSTR("lightfox"));
+PROGMEM_STRING(Module, "lightfox");
+
+void onVisible(JsonObject& root) {
+    wsPayloadModule(root, Module);
 }
 
-void _lightfoxWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
-    if (strcmp(action, "lightfoxLearn") == 0) {
-        lightfoxLearn();
-    } else if (strcmp(action, "lightfoxClear") == 0) {
-        lightfoxClear();
+void onAction(uint32_t client_id, const char* action, JsonObject& data) {
+    STRING_VIEW_INLINE(Learn, "lightfoxLearn");
+    if (Learn == action) {
+        learn();
+        return;
+    }
+
+    STRING_VIEW_INLINE(Clear, "lightfoxClear");
+    if (Clear == action) {
+        clear();
+        return;
     }
 }
 
-#endif
+void setup() {
+    wsRegister()
+        .onVisible(onVisible)
+        .onAction(onAction);
+}
 
-// -----------------------------------------------------------------------------
-// TERMINAL
-// -----------------------------------------------------------------------------
+} // namespace web
+#endif
 
 #if TERMINAL_SUPPORT
-PROGMEM_STRING(LightfoxCommandLearn, "LIGHTFOX.LEARN");
+namespace terminal {
 
-static void _lightfoxCommandLearn(::terminal::CommandContext&& ctx) {
-    lightfoxLearn();
+PROGMEM_STRING(Learn, "LIGHTFOX.LEARN");
+
+static void learn(::terminal::CommandContext&& ctx) {
+    lightfox::learn();
     terminalOK(ctx);
 }
 
-PROGMEM_STRING(LightfoxCommandClear, "LIGHTFOX.LEARN");
+PROGMEM_STRING(Clear, "LIGHTFOX.LEARN");
 
-static void _lightfoxCommandClear(::terminal::CommandContext&& ctx) {
-    lightfoxClear();
+static void clear(::terminal::CommandContext&& ctx) {
+    lightfox::clear();
     terminalOK(ctx);
 }
 
-static constexpr ::terminal::Command LightfoxCommands[] PROGMEM {
-    {LightfoxCommandLearn, _lightfoxCommandLearn},
-    {LightfoxCommandClear, _lightfoxCommandClear},
+static constexpr ::terminal::Command Commands[] PROGMEM {
+    {Learn, learn},
+    {Clear, clear},
 };
 
-void _lightfoxCommandsSetup() {
-    espurna::terminal::add(LightfoxCommands);
+void setup() {
+    espurna::terminal::add(Commands);
 }
+
+} // namespace terminal
 #endif
 
 // -----------------------------------------------------------------------------
-// SETUP & LOOP
-// -----------------------------------------------------------------------------
 
-void _lightfoxInputLoop() {
-    if (_lightfox_port->available() < 4) {
+void loop() {
+    if (internal::port->available() < 4) {
         return;
     }
 
     unsigned char bytes[4] = {0};
-    _lightfox_port->readBytes(bytes, 4);
+    internal::port->readBytes(bytes, 4);
     if ((bytes[0] != 0xA0) && (bytes[1] != 0x04) && (bytes[3] != 0xA1)) {
         return;
     }
@@ -206,48 +234,52 @@ void _lightfoxInputLoop() {
     unsigned long mask { static_cast<unsigned long>(bytes[2]) & InputsMask };
     unsigned long id { 0 };
 
-    for (size_t button = 0; id < _lightfox_buttons; ++button) {
+    for (size_t button = 0; id < internal::buttons; ++button) {
         if (mask & (1ul << button)) {
-            buttonEvent(button + _lightfox_button_offset, ButtonEvent::Click);
+            buttonEvent(button + internal::button_offset, ButtonEvent::Click);
         }
     }
 }
 
-void lightfoxSetup() {
-
-    const auto port = uartPort(LIGHTFOX_PORT - 1);
-    if (!port || !port->tx) {
+void setup() {
+    const auto port = uartPort(build::port());
+    if (!port) {
         return;
     }
 
-    _lightfox_port = port->stream;
+    internal::port = port->stream;
 
-    #if WEB_SUPPORT
-        wsRegister()
-            .onVisible(_lightfoxWebSocketOnVisible)
-            .onAction(_lightfoxWebSocketOnAction);
-    #endif
+#if WEB_SUPPORT
+    web::setup();
+#endif
+#if TERMINAL_SUPPORT
+    terminal::setup();
+#endif
 
-    #if TERMINAL_SUPPORT
-        _lightfoxCommandsSetup();
-    #endif
-
-    for (size_t relay = 0; relay < _lightfoxBuildRelays(); ++relay) {
+    for (size_t relay = 0; relay < build::relays(); ++relay) {
         size_t relayId { relayCount() };
-        if (!relayAdd(std::make_unique<LightfoxProvider>(relayId))) {
+        if (!relayAdd(std::make_unique<RelayProvider>(relayId))) {
             break;
         }
     }
 
-    _lightfox_button_offset = buttonCount();
-    for (size_t index = 0; index < _lightfoxBuildButtons(); ++index) {
+    internal::button_offset = buttonCount();
+    for (size_t index = 0; index < build::buttons(); ++index) {
         if (buttonAdd()) {
-            ++_lightfox_buttons;
+            ++internal::buttons;
         }
     }
 
-    espurnaRegisterLoop(_lightfoxInputLoop);
+    ::espurnaRegisterLoop(lightfox::loop);
+}
 
+} // namespace
+} // namespace lightfox
+} // namespace hardware
+} // namespace espurna
+
+void lightfoxSetup() {
+    espurna::hardware::lightfox::setup();
 }
 
 #endif
