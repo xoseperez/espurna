@@ -332,7 +332,7 @@ constexpr SystemTimer::Duration SystemTimer::DurationMax;
 
 SystemTimer::SystemTimer() = default;
 
-void SystemTimer::start(Duration duration, Callback callback, bool repeat) {
+void SystemTimer::start(duration::Milliseconds duration, Callback callback, bool repeat) {
     stop();
     if (!duration.count()) {
         return;
