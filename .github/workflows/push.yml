@@ -78,11 +78,11 @@ jobs:
       run: |
         git config --global advice.detachedHead false
         ./ci_install.sh build ${{ matrix.env }}
-    - if: ${{ matrix.env }} == 'nodemcu-lolin'
+    - if: ${{ matrix.env == 'nodemcu-lolin' }}
       name: Basic build
       run: |
         ./ci_script.sh build ${{ matrix.env }}
-    - if: ${{ matrix.env }} != 'nodemcu-lolin'
+    - if: ${{ endsWith(matrix.env, '-base') }}
       name: Test build
       run: |
         ./ci_script.sh test ${{ matrix.env }}
