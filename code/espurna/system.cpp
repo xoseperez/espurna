@@ -399,10 +399,7 @@ void SystemTimer::callback() {
         return;
     }
 
-    if (_tick) {
-        os_timer_disarm(_armed);
-    }
-    reset();
+    stop();
 }
 
 void SystemTimer::schedule_once(Duration duration, Callback callback) {
