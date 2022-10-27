@@ -399,6 +399,9 @@ void SystemTimer::callback() {
         return;
     }
 
+    if (_tick) {
+        os_timer_disarm(_armed);
+    }
     reset();
 }
 
