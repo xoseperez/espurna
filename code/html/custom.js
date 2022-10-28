@@ -899,6 +899,10 @@ function initSetupPassword(form) {
 }
 
 function styleInject(rules) {
+    if (!rules.length) {
+        return;
+    }
+
     const style = document.createElement("style");
     style.setAttribute("type", "text/css");
     document.head.appendChild(style);
@@ -2192,34 +2196,42 @@ function updateLightState(value) {
     state.checked = value;
 
     const picker = document.querySelector(".IroColorPicker");
-    picker.style["content-visibility"] = value ? "visible" : "hidden";
+    picker.style["display"] = value ? "block" : "none";
 }
 
 function colorEnabled(value) {
-    styleInject([
-        styleVisible(".IroColorPicker", value),
-        styleVisible(".light-channel", !value)
-    ]);
+    const rules = []
+    rules.push(styleVisible(".IroColorPicker", value));
+
+    for (let channel = 0; channel < 3; ++channel) {
+        rules.push(
+            styleVisible(`.light-channel-${channel}`, !value));
+    }
+
+    styleInject(rules);
 }
 
-function colorInit(mode) {
+function colorInit(value) {
     // TODO: ref. #2451, input:change causes pretty fast updates.
     // either make sure we don't cause any issue on the esp, or switch to
     // color:change instead (which applies after input ends)
     let change = () => {
     };
 
-    const layout = []
-    switch (mode) {
-    case "rgb":
+    const rules = [];
+    const layout = [];
+
+    // RGB
+    if (value) {
         layout.push(colorWheel());
         change = (color) => {
             sendAction("light", {
                 rgb: color.hexString
             });
         };
-        break;
-    case "hsv":
+    // HSV
+    } else {
+        rules.push(styleVisible(".light-brightness", false));
         layout.push(colorBox());
         layout.push(colorSlider("hue"));
         layout.push(colorSlider("saturation"));
@@ -2229,43 +2241,12 @@ function colorInit(mode) {
                 hsv: colorToHsvString(color)
             });
         };
-        break;
-    default:
-        return;
-    }
-
-    const picker = document.createElement("div");
-    picker.classList.add("pure-control-group");
-    ColorPicker = new iro.ColorPicker(picker, {layout});
-    ColorPicker.on("input:change", change);
-
-    const container = document.getElementById("light");
-    container.appendChild(picker);
-}
-
-function initMireds(value) {
-    if (!value) {
-        return;
-    }
-
-    const control = loadTemplate("mireds-control");
-
-    const slider = control.getElementById("mireds");
-    slider.addEventListener("change", (event) => {
-        event.target.nextElementSibling.textContent = event.target.value;
-        sendAction("light", {mireds: event.target.value});
-    });
-
-    mergeTemplate(document.getElementById("cct"), control);
-    
-    // When there are CCT controls, no need for raw white channel sliders
-    let rules = [];
-    for (let channel = 3; channel < 5; ++channel) {
-        rules.push(
-            styleVisible(`.light-channel input.slider[data-id='${channel}']`, false));
     }
 
     styleInject(rules);
+
+    ColorPicker = new iro.ColorPicker("#light-picker", {layout});
+    ColorPicker.on("input:change", change);
 }
 
 function updateMireds(value) {
@@ -2276,12 +2257,31 @@ function updateMireds(value) {
     }
 }
 
-function cctInit(value) {
-    const mireds = document.getElementById("mireds");
-    if (mireds) {
-        mireds.setAttribute("min", value.cold);
-        mireds.setAttribute("max", value.warm);
+// When there are CCT controls, no need for raw white channel sliders
+function cctEnabled(value) {
+    if (value) {
+        let rules = [];
+        for (let channel = 3; channel < 5; ++channel) {
+            rules.push(
+                styleVisible(`.light-channel-${channel}`, false));
+        }
+
+        styleInject(rules);
     }
+}
+
+function cctInit(value) {
+    const control = loadTemplate("mireds-control");
+
+    const slider = control.getElementById("mireds");
+    slider.setAttribute("min", value.cold);
+    slider.setAttribute("max", value.warm);
+    slider.addEventListener("change", (event) => {
+        event.target.nextElementSibling.textContent = event.target.value;
+        sendAction("light", {mireds: event.target.value});
+    });
+
+    mergeTemplate(document.getElementById("light"), control);
 }
 
 function updateLight(data) {
@@ -2338,6 +2338,7 @@ function onBrightnessSliderChange(event) {
 
 function initBrightness() {
     const template = loadTemplate("brightness-control");
+    template.querySelector("div").classList.add("light-brightness");
 
     const slider = template.getElementById("brightness");
     slider.addEventListener("change", onBrightnessSliderChange);
@@ -2358,6 +2359,7 @@ function initChannels(channels) {
     for (let channel = 0; channel < channels; ++channel) {
         const line = loadTemplate("channel-control");
         line.querySelector("span.slider").dataset["id"] = channel;
+        line.querySelector("div").classList.add(`light-channel-${channel}`);
 
         const slider = line.querySelector("input.slider");
         slider.dataset["id"] = channel;
@@ -2369,7 +2371,7 @@ function initChannels(channels) {
 }
 
 function updateChannels(values) {
-    const container = document.getElementById("channels");
+    const container = document.getElementById("light");
     if (!container) {
         return;
     }
@@ -2636,7 +2638,7 @@ function processData(data) {
         }
 
         if ("useCCT" === key) {
-            initMireds(value);
+            cctEnabled(value);
         }
 
         if ("useColor" === key) {
@@ -2644,7 +2646,7 @@ function processData(data) {
         }
 
         if ("useRGB" === key) {
-            colorInit(value ? "rgb" : "hsv");
+            colorInit(value);
         }
 
         //endRemoveIf(!light)
