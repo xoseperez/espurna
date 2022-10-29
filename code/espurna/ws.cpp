@@ -517,27 +517,27 @@ void _wsPostParse(uint32_t client_id, bool save, bool reload) {
     });
 }
 
-void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
-
-    //DEBUG_MSG_P(PSTR("[WEBSOCKET] Parsing: %.*s\n"), length, reinterpret_cast<cont char*>(payload));
-
-    // Get client ID
-    uint32_t client_id = client->id();
+void _wsParse(AsyncWebSocketClient* client, uint8_t* payload, size_t length) {
+    //DEBUG_MSG_P(PSTR("[WEBSOCKET] Parsing: %.*s\n"),
+    //    length, reinterpret_cast<cont char*>(payload));
 
     // Check early for empty object / nothing
-    if ((length == 0) || (length == 1)) {
+    if ((length < 2) || (payload[0] != '{')) {
         return;
     }
 
-    if ((length == 3) && (strcmp((char*) payload, "{}") == 0)) {
+    if ((length == 2) && (payload[1] == '}')) {
         return;
     }
 
-    // Parse JSON input
-    // TODO: json buffer should be pretty efficient with the non-const payload,
+    // Notice that the buffer payload above *is null terminated*!
+    // JSON parser should be pretty efficient with the non-const payload,
     // most of the space is taken by the object key references
+    const auto client_id = client->id();
+    auto* ptr = reinterpret_cast<char*>(payload);
+
     DynamicJsonBuffer jsonBuffer(512);
-    JsonObject& root = jsonBuffer.parseObject((char *) payload);
+    JsonObject& root = jsonBuffer.parseObject(ptr);
     if (!root.success()) {
         wsPost(client_id, [](JsonObject& root) {
             root[F("message")] = F("JSON parsing error");
@@ -576,13 +576,12 @@ void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
         if (data.success()) {
             if (strcmp(action, "restore") == 0) {
                 const auto* message = settingsRestoreJson(data)
-                    ? F("Changes saved, you should be able to reboot now")
-                    : F("Cound not restore the configuration, see the debug log for more information");
+                    ? PSTR("Changes saved, you should be able to reboot now")
+                    : PSTR("Cound not restore the configuration, see the debug log for more information");
 
                 wsPost(client_id, [message](JsonObject& root) {
-                    root[F("message")] = message;
+                    root[F("message")] = FPSTR(message);
                 });
-
                 return;
             }
 

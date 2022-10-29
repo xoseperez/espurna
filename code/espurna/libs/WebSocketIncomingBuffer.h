@@ -68,10 +68,11 @@ struct WebSocketIncomingBuffer {
             && (info->final || _cb_on_fragments))
         {
             // Frame/message complete
+            const size_t len = _buffer.size();
             if (_terminate_string) {
                 _buffer.push_back(0);
             }
-            _cb(client, _buffer.data(), _buffer.size());
+            _cb(client, _buffer.data(), len);
             _buffer.clear();
         }
     }
