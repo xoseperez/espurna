@@ -21,7 +21,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "wifi.h"
 #include "ws_internal.h"
 
-#include "libs/WebSocketIncommingBuffer.h"
+#include "libs/WebSocketIncomingBuffer.h"
 
 // -----------------------------------------------------------------------------
 // Helpers / utility functions
@@ -519,7 +519,7 @@ void _wsPostParse(uint32_t client_id, bool save, bool reload) {
 
 void _wsParse(AsyncWebSocketClient *client, uint8_t * payload, size_t length) {
 
-    //DEBUG_MSG_P(PSTR("[WEBSOCKET] Parsing: %s\n"), length ? (char*) payload : "");
+    //DEBUG_MSG_P(PSTR("[WEBSOCKET] Parsing: %.*s\n"), length, reinterpret_cast<cont char*>(payload));
 
     // Get client ID
     uint32_t client_id = client->id();
@@ -684,49 +684,60 @@ void _wsConnected(uint32_t client_id) {
     wsPostSequence(client_id, _ws_callbacks.on_data);
 }
 
-void _wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len){
-
-    if (type == WS_EVT_CONNECT) {
-
-        client->_tempObject = nullptr;
-        String ip = client->remoteIP().toString();
-
+void _wsEvent(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType type, void* arg, uint8_t* data, size_t len) {
+    switch (type) {
+    case WS_EVT_CONNECT:
+    {
+        const auto ip = client->remoteIP().toString();
 #ifndef NOWSAUTH
         if (!_wsAuth(client)) {
-            DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u session expired for %s\n"), client->id(), ip.c_str());
+            DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u session expired for %s\n"),
+                client->id(), ip.c_str());
             client->close();
             return;
         }
 #endif
 
-        DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u connected, ip: %s, url: %s\n"), client->id(), ip.c_str(), server->url());
+        DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u connected, ip: %s, url: %s\n"),
+            client->id(), ip.c_str(), server->url());
+
         _wsConnected(client->id());
         _wsResetUpdateTimer();
-        client->_tempObject = new WebSocketIncommingBuffer(_wsParse, true);
 
-    } else if(type == WS_EVT_DISCONNECT) {
+        client->_tempObject = new WebSocketIncomingBuffer(_wsParse);
+        break;
+    }
+
+    case WS_EVT_DISCONNECT:
         DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u disconnected\n"), client->id());
         if (client->_tempObject) {
-            delete (WebSocketIncommingBuffer *) client->_tempObject;
+            auto* ptr = reinterpret_cast<WebSocketIncomingBuffer*>(client->_tempObject);
+            delete ptr;
             client->_tempObject = nullptr;
         }
         wifiApCheck();
+        break;
 
-    } else if(type == WS_EVT_ERROR) {
-        DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u error(%u): %s\n"), client->id(), *((uint16_t*)arg), (char*)data);
-
-    } else if(type == WS_EVT_PONG) {
-        DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u pong(%u): %s\n"), client->id(), len, len ? (char*) data : "");
-
-    } else if(type == WS_EVT_DATA) {
-        //DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u data(%u): %s\n"), client->id(), len, len ? (char*) data : "");
-        if (!client->_tempObject) return;
-        WebSocketIncommingBuffer *buffer = (WebSocketIncommingBuffer *)client->_tempObject;
-        AwsFrameInfo * info = (AwsFrameInfo*)arg;
-        buffer->data_event(client, info, data, len);
-
+    case WS_EVT_ERROR:
+    {
+        uint16_t code;
+        std::memcpy(&code, arg, 2);
+        DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u error(%hu)\n"), client->id(), code);
+        break;
     }
 
+    case WS_EVT_PONG:
+        break;
+
+    case WS_EVT_DATA:
+        if (client->_tempObject) {
+            auto *buffer = reinterpret_cast<WebSocketIncomingBuffer*>(client->_tempObject);
+            AwsFrameInfo * info = (AwsFrameInfo*)arg;
+            buffer->data_event(client, info, data, len);
+        }
+        break;
+
+    }
 }
 
 void _wsHandlePostponedCallbacks(bool connected) {
