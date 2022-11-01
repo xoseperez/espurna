@@ -69,7 +69,8 @@ struct pwm_phase {
  * pwm_next_set from the interrupt routine during the first
  * pwm phase
  */
-typedef struct pwm_phase (pwm_phase_array)[PWM_MAX_CHANNELS + 2];
+#define PWM_PHASES_MAX (PWM_MAX_CHANNELS + 2)
+typedef struct pwm_phase (pwm_phase_array)[PWM_PHASES_MAX];
 static pwm_phase_array pwm_phases[3];
 static struct {
 	struct pwm_phase* next_set;
@@ -114,23 +115,27 @@ static struct timer_regs* timer = (struct timer_regs*)(0x60000600);
 static void IRAM_ATTR
 pwm_intr_handler(void)
 {
-	if ((pwm_state.current_set[pwm_state.current_phase].off_mask == 0) &&
-	    (pwm_state.current_set[pwm_state.current_phase].on_mask == 0)) {
+	const struct pwm_phase current_phase = pwm_state.current_set[pwm_state.current_phase];
+	if ((current_phase.off_mask == 0) && (current_phase.on_mask == 0)) {
 		pwm_state.current_set = pwm_state.next_set;
 		pwm_state.current_phase = 0;
 	}
 
 	do {
-		// force write to GPIO registers on each loop
+		// need barrier to force write to GPIO registers on each loop
+		// (plus, unlike with volatile variables, memw only added once)
 		__asm__ volatile ("" : : : "memory");
 
-		gpio->out_w1ts = (uint32_t)(pwm_state.current_set[pwm_state.current_phase].on_mask);
-		gpio->out_w1tc = (uint32_t)(pwm_state.current_set[pwm_state.current_phase].off_mask);
+		const struct pwm_phase current_phase = pwm_state.current_set[pwm_state.current_phase];
+		gpio->out_w1ts = (uint32_t)(current_phase.on_mask);
+		gpio->out_w1tc = (uint32_t)(current_phase.off_mask);
 
-		uint32_t ticks = pwm_state.current_set[pwm_state.current_phase].ticks;
+		uint32_t ticks = current_phase.ticks;
 
-		pwm_state.current_phase++;
+		const uint8_t next_phase = ++pwm_state.current_phase;
+		pwm_state.current_phase = (next_phase < PWM_PHASES_MAX) ? next_phase : 0;
 
+		// TODO busy loop numbers need to depend on cpu speed
 		if (ticks) {
 			if (ticks >= 16) {
 				// constant interrupt overhead

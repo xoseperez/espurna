@@ -1741,7 +1741,7 @@
 #endif
 
 #ifndef PWM_PROVIDER
-#define PWM_PROVIDER                PWM_PROVIDER_ARDUINO // Currently, two software PWM providers are supported
+#define PWM_PROVIDER                PWM_PROVIDER_GENERIC // Currently, two software PWM providers are supported
                                                          // - PWM_PROVIDER_GENERIC (default)
                                                          // - PWM_PROVIDER_ARDUINO
 #endif
