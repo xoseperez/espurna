@@ -148,7 +148,9 @@
 #define BH1750_ADDRESS                  0x00    // 0x00 means auto
 #endif
 
+#ifndef BH1750_MODE
 #define BH1750_MODE                     BH1750_CONTINUOUS_HIGH_RES_MODE
+#endif
 
 //------------------------------------------------------------------------------
 // BMP085/BMP180
