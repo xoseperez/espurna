@@ -355,9 +355,10 @@ const uint8_t* hexEncodeImpl(const uint8_t* in_begin, const uint8_t* in_end, T&&
 
     auto* in_ptr = in_begin;
     for (; in_ptr != in_end; ++in_ptr) {
-        char buf[2] {
+        const char buf[2] {
             base16[((*in_ptr) & Left) >> Shift],
-            base16[(*in_ptr) & Right]};
+            base16[(*in_ptr) & Right]
+        };
         if (!callback(buf)) {
             break;
         }

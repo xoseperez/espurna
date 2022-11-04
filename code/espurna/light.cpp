@@ -1462,19 +1462,30 @@ String _lightGroupPayload() {
 
 long _lightAdjustValue(long value, espurna::StringView operation) {
     if (operation.length()) {
-        char* endp { nullptr };
-        auto updated = std::strtol(operation.begin(), &endp, 10);
-        if ((endp == operation.begin()) || (*endp != '\0')) {
-            return value;
-        }
-
         switch (operation[0]) {
         case '+':
         case '-':
-            return updated + value;
+        {
+            const long multiplier = (operation[0] == '-') ? -1 : 1;
+            operation = espurna::StringView(
+                operation.begin() + 1, operation.end());
+
+            const auto result = parseUnsigned(operation, 10);
+            if (result.ok && result.value < std::numeric_limits<long>::max()) {
+                return value + (static_cast<long>(result.value) * multiplier);
+            }
+            break;
         }
 
-        return updated;
+        default:
+        {
+            const auto result = parseUnsigned(operation, 10);
+            if (result.ok && result.value < std::numeric_limits<long>::max()) {
+                return result.value;
+            }
+        }
+
+        }
     }
 
     return value;
@@ -2576,12 +2587,12 @@ void _lightWebSocketOnAction(uint32_t client_id, const char* action, JsonObject&
 
     if (channel.success()) {
         for (auto& kv : channel) {
-            const auto id = parseUnsigned(kv.key, 10);
-            if (!id.ok) {
+            size_t id;
+            if (!_lightTryParseChannel(kv.key, id)) {
                 break;
             }
 
-            lightChannel(id.value, kv.value.as<long>());
+            _lightAdjustChannel(id, kv.value.as<String>());
             update = true;
         }
     }
