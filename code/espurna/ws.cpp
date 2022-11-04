@@ -671,7 +671,7 @@ void _wsConnected(uint32_t client_id) {
         : false;
 
     if (changePassword) {
-        StaticJsonBuffer<JSON_OBJECT_SIZE(1)> jsonBuffer;
+        DynamicJsonBuffer jsonBuffer(32);
         JsonObject& root = jsonBuffer.createObject();
         root[F("webMode")] = WEB_MODE_PASSWORD;
         wsSend(client_id, root);
