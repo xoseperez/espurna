@@ -140,6 +140,7 @@ constexpr size_t bufferSize() {
 namespace settings {
 namespace {
 
+[[gnu::unused]]
 bool sdkDebug() {
     return getSetting(keys::SdkDebug, build::sdkDebug());
 }
