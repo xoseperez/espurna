@@ -1046,9 +1046,14 @@ const char* _lightForEachToken(espurna::StringView payload, char sep, T&& callba
     return it;
 }
 
-template <typename Begin, typename End>
-const char* _lightApplyForEachToken(espurna::StringView payload, char sep, Begin& it, End end) {
-    return _lightForEachToken(payload, sep,
+void _lightFromCommaSeparatedPayload(espurna::StringView payload, decltype(_light_channels.end()) end) {
+    auto it = _light_channels.begin();
+    if (it == end) {
+        return;
+    }
+
+    // every channel value is separated by a comma
+    _lightForEachToken(payload, ',',
         [&](espurna::StringView token) {
             if (it != end) {
                 const auto result = parseUnsigned(token, 10);
@@ -1061,24 +1066,16 @@ const char* _lightApplyForEachToken(espurna::StringView payload, char sep, Begin
 
             return false;
         });
-}
 
-void _lightFromCommaSeparatedPayload(espurna::StringView payload) {
-    const auto end = _light_channels.end();
-
-    auto it = _light_channels.begin();
-    if (it == end) {
-        return;
-    }
-
-    // every channel value is separated by a comma
-    _lightApplyForEachToken(payload, ',', it, end);
-
-    // and fill the rest with zeroes
+    // fill the rest with zeroes
     while (it != end) {
         (*it) = 0;
         ++it;
     }
+}
+
+void _lightFromCommaSeparatedPayload(espurna::StringView payload) {
+    _lightFromCommaSeparatedPayload(payload, _light_channels.end());
 }
 
 void _lightFromRgbPayload(espurna::StringView payload) {
@@ -1101,7 +1098,7 @@ void _lightFromRgbPayload(espurna::StringView payload) {
     }
 
     // Otherwise, assume comma-separated decimal values
-    _lightFromCommaSeparatedPayload(payload);
+    _lightFromCommaSeparatedPayload(payload, _light_channels.begin() + 3);
 }
 
 espurna::light::Hsv _lightHsvFromPayload(espurna::StringView payload) {
@@ -1112,12 +1109,24 @@ espurna::light::Hsv _lightHsvFromPayload(espurna::StringView payload) {
     // - H [0...360]
     // - S [0...100]
     // - V [0...100]
-    const auto parsed = _lightApplyForEachToken(
-            payload, ',', it, std::end(values));
+    const auto end = std::end(values);
+    const auto parsed = _lightForEachToken(payload, ',',
+        [&](espurna::StringView token) {
+            if (it != end) {
+                const auto result = parseUnsigned(token, 10);
+                if (result.ok) {
+                    (*it) = result.value;
+                    ++it;
+                    return true;
+                }
+            }
+
+            return false;
+        });
 
     // discard partial or uneven payloads
     espurna::light::Hsv out;
-    if ((parsed != payload.end()) || (it != std::end(values))) {
+    if ((parsed != payload.end()) || (it != end)) {
         return out;
     }
 
