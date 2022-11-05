@@ -1076,7 +1076,6 @@ void _lightFromCommaSeparatedPayload(espurna::StringView payload) {
 
     // and fill the rest with zeroes
     while (it != end) {
-        DEBUG_MSG_P(PSTR(":set %p with zero\n"), it);
         (*it) = 0;
         ++it;
     }
@@ -1282,34 +1281,6 @@ String _lightRgbPayload(espurna::light::Rgb rgb) {
 
 String _lightRgbPayload() {
     return _lightRgbPayload(_lightToInputRgb());
-}
-
-void _lightFromGroupPayload(espurna::StringView payload) {
-    if (!payload.length()) {
-        return;
-    }
-
-    constexpr size_t BufferSize { 32 };
-    if (payload.length() < BufferSize) {
-        char buffer[BufferSize] = {0};
-        std::copy(payload.begin(), payload.end(), buffer);
-
-        char* tok = std::strtok(buffer, ",");
-        auto it = _light_channels.begin();
-
-        while ((it != _light_channels.end()) && (tok != nullptr)) {
-            char* endp { nullptr };
-            auto value = std::strtol(tok, &endp, 10);
-            if ((endp == tok) || (*endp != '\0')) {
-                return;
-            }
-
-            (*it) = value;
-            ++it;
-
-            tok = std::strtok(nullptr, ",");
-        }
-    }
 }
 
 // HSV to RGB transformation
@@ -2229,7 +2200,7 @@ void _lightMqttCallback(unsigned int type, espurna::StringView topic, espurna::S
     if (type == MQTT_MESSAGE_EVENT) {
         // Group color
         if ((mqtt_group_color.length() > 0) && (topic == mqtt_group_color)) {
-            _lightFromGroupPayload(payload);
+            _lightFromCommaSeparatedPayload(payload);
             _lightUpdateFromMqttGroup();
             return;
         }
