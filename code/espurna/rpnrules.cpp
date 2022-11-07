@@ -1104,7 +1104,7 @@ void updateVariables(const espurna::sensor::Value& value) {
     static_assert(std::is_same<decltype(value.value), rpn_float>::value, "");
 
     auto topic = value.topic;
-    topic.remove('/');
+    topic.replace("/", "");
 
     rpn_variable_set(internal::context,
             topic, rpn_value(static_cast<rpn_float>(value.value)));
