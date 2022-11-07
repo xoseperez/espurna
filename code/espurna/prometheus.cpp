@@ -57,7 +57,7 @@ void handler(AsyncWebServerRequest* request) {
         for (size_t index = 0; index < magnitudeCount(); ++index) {
             auto value = magnitudeValue(index);
             if (value) {
-                value.topic.replace('/', '_');
+                value.topic.replace("/", "");
                 response->printf_P(PSTR("%s %s\n"),
                     value.topic.c_str(), value.repr.c_str());
             }
