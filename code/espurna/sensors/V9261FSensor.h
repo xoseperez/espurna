@@ -88,7 +88,7 @@ class V9261FSensor : public BaseEmonSensor {
             if (index == 2) return _active;
             if (index == 3) return _reactive;
             if (index == 4) return _apparent;
-            if (index == 5) return _apparent > 0 ? 100 * _active / _apparent : 100;
+            if (index == 5) return _factor;
             if (index == 6) return _energy[0].asDouble();
             return 0;
         }
@@ -100,9 +100,7 @@ class V9261FSensor : public BaseEmonSensor {
             case 1:
                 return V9261F_VOLTAGE_FACTOR;
             case 2:
-                return V9261F_POWER_FACTOR;
-            case 3:
-                return V9261F_RPOWER_FACTOR;
+                return V9261F_POWER_ACTIVE_FACTOR;
             }
 
             return BaseEmonSensor::DefaultRatio;
@@ -120,9 +118,6 @@ class V9261FSensor : public BaseEmonSensor {
                 case 2:
                     _power_active_ratio = value;
                     break;
-                case 3:
-                    _power_reactive_ratio = value;
-                    break;
                 }
             }
         }
@@ -135,8 +130,6 @@ class V9261FSensor : public BaseEmonSensor {
                 return _voltage_ratio;
             case 2:
                 return _power_active_ratio;
-            case 3:
-                return _power_reactive_ratio;
             }
 
             return BaseEmonSensor::getRatio(index);
@@ -191,7 +184,7 @@ class V9261FSensor : public BaseEmonSensor {
 
             // validate received data and wait for the next request -> response
             // FE1104 25F2420069C1BCFF20670C38C05E4101 B6
-            // ^^^^^^                                       - HEAD byte, mask, number of valeus
+            // ^^^^^^                                       - HEAD byte, mask, number of values
             //        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^      - u32 4 times
             //                                         ^^   - CRC byte
             } else if (_state == 3) {
@@ -205,12 +198,12 @@ class V9261FSensor : public BaseEmonSensor {
                         (_data[6] << 24)
                     ) / _power_active_ratio;
 
-                    _reactive = (double) (
-                        (_data[7]) +
-                        (_data[8] <<  8) +
-                        (_data[9] << 16) +
-                        (_data[10] << 24)
-                    ) / _power_reactive_ratio;
+                    // With known ratio, could also use this
+                    // _reactive = (double) (
+                    //     (_data[7]) +
+                    //     (_data[8] <<  8) +
+                    //     (_data[9] << 16) +
+                    //     (_data[10] << 24);
 
                     _voltage = (double) (
                         (_data[11]) +
@@ -227,11 +220,19 @@ class V9261FSensor : public BaseEmonSensor {
                     ) / _current_ratio;
 
                     if (_active < 0) _active = 0;
-                    if (_reactive < 0) _reactive = 0;
                     if (_voltage < 0) _voltage = 0;
                     if (_current < 0) _current = 0;
 
-                    _apparent = fs_sqrt(_reactive * _reactive + _active * _active);
+                    _apparent = _voltage * _current;
+                    _factor = ((_voltage > 0) && (_current > 0))
+                        ? (100 * _active / _voltage / _current)
+                        : 100;
+
+                    if (_apparent > _active) {
+                        _reactive = fs_sqrt(_apparent * _apparent - _active * _active);
+                    } else {
+                        _reactive = 0;
+                    }
 
                     const auto now = TimeSource::now();
                     if (_reading) {
@@ -249,7 +250,7 @@ class V9261FSensor : public BaseEmonSensor {
                 _index = 0;
                 _state = 4;
 
-            // ... by waiting for a bit
+            // ... by consuming everything until our clock runs out
             } else if (_state == 4) {
 
                 consumeAvailable(*_serial);
@@ -279,9 +280,12 @@ class V9261FSensor : public BaseEmonSensor {
 
         double _active { 0 };
         double _reactive { 0 };
+        double _apparent { 0 };
+
         double _voltage { 0 };
         double _current { 0 };
-        double _apparent { 0 };
+
+        double _factor { 0 };
 
         TimeSource::time_point _last_reading;
         TimeSource::time_point _timestamp;

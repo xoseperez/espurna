@@ -158,7 +158,6 @@ public:
         _current_ratio = DefaultRatio;
         _voltage_ratio = DefaultRatio;
         _power_active_ratio = DefaultRatio;
-        _power_reactive_ratio = DefaultRatio;
         _energy_ratio = DefaultRatio;
         _ratios_changed = true;
     }
@@ -217,8 +216,6 @@ private:
                 return &(instance._voltage_ratio);
             case MAGNITUDE_POWER_ACTIVE:
                 return &(instance._power_active_ratio);
-            case MAGNITUDE_POWER_REACTIVE:
-                return &(instance._power_reactive_ratio);
             case MAGNITUDE_ENERGY:
                 return &(instance._energy_ratio);
             }
@@ -233,7 +230,6 @@ protected:
     double _current_ratio { DefaultRatio };
     double _voltage_ratio { DefaultRatio };
     double _power_active_ratio { DefaultRatio };
-    double _power_reactive_ratio { DefaultRatio };
     double _energy_ratio { DefaultRatio };
 
     EnergyIndex _energy{};

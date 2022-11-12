@@ -1168,11 +1168,17 @@
 #define V9261F_SYNC_INTERVAL            600     // Sync signal length (ms)
 #endif
 
-// Default ratios
-#define V9261F_CURRENT_FACTOR           79371434.0
+#ifndef V9261F_POWER_ACTIVE_FACTOR
+#define V9261F_POWER_ACTIVE_FACTOR      153699.0
+#endif
+
+#ifndef V9261F_VOLTAGE_FACTOR
 #define V9261F_VOLTAGE_FACTOR           4160651.0
-#define V9261F_POWER_FACTOR             153699.0
-#define V9261F_RPOWER_FACTOR            V9261F_CURRENT_FACTOR
+#endif
+
+#ifndef V9261F_CURRENT_FACTOR
+#define V9261F_CURRENT_FACTOR           79371434.0
+#endif
 
 //------------------------------------------------------------------------------
 // VEML6075 based power sensor

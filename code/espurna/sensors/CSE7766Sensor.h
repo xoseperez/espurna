@@ -136,8 +136,8 @@ class CSE7766Sensor : public BaseEmonSensor {
             if (index == 1) return _voltage;
             if (index == 2) return _active;
             if (index == 3) return _reactive;
-            if (index == 4) return _voltage * _current;
-            if (index == 5) return ((_voltage > 0) && (_current > 0)) ? 100 * _active / _voltage / _current : 100;
+            if (index == 4) return _apparent;
+            if (index == 5) return _factor;
             if (index == 6) return _energy[0].asDouble();
             return 0;
         }
@@ -236,11 +236,13 @@ class CSE7766Sensor : public BaseEmonSensor {
             }
 
             // Calculate reactive power
-            _reactive = 0;
-            unsigned int active = _active;
-            unsigned int apparent = _voltage * _current;
-            if (apparent > active) {
-                _reactive = sqrt(apparent * apparent - active * active);
+            _apparent = _voltage * _current;
+            _factor = ((_voltage > 0) && (_current > 0))
+                ? (100 * _active / _voltage / _current)
+                : 100;
+
+            if (_apparent > _active) {
+                _reactive = fs_sqrt(_apparent * _apparent - _active * _active);
             } else {
                 _reactive = 0;
             }
@@ -315,8 +317,12 @@ class CSE7766Sensor : public BaseEmonSensor {
 
         double _active = 0;
         double _reactive = 0;
+        double _apparent;
+
         double _voltage = 0;
         double _current = 0;
+
+        double _factor = 0;
 
         TimeSource::time_point _last_index_reset;
         unsigned char _data[24] {0};
