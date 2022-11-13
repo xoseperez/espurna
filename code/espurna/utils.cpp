@@ -442,3 +442,21 @@ size_t hexDecode(const char* in, size_t in_size, uint8_t* out, size_t out_size) 
     uint8_t* out_ptr { hexDecode(in, in + in_size, out, out + out_size) };
     return out_ptr - out;
 }
+
+size_t consumeAvailable(Stream& stream) {
+    const auto result = stream.available();
+    if (result <= 0) {
+        return 0;
+    }
+
+    const auto available = static_cast<size_t>(result);
+    size_t size = 0;
+    uint8_t buf[64];
+    do {
+        const auto chunk = std::min(available, std::size(buf));
+        stream.read(&buf[0], chunk);
+        size += chunk;
+    } while (size != available);
+
+    return size;
+}

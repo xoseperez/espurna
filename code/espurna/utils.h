@@ -59,3 +59,5 @@ bool tryParseId(espurna::StringView, size_t limit, size_t& out);
 bool tryParseIdPath(espurna::StringView, size_t limit, size_t& out);
 
 espurna::StringView stripNewline(espurna::StringView);
+
+size_t consumeAvailable(Stream&);

@@ -296,7 +296,6 @@ class CSE7766Sensor : public BaseEmonSensor {
 
                 _data[_data_index++] = byte;
                 if (_data_index > 23) {
-                    _serial->flush();
                     break;
                 }
 

@@ -472,11 +472,6 @@ public:
             });
     }
 
-    void flush() {
-        while (_port->read() >= 0) {
-        }
-    }
-
     // ---------------------------------------------------------------------
 
     void setDebug(bool debug) {
@@ -553,14 +548,14 @@ public:
     }
 
     void pre() override {
-        flush();
+        consumeAvailable(*_port);
 
         if (_reset_energy) {
             const auto result [[gnu::unused]] = modbusResetEnergy();
             PZEM_DEBUG_MSG_P(PSTR("[PZEM004TV3] Energy reset - %s\n"),
                 result ? PSTR("OK") : PSTR("FAIL"));
             _reset_energy = false;
-            flush();
+            consumeAvailable(*_port);
         }
 
         if (TimeSource::now() - _last_update > _update_interval) {
@@ -618,7 +613,7 @@ void PZEM004TV30Sensor::command_address(::terminal::CommandContext&& ctx) {
 
     uint8_t address = espurna::settings::internal::convert<uint8_t>(ctx.argv[1]);
 
-    _instance->flush();
+    consumeAvailable(*(_instance->_port));
     if (_instance->modbusChangeAddress(address)) {
         _instance->_address = address;
         setSetting("pzemv30Addr", address);

@@ -150,45 +150,53 @@ class V9261FSensor : public BaseEmonSensor {
 
         void _read() {
 
+            // we are seeing the data request
             if (_state == 0) {
-
-                while (_serial->available()) {
-                    _serial->flush();
-                    _found = true;
-                    _timestamp = TimeSource::now();
+                const auto available = _serial->available();
+                if (available <= 0) {
+                    if (_found && (TimeSource::now() - _timestamp > SyncInterval)) {
+                        _index = 0;
+                        _state = 1;
+                    }
+                    return;
                 }
 
-                if (_found && (TimeSource::now() - _timestamp > SyncInterval)) {
-                    _serial->flush();
-                    _index = 0;
-                    _state = 1;
-                }
+                consumeAvailable(*_serial);
+                _found = true;
+                _timestamp = TimeSource::now();
 
+            // ...which we just skip...
             } else if (_state == 1) {
 
-                while (_serial->available()) {
-                    _serial->read();
-                    if (_index++ >= 7) {
-                        _serial->flush();
-                        _index = 0;
-                        _state = 2;
-                    }
+                _index += consumeAvailable(*_serial);
+                if (_index++ >= 7) {
+                    _index = 0;
+                    _state = 2;
                 }
 
+            // ...until we receive response...
             } else if (_state == 2) {
 
-                while (_serial->available()) {
-                    _data[_index] = _serial->read();
-                    if (_index++ >= 19) {
-                        _serial->flush();
-                        _timestamp = TimeSource::now();
-                        _state = 3;
-                    }
+                const auto available = _serial->available();
+                if (available <= 0) {
+                    return;
                 }
 
+                _index += _serial->read(&_data[_index], std::min(
+                    static_cast<size_t>(available), sizeof(_data)));
+                if (_index >= 19) {
+                    _timestamp = TimeSource::now();
+                    _state = 3;
+                }
+
+            // validate received data and wait for the next request -> response
+            // FE1104 25F2420069C1BCFF20670C38C05E4101 B6
+            // ^^^^^^                                       - HEAD byte, mask, number of valeus
+            //        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^      - u32 4 times
+            //                                         ^^   - CRC byte
             } else if (_state == 3) {
 
-                if (_checksum(_data)) {
+                if (_checksum(&_data[0], &_data[19]) == _data[19]) {
 
                     _active = (double) (
                         (_data[3]) +
@@ -241,13 +249,10 @@ class V9261FSensor : public BaseEmonSensor {
                 _index = 0;
                 _state = 4;
 
+            // ... by waiting for a bit
             } else if (_state == 4) {
 
-                while (_serial->available()) {
-                    _serial->flush();
-                    _timestamp = TimeSource::now();
-                }
-
+                consumeAvailable(*_serial);
                 if (TimeSource::now() - _timestamp > SyncInterval) {
                     _state = 1;
                 }
@@ -256,13 +261,13 @@ class V9261FSensor : public BaseEmonSensor {
 
         }
 
-        static bool _checksum(const uint8_t (&data)[24]) {
-            uint8_t checksum = 0;
-            for (size_t i = 0; i < 19; i++) {
-                checksum = checksum + data[i];
+        static uint8_t _checksum(const uint8_t* begin, const uint8_t* end) {
+            uint8_t out = 0;
+            for (auto it = begin; it != end; ++it) {
+                out += (*it);
             }
-            checksum = ~checksum + 0x33;
-            return checksum == data[19];
+            out = ~out + 0x33;
+            return out;
         }
 
         // ---------------------------------------------------------------------
@@ -281,11 +286,12 @@ class V9261FSensor : public BaseEmonSensor {
         TimeSource::time_point _last_reading;
         TimeSource::time_point _timestamp;
 
-        unsigned char _state { 0 };
-        unsigned char _index { 0 };
+        int _state { 0 };
         bool _found { false };
         bool _reading { false };
-        unsigned char _data[24] {0};
+
+        uint8_t _data[24] {0};
+        size_t _index { 0 };
 
 };
 
