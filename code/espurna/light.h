@@ -114,21 +114,21 @@ struct Rgb {
     Rgb& operator=(const Rgb&) = default;
     Rgb& operator=(Rgb&&) = default;
 
-    Rgb(long red, long green, long blue) :
+    constexpr Rgb(long red, long green, long blue) noexcept :
         _red(std::clamp(red, Min, Max)),
         _green(std::clamp(green, Min, Max)),
         _blue(std::clamp(blue, Min, Max))
     {}
 
-    long red() const {
+    constexpr long red() const {
         return _red;
     }
 
-    long green() const {
+    constexpr long green() const {
         return _green;
     }
 
-    long blue() const {
+    constexpr long blue() const {
         return _blue;
     }
 
@@ -138,24 +138,32 @@ private:
     long _blue { Min };
 };
 
-struct MiredsRange {
-    constexpr MiredsRange() = default;
-    MiredsRange(long cold, long warm) :
+struct Mireds {
+    long value;
+};
+
+struct Kelvin {
+    long value;
+};
+
+struct TemperatureRange {
+    TemperatureRange() = delete;
+    constexpr TemperatureRange(long cold, long warm) noexcept :
         _cold(cold),
         _warm(warm)
     {}
 
-    long cold() const {
+    constexpr long cold() const {
         return _cold;
     }
 
-    long warm() const {
+    constexpr long warm() const {
         return _warm;
     }
 
 private:
-    long _cold { MiredsCold };
-    long _warm { MiredsWarm };
+    long _cold;
+    long _warm;
 };
 
 } // namespace light
@@ -212,8 +220,9 @@ espurna::light::Hsv lightHsv();
 void lightHs(long hue, long saturation);
 void lightHsv(espurna::light::Hsv);
 
-void lightMireds(long mireds);
-espurna::light::MiredsRange lightMiredsRange();
+void lightTemperature(espurna::light::Kelvin);
+void lightTemperature(espurna::light::Mireds);
+espurna::light::TemperatureRange lightMiredsRange();
 
 void lightRed(long value);
 long lightRed();

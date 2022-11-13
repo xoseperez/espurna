@@ -644,7 +644,8 @@ void receiveLightJson(StringView payload) {
     }
 
     if (root.containsKey("color_temp")) {
-        lightMireds(root["color_temp"].as<long>());
+        const auto mireds = root["color_temp"].as<long>();
+        lightTemperature(light::Mireds{ .value = mireds });
     }
 
     if (root.containsKey("brightness")) {

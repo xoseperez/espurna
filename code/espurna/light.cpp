@@ -36,14 +36,14 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 
 // -----------------------------------------------------------------------------
 
-#if __GNUC__ > 4
-static_assert(std::is_trivially_copyable<espurna::light::Rgb>::value, "");
-static_assert(std::is_trivially_copyable<espurna::light::Hsv>::value, "");
-static_assert(std::is_trivially_copyable<espurna::light::MiredsRange>::value, "");
-#endif
-
 namespace espurna {
 namespace light {
+
+#if __GNUC__ > 4
+static_assert(std::is_trivially_copyable<Rgb>::value, "");
+static_assert(std::is_trivially_copyable<Hsv>::value, "");
+static_assert(std::is_trivially_copyable<TemperatureRange>::value, "");
+#endif
 
 constexpr long Rgb::Min;
 constexpr long Rgb::Max;
@@ -255,24 +255,28 @@ void value(size_t channel, long input) {
     setSetting({"ch", channel}, input);
 }
 
-long mireds() {
-    return std::clamp(getSetting("mireds", espurna::light::MiredsDefault), espurna::light::MiredsCold, espurna::light::MiredsWarm);
+espurna::light::Mireds mireds() {
+    return getSetting(
+        "mireds",
+        espurna::light::Mireds{
+            .value = espurna::light::MiredsDefault
+        });
 }
 
 long miredsCold() {
-    return std::clamp(getSetting("ltColdMired", espurna::light::MiredsCold), espurna::light::MiredsCold, espurna::light::MiredsWarm);
+    return getSetting("ltColdMired", espurna::light::MiredsCold);
 }
 
 long miredsWarm() {
-    return std::clamp(getSetting("ltWarmMired", espurna::light::MiredsWarm), espurna::light::MiredsCold, espurna::light::MiredsWarm);
+    return getSetting("ltWarmMired", espurna::light::MiredsWarm);
 }
 
-void mireds(long input) {
-    setSetting("mireds", input);
+void mireds(espurna::light::Mireds mireds) {
+    setSetting("mireds", mireds.value);
 }
 
 long brightness() {
-    return std::clamp(getSetting("brightness", espurna::light::BrightnessMax), espurna::light::BrightnessMin, espurna::light::BrightnessMax);
+    return getSetting("brightness", espurna::light::BrightnessMax);
 }
 
 void brightness(long input) {
@@ -462,59 +466,95 @@ namespace light {
 namespace {
 
 struct Pointers {
-    Pointers() = default;
-    Pointers(const Pointers&) = default;
-    Pointers(Pointers&&) = default;
+    using Type = LightChannels::pointer;
+    using Data = std::array<Type, 5>;
 
+    Pointers() = default;
+    explicit Pointers(LightChannels&);
+
+    Pointers(const Pointers&) = default;
     Pointers& operator=(const Pointers&) = default;
+
+    Pointers(Pointers&&) = default;
     Pointers& operator=(Pointers&&) = default;
 
-    using Type = LightChannel*;
-
-    Pointers(Type red, Type green, Type blue, Type cold, Type warm) :
-        _red(red),
-        _green(green),
-        _blue(blue),
-        _cold(cold),
-        _warm(warm)
-    {}
+    Pointers& operator=(LightChannels& channels) {
+        _data.fill(nullptr);
+        reset(channels);
+        return *this;
+    }
 
     LightChannel* red() const {
-        return _red;
+        return _data[0];
     }
 
     LightChannel* green() const {
-        return _green;
+        return _data[1];
     }
 
     LightChannel* blue() const {
-        return _blue;
-    }
-
-    LightChannel* cold() const {
-        return _cold;
+        return _data[2];
     }
 
     LightChannel* warm() const {
-        return _warm;
+        return _data[3];
+    }
+
+    LightChannel* cold() const {
+        return _data[4];
     }
 
 private:
-    LightChannel* _red { nullptr };
-    LightChannel* _green { nullptr };
-    LightChannel* _blue { nullptr };
-    LightChannel* _cold { nullptr };
-    LightChannel* _warm { nullptr };
+    void reset(LightChannels& channels);
+
+    Data _data{};
 };
 
-struct Mapping {
-    template <typename ...Args>
-    void update(Args&&... args) {
-        _pointers = Pointers(std::forward<Args>(args)...);
+void Pointers::reset(LightChannels& channels) {
+    switch (channels.size()) {
+    case 0:
+        break;
+    case 1:
+        _data[3] = &channels[0];
+        break;
+    case 2:
+        _data[3] = &channels[0];
+        _data[4] = &channels[1];
+        break;
+    case 3:
+        _data[0] = &channels[0];
+        _data[1] = &channels[1];
+        _data[2] = &channels[2];
+        break;
+    case 4:
+        _data[0] = &channels[0];
+        _data[1] = &channels[1];
+        _data[2] = &channels[2];
+        _data[3] = &channels[3];
+        break;
+    case 5:
+        _data[0] = &channels[0];
+        _data[1] = &channels[1];
+        _data[2] = &channels[2];
+        _data[3] = &channels[3];
+        _data[4] = &channels[4];
+        break;
     }
+}
 
+Pointers::Pointers(LightChannels& channels) {
+    reset(channels);
+}
+
+struct Mapping {
     void reset() {
         _pointers = Pointers();
+    }
+
+    template <typename T>
+    Mapping operator=(T&& other) {
+        _pointers = std::forward<T>(other);
+        return *this;
     }
 
     long red() const {
@@ -582,10 +622,15 @@ private:
 } // namespace
 } // namespace light
 
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 namespace settings {
 namespace internal {
 
+template <>
+light::Mireds convert(const String& value) {
+    return light::Mireds{ .value = convert<long>(value) };
+}
+
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 template <>
 my92xx_model_t convert(const String& value) {
     PROGMEM_STRING(MY9291, "9291");
@@ -599,10 +644,10 @@ my92xx_model_t convert(const String& value) {
 
     return convert(options, value, espurna::light::build::my92xxModel());
 }
+#endif
 
 } // namespace internal
 } // namespace settings
-#endif
 
 } // namespace espurna
 
@@ -610,27 +655,8 @@ namespace {
 
 espurna::light::Mapping _light_mapping;
 
-template <typename T>
-void _lightUpdateMapping(T& channels) {
-    switch (channels.size()) {
-    case 0:
-        break;
-    case 1:
-        _light_mapping.update(nullptr, nullptr, nullptr, &channels[0], nullptr);
-        break;
-    case 2:
-        _light_mapping.update(nullptr, nullptr, nullptr, &channels[0], &channels[1]);
-        break;
-    case 3:
-        _light_mapping.update(&_light_channels[0], &channels[1], &channels[2], nullptr, nullptr);
-        break;
-    case 4:
-        _light_mapping.update(&channels[0], &channels[1], &channels[2], &channels[3], nullptr);
-        break;
-    case 5:
-        _light_mapping.update(&channels[0], &channels[1], &channels[2], &channels[3], &channels[4]);
-        break;
-    }
+void _lightUpdateMapping(LightChannels& channels) {
+    _light_mapping = channels;
 }
 
 template <typename T>
@@ -692,35 +718,139 @@ bool _light_use_cct = false;
 bool _light_use_gamma = false;
 
 bool _light_state = false;
-long _light_brightness = espurna::light::BrightnessMax;
 
-// Default to the Philips Hue value that HA also use.
-// https://developers.meethue.com/documentation/core-concepts
+struct LightBrightness {
+    LightBrightness() = default;
+    explicit LightBrightness(long value) :
+        _value(clamp(value))
+    {}
 
-// TODO: We only accept this as input, thus setting 'related' channels directly
-// will cause the cached mireds value to be used:
-// - by brightness function in R G B CW and R G B CW WW as a factor for CW and WW channels
-// - by setter in CW and CW WW modes
+    LightBrightness& operator=(long value) {
+        this->value(value);
+        return *this;
+    }
 
-long _light_cold_mireds = espurna::light::MiredsCold;
-long _light_warm_mireds = espurna::light::MiredsWarm;
+    long value() const {
+        return _value;
+    }
 
-long _light_cold_kelvin = (1000000L / _light_cold_mireds);
-long _light_warm_kelvin = (1000000L / _light_warm_mireds);
+    void value(long value) {
+        _value = clamp(value);
+    }
 
-long _light_mireds { espurna::light::MiredsDefault };
+    long percent() const {
+        return (_value * 100l) / espurna::light::BrightnessMax;
+    }
+
+    void percent(long value) {
+        const auto Fixed = std::clamp(value, 0l, 100l);
+        const auto Ratio = espurna::light::BrightnessMax * Fixed;
+        this->value(Ratio / 100l);
+    }
+
+    long operator()(long input) const {
+        return (input * _value) / espurna::light::BrightnessMax;
+    }
+
+    String toString() const {
+        return String(_value, 10);
+    }
+
+private:
+    long clamp(long value) {
+        return std::clamp(value,
+            espurna::light::BrightnessMin,
+            espurna::light::BrightnessMax);
+    }
+
+    long _value { espurna::light::BrightnessMax };
+};
+
+LightBrightness _light_brightness;
+
+// Default to the mireds scale, similar to Philips Hue and old Home Assistant.
+// * https://developers.meethue.com/documentation/core-concepts
+// Note that HA 2022.11+ uses kelvin as the native color temperature unit
+// * https://www.home-assistant.io/blog/2022/11/02/release-202211/#color-temperatures-in-kelvin
+
+struct LightTemperature {
+    static constexpr long MiredsKelvinScale { 1000000 };
+
+    long cold() const {
+        return _cold;
+    }
+
+    void cold(long value) {
+        _cold = value;
+    }
+
+    long warm() const {
+        return _warm;
+    }
+
+    void warm(long value) {
+        _warm = value;
+    }
+
+    void range(espurna::light::TemperatureRange range) {
+        _cold = range.cold();
+        _warm = range.warm();
+    }
+
+    float factor() const {
+        const auto Mireds = static_cast<float>(_value);
+        const auto Cold = static_cast<float>(_cold);
+        const auto Warm = static_cast<float>(_warm);
+        return (Mireds - Cold) / (Warm - Cold);
+    }
+
+    espurna::light::TemperatureRange range() const {
+        return {_cold, _warm};
+    }
+
+    espurna::light::Mireds mireds() const {
+        return {_value};
+    }
+
+    void mireds(espurna::light::Mireds mireds) {
+        _value = std::clamp(mireds.value, _cold, _warm);
+    }
+
+    espurna::light::Kelvin kelvin() const {
+        return {MiredsKelvinScale / _value};
+    }
+
+    LightTemperature& operator=(espurna::light::Mireds mireds) {
+        this->mireds(mireds);
+        return *this;
+    }
+
+    LightTemperature& operator=(espurna::light::Kelvin kelvin) {
+        *this = espurna::light::Mireds{
+            .value = MiredsKelvinScale / kelvin.value
+        };
+        return *this;
+    }
+
+private:
+    long _value { espurna::light::MiredsDefault };
+    long _warm { espurna::light::MiredsWarm };
+    long _cold { espurna::light::MiredsCold };
+};
+
+LightTemperature _light_temperature;
 
 bool _light_state_changed = false;
 LightStateListener _light_state_listener = nullptr;
 
-void _lightProcessInputValuesNoop(LightChannels&, long) {
+void _lightProcessNoop(LightChannels&) {
 }
 
-using LightProcessInputValues = void (*)(LightChannels&, long brightness);
-LightProcessInputValues _light_process_input_values { _lightProcessInputValuesNoop };
+using LightProcessInputValues = void(*)(LightChannels&);
+LightProcessInputValues _light_process_input_values { _lightProcessNoop };
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
-my92xx* _my92xx { nullptr };
+std::unique_ptr<my92xx> _my92xx;
 #endif
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
@@ -735,87 +865,80 @@ std::unique_ptr<LightProvider> _light_provider;
 
 namespace {
 
-void _lightBrightnessPercent(long percent) {
-    const auto fixed = std::clamp(percent, 0l, 100l);
-    const auto ratio = espurna::light::BrightnessMax * fixed;
-    lightBrightness(ratio / 100l);
+void _lightBrightnessPercent(long value) {
+    _light_brightness.percent(value);
 }
 
 long _lightBrightnessPercent() {
-    return (_light_brightness * 100l) / espurna::light::BrightnessMax;
+    return _light_brightness.percent();
 }
 
 // After the channel value was updated through the API (i.e. through changing the `inputValue`),
 // these functions are expected to be called. Which one is chosen is based on the current settings values.
-// TODO: existing mapping class handles setting `inputValue` & getting `target` value applied by the transition handler
-// should it also handle setting the `value` so there's no need to refer to channels through numbers?
 
-struct LightBrightness {
-    LightBrightness() = delete;
-    explicit LightBrightness(long brightness) :
-        _brightness(std::clamp(brightness, espurna::light::BrightnessMin, espurna::light::BrightnessMax))
-    {}
-
-    long operator()(long input) const {
-        return (input * _brightness) / espurna::light::BrightnessMax;
-    }
-
-private:
-    long _brightness;
-};
-
-void _lightValuesWithBrightness(LightChannels& channels, long brightness) {
-    const auto Brightness = LightBrightness{brightness};
+void _lightValuesWithBrightness(LightChannels& channels) {
+    const auto Brightness = _light_brightness;
     for (auto& channel : channels) {
         channel.apply(Brightness);
     }
 }
 
-void _lightValuesWithBrightnessExceptWhite(LightChannels& channels, long brightness) {
-    const auto Brightness = LightBrightness{brightness};
-    auto it = channels.begin();
-
-    (*it).apply(Brightness);
-    ++it;
-
-    (*it).apply(Brightness);
-    ++it;
-
-    (*it).apply(Brightness);
-    ++it;
-
-    while (it != channels.end()) {
-        (*it).apply();
-        ++it;
+template <typename... Args>
+void _lightChannelMaybeApply(LightChannel* ptr, Args&&... args) {
+    if (ptr) {
+        (*ptr).apply(std::forward<Args>(args)...);
     }
 }
 
-// When `useWhite` is enabled, white channels are 'detached' from the processing and their value depends on the RGB ones.
-// Common calculation is to subtract 'white value' from the RGB based on the minimum channel value, e.g. [250, 150, 50] becomes [200, 100, 0, 50]
-//
-// With `useCCT` also enabled, value is instead split between Warm and Cold channels based on the current `mireds`.
-// Otherwise, Warm channel is using the remainder and Cold uses the `inputValue` directly.
-//
-// (TODO: notice that this also means HSV mode will hardly agree with our changes and will try to bounce
-// the brigthness all over the place. at least for now, only `useRGB` mode works correctly)
+void _lightValuesWithBrightnessExceptWhite(LightChannels& channels) {
+    auto ptr = espurna::light::Pointers(channels);
+    const auto Brightness = _light_brightness;
 
-// Map from normal 153...500 to 0...347, so we get a value 0...1
-double _lightMiredFactor() {
-    if (_light_cold_mireds < _light_warm_mireds) {
-        const auto Cold = static_cast<double>(_light_cold_mireds);
-        const auto Warm = static_cast<double>(_light_warm_mireds);
-        const auto Mireds = static_cast<double>(_light_mireds);
-        return (Mireds - Cold) / (Warm - Cold);
-    }
+    (*ptr.red()).apply(Brightness);
+    (*ptr.green()).apply(Brightness);
+    (*ptr.blue()).apply(Brightness);
 
-    return 0.0;
+    _lightChannelMaybeApply(ptr.warm());
+    _lightChannelMaybeApply(ptr.cold());
 }
 
-espurna::light::MiredsRange _lightCctRange(long value) {
-    const double Factor { _lightMiredFactor() };
-    return {
-        std::lround(Factor * value),
-        std::lround((1.0 - Factor) * value)};
+// With `useCCT`, balance the value between Warm and Cold channels based on the current `mireds`.
+
+struct LightScaledWhite {
+    LightScaledWhite() = default;
+    explicit LightScaledWhite(float factor) :
+        _factor(factor)
+    {}
+
+    long operator()(long input) const {
+        return std::lround(
+                static_cast<float>(input)
+                * _factor
+                * espurna::light::build::WhiteFactor);
+    }
+
+private:
+    float _factor { 1.0f };
+};
+
+void _lightValuesWithCct(LightChannels& channels) {
+    const auto Brightness = _light_brightness;
+
+    auto ptr = espurna::light::Pointers(channels);
+    _lightChannelMaybeApply(ptr.red(), Brightness);
+    _lightChannelMaybeApply(ptr.green(), Brightness);
+    _lightChannelMaybeApply(ptr.blue(), Brightness);
+
+    const auto Factor = _light_temperature.factor();
+    const auto White = LightScaledWhite();
+
+    auto& warm = *ptr.warm();
+    warm = std::lround(Factor * espurna::light::ValueMax);
+    warm.apply(White, Brightness);
+
+    auto& cold = *ptr.cold();
+    cold = std::lround((1.0f - Factor) * espurna::light::ValueMax);
+    cold.apply(White, Brightness);
 }
 
 // To handle both 4 and 5 channels, allow to 'adjust' internal factor calculation after construction
@@ -830,7 +953,7 @@ espurna::light::MiredsRange _lightCctRange(long value) {
 struct LightRgbWithoutWhite {
     LightRgbWithoutWhite() = delete;
     explicit LightRgbWithoutWhite(const LightChannels& channels) :
-        _common(makeCommon(channels)),
+        _common(makeCommon(makeRgb(channels))),
         _factor(makeFactor(_common))
     {}
 
@@ -840,7 +963,10 @@ struct LightRgbWithoutWhite {
 
     template <typename... Args>
     void adjustOutput(Args&&... args) {
-        _common.outputMax = std::max({_common.outputMax, std::forward<Args>(args)...});
+        _common.outputMax = std::max({
+            _common.outputMax,
+            std::forward<Args>(args)...
+        });
         _factor = makeFactor(_common);
     }
 
@@ -860,21 +986,29 @@ private:
     };
 
     static float makeFactor(const Common& common) {
-        return (common.outputMax > 0)
-            ? static_cast<float>(common.inputMax) / static_cast<float>(common.outputMax)
+        const auto inputMax = static_cast<float>(common.inputMax);
+        const auto outputMax = static_cast<float>(common.outputMax);
+        return (outputMax > 0.0f)
+            ? (inputMax / outputMax)
             : 0.0f;
     }
 
-    static Common makeCommon(const LightChannels& channels) {
+    static espurna::light::Rgb makeRgb(const LightChannels& channels) {
+        return {
+            channels[0].inputValue,
+            channels[1].inputValue,
+            channels[2].inputValue,
+        };
+    }
+
+    static Common makeCommon(espurna::light::Rgb rgb) {
         Common out;
-        out.inputMax = std::max({
-                channels[0].inputValue, channels[1].inputValue, channels[2].inputValue});
-        out.inputMin = std::min({
-                channels[0].inputValue, channels[1].inputValue, channels[2].inputValue});
+        out.inputMax = std::max({rgb.red(), rgb.green(), rgb.blue()});
+        out.inputMin = std::min({rgb.red(), rgb.green(), rgb.blue()});
         out.outputMax = std::max({
-            channels[0].inputValue - out.inputMin,
-            channels[1].inputValue - out.inputMin,
-            channels[2].inputValue - out.inputMin
+            rgb.red() - out.inputMin,
+            rgb.green() - out.inputMin,
+            rgb.blue() - out.inputMin
         });
 
         return out;
@@ -884,74 +1018,84 @@ private:
     float _factor;
 };
 
-struct LightScaledWhite {
-    LightScaledWhite() = delete;
-    explicit LightScaledWhite(float factor) :
-        _factor(factor)
-    {}
-
-    long operator()(long input) const {
-        return std::lround(static_cast<float>(input) * _factor * espurna::light::build::WhiteFactor);
-    }
-
-private:
-    float _factor;
-};
-
-// General case when `useCCT` is disabled, but there are 4 channels and `useWhite` is enabled
+// When `useWhite` is enabled, white channels are 'detached' from the processing and their value depends on the RGB ones.
+// Common calculation is to subtract 'white value' from the RGB based on the minimum channel value, e.g. [250, 150, 50] becomes [200, 100, 0, 50]
+//
+// General case when `useCCT` is disabled, but there are 4 channels.
 // Keeps 5th channel as-is, without applying the brightness scale or resetting the value to 0
 
-void _lightValuesWithRgbWhite(LightChannels& channels, long brightness) {
+void _lightValuesWithRgbWhite(LightChannels& channels) {
     auto rgb = LightRgbWithoutWhite{channels};
     rgb.adjustOutput(rgb.inputMin());
 
-    const auto Brightness = LightBrightness(brightness);
-    auto it = channels.begin();
-    (*it).apply(rgb, Brightness);
-    ++it;
+    const auto Brightness = _light_brightness;
 
-    (*it).apply(rgb, Brightness);
-    ++it;
+    auto ptr = espurna::light::Pointers(channels);
+    (*ptr.red()).apply(rgb, Brightness);
+    (*ptr.green()).apply(rgb, Brightness);
+    (*ptr.blue()).apply(rgb, Brightness);
 
-    (*it).apply(rgb, Brightness);
-    ++it;
+    auto& warm = *ptr.warm();
+    warm = rgb.inputMin();
+    warm.apply(LightScaledWhite{rgb.factor()}, Brightness);
 
-    (*it) = rgb.inputMin();
-    (*it).apply(LightScaledWhite{rgb.factor()}, Brightness);
-    ++it;
-
-    if (it != channels.end()) {
-        (*it).apply();
-    }
+    _lightChannelMaybeApply(ptr.cold());
 }
 
 // Instead of the above, use `mireds` value as a range for warm and cold channels, based on the calculated rgb common values
 // Every value is also scaled by `brightness` after applying all of the previous steps
+// Notice that we completely ignore inputs and reset them to either kelvin'ized or MAX value as the first step
 
-void _lightValuesWithRgbCct(LightChannels& channels, long brightness) {
-    auto rgb = LightRgbWithoutWhite{channels};
+espurna::light::Rgb _lightKelvinRgb(espurna::light::Kelvin kelvin) {
+    kelvin.value /= 100;
+    const auto red = ((kelvin.value <= 66)
+        ? espurna::light::ValueMax
+        : std::lround(329.698727446 * fs_pow(static_cast<double>(kelvin.value - 60), -0.1332047592)));
+    const auto green = ((kelvin.value <= 66)
+        ? std::lround(99.4708025861 * fs_log(kelvin.value) - 161.1195681661)
+        : std::lround(288.1221695283 * fs_pow(static_cast<double>(kelvin.value), -0.0755148492)));
+    const auto blue = ((kelvin.value >= 66)
+        ? espurna::light::ValueMax
+        : ((kelvin.value <= 19)
+            ? espurna::light::ValueMin
+            : std::lround(138.5177312231 * fs_log(static_cast<double>(kelvin.value - 10)) - 305.0447927307)));
 
-    const auto Range = _lightCctRange(rgb.inputMin());
-    rgb.adjustOutput(Range.warm(), Range.cold());
+    return {red, green, blue};
+}
 
-    const auto Brightness = LightBrightness(brightness);
-    auto it = channels.begin();
-    (*it).apply(rgb, Brightness);
-    ++it;
+void _lightValuesWithRgbCct(LightChannels& channels) {
+    const auto Temperature = _light_temperature;
 
-    (*it).apply(rgb, Brightness);
-    ++it;
+    const auto Factor = Temperature.factor();
+    const auto Warm = std::lround(Factor * espurna::light::ValueMax);
+    const auto Cold = std::lround((1.0f - Factor) * espurna::light::ValueMax);
 
-    (*it).apply(rgb, Brightness);
-    ++it;
+    const auto RgbFromKelvin = _lightKelvinRgb(Temperature.kelvin());
+    auto ptr = espurna::light::Pointers(channels);
 
-    const auto White = LightScaledWhite{rgb.factor()};
-    (*it) = Range.warm();
-    (*it).apply(White, Brightness);
-    ++it;
+    const auto Brightness = _light_brightness;
 
-    (*it) = Range.cold();
-    (*it).apply(White, Brightness);
+    auto& red = *ptr.red();
+    red = RgbFromKelvin.red();
+    red.apply(Brightness);
+
+    auto& green = *ptr.green();
+    green = RgbFromKelvin.green();
+    green.apply(Brightness);
+
+    auto& blue = *ptr.blue();
+    blue = RgbFromKelvin.blue();
+    blue.apply(Brightness);
+
+    const auto White = LightScaledWhite();
+
+    auto& warm = *ptr.warm();
+    warm = Warm;
+    warm.apply(White, Brightness);
+
+    auto& cold = *ptr.cold();
+    cold = Cold;
+    cold.apply(White, Brightness);
 }
 
 // UI hints about channel distribution
@@ -1144,84 +1288,9 @@ void _lightFromHsvPayload(espurna::StringView payload) {
     lightHsv(_lightHsvFromPayload(payload));
 }
 
-// Thanks to Sacha Telgenhof for sharing this code in his AiLight library
-// https://github.com/stelgenhof/AiLight
-// Color temperature is measured in mireds (kelvin = 1e6/mired)
-long _toKelvin(long mireds) {
-    return std::clamp(static_cast<long>(1000000L / mireds), _light_warm_kelvin, _light_cold_kelvin);
-}
-
-long _toMireds(long kelvin) {
-    return std::clamp(static_cast<long>(lround(1000000L / kelvin)), _light_cold_mireds, _light_warm_mireds);
-}
-
-void _lightMireds(long kelvin) {
-    _light_mireds = _toMireds(kelvin);
-}
-
-void _lightMiredsCCT(long kelvin) {
-    _lightMireds(kelvin);
-
-    const auto Range = _lightCctRange(espurna::light::ValueMax);
-    _light_mapping.warm(Range.warm());
-    _light_mapping.cold(Range.cold());
-}
-
-// TODO: is there a sane way to deduce this back from RGB variant?
-// TODO: should mireds require CCT mode, so we only deal with white value?
-
-#if 0
-
-long _lightCCTMireds() {
-    auto cold = static_cast<double>(_light_cold_mireds);
-    auto warm = static_cast<double>(_light_warm_mireds);
-
-    auto factor = (static_cast<double>(lightColdWhite()) / espurna::light::ValueMax);
-
-    return cold + (factor * (warm - cold));
-}
-
-#endif
-
-// TODO: function ptr like for input values?
-
-void _fromKelvin(long kelvin) {
-    // work through the brightness function instead of adjusting here
-    // (but, note that +color +cct -white variant will set every rgb channel to 0)
-    if (_light_use_color && _light_use_cct) {
-        if (_light_use_white) {
-            _lightMireds(kelvin);
-        } else {
-            _light_mapping.red(espurna::light::ValueMax);
-            _light_mapping.green(espurna::light::ValueMax);
-            _light_mapping.blue(espurna::light::ValueMax);
-        }
-        return;
-    }
-
-    if (!_light_use_color && _light_use_cct) {
-        _lightMiredsCCT(kelvin);
-        return;
-    }
-
-    // otherwise, only apply approximated color values
-    kelvin /= 100;
-    _light_mapping.red((kelvin <= 66)
-        ? espurna::light::ValueMax
-        : std::lround(329.698727446 * fs_pow(static_cast<double>(kelvin - 60), -0.1332047592)));
-    _light_mapping.green((kelvin <= 66)
-        ? std::lround(99.4708025861 * fs_log(kelvin) - 161.1195681661)
-        : std::lround(288.1221695283 * fs_pow(static_cast<double>(kelvin), -0.0755148492)));
-    _light_mapping.blue((kelvin >= 66)
-        ? espurna::light::ValueMax
-        : ((kelvin <= 19)
-            ? espurna::light::ValueMin
-            : std::lround(138.5177312231 * fs_log(static_cast<double>(kelvin - 10)) - 305.0447927307)));
-    _lightMireds(kelvin);
-}
-
-void _fromMireds(long mireds) {
-    _fromKelvin(_toKelvin(mireds));
+template <typename T>
+void _lightTemperature(T value) {
+    _light_temperature = value;
 }
 
 } // namespace
@@ -1251,6 +1320,8 @@ espurna::light::Rgb _lightToInputRgb() {
 
     return {values[0], values[1], values[2]};
 }
+
+// instead of falling back to scale, use channels as reference in simple modes
 
 String _lightRgbHexPayload(espurna::light::Rgb rgb) {
     static_assert(espurna::light::Rgb::Min == 0, "");
@@ -1304,7 +1375,7 @@ espurna::light::Rgb _lightRgb(espurna::light::Hsv hsv) {
     double g { ValueMin };
     double b { ValueMin };
 
-    constexpr auto Scale = 100.0;
+    static constexpr auto Scale = 100.0;
     auto v = static_cast<double>(hsv.value()) / Scale;
 
     if (hsv.saturation()) {
@@ -1350,10 +1421,10 @@ espurna::light::Rgb _lightRgb(espurna::light::Hsv hsv) {
         b = (b + m) * ValueMax;
     }
 
-    return espurna::light::Rgb(
+    return {
         static_cast<long>(std::nearbyint(r)),
         static_cast<long>(std::nearbyint(g)),
-        static_cast<long>(std::nearbyint(b)));
+        static_cast<long>(std::nearbyint(b))};
 }
 
 espurna::light::Hsv _lightHsv(espurna::light::Rgb rgb) {
@@ -1472,7 +1543,7 @@ long _lightAdjustValue(long value, espurna::StringView operation) {
 }
 
 void _lightAdjustBrightness(espurna::StringView payload) {
-    lightBrightness(_lightAdjustValue(_light_brightness, payload));
+    lightBrightness(_lightAdjustValue(_light_brightness.value(), payload));
 }
 
 void _lightAdjustChannel(LightChannel& channel, espurna::StringView payload) {
@@ -1486,11 +1557,19 @@ void _lightAdjustChannel(size_t id, espurna::StringView payload) {
 }
 
 void _lightAdjustKelvin(espurna::StringView payload) {
-    _fromKelvin(_lightAdjustValue(_toKelvin(_light_mireds), payload));
+    const auto kelvin = _light_temperature.kelvin();
+    const auto adjusted = _lightAdjustValue(kelvin.value, payload);
+    _lightTemperature(espurna::light::Kelvin{
+        .value = adjusted,
+    });
 }
 
 void _lightAdjustMireds(espurna::StringView payload) {
-    _fromMireds(_lightAdjustValue(_light_mireds, payload));
+    const auto mireds = _light_temperature.mireds();
+    const auto adjusted = _lightAdjustValue(mireds.value, payload);
+    _lightTemperature(espurna::light::Mireds{
+        .value = adjusted,
+    });
 }
 
 } // namespace
@@ -1989,7 +2068,7 @@ struct LightRtcmem {
     LightRtcmem() = default;
 
     explicit LightRtcmem(uint64_t value) {
-        _mireds = (value >> (8ull * 6ull)) & 0xffffull;
+        _mireds.value = (value >> (8ull * 6ull)) & 0xffffull;
         _brightness = (value >> (8ull * 5ull)) & 0xffull;
 
         _values[4] = ((value >> (8ull * 4ull)) & 0xffull);
@@ -1999,14 +2078,14 @@ struct LightRtcmem {
         _values[0] = ((value & 0xffull));
     }
 
-    LightRtcmem(const LightValues& values, long brightness, long mireds) :
+    LightRtcmem(const LightValues& values, long brightness, espurna::light::Mireds mireds) :
         _values(values),
         _brightness(brightness),
         _mireds(mireds)
     {}
 
     uint64_t serialize() const {
-        return ((static_cast<uint64_t>(_mireds) & 0xffffull) << (8ull * 6ull))
+        return ((static_cast<uint64_t>(_mireds.value) & 0xffffull) << (8ull * 6ull))
             | ((static_cast<uint64_t>(_brightness) & 0xffull) << (8ull * 5ull))
             | (static_cast<uint64_t>(_values[4] & 0xffl) << (8ull * 4ull))
             | (static_cast<uint64_t>(_values[3] & 0xffl) << (8ull * 3ull))
@@ -2029,14 +2108,14 @@ struct LightRtcmem {
         return _brightness;
     }
 
-    long mireds() const {
+    espurna::light::Mireds mireds() const {
         return _mireds;
     }
 
 private:
     LightValues _values = defaultValues();
     long _brightness { espurna::light::BrightnessMax };
-    long _mireds { espurna::light::MiredsDefault };
+    espurna::light::Mireds _mireds { espurna::light::MiredsDefault };
 };
 
 bool lightSave() {
@@ -2055,7 +2134,9 @@ void _lightSaveRtcmem() {
         values[channel] = _light_channels[channel].inputValue;
     }
 
-    LightRtcmem light(values, _light_brightness, _light_mireds);
+    LightRtcmem light(values,
+        _light_brightness.value(),
+        _light_temperature.mireds());
     Rtcmem->light = light.serialize();
 }
 
@@ -2068,7 +2149,7 @@ void _lightRestoreRtcmem() {
         _light_channels[channel] = values[channel];
     }
 
-    _light_mireds = light.mireds(); // channels are already set
+    lightTemperature(light.mireds());
     lightBrightness(light.brightness());
 }
 
@@ -2082,8 +2163,8 @@ void _lightSaveSettings() {
             channel, _light_channels[channel].inputValue);
     }
 
-    espurna::light::settings::brightness(_light_brightness);
-    espurna::light::settings::mireds(_light_mireds);
+    espurna::light::settings::brightness(_light_brightness.value());
+    espurna::light::settings::mireds(_light_temperature.mireds());
 
     saveSettings();
 }
@@ -2093,7 +2174,7 @@ void _lightRestoreSettings() {
         _light_channels[channel] = espurna::light::settings::value(channel);
     }
 
-    _light_mireds = espurna::light::settings::mireds();
+    _light_temperature = espurna::light::settings::mireds();
     lightBrightness(espurna::light::settings::brightness());
 }
 
@@ -2285,22 +2366,23 @@ void _lightMqttSetup() {
 } // namespace
 
 void lightMQTT() {
-    if (_light_use_color) {
+    if (_light_has_color) {
         const auto rgb = _lightToTargetRgb();
         mqttSend(MQTT_TOPIC_COLOR_HEX, _lightRgbHexPayload(rgb).c_str());
         mqttSend(MQTT_TOPIC_COLOR_RGB, _lightRgbPayload(rgb).c_str());
         mqttSend(MQTT_TOPIC_COLOR_HSV, _lightHsvPayload(rgb).c_str());
     }
 
-    if (_light_use_color || _light_use_cct) {
-        mqttSend(MQTT_TOPIC_MIRED, String(_light_mireds, 10).c_str());
+    if (_light_has_color || _light_has_cold_white) {
+        const auto mireds = _light_temperature.mireds();
+        mqttSend(MQTT_TOPIC_MIRED, String(mireds.value, 10).c_str());
     }
 
     for (size_t channel = 0; channel < _light_channels.size(); ++channel) {
         mqttSend(MQTT_TOPIC_CHANNEL, channel, String(_light_channels[channel].target, 10).c_str());
     }
 
-    mqttSend(MQTT_TOPIC_BRIGHTNESS, String(_light_brightness, 10).c_str());
+    mqttSend(MQTT_TOPIC_BRIGHTNESS, _light_brightness.toString().c_str());
 
     if (!_light_has_controls) {
         mqttSend(MQTT_TOPIC_LIGHT, _light_state ? "1" : "0");
@@ -2376,7 +2458,8 @@ void _lightApiSetup() {
     if (_light_has_color || _light_has_cold_white || _light_has_warm_white) {
         apiRegister(F(MQTT_TOPIC_MIRED),
             [](ApiRequest& request) {
-                request.send(String(_light_mireds));
+                const auto mireds = _light_temperature.mireds();
+                request.send(String(mireds.value, 10));
                 return true;
             },
             [](ApiRequest& request) {
@@ -2388,7 +2471,8 @@ void _lightApiSetup() {
 
         apiRegister(F(MQTT_TOPIC_KELVIN),
             [](ApiRequest& request) {
-                request.send(String(_toKelvin(_light_mireds)));
+                const auto kelvin = _light_temperature.kelvin();
+                request.send(String(kelvin.value, 10));
                 return true;
             },
             [](ApiRequest& request) {
@@ -2411,7 +2495,7 @@ void _lightApiSetup() {
 
     apiRegister(F(MQTT_TOPIC_BRIGHTNESS),
         [](ApiRequest& request) {
-            request.send(String(static_cast<int>(_light_brightness)));
+            request.send(_light_brightness.toString());
             return true;
         },
         [](ApiRequest& request) {
@@ -2424,7 +2508,7 @@ void _lightApiSetup() {
     apiRegister(F(MQTT_TOPIC_CHANNEL "/+"),
         [](ApiRequest& request) {
             return _lightApiTryHandle(request, [&](size_t id) {
-                request.send(String(static_cast<int>(_light_channels[id].target)));
+                request.send(String(_light_channels[id].target));
                 return true;
             });
         },
@@ -2481,7 +2565,7 @@ void _lightWebSocketStatus(JsonObject& root) {
     }
 
     if (_light_use_cct) {
-        light["mireds"] = _light_mireds;
+        light["mireds"] = _light_temperature.mireds().value;
     }
 
     JsonArray& values = light.createNestedArray("values");
@@ -2489,7 +2573,7 @@ void _lightWebSocketStatus(JsonObject& root) {
         values.add(channel.inputValue);
     }
 
-    light["brightness"] = _light_brightness;
+    light["brightness"] = _light_brightness.value();
     light["state"] = _light_state;
 }
 
@@ -2498,23 +2582,22 @@ void _lightWebSocketOnVisible(JsonObject& root) {
 
     JsonObject& light = root.createNestedObject("light");
     light["channels"] = _light_channels.size();
-    light["mode"] = _light_use_rgb ? "rgb" : "hsv";
 
     if (_light_use_cct) {
         JsonObject& cct = light.createNestedObject("cct");
-        cct["cold"] = _light_cold_mireds;
-        cct["warm"] = _light_warm_mireds;
+        cct["cold"] = _light_temperature.cold();
+        cct["warm"] = _light_temperature.warm();
     }
 }
 
 void _lightWebSocketOnConnected(JsonObject& root) {
     root["mqttGroupColor"] = espurna::light::settings::mqttGroup();
+    root["useWhite"] = _light_use_white;
     root["useCCT"] = _light_use_cct;
     root["useColor"] = _light_use_color;
     root["useGamma"] = _light_use_gamma;
     root["useRGB"] = _light_use_rgb;
     root["useTransitions"] = _light_use_transitions;
-    root["useWhite"] = _light_use_white;
     root["ltSave"] = _light_save;
     root["ltSaveDelay"] = _light_save_delay.count();
     root["ltTime"] = _light_transition_time.count();
@@ -2558,7 +2641,9 @@ void _lightWebSocketOnAction(uint32_t client_id, const char* action, JsonObject&
 
     STRING_VIEW_INLINE(Mireds, "mireds");
     if (data.containsKey(Mireds)) {
-        _fromMireds(data[Mireds].as<long>());
+        _lightTemperature(espurna::light::Mireds{
+            .value = data[Mireds].as<long>()
+        });
         update = true;
     }
 
@@ -2612,7 +2697,7 @@ LightValuesState _lightValuesState() {
             return channel.inputValue;
         });
 
-    out.brightness = _light_brightness;
+    out.brightness = _light_brightness.value();
     out.state = _light_state;
 
     return out;
@@ -2811,8 +2896,8 @@ static void _lightCommandKelvin(::terminal::CommandContext&& ctx) {
         lightUpdate();
     }
 
-    ctx.output.printf_P(PSTR("kelvin %ld\n"),
-        _toKelvin(_light_mireds));
+    const auto kelvin = _light_temperature.kelvin();
+    ctx.output.printf_P(PSTR("kelvin %ld\n"), kelvin.value);
     terminalOK(ctx);
 }
 
@@ -2824,7 +2909,8 @@ static void _lightCommandMired(::terminal::CommandContext&& ctx) {
         lightUpdate();
     }
 
-    ctx.output.printf_P(PSTR("mireds %ld\n"), _light_mireds);
+    const auto mireds = _light_temperature.mireds();
+    ctx.output.printf_P(PSTR("mireds %ld\n"), mireds.value);
     terminalOK(ctx);
 }
 
@@ -3006,7 +3092,7 @@ void _lightUpdate() {
     }
 
     LightValuesObserver observer(_light_channels);
-    _light_process_input_values(_light_channels, _light_brightness);
+    _light_process_input_values(_light_channels);
 
     if (!_light_state_changed && !observer.changed()) {
         _light_update.cancel();
@@ -3177,12 +3263,16 @@ void lightColdWhite(long value) {
     _light_mapping.cold(value);
 }
 
-void lightMireds(long mireds) {
-    _fromMireds(mireds);
+void lightTemperature(espurna::light::Mireds mireds) {
+    _lightTemperature(mireds);
 }
 
-espurna::light::MiredsRange lightMiredsRange() {
-    return { _light_cold_mireds, _light_warm_mireds };
+void lightMireds(espurna::light::Kelvin kelvin) {
+    _lightTemperature(kelvin);
+}
+
+espurna::light::TemperatureRange lightMiredsRange() {
+    return _light_temperature.range();
 }
 
 long lightChannel(size_t id) {
@@ -3208,7 +3298,7 @@ void lightChannelStep(size_t id, long steps) {
 }
 
 long lightBrightness() {
-    return _light_brightness;
+    return _light_brightness.value();
 }
 
 void lightBrightnessPercent(long percent) {
@@ -3220,7 +3310,7 @@ void lightBrightness(long brightness) {
 }
 
 void lightBrightnessStep(long steps, long multiplier) {
-    lightBrightness(static_cast<int>(_light_brightness) + (steps * multiplier));
+    lightBrightness(_light_brightness.value() + (steps * multiplier));
 }
 
 void lightBrightnessStep(long steps) {
@@ -3308,8 +3398,7 @@ void _lightConfigure() {
     }
 
     const auto use_cct = espurna::light::settings::cct();
-    _light_use_cct = !_light_use_white
-        && use_cct && has_cold_white && has_warm_white;
+    _light_use_cct = use_cct && has_cold_white && has_warm_white;
     if (!_light_use_cct) {
         espurna::light::settings::cct(false);
     }
@@ -3320,15 +3409,17 @@ void _lightConfigure() {
             (_light_use_cct) ? _lightValuesWithRgbCct :
             (_light_use_white) ? _lightValuesWithRgbWhite :
             _lightValuesWithBrightnessExceptWhite) :
-        _lightValuesWithBrightness;
+        (_light_use_cct) ?
+            _lightValuesWithCct :
+            _lightValuesWithBrightness;
 
     _light_use_rgb = espurna::light::settings::rgb();
 
-    // TODO: provide single entrypoint for colortemp
-    _light_cold_mireds = espurna::light::settings::miredsCold();
-    _light_warm_mireds = espurna::light::settings::miredsWarm();
-    _light_cold_kelvin = (1000000L / _light_cold_mireds);
-    _light_warm_kelvin = (1000000L / _light_warm_mireds);
+    _light_temperature.range(
+        espurna::light::TemperatureRange{
+            espurna::light::settings::miredsCold(),
+            espurna::light::settings::miredsWarm()
+        });
 
     _light_use_transitions = espurna::light::settings::transition();
     _light_transition_time = espurna::light::settings::transitionTime();
@@ -3372,7 +3463,7 @@ void _lightRelayBoot() {
 void _lightBoot() {
     const size_t Channels { _light_channels.size() };
     if (Channels) {
-        DEBUG_MSG_P(PSTR("[LIGHT] Number of channels: %u\n"), Channels);
+        DEBUG_MSG_P(PSTR("[LIGHT] Number of channels: %zu\n"), Channels);
 
         _lightUpdateMapping(_light_channels);
         _lightConfigure();
@@ -3493,7 +3584,7 @@ void lightSetup() {
         // than the value generated by the lib (ref. `my92xx::getChannels()`)
         auto channels = espurna::light::settings::my92xxChannels();
         if (channels) {
-            _my92xx = new my92xx(
+            _my92xx = std::make_unique<my92xx>(
                     espurna::light::settings::my92xxModel(),
                     espurna::light::settings::my92xxChips(),
                     espurna::light::settings::my92xxDiPin(),
