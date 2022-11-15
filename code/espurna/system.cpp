@@ -320,7 +320,7 @@ void blockingDelay(CoreClock::duration timeout, CoreClock::duration interval) {
 }
 
 void blockingDelay(CoreClock::duration timeout) {
-    blockingDelay(timeout, espurna::duration::Milliseconds(1));
+    blockingDelay(timeout, timeout);
 }
 
 } // namespace time
