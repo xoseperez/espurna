@@ -1861,10 +1861,7 @@ function initMagnitudesExpected(id) {
     const [expected, result] = template.querySelectorAll("input");
 
     const info = emonRatioInfo(id);
-    const expectedClass = `emon-expected-${info.prefix}`;
-
     const root = template.children[0];
-    root.classList.add(`show-${expectedClass}`);
 
     expected.name += `${info.key}`;
     expected.id = expected.name;
@@ -1877,14 +1874,11 @@ function initMagnitudesExpected(id) {
     label.textContent = info.name;
     label.htmlFor = expected.id;
 
-    const container = document.getElementById("emon-expected")
-    const hint_shown = container.querySelector(`.show-${expectedClass}`);
-    if (hint_shown === null) {
-        const hint = template.querySelector(`.${expectedClass}`);
-        hint.style.display = "block";
-    }
+    styleInject([
+        styleVisible(`.emon-expected-${info.prefix}`, true)
+    ]);
 
-    mergeTemplate(container, template);
+    mergeTemplate(document.getElementById("emon-expected"), template);
 }
 
 function emonCalculateRatios() {

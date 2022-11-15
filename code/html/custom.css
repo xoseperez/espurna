@@ -168,7 +168,7 @@ label {
 .emon-expected-volt,
 .emon-expected-curr,
 .emon-expected-ene {
-    display: none;
+    content-visibility: hidden;
 }
 
 /* -----------------------------------------------------------------------------
