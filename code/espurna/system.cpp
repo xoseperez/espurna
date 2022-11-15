@@ -315,7 +315,7 @@ bool tryDelay(CoreClock::time_point start, CoreClock::duration timeout, CoreCloc
 
 void blockingDelay(CoreClock::duration timeout, CoreClock::duration interval) {
     blockingDelay(timeout, interval, []() {
-        return false;
+        return true;
     });
 }
 

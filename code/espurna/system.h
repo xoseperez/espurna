@@ -189,7 +189,14 @@ bool tryDelay(CoreClock::time_point start, CoreClock::duration timeout, CoreCloc
 template <typename T>
 void blockingDelay(CoreClock::duration timeout, CoreClock::duration interval, T&& blocked) {
     const auto start = CoreClock::now();
-    while (!tryDelay(start, timeout, interval) && blocked()) {
+    for (;;) {
+        if (tryDelay(start, timeout, interval)) {
+            break;
+        }
+
+        if (!blocked()) {
+            break;
+        }
     }
 }
 
