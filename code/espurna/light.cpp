@@ -2610,6 +2610,8 @@ void _lightWebSocketOnConnected(JsonObject& root) {
     root["ltStep"] = _light_transition_step.count();
 #if RELAY_SUPPORT
     root["ltRelay"] = espurna::light::settings::relay();
+#else
+    root["ltRelay"] = false;
 #endif
 }
 
