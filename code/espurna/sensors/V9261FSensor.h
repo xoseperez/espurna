@@ -175,7 +175,7 @@ class V9261FSensor : public BaseEmonSensor {
                     return;
                 }
 
-                _index += _serial->read(&_data[_index], std::min(
+                _index += _serial->readBytes(&_data[_index], std::min(
                     static_cast<size_t>(available), sizeof(_data)));
                 if (_index >= 19) {
                     _timestamp = TimeSource::now();

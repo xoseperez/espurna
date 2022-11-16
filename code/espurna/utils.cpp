@@ -454,7 +454,7 @@ size_t consumeAvailable(Stream& stream) {
     uint8_t buf[64];
     do {
         const auto chunk = std::min(available, std::size(buf));
-        stream.read(&buf[0], chunk);
+        stream.readBytes(&buf[0], chunk);
         size += chunk;
     } while (size != available);
 
