@@ -2371,7 +2371,6 @@
                 <span class="pure-form-message-inline emon-expected-pwrP">In Watts (W). Calibrate your sensor connecting a pure resistive load (like a bulb) and enter here its nominal power or use a multimeter.</span>
                 <span class="pure-form-message-inline emon-expected-volt">In Volts (V). Enter your the nominal AC voltage for your household or facility, or use multimeter to get this value.</span>
                 <span class="pure-form-message-inline emon-expected-curr">In Amperes (A). If you are using a pure resistive load like a bulb, this will be the ratio between the two previous values, i.e. power / voltage. You can also use a current clamp around one of the power wires to get this value.</span>
-                <span class="pure-form-message-inline emon-expected-ene"></span>
             </div>
         </template>
 
@@ -2396,9 +2395,11 @@
 
         <template id="template-mireds-control">
             <div class="pure-control-group">
-                <label>Mireds (Cold &harr; Warm)</label>
-                <input type="range" min="153" max="500" class="slider pure-input-2-3" id="mireds">
+                <label>Mireds</label>
+                <input type="range" class="slider pure-input-2-3" id="mireds" list="mired-range">
                 <span class="slider mireds"></span>
+                <datalist id="mired-range">
+                </datalist>
             </div>
         </template>
         <!-- endRemoveIf(!light) -->

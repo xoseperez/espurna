@@ -600,8 +600,5 @@ input::placeholder {
     padding-bottom: 1em;
     padding-top: 1em;
     transition: visibility 0.2s;
-}
-
-.IroColorPicker, .light-control {
     content-visibility: hidden;
 }

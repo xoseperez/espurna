@@ -2581,7 +2581,13 @@ void _lightWebSocketOnVisible(JsonObject& root) {
     wsPayloadModule(root, PSTR("light"));
 
     JsonObject& light = root.createNestedObject("light");
-    light["channels"] = _light_channels.size();
+
+    JsonArray& channels = light.createNestedArray("channels");
+
+    const auto Channels = _light_channels.size();
+    for (size_t index = 0; index < Channels; ++index) {
+        channels.add(_lightTag(Channels, index));
+    }
 
     if (_light_use_cct) {
         JsonObject& cct = light.createNestedObject("cct");

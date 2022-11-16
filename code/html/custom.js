@@ -1861,7 +1861,6 @@ function initMagnitudesExpected(id) {
     const [expected, result] = template.querySelectorAll("input");
 
     const info = emonRatioInfo(id);
-    const root = template.children[0];
 
     expected.name += `${info.key}`;
     expected.id = expected.name;
@@ -2189,17 +2188,16 @@ function updateLightState(value) {
     const state = document.getElementById("light-state");
     state.checked = value;
 
-    const picker = document.querySelector(".IroColorPicker");
-    picker.style["display"] = value ? "block" : "none";
+    const picker = document.getElementById("light-picker");
+    picker.style["content-visibility"] = value ? "visible" : "hidden";
 }
 
 function colorEnabled(value) {
     const rules = []
     rules.push(styleVisible(".IroColorPicker", value));
 
-    for (let channel = 0; channel < 3; ++channel) {
-        rules.push(
-            styleVisible(`.light-channel-${channel}`, !value));
+    for (let type of ["r", "g", "b"]) {
+        rules.push(styleVisible(`.light-channel-${type}`, !value));
     }
 
     styleInject(rules);
@@ -2254,18 +2252,32 @@ function updateMireds(value) {
 // When there are CCT controls, no need for raw white channel sliders
 function cctEnabled(value) {
     if (value) {
-        let rules = [];
-        for (let channel = 3; channel < 5; ++channel) {
-            rules.push(
-                styleVisible(`.light-channel-${channel}`, false));
-        }
+        styleInject([
+            styleVisible(".light-channel-w", false),
+            styleVisible(".light-channel-c", false)
+        ]);
+    } else {
+        styleInject([
+            styleVisible(".light-cct", false),
+        ]);
+    }
+}
 
-        styleInject(rules);
+// Only allow cold white
+function whiteEnabled(value) {
+    if (value) {
+        styleInject([
+            styleVisible(".light-channel-w", false),
+            styleVisible(".light-channel-c", true)
+        ]);
     }
 }
 
 function cctInit(value) {
     const control = loadTemplate("mireds-control");
+
+    const root = control.querySelector("div");
+    root.classList.add("light-cct");
 
     const slider = control.getElementById("mireds");
     slider.setAttribute("min", value.cold);
@@ -2274,6 +2286,12 @@ function cctInit(value) {
         event.target.nextElementSibling.textContent = event.target.value;
         sendAction("light", {mireds: event.target.value});
     });
+
+    const datalist = control.querySelector("datalist");
+    datalist.innerHTML = `
+    <option value="${value.cold}">Cold</option>
+    <option value="${value.warm}">Warm</option>
+    `;
 
     mergeTemplate(document.getElementById("light"), control);
 }
@@ -2289,7 +2307,6 @@ function updateLight(data) {
             initLightState();
             initBrightness();
             initChannels(value);
-            addSimpleEnumerables("channel", "Channel", value);
             break;
 
         case "cct":
@@ -2349,19 +2366,26 @@ function updateBrightness(value) {
 }
 
 function initChannels(channels) {
+    const enumerables = [];
+
     const container = document.getElementById("light");
-    for (let channel = 0; channel < channels; ++channel) {
+    channels.forEach((tag, channel) => {
         const line = loadTemplate("channel-control");
         line.querySelector("span.slider").dataset["id"] = channel;
-        line.querySelector("div").classList.add(`light-channel-${channel}`);
+        line.querySelector("div").classList.add(`light-channel-${tag}`);
 
         const slider = line.querySelector("input.slider");
         slider.dataset["id"] = channel;
         slider.addEventListener("change", onChannelSliderChange);
 
-        line.querySelector("label").textContent = "Channel #".concat(channel);
+        const label = `Channel #${channel} (${tag.toUpperCase()})`;
+        line.querySelector("label").textContent = label;
         mergeTemplate(container, line);
-    }
+
+        enumerables.push({"id": channel, "name": label});
+    });
+
+    addEnumerables("Channels", enumerables);
 }
 
 function updateChannels(values) {
@@ -2629,6 +2653,10 @@ function processData(data) {
 
         if ("ltRelay" === key) {
             showLightState(value);
+        }
+
+        if ("useWhite" === key) {
+            whiteEnabled(value);
         }
 
         if ("useCCT" === key) {
