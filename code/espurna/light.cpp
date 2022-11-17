@@ -1584,11 +1584,11 @@ namespace {
 // TODO: input value modifier, instead of a transition-only thing?
 // TODO: calculate on the fly instead of limiting this to an 8bit value?
 
-constexpr long LightGammaMin { 0 };
-constexpr long LightGammaMax { 255 };
+static constexpr long LightGammaMin { 0 };
+static constexpr long LightGammaMax { 255 };
 
-long _lightGammaMap(size_t index) {
-    const static std::array<uint8_t, 256> Gamma PROGMEM {
+long _lightGammaValue(size_t index) {
+    static const std::array<uint8_t, 256> Gamma PROGMEM {
         0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
         1,   1,   1,   1,   1,   1,   1,   1,   1,   1,   2,   2,   2,   2,   2,   2,
         3,   3,   3,   3,   3,   3,   4,   4,   4,   4,   5,   5,   5,   5,   6,   6,
@@ -1622,7 +1622,7 @@ long _lightGammaMap(long value) {
     if (Divisor != 0l) {
         const long Scaled {
             (value - espurna::light::ValueMin) * (LightGammaMax - LightGammaMin) / Divisor + LightGammaMin };
-        return _lightGammaMap(static_cast<size_t>(Scaled));
+        return _lightGammaValue(static_cast<size_t>(Scaled));
     }
 
     return espurna::light::ValueMin;
