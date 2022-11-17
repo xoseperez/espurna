@@ -2586,7 +2586,7 @@ void _lightWebSocketOnVisible(JsonObject& root) {
 
     const auto Channels = _light_channels.size();
     for (size_t index = 0; index < Channels; ++index) {
-        channels.add(_lightTag(Channels, index));
+        channels.add(String(_lightTag(Channels, index)));
     }
 
     if (_light_use_cct) {
