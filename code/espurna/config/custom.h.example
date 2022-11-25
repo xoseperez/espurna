@@ -24,6 +24,10 @@
     #define DOMOTICZ_SUPPORT           0
     #define HOMEASSISTANT_SUPPORT      0
     #define THINGSPEAK_SUPPORT         0
+    #define UART_SUPPORT        0            //  Disables #1 UART
+    #define UART1_TX_PIN        GPIO_NONE    //  to allow TX/RX
+    #define UART1_RX_PIN        GPIO_NONE    //  pins to be used
+    #define TERMINAL_SERIAL_SUPPORT  0       //  for other functions.
 
     // Buttons
     #define BUTTON1_PIN         	0
@@ -58,7 +62,10 @@
     #define DOMOTICZ_SUPPORT        0
     #define HOMEASSISTANT_SUPPORT   0
     #define THINGSPEAK_SUPPORT      0
-
+    #define UART_SUPPORT        0            //  Disables #1 UART
+    #define UART1_TX_PIN        GPIO_NONE    //  to allow TX/RX
+    #define UART1_RX_PIN        GPIO_NONE    //  pins to be used
+    #define TERMINAL_SERIAL_SUPPORT  0       //  for other functions.
 
     // Buttons
     #define BUTTON_MQTT_SEND_ALL_EVENTS		1
