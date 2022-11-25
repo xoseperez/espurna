@@ -2236,7 +2236,6 @@ function colorInit(value) {
         };
     // HSV
     } else {
-        rules.push(styleVisible(".light-brightness", false));
         layout.push(colorBox());
         layout.push(colorSlider("hue"));
         layout.push(colorSlider("saturation"));
