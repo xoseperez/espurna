@@ -2771,32 +2771,42 @@ constexpr size_t _relayAdhocPins() {
 }
 
 struct RelayGpioProviderCfg {
-    GpioBase* base;
+    GpioType type;
     uint8_t main;
     uint8_t reset;
 };
 
 RelayGpioProviderCfg _relayGpioProviderCfg(size_t index) {
-    return {
-        gpioBase(espurna::relay::settings::pinType(index)),
-        espurna::relay::settings::pin(index),
-        espurna::relay::settings::resetPin(index)};
+    return RelayGpioProviderCfg{
+        .type = espurna::relay::settings::pinType(index),
+        .main = espurna::relay::settings::pin(index),
+        .reset = espurna::relay::settings::resetPin(index),
+    };
 }
 
 std::unique_ptr<GpioProvider> _relayGpioProvider(size_t index, RelayType type) {
-    auto cfg = _relayGpioProviderCfg(index);
-    if (!cfg.base) {
+    const auto cfg = _relayGpioProviderCfg(index);
+
+    auto* base = gpioBase(cfg.type);
+    if (!base) {
         return nullptr;
     }
 
-    auto main = gpioRegister(*cfg.base, cfg.main);
-    if (main) {
-        auto reset = gpioRegister(*cfg.base, cfg.reset);
-        return std::make_unique<GpioProvider>(
-            type, std::move(main), std::move(reset));
+    auto main = gpioRegister(*base, cfg.main);
+    if (!main) {
+        return nullptr;
     }
 
-    return nullptr;
+    auto reset = gpioRegister(*base, cfg.reset);
+    if (GpioType::Hardware == cfg.type) {
+        hardwareGpioIgnore(cfg.main);
+        if (GPIO_NONE != cfg.reset) {
+            hardwareGpioIgnore(cfg.reset);
+        }
+    }
+
+    return std::make_unique<GpioProvider>(
+        type, std::move(main), std::move(reset));
 }
 
 RelayProviderBasePtr _relaySetupProvider(size_t index) {

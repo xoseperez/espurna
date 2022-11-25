@@ -15,6 +15,7 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "mcp23s08_pin.h"
 
+#include "rtcmem.h"
 #include "terminal.h"
 #include "ws.h"
 
@@ -836,6 +837,11 @@ void gpioSetup() {
 #endif
 }
 
+void hardwareGpioIgnore(unsigned char gpio) {
+    const auto value = Rtcmem->gpio_ignore;
+    Rtcmem->gpio_ignore = value | (1 << gpio);
+}
+
 void gpioLockOrigin(espurna::gpio::Origin origin) {
     espurna::gpio::origin::add(origin);
 }
@@ -880,9 +886,13 @@ void pinMode(uint8_t pin, uint8_t mode) {
 // Special override for Core, allows us to skip init for certain pins when needed
 void resetPins() {
     const auto& hardware = hardwareGpio();
+    const auto ignore = Rtcmem->gpio_ignore;
 
     for (size_t pin = 0; pin < espurna::gpio::Hardware::Pins; ++pin) {
         if (!hardware.valid(pin)) {
+            continue;
+        }
+        if ((ignore & (1 << pin)) > 0) {
             continue;
         }
 #if DEBUG_SERIAL_SUPPORT

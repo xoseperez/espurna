@@ -50,13 +50,16 @@ public:
     virtual BasePinPtr pin(unsigned char index) = 0;
 };
 
-GpioBase& hardwareGpio();
 GpioBase* gpioBase(GpioType);
+
+GpioBase& hardwareGpio();
+void hardwareGpioIgnore(unsigned char gpio);
 
 BasePinPtr gpioRegister(GpioBase& base, unsigned char gpio);
 BasePinPtr gpioRegister(unsigned char gpio);
 
 void gpioLockOrigin(espurna::gpio::Origin);
+
 void gpioSetup();
 
 inline size_t gpioPins(const GpioBase& base) {
