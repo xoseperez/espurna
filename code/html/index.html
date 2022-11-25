@@ -676,15 +676,17 @@
                                     <label>Use white channel</label>
                                     <div><input type="checkbox" name="useWhite" data-action="reload"></div>
                                     <span class="pure-form-message">
-                                        For 2 channels warm white and cold white lights or color lights to use forth dimmable channel as (cold) white light calculated out of the RGB values. This setting will only work when the device has at least 4 dimmable channels. Enabling this will render the Channel #4 slider on the status page unavailable.
+                                        When device is configured as RGB + WW (warm white), use RGB to balance the &quot;warm white&quot; channel, while the &quot;Cold channel&quot; is still configurable.
+                                        <br>This option hides <strong>RGB</strong> and <strong>WW</strong> sliders!
                                     </span>
                                 </div>
 
                                 <div class="pure-control-group">
-                                    <label>Use white color temperature</label>
+                                    <label>Use color temperature</label>
                                     <div><input type="checkbox" name="useCCT" data-action="reload"></div>
                                     <span class="pure-form-message">
-                                        Use a dimmable channel as warm white light and another dimmable channel as cold white light.<br>On devices with two dimmable channels the first use used for warm white light and the second for cold white light.<br>On color lights the fifth use used for warm white light and the fourth for cold white light.<br>Will only work if the device has exactly 2 dimmable channels or at least 5 dimmable channels and "white channel" above is also ON.<br>Enabling this will render useless the "Channel 5" slider in the status page.
+                                        Balance between &quot;cold&quot; and &quot;warm&quot; when channel configuration has WW (warm white) and CW (cold white) channels available. When RGB is also available, replace its values with an approximation based on the current &quot;Mireds&quot; value.
+                                        <br>This option hides <strong>all channel sliders</strong>
                                     </span>
                                 </div>
 
@@ -2407,7 +2409,7 @@
 
         <!-- removeIf(!light) -->
         <template id="template-channel-control">
-            <div class="pure-control-group light-channel">
+            <div>
                 <label>Channel #</label>
                 <input type="range" min="0" max="255" class="slider pure-input-2-3">
                 <span class="slider"></span>
