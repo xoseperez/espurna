@@ -2394,7 +2394,7 @@ function initChannels(channels) {
     channels.forEach((tag, channel) => {
         const line = loadTemplate("channel-control");
         line.querySelector("span.slider").dataset["id"] = channel;
-        line.querySelector("div").classList.add(`light-channel-${tag}`);
+        line.querySelector("div").classList.add(`light-channel-${tag.toLowerCase()}`);
 
         const slider = line.querySelector("input.slider");
         slider.dataset["id"] = channel;
