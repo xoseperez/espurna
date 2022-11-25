@@ -907,8 +907,8 @@
     #define LED1_PIN_INVERSE    1
 
     // Light
-    #define LIGHT_CH1_PIN       12  // Cold white
-    #define LIGHT_CH2_PIN       14  // Warm white
+    #define LIGHT_CH1_PIN       14  // WARM WHITE
+    #define LIGHT_CH2_PIN       12  // COLD WHITE
 
 #elif defined(ITEAD_SONOFF_T1_1CH)
 
@@ -1471,8 +1471,8 @@
     #define LIGHT_CH1_PIN       14      // RED
     #define LIGHT_CH2_PIN       12      // GREEN
     #define LIGHT_CH3_PIN       13      // BLUE
-    #define LIGHT_CH4_PIN       5       // COLD WHITE
-    #define LIGHT_CH5_PIN       15      // WARM WHITE
+    #define LIGHT_CH4_PIN       15      // WARM WHITE
+    #define LIGHT_CH5_PIN       5       // COLD WHITE
 
 #elif defined(MAGICHOME_ZJ_LB_RGBWW_L)
 
@@ -1485,8 +1485,8 @@
     #define LIGHT_CH1_PIN       5       // RED
     #define LIGHT_CH2_PIN       4       // GREEN
     #define LIGHT_CH3_PIN       14      // BLUE
-    #define LIGHT_CH4_PIN       12      // COLD WHITE
-    #define LIGHT_CH5_PIN       13      // WARM WHITE
+    #define LIGHT_CH4_PIN       13      // WARM WHITE
+    #define LIGHT_CH5_PIN       12      // COLD WHITE
 
 // -----------------------------------------------------------------------------
 // HUACANXING H801 & H802
@@ -4048,8 +4048,8 @@
     // Light
     #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
     #define LIGHT_STEP          8
-    #define LIGHT_CH1_PIN       5   // warm white
-    #define LIGHT_CH2_PIN       4   // cold white
+    #define LIGHT_CH1_PIN       5   // WARM WHITE
+    #define LIGHT_CH2_PIN       4   // COLD WHITE
 
     // https://www.xiaomitoday.com/xiaomi-mijia-mjtd01yl-led-desk-lamp-review/
     #define LIGHT_COLDWHITE_MIRED 153
@@ -5107,15 +5107,13 @@
 #elif defined(LSC_E27_10W_WHITE)
 
     // Info
-    #define MANUFACTURER                  "LSC"
-    #define DEVICE                        "E27_10W_WHITE"
-    #define LIGHT_PROVIDER                LIGHT_PROVIDER_DIMMER
+    #define MANUFACTURER        "LSC"
+    #define DEVICE              "E27_10W_WHITE"
+    #define LIGHT_PROVIDER      LIGHT_PROVIDER_DIMMER
 
     // Light
-    #define LIGHT_CH1_PIN                 5       // WARM WHITE LED PWM PIN
-    #define LIGHT_CH1_INVERSE             0
-    #define LIGHT_CH2_PIN                 4       // COLD WHITE LED PWM PIN
-    #define LIGHT_CH2_INVERSE             0
+    #define LIGHT_CH1_PIN       5       // WARM WHITE
+    #define LIGHT_CH2_PIN       4       // COLD WHITE
 
 // -----------------------------------------------------------------------------
 // Mirabella Genio White A60
