@@ -1232,10 +1232,6 @@ struct GpioProvider : public RelayProviderBase {
             _reset_pin->pinMode(OUTPUT);
         }
 
-        if (_type == RelayType::Inverse) {
-            _pin->digitalWrite(HIGH);
-        }
-
         return true;
     }
 
