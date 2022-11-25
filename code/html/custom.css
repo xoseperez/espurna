@@ -596,9 +596,29 @@ input::placeholder {
     Lights
    -------------------------------------------------------------------------- */
 
-.IroColorPicker {
+#light-picker {
     padding-bottom: 1em;
     padding-top: 1em;
-    transition: visibility 0.2s;
+    contain-intrinsic-size: 0px;
+    content-visibility: hidden;
+    opacity: 0;
+    display: none;
+}
+
+#light-picker.light-on {
+    display: block;
+    opacity: 1;
+    content-visibility: visible;
+    contain: style layout paint;
+}
+
+#light-picker.light-cct,
+#light-picker.light-on.light-cct {
+    content-visibility: hidden;
+    opacity: 0;
+    display: none;
+}
+
+#light-cct {
     content-visibility: hidden;
 }

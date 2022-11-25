@@ -2187,20 +2187,33 @@ function initLightState() {
 function updateLightState(value) {
     const state = document.getElementById("light-state");
     state.checked = value;
+    colorPickerState(value);
+}
 
+function colorPickerCct() {
     const picker = document.getElementById("light-picker");
-    picker.style["content-visibility"] = value ? "visible" : "hidden";
+    picker.classList.add("light-cct");
+}
+
+function colorPickerState(value) {
+    const picker = document.getElementById("light-picker");
+    if (value) {
+        picker.classList.add("light-on");
+    } else {
+        picker.classList.remove("light-on");
+    }
 }
 
 function colorEnabled(value) {
-    const rules = []
-    rules.push(styleVisible(".IroColorPicker", value));
+    styleInject([
+        styleVisible("#light-picker", value)
+    ]);
 
-    for (let type of ["r", "g", "b"]) {
-        rules.push(styleVisible(`.light-channel-${type}`, !value));
-    }
-
-    styleInject(rules);
+    channelVisible({
+        "r": !value,
+        "g": !value,
+        "b": !value
+    });
 }
 
 function colorInit(value) {
@@ -2244,31 +2257,38 @@ function colorInit(value) {
 function updateMireds(value) {
     const mireds = document.getElementById("mireds");
     if (mireds !== null) {
-        mireds.value = value.value;
-        mireds.nextElementSibling.textContent = value.value;
+        mireds.value = value;
+        mireds.nextElementSibling.textContent = value;
+    }
+}
+
+// Only allow to see specific channel(s)
+function channelVisible(tags) {
+    const styles = [];
+    for (const [tag, visible] of Object.entries(tags)) {
+        styles.push(styleVisible(`.light-channel-${tag}`, visible));
+    }
+
+    styleInject(styles);
+}
+
+// Only allow to see one of the channels
+function whiteEnabled(value) {
+    if (value) {
+        channelVisible({
+            "w": false,
+            "c": true
+        });
     }
 }
 
 // When there are CCT controls, no need for raw white channel sliders
 function cctEnabled(value) {
     if (value) {
+        colorPickerCct();
         styleInject([
-            styleVisible(".light-channel-w", false),
-            styleVisible(".light-channel-c", false)
-        ]);
-    } else {
-        styleInject([
-            styleVisible(".light-cct", false),
-        ]);
-    }
-}
-
-// Only allow cold white
-function whiteEnabled(value) {
-    if (value) {
-        styleInject([
-            styleVisible(".light-channel-w", false),
-            styleVisible(".light-channel-c", true)
+            styleVisible("#light-channels", false),
+            styleVisible("#light-cct", true),
         ]);
     }
 }
@@ -2277,7 +2297,7 @@ function cctInit(value) {
     const control = loadTemplate("mireds-control");
 
     const root = control.querySelector("div");
-    root.classList.add("light-cct");
+    root.setAttribute("id", "light-cct");
 
     const slider = control.getElementById("mireds");
     slider.setAttribute("min", value.cold);
@@ -2366,9 +2386,12 @@ function updateBrightness(value) {
 }
 
 function initChannels(channels) {
+    const container = document.createElement("div");
+    container.setAttribute("id", "light-channels");
+    container.classList.add("pure-control-group");
+
     const enumerables = [];
 
-    const container = document.getElementById("light");
     channels.forEach((tag, channel) => {
         const line = loadTemplate("channel-control");
         line.querySelector("span.slider").dataset["id"] = channel;
@@ -2384,6 +2407,9 @@ function initChannels(channels) {
 
         enumerables.push({"id": channel, "name": label});
     });
+
+    const light = document.getElementById("light");
+    light.appendChild(container);
 
     addEnumerables("Channels", enumerables);
 }
