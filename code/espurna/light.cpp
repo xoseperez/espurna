@@ -2972,7 +2972,11 @@ static void _lightCommandMired(::terminal::CommandContext&& ctx) {
     }
 
     const auto mireds = _light_temperature.mireds();
-    ctx.output.printf_P(PSTR("mireds %ld\n"), mireds.value);
+    const auto cold = _light_temperature.cold();
+    const auto warm = _light_temperature.warm();
+    ctx.output.printf_P(PSTR("mireds %ld range %ld...%ld (factor %s%)\n"),
+        mireds.value, cold, warm,
+        String(_light_temperature.factor(), 1).c_str());
     terminalOK(ctx);
 }
 
