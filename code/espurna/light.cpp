@@ -504,6 +504,15 @@ struct Pointers {
         return _data[4];
     }
 
+    template <typename ...Args>
+    void maybeApply(Args&&... args) const {
+        for (auto ptr : _data) {
+            if (ptr) {
+                (*ptr).apply(std::forward<Args>(args)...);
+            }
+        }
+    }
+
 private:
     void reset(LightChannels& channels);
 
@@ -876,6 +885,8 @@ long _lightBrightnessPercent() {
 // After the channel value was updated through the API (i.e. through changing the `inputValue`),
 // these functions are expected to be called. Which one is chosen is based on the current settings values.
 
+// Basic brightness application; default when all other processing options are disabled
+
 void _lightValuesWithBrightness(LightChannels& channels) {
     const auto Brightness = _light_brightness;
     for (auto& channel : channels) {
@@ -883,12 +894,7 @@ void _lightValuesWithBrightness(LightChannels& channels) {
     }
 }
 
-template <typename... Args>
-void _lightChannelMaybeApply(LightChannel* ptr, Args&&... args) {
-    if (ptr) {
-        (*ptr).apply(std::forward<Args>(args)...);
-    }
-}
+// Maintain compatibility with older versions, limit brightness application to the RGB when using 'color mode'.
 
 void _lightValuesWithBrightnessExceptWhite(LightChannels& channels) {
     auto ptr = espurna::light::Pointers(channels);
@@ -898,47 +904,76 @@ void _lightValuesWithBrightnessExceptWhite(LightChannels& channels) {
     (*ptr.green()).apply(Brightness);
     (*ptr.blue()).apply(Brightness);
 
-    _lightChannelMaybeApply(ptr.warm());
-    _lightChannelMaybeApply(ptr.cold());
+    if (ptr.warm()) {
+        (*ptr.warm()).apply();
+    }
+
+    if (ptr.cold()) {
+        (*ptr.cold()).apply();
+    }
 }
+
+// Reset inputValue directly in the expression
+// Ignores all previous values, should only be used at the beginning
+
+struct LightResetInput {
+    LightResetInput() = delete;
+    explicit LightResetInput(long value) :
+        _value(value)
+    {}
+
+    long operator()(long) const {
+        return _value;
+    }
+
+    // 0.0 is the 'coldest', 1.0 is the 'warmest'
+    static LightResetInput forWarm(float factor) {
+        return LightResetInput(factor * espurna::light::ValueMax);
+    }
+
+    // opposite value of `forWarm` for the given factor
+    static LightResetInput forCold(float factor) {
+        return LightResetInput((1.0f - factor) * espurna::light::ValueMax);
+    }
+
+private:
+    long _value;
+};
 
 // With `useCCT`, balance the value between Warm and Cold channels based on the current `mireds`.
 
 struct LightScaledWhite {
+    static auto constexpr Default = espurna::light::build::WhiteFactor;
+
     LightScaledWhite() = default;
     explicit LightScaledWhite(float factor) :
         _factor(factor)
     {}
 
+    static LightScaledWhite with(float factor) {
+        return LightScaledWhite{factor * Default};
+    }
+
     long operator()(long input) const {
-        return std::lround(
-                static_cast<float>(input)
-                * _factor
-                * espurna::light::build::WhiteFactor);
+        return std::lround(static_cast<float>(input) * _factor);
     }
 
 private:
-    float _factor { 1.0f };
+    float _factor { Default };
 };
 
 void _lightValuesWithCct(LightChannels& channels) {
-    const auto Brightness = _light_brightness;
-
-    auto ptr = espurna::light::Pointers(channels);
-    _lightChannelMaybeApply(ptr.red(), Brightness);
-    _lightChannelMaybeApply(ptr.green(), Brightness);
-    _lightChannelMaybeApply(ptr.blue(), Brightness);
-
-    const auto Factor = _light_temperature.factor();
+    const auto CctFactor = _light_temperature.factor();
     const auto White = LightScaledWhite();
 
-    auto& warm = *ptr.warm();
-    warm = std::lround(Factor * espurna::light::ValueMax);
-    warm.apply(White, Brightness);
+    auto ptr = espurna::light::Pointers(channels);
+    (*ptr.warm()).apply(
+        LightResetInput::forWarm(CctFactor), White);
+    (*ptr.cold()).apply(
+        LightResetInput::forCold(CctFactor), White);
 
-    auto& cold = *ptr.cold();
-    cold = std::lround((1.0f - Factor) * espurna::light::ValueMax);
-    cold.apply(White, Brightness);
+    const auto Brightness = _light_brightness;
+    ptr.maybeApply(Brightness);
 }
 
 // To handle both 4 and 5 channels, allow to 'adjust' internal factor calculation after construction
@@ -952,9 +987,14 @@ void _lightValuesWithCct(LightChannels& channels) {
 
 struct LightRgbWithoutWhite {
     LightRgbWithoutWhite() = delete;
+    explicit LightRgbWithoutWhite(espurna::light::Rgb rgb) :
+        _common(makeCommon(rgb)),
+        _factor(makeFactor(_common)),
+        _luminance(makeLuminance(_common))
+    {}
+
     explicit LightRgbWithoutWhite(const LightChannels& channels) :
-        _common(makeCommon(makeRgb(channels))),
-        _factor(makeFactor(_common))
+        LightRgbWithoutWhite{makeRgb(channels)}
     {}
 
     long operator()(long input) const {
@@ -968,6 +1008,7 @@ struct LightRgbWithoutWhite {
             std::forward<Args>(args)...
         });
         _factor = makeFactor(_common);
+        _luminance = makeLuminance(_common);
     }
 
     long inputMin() const {
@@ -978,6 +1019,10 @@ struct LightRgbWithoutWhite {
         return _factor;
     }
 
+    float luminance() const {
+        return _luminance;
+    }
+
 private:
     struct Common {
         long inputMin;
@@ -985,7 +1030,12 @@ private:
         long outputMax;
     };
 
-    static float makeFactor(const Common& common) {
+    static float makeLuminance(Common common) {
+        const auto raw = (common.inputMin + common.inputMax) / 2;
+        return static_cast<float>(raw) / espurna::light::ValueMax;
+    }
+
+    static float makeFactor(Common common) {
         const auto inputMax = static_cast<float>(common.inputMax);
         const auto outputMax = static_cast<float>(common.outputMax);
         return (outputMax > 0.0f)
@@ -1016,6 +1066,7 @@ private:
 
     Common _common;
     float _factor;
+    float _luminance;
 };
 
 // When `useWhite` is enabled, white channels are 'detached' from the processing and their value depends on the RGB ones.
@@ -1035,16 +1086,25 @@ void _lightValuesWithRgbWhite(LightChannels& channels) {
     (*ptr.green()).apply(rgb, Brightness);
     (*ptr.blue()).apply(rgb, Brightness);
 
-    auto& warm = *ptr.warm();
-    warm = rgb.inputMin();
-    warm.apply(LightScaledWhite{rgb.factor()}, Brightness);
+    (*ptr.warm()).apply(
+        LightResetInput{rgb.inputMin()},
+        LightScaledWhite::with(rgb.factor()),
+        Brightness);
 
-    _lightChannelMaybeApply(ptr.cold());
+    if (ptr.cold()) {
+        (*ptr.cold()).apply();
+    }
 }
+
+// Kelvin to RGB approximation algorithm by Tanner Helland
+// * https://tannerhelland.com/2012/09/18/convert-temperature-rgb-algorithm-code.html
+// Original code for RGB lights from AiLight library by Sacha Telgenhof (@
+// * https://github.com/stelgenhof/AiLight/blob/develop/lib/AiLight/AiLight.cpp
 
 // Instead of the above, use `mireds` value as a range for warm and cold channels, based on the calculated rgb common values
 // Every value is also scaled by `brightness` after applying all of the previous steps
-// Notice that we completely ignore inputs and reset them to either kelvin'ized or MAX value as the first step
+// Notice that we completely ignore inputs and reset them to either kelvin'ized or hardcoded ValueMin or ValueMax
+// (also, RED **always** stays at ValueMax b/c we never go above 6.6k kelvin)
 
 espurna::light::Rgb _lightKelvinRgb(espurna::light::Kelvin kelvin) {
     kelvin.value /= 100;
@@ -1065,37 +1125,31 @@ espurna::light::Rgb _lightKelvinRgb(espurna::light::Kelvin kelvin) {
 
 void _lightValuesWithRgbCct(LightChannels& channels) {
     const auto Temperature = _light_temperature;
-
-    const auto Factor = Temperature.factor();
-    const auto Warm = std::lround(Factor * espurna::light::ValueMax);
-    const auto Cold = std::lround((1.0f - Factor) * espurna::light::ValueMax);
-
     const auto RgbFromKelvin = _lightKelvinRgb(Temperature.kelvin());
-    auto ptr = espurna::light::Pointers(channels);
+
+    auto rgb = LightRgbWithoutWhite{RgbFromKelvin};
+    rgb.adjustOutput(rgb.inputMin());
 
     const auto Brightness = _light_brightness;
+    auto ptr = espurna::light::Pointers(channels);
 
-    auto& red = *ptr.red();
-    red = RgbFromKelvin.red();
-    red.apply(Brightness);
+    (*ptr.red()).apply(
+        LightResetInput{RgbFromKelvin.red()},
+        rgb, Brightness);
+    (*ptr.green()).apply(
+        LightResetInput{RgbFromKelvin.green()},
+        rgb, Brightness);
+    (*ptr.blue()).apply(
+        LightResetInput{RgbFromKelvin.blue()},
+        rgb, Brightness);
 
-    auto& green = *ptr.green();
-    green = RgbFromKelvin.green();
-    green.apply(Brightness);
-
-    auto& blue = *ptr.blue();
-    blue = RgbFromKelvin.blue();
-    blue.apply(Brightness);
-
-    const auto White = LightScaledWhite();
-
-    auto& warm = *ptr.warm();
-    warm = Warm;
-    warm.apply(White, Brightness);
-
-    auto& cold = *ptr.cold();
-    cold = Cold;
-    cold.apply(White, Brightness);
+    const auto White = LightScaledWhite(rgb.factor());
+    (*ptr.warm()).apply(
+        LightResetInput::forWarm(Temperature.factor()),
+        White, Brightness);
+    (*ptr.cold()).apply(
+        LightResetInput::forCold(Temperature.factor()),
+        White, Brightness);
 }
 
 // UI hints about channel distribution
@@ -3393,6 +3447,8 @@ void _lightConfigure() {
         espurna::light::settings::color(false);
     }
 
+    _light_use_rgb = espurna::light::settings::rgb();
+
     const auto has_warm_white = (Channels >= 4) || (Channels >= 1);
     _light_has_warm_white = has_warm_white;
 
@@ -3410,18 +3466,6 @@ void _lightConfigure() {
     if (!_light_use_cct) {
         espurna::light::settings::cct(false);
     }
-
-    const auto last_process_input_values = _light_process_input_values;
-    _light_process_input_values =
-        (_light_use_color) ? (
-            (_light_use_cct) ? _lightValuesWithRgbCct :
-            (_light_use_white) ? _lightValuesWithRgbWhite :
-            _lightValuesWithBrightnessExceptWhite) :
-        (_light_use_cct) ?
-            _lightValuesWithCct :
-            _lightValuesWithBrightness;
-
-    _light_use_rgb = espurna::light::settings::rgb();
 
     _light_temperature.range(
         espurna::light::TemperatureRange{
@@ -3444,6 +3488,16 @@ void _lightConfigure() {
         _light_channels[index].inverse = espurna::light::settings::inverse(index);
         _light_channels[index].gamma = (_light_has_color && _light_use_gamma) && _lightUseGamma(Channels, index);
     }
+
+    const auto last_process_input_values = _light_process_input_values;
+    _light_process_input_values =
+        (_light_use_color) ? (
+            (_light_use_cct) ? _lightValuesWithRgbCct :
+            (_light_use_white) ? _lightValuesWithRgbWhite :
+            _lightValuesWithBrightnessExceptWhite) :
+        (_light_use_cct) ?
+            _lightValuesWithCct :
+            _lightValuesWithBrightness;
 
     if (!_light_update && (last_process_input_values != _light_process_input_values)) {
         lightUpdate(false);

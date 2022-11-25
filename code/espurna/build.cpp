@@ -263,9 +263,9 @@ PROGMEM_STRING(BuildTime, __TIME__);
 // > This macro expands to a string constant that describes the date on which the preprocessor is being run.
 // > The string constant contains eleven characters and looks like "Feb 12 1996". If the day of the month is less than 10,
 // > it is padded with a space on the left.
-// > 
+// >
 // > If GCC cannot determine the current date, it will emit a warning message (once per compilation) and __DATE__ will expand to "??? ?? ????".
-// 
+//
 // __TIME__
 // > This macro expands to a string constant that describes the time at which the preprocessor is being run.
 // > The string constant contains eight characters and looks like "23:59:01".
