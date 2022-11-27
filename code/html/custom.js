@@ -2205,9 +2205,10 @@ function colorPickerState(value) {
 }
 
 function colorEnabled(value) {
-    styleInject([
-        styleVisible("#light-picker", value)
-    ]);
+    if (value) {
+        const picker = document.getElementById("light-picker");
+        picker.classList.add("light-color");
+    }
 
     channelVisible({
         "r": !value,

@@ -605,18 +605,11 @@ input::placeholder {
     display: none;
 }
 
-#light-picker.light-on {
+#light-picker.light-color.light-on:not(.light-cct) {
     display: block;
     opacity: 1;
     content-visibility: visible;
     contain: style layout paint;
-}
-
-#light-picker.light-cct,
-#light-picker.light-on.light-cct {
-    content-visibility: hidden;
-    opacity: 0;
-    display: none;
 }
 
 #light-cct {
