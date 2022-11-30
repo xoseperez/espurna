@@ -1184,9 +1184,6 @@ String _relay_payload_toggle;
 
 RelayProviderBase::~RelayProviderBase() = default;
 
-void RelayProviderBase::dump() {
-}
-
 bool RelayProviderBase::setup() {
     return true;
 }

@@ -66,8 +66,6 @@ public:
     RelayProviderBase() = default;
     virtual ~RelayProviderBase();
 
-    virtual void dump();
-
     // whether the provider is ready
     virtual bool setup();
 
