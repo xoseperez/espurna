@@ -599,8 +599,9 @@ bool heartbeat(heartbeat::Mask mask) {
         String message;
         root.printTo(message);
 
+        static const auto topic = StringView(Topic).toString();
         mqttSendRaw(
-            mqttTopic(Topic).c_str(),
+            mqttTopic(topic).c_str(),
             message.c_str(), false);
     }
 
