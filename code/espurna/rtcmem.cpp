@@ -13,7 +13,7 @@ static constexpr uint32_t RtcmemMagic { RTCMEM_MAGIC };
 
 static constexpr uintptr_t RtcmemBlocks { RTCMEM_BLOCKS };
 static constexpr uintptr_t RtcmemBegin { RTCMEM_ADDR };
-static constexpr uintptr_t RtcmemEnd { RtcmemBegin + RtcmemBlocks };
+static constexpr uintptr_t RtcmemEnd { RtcmemBegin + (4 * RtcmemBlocks) };
 
 volatile RtcmemData* Rtcmem = reinterpret_cast<volatile RtcmemData*>(RtcmemBegin);
 
@@ -76,27 +76,26 @@ void init(::terminal::CommandContext&& ctx) {
 PROGMEM_STRING(Dump, "RTCMEM.DUMP");
 
 void dump(::terminal::CommandContext&& ctx) {
-    ctx.output.printf_P(PSTR("boot_status=%s status=%s capacity=%u\n"),
+    ctx.output.printf_P(PSTR("boot_status=%s status=%s\n"),
         internal::status ? "OK" : "INIT",
-        status() ? "OK" : "INIT",
-        RtcmemSize);
+        status() ? "OK" : "INIT");
 
-    constexpr size_t Blocks = 8;
-    constexpr auto Increment = alignof(uint32_t) * Blocks;
+    constexpr size_t BytesPerBlock = sizeof(uint32_t);
+    constexpr size_t BlocksPerLine = 8;
 
-    alignas(4) uint8_t buffer[Blocks];
-    
+    alignas(4) uint8_t buffer[BytesPerBlock * BlocksPerLine];
     String line;
-    for (auto addr = RtcmemBegin; addr < RtcmemEnd; addr += Increment) {
-        std::memcpy(buffer, reinterpret_cast<uint32_t*>(addr), 1);
+
+    for (auto addr = RtcmemBegin; addr < RtcmemEnd; addr += std::size(buffer)) {
+        std::memcpy(&buffer[0], reinterpret_cast<uint32_t*>(addr), std::size(buffer));
 
         line += PSTR("0x");
         line += String(addr, 16);
         line += ':';
 
-        for (auto offset = &buffer[0]; offset < &buffer[Blocks]; offset += 4) {
+        for (auto it = std::begin(buffer); it != std::end(buffer); it += BytesPerBlock) {
             line += PSTR(" ");
-            line += hexEncode(offset, offset + 4);
+            line += hexEncode(it, it + BytesPerBlock);
         }
 
         line += '\n';
