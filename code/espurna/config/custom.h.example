@@ -19,7 +19,7 @@
     #define DEVICE                     "SONOFF_BASIC_BUILD01"
 
     // Disable these
-    #define DEBUG_SERIAL_SUPPORT       0
+    #define UART_SUPPORT               0
     #define ALEXA_SUPPORT              0
     #define DOMOTICZ_SUPPORT           0
     #define HOMEASSISTANT_SUPPORT      0
@@ -53,15 +53,16 @@
     #define DEVICE                  "SONOFF_BASIC_BMX280"    // You can use your own name here
 
     // Disable these
-    #define DEBUG_SERIAL_SUPPORT    0
+    #define UART_SUPPORT            0
     #define ALEXA_SUPPORT           0
     #define DOMOTICZ_SUPPORT        0
     #define HOMEASSISTANT_SUPPORT   0
     #define THINGSPEAK_SUPPORT      0
 
+    // Always publish button events to MQTT
+    #define BUTTON_MQTT_SEND_ALL_EVENTS		1
 
     // Buttons
-    #define BUTTON_MQTT_SEND_ALL_EVENTS		1
     #define BUTTON1_PIN         	0    // Built in button.
     #define BUTTON1_CONFIG      	BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
     #define BUTTON1_RELAY       	1
@@ -70,6 +71,7 @@
     #define BUTTON1_DBLCLICK    	BUTTON_MODE_NONE
     #define BUTTON1_LNGCLICK    	BUTTON_MODE_OFF
     #define BUTTON1_LNGLNGCLICK 	BUTTON_MODE_NONE
+
     #define BUTTON2_PIN         	2    // External push button connected between IO2 and GND.
     #define BUTTON2_CONFIG      	BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
     #define BUTTON2_RELAY       	1
@@ -87,10 +89,12 @@
     #define LED1_PIN            	13
     #define LED1_PIN_INVERSE    	1
 
-    // Extras
-    #define BMX280_SUPPORT 		1
-    #define BMX280_ADDRESS 		0x76
-    #define I2C_SDA_PIN 		1  //TX PIN    **DISABLE DEBUG_SERIAL_SUPPORT**
-    #define I2C_SCL_PIN 		3  //RX PIN    **DISABLE DEBUG_SERIAL_SUPPORT**
+    // Non-default I2C on hardware UART0 pins. Make sure to disable UART for these to work!
+    #define I2C_SDA_PIN 		    1
+    #define I2C_SCL_PIN 		    3
+
+    // BMX280 depends on I2C
+    #define BMX280_SUPPORT 		    1
+    #define BMX280_ADDRESS 		    0x76
 
 #endif
