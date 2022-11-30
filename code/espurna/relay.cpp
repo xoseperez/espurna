@@ -1182,8 +1182,7 @@ String _relay_payload_toggle;
 
 // 'anchor' default virtual implementations to the relay.cpp.o
 
-RelayProviderBase::~RelayProviderBase() {
-}
+RelayProviderBase::~RelayProviderBase() = default;
 
 void RelayProviderBase::dump() {
 }
