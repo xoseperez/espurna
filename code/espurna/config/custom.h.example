@@ -60,41 +60,41 @@
     #define THINGSPEAK_SUPPORT      0
 
     // Always publish button events to MQTT
-    #define BUTTON_MQTT_SEND_ALL_EVENTS		1
+    #define BUTTON_MQTT_SEND_ALL_EVENTS     1
 
     // Buttons
-    #define BUTTON1_PIN         	0    // Built in button.
-    #define BUTTON1_CONFIG      	BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-    #define BUTTON1_RELAY       	1
-    #define BUTTON1_PRESS       	BUTTON_MODE_NONE
-    #define BUTTON1_CLICK       	BUTTON_MODE_TOGGLE
-    #define BUTTON1_DBLCLICK    	BUTTON_MODE_NONE
-    #define BUTTON1_LNGCLICK    	BUTTON_MODE_OFF
-    #define BUTTON1_LNGLNGCLICK 	BUTTON_MODE_NONE
+    #define BUTTON1_PIN             0    // Built in button.
+    #define BUTTON1_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY           1
+    #define BUTTON1_PRESS           BUTTON_MODE_NONE
+    #define BUTTON1_CLICK           BUTTON_MODE_TOGGLE
+    #define BUTTON1_DBLCLICK        BUTTON_MODE_NONE
+    #define BUTTON1_LNGCLICK        BUTTON_MODE_OFF
+    #define BUTTON1_LNGLNGCLICK     BUTTON_MODE_NONE
 
-    #define BUTTON2_PIN         	2    // External push button connected between IO2 and GND.
-    #define BUTTON2_CONFIG      	BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
-    #define BUTTON2_RELAY       	1
-    #define BUTTON2_PRESS       	BUTTON_MODE_NONE
-    #define BUTTON2_CLICK       	BUTTON_MODE_TOGGLE
-    #define BUTTON2_DBLCLICK    	BUTTON_MODE_NONE
-    #define BUTTON2_LNGCLICK    	BUTTON_MODE_NONE
-    #define BUTTON2_LNGLNGCLICK 	BUTTON_MODE_NONE
+    #define BUTTON2_PIN             2    // External push button connected between IO2 and GND.
+    #define BUTTON2_CONFIG          BUTTON_PUSHBUTTON | BUTTON_SET_PULLUP | BUTTON_DEFAULT_HIGH
+    #define BUTTON2_RELAY           1
+    #define BUTTON2_PRESS           BUTTON_MODE_NONE
+    #define BUTTON2_CLICK           BUTTON_MODE_TOGGLE
+    #define BUTTON2_DBLCLICK        BUTTON_MODE_NONE
+    #define BUTTON2_LNGCLICK        BUTTON_MODE_NONE
+    #define BUTTON2_LNGLNGCLICK     BUTTON_MODE_NONE
 
     // Relays
-    #define RELAY1_PIN          	12
-    #define RELAY1_TYPE         	RELAY_TYPE_NORMAL
+    #define RELAY1_PIN              12
+    #define RELAY1_TYPE             RELAY_TYPE_NORMAL
 
     // LEDs
-    #define LED1_PIN            	13
-    #define LED1_PIN_INVERSE    	1
+    #define LED1_PIN                13
+    #define LED1_PIN_INVERSE        1
 
     // Non-default I2C on hardware UART0 pins. Make sure to disable UART for these to work!
-    #define I2C_SDA_PIN 		    1
-    #define I2C_SCL_PIN 		    3
+    #define I2C_SDA_PIN             1
+    #define I2C_SCL_PIN             3
 
     // BMX280 depends on I2C
-    #define BMX280_SUPPORT 		    1
-    #define BMX280_ADDRESS 		    0x76
+    #define BMX280_SUPPORT          1
+    #define BMX280_ADDRESS          0x76
 
 #endif
