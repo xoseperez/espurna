@@ -232,12 +232,15 @@
 
                                 <!-- removeIf(!light) -->
                                 <div id="light">
-                                    <div class="pure-control-group light-control">
+                                    <div id="light-state" class="pure-control-group">
                                         <label>Lights</label>
-                                        <div><input type="checkbox" name="light-state"></div>
+                                        <div><input type="checkbox" name="light-state-value"></div>
                                     </div>
                                     <div class="pure-control-group">
                                         <div id="light-picker"></div>
+                                        <div id="light-cct"></div>
+                                        <div id="light-brightness"></div>
+                                        <div id="light-channels"></div>
                                     </div>
                                 </div>
 
@@ -660,7 +663,8 @@
                                     <label>Use color</label>
                                     <div><input type="checkbox" name="useColor" data-action="reload"></div>
                                     <span class="pure-form-message">
-                                        Use the first three channels as RGB channels. This will also enable the color picker in the web UI. Will only work if the device has at least 3 dimmable channels.
+                                        Enable color picker.
+                                        <br>This option hides <strong>R</strong> (red), <strong>G</strong> (green) and <strong>B</strong> (blue) channel sliders.
                                     </span>
                                 </div>
 
@@ -668,15 +672,15 @@
                                     <label>Use RGB picker</label>
                                     <div><input type="checkbox" name="useRGB"  data-action="reload"></div>
                                     <span class="pure-form-message">
-                                        Use RGB color picker if enabled (plus brightness), otherwise use HSV (hue-saturation-value) style
+                                        Use RGB color picker. When disabled (default), use HSV (hue-saturation-value).
                                     </span>
                                 </div>
 
                                 <div class="pure-control-group">
-                                    <label>Use white channel</label>
+                                    <label>Use white channel(s)</label>
                                     <div><input type="checkbox" name="useWhite" data-action="reload"></div>
                                     <span class="pure-form-message">
-                                        When device is configured as RGB + WW (warm white), use RGB to balance the &quot;warm white&quot; channel, while the &quot;Cold channel&quot; is still configurable.
+                                        When device is configured as RGB + WW (warm white) or RGB + WW CC (cold white), use RGB to balance the &quot;warm white&quot; channel output, leaving &quot;Cold channel&quot; for manual adjustments.
                                         <br>This option hides <strong>RGB</strong> and <strong>WW</strong> sliders!
                                     </span>
                                 </div>
@@ -685,8 +689,8 @@
                                     <label>Use color temperature</label>
                                     <div><input type="checkbox" name="useCCT" data-action="reload"></div>
                                     <span class="pure-form-message">
-                                        Balance between &quot;cold&quot; and &quot;warm&quot; when channel configuration has WW (warm white) and CW (cold white) channels available. When RGB is also available, replace its values with an approximation based on the current &quot;Mireds&quot; value.
-                                        <br>This option hides <strong>all channel sliders</strong>
+                                        Balance between &quot;cold&quot; and &quot;warm&quot; color temperature when channel configuration has WW (warm white) and CW (cold white) channels available. When RGB is available but <code>Use white channel(s)</code> is disabled, replace RGB values with an approximation based on the current &quot;Mireds&quot; value. Otherwise, RGB channels will be disabled.
+                                        <br>This option hides either <strong>WW</strong> and <strong>CW</strong> channel sliders, or <strong>RGB</strong> color picker.
                                     </span>
                                 </div>
 
@@ -2417,18 +2421,18 @@
         </template>
 
         <template id="template-brightness-control">
-            <div class="pure-control-group">
+            <div>
                 <label>Brightness</label>
-                <input type="range" min="0" max="255" class="slider pure-input-2-3" id="brightness">
-                <span class="slider brightness"></span>
+                <input type="range" min="0" max="255" class="slider pure-input-2-3" id="brightness-value">
+                <span class="slider"></span>
             </div>
         </template>
 
         <template id="template-mireds-control">
-            <div class="pure-control-group">
+            <div>
                 <label>Mireds</label>
-                <input type="range" class="slider pure-input-2-3" id="mireds" list="mired-range">
-                <span class="slider mireds"></span>
+                <input type="range" class="slider pure-input-2-3" id="mireds-value" list="mired-range">
+                <span class="slider"></span>
                 <datalist id="mired-range">
                 </datalist>
             </div>

@@ -596,22 +596,33 @@ input::placeholder {
     Lights
    -------------------------------------------------------------------------- */
 
-#light-picker {
-    padding-bottom: 1em;
+#light-brightness,
+#light-cct,
+#light-channels,
+#light-picker,
+#light-state {
     padding-top: 1em;
-    contain-intrinsic-size: 0px;
-    content-visibility: hidden;
-    opacity: 0;
+}
+
+#light.light-cct #light-channel-c,
+#light.light-cct #light-channel-w,
+#light.light-color #light-channel-b,
+#light.light-color #light-channel-g,
+#light.light-color #light-channel-r,
+#light.light-color.light-white #light-channel-w {
     display: none;
 }
 
-#light-picker.light-color.light-on:not(.light-cct) {
-    display: block;
-    opacity: 1;
-    content-visibility: visible;
-    contain: style layout paint;
+#light-cct,
+#light-picker,
+#light-state {
+    display: none;
 }
 
-#light-cct {
-    content-visibility: hidden;
+#light.light-cct #light-cct,
+#light.light-cct:not(.light-white) #light-channel-c,
+#light.light-cct:not(.light-white) #light-channel-w,
+#light.light-color.light-on:not(.light-cct) #light-picker,
+#light.light-state #light-state {
+    display: block;
 }

@@ -504,15 +504,6 @@ struct Pointers {
         return _data[4];
     }
 
-    template <typename ...Args>
-    void maybeApply(Args&&... args) const {
-        for (auto ptr : _data) {
-            if (ptr) {
-                (*ptr).apply(std::forward<Args>(args)...);
-            }
-        }
-    }
-
 private:
     void reset(LightChannels& channels);
 
@@ -963,17 +954,24 @@ private:
 };
 
 void _lightValuesWithCct(LightChannels& channels) {
+    const auto Brightness = _light_brightness;
     const auto CctFactor = _light_temperature.factor();
     const auto White = LightScaledWhite();
 
     auto ptr = espurna::light::Pointers(channels);
     (*ptr.warm()).apply(
-        LightResetInput::forWarm(CctFactor), White);
+        LightResetInput::forWarm(CctFactor), White, Brightness);
     (*ptr.cold()).apply(
-        LightResetInput::forCold(CctFactor), White);
+        LightResetInput::forCold(CctFactor), White, Brightness);
 
-    const auto Brightness = _light_brightness;
-    ptr.maybeApply(Brightness);
+    if (ptr.red() && ptr.green() && ptr.blue()) {
+        (*ptr.red()).apply(
+            LightResetInput{espurna::light::ValueMin});
+        (*ptr.green()).apply(
+            LightResetInput{espurna::light::ValueMin});
+        (*ptr.blue()).apply(
+            LightResetInput{espurna::light::ValueMin});
+    }
 }
 
 // To handle both 4 and 5 channels, allow to 'adjust' internal factor calculation after construction
@@ -1069,7 +1067,7 @@ private:
     float _luminance;
 };
 
-// When `useWhite` is enabled, white channels are 'detached' from the processing and their value depends on the RGB ones.
+// When `useWhite` is enabled, warm white channel is 'detached' from the processing and its value depends on the input RGB.
 // Common calculation is to subtract 'white value' from the RGB based on the minimum channel value, e.g. [250, 150, 50] becomes [200, 100, 0, 50]
 //
 // General case when `useCCT` is disabled, but there are 4 channels.
@@ -1104,7 +1102,9 @@ void _lightValuesWithRgbWhite(LightChannels& channels) {
 // Instead of the above, use `mireds` value as a range for warm and cold channels, based on the calculated rgb common values
 // Every value is also scaled by `brightness` after applying all of the previous steps
 // Notice that we completely ignore inputs and reset them to either kelvin'ized or hardcoded ValueMin or ValueMax
-// (also, RED **always** stays at ValueMax b/c we never go above 6.6k kelvin)
+
+// Heavily depends on the used temperature range; by default (153...500), we stay on the 'warm side'
+// of the scale and effectively never enable blue. Setting cold mireds to 100 will use the whole range.
 
 espurna::light::Rgb _lightKelvinRgb(espurna::light::Kelvin kelvin) {
     kelvin.value /= 100;
@@ -1125,7 +1125,9 @@ espurna::light::Rgb _lightKelvinRgb(espurna::light::Kelvin kelvin) {
 
 void _lightValuesWithRgbCct(LightChannels& channels) {
     const auto Temperature = _light_temperature;
-    const auto RgbFromKelvin = _lightKelvinRgb(Temperature.kelvin());
+
+    const auto Kelvin = Temperature.kelvin();
+    const auto RgbFromKelvin = _lightKelvinRgb(Kelvin);
 
     auto rgb = LightRgbWithoutWhite{RgbFromKelvin};
     rgb.adjustOutput(rgb.inputMin());
@@ -1144,12 +1146,15 @@ void _lightValuesWithRgbCct(LightChannels& channels) {
         rgb, Brightness);
 
     const auto White = LightScaledWhite(rgb.factor());
-    (*ptr.warm()).apply(
-        LightResetInput::forWarm(Temperature.factor()),
-        White, Brightness);
-    (*ptr.cold()).apply(
-        LightResetInput::forCold(Temperature.factor()),
-        White, Brightness);
+    if (ptr.warm() || ptr.cold()) {
+        if (ptr.warm()) {
+            (*ptr.warm()).apply(White, Brightness);
+        }
+
+        if (ptr.cold()) {
+            (*ptr.cold()).apply(White, Brightness);
+        }
+    }
 }
 
 // UI hints about channel distribution
@@ -3494,16 +3499,21 @@ void _lightConfigure() {
     }
 
     const auto last_process_input_values = _light_process_input_values;
-    _light_process_input_values =
-        (_light_use_color) ? (
-            (_light_use_cct) ? _lightValuesWithRgbCct :
-            (_light_use_white) ? _lightValuesWithRgbWhite :
-            _lightValuesWithBrightnessExceptWhite) :
-        (_light_use_cct) ?
-            _lightValuesWithCct :
-            _lightValuesWithBrightness;
+    auto process_input_values =
+        (_light_use_color && _light_use_white && _light_use_cct)
+            ? _lightValuesWithCct :
+        (_light_use_color && _light_use_white)
+            ? _lightValuesWithRgbWhite :
+        (_light_use_color && _light_use_cct)
+            ? _lightValuesWithRgbCct :
+        (_light_use_color)
+            ? _lightValuesWithBrightnessExceptWhite :
+        (_light_use_cct)
+            ? _lightValuesWithCct
+            : _lightValuesWithBrightness;
 
-    if (!_light_update && (last_process_input_values != _light_process_input_values)) {
+    _light_process_input_values = process_input_values;
+    if (!_light_update && (last_process_input_values != process_input_values)) {
         lightUpdate(false);
     }
 }
