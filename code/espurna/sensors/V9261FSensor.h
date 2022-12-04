@@ -11,6 +11,19 @@
 #include "../libs/fs_math.h"
 
 class V9261FSensor : public BaseEmonSensor {
+    private:
+        static constexpr uint16_t AddressPowerActive = 0x119;
+        static constexpr uint16_t AddressPowerReactive = 0x11a;
+        static constexpr uint16_t AddressVoltage = 0x11b;
+        static constexpr uint16_t AddressCurrent = 0x11c;
+
+        static constexpr uint8_t ControlDirectionMask = 0b1111;
+        static constexpr uint8_t ControlRead = 0b1;
+        static constexpr uint8_t ControlWrite = 0b10;
+
+        static constexpr uint8_t ControlAddressMask = 0b11110000;
+
+        static constexpr uint8_t HeadByte = 0b11111110;
 
     public:
 
@@ -59,7 +72,8 @@ class V9261FSensor : public BaseEmonSensor {
 
         // Descriptive name of the sensor
         String description() const override {
-            return F("V9261F");
+            STRING_VIEW_INLINE(Name, "V9261F");
+            return Name.toString();
         }
 
         // Address of the sensor (it could be the GPIO or I2C address)
@@ -69,7 +83,8 @@ class V9261FSensor : public BaseEmonSensor {
 
         // Loop-like method, call it in your main loop
         void tick() override {
-            _read();
+            _read_some();
+            _process();
         }
 
         // Type for slot # index
@@ -141,125 +156,171 @@ class V9261FSensor : public BaseEmonSensor {
         // Protected
         // ---------------------------------------------------------------------
 
-        void _read() {
+        // Current approach is to just listen for the incoming data
+        // We never send anything (and usually disable TX on the port)
+        void _read_some() {
+            const auto result = _serial->available();
+            if (result <= 0) {
+                return;
+            }
 
-            // we are seeing the data request
-            if (_state == 0) {
-                const auto available = _serial->available();
-                if (available <= 0) {
-                    if (_found && (TimeSource::now() - _timestamp > SyncInterval)) {
-                        _index = 0;
-                        _state = 1;
-                    }
-                    return;
+            const size_t available = result;
+            if (available >= (_buffer.size() - _size)) {
+                _size = 0;
+                return;
+            }
+
+            const auto read = _serial->readBytes(
+                _buffer.begin() + _size,
+                std::min(static_cast<size_t>(available), _buffer.size() - _size));
+            if (read < 0) {
+                return;
+            }
+
+            _size += static_cast<size_t>(result);
+        }
+
+        void _process() {
+            const auto begin = _buffer.begin();
+            const auto end = begin + _size;
+
+            switch (_status) {
+            // Every read or write frame starts with specific byte
+            case Status::Idle:
+            {
+                if (!_size) {
+                    break;
                 }
 
-                consumeAvailable(*_serial);
-                _found = true;
+                auto it = std::find(begin, end, HeadByte);
+                if (it == end) {
+                    break;
+                }
+
+                if (it != _buffer.begin()) {
+                    std::copy_backward(it, end, _buffer.begin());
+                }
+
+                _status = Status::ExpectWriteResponse;
                 _timestamp = TimeSource::now();
+                break;
+            }
 
-            // ...which we just skip...
-            } else if (_state == 1) {
-
-                _index += consumeAvailable(*_serial);
-                if (_index++ >= 7) {
-                    _index = 0;
-                    _state = 2;
+            // 7.3 - communication protocol
+            // write operation ack from sensor
+            case Status::ExpectWriteResponse:
+            case Status::ExpectReadWriteRequest:
+            case Status::ExpectDataResponse:
+            {
+                const size_t expect = expectedLength(_status);
+                if (_size < expect) {
+                    break;
                 }
 
-            // ...until we receive response...
-            } else if (_state == 2) {
+                const auto checksum = _checksum(
+                    _buffer.begin(), _buffer.begin() + expect - 1);
 
-                const auto available = _serial->available();
-                if (available <= 0) {
-                    return;
-                }
-
-                _index += _serial->readBytes(&_data[_index], std::min(
-                    static_cast<size_t>(available), sizeof(_data)));
-                if (_index >= 19) {
-                    _timestamp = TimeSource::now();
-                    _state = 3;
-                }
-
-            // validate received data and wait for the next request -> response
-            // FE1104 25F2420069C1BCFF20670C38C05E4101 B6
-            // ^^^^^^                                       - HEAD byte, mask, number of values
-            //        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^      - u32 4 times
-            //                                         ^^   - CRC byte
-            } else if (_state == 3) {
-
-                if (_checksum(&_data[0], &_data[19]) == _data[19]) {
-
-                    _active = (double) (
-                        (_data[3]) +
-                        (_data[4] << 8) +
-                        (_data[5] << 16) +
-                        (_data[6] << 24)
-                    ) / _power_active_ratio;
-
-                    // With known ratio, could also use this
-                    // _reactive = (double) (
-                    //     (_data[7]) +
-                    //     (_data[8] <<  8) +
-                    //     (_data[9] << 16) +
-                    //     (_data[10] << 24);
-
-                    _voltage = (double) (
-                        (_data[11]) +
-                        (_data[12] <<  8) +
-                        (_data[13] << 16) +
-                        (_data[14] << 24)
-                    ) / _voltage_ratio;
-
-                    _current = (double) (
-                        (_data[15]) +
-                        (_data[16] <<  8) +
-                        (_data[17] << 16) +
-                        (_data[18] << 24)
-                    ) / _current_ratio;
-
-                    if (_active < 0) _active = 0;
-                    if (_voltage < 0) _voltage = 0;
-                    if (_current < 0) _current = 0;
-
-                    _apparent = _voltage * _current;
-                    _factor = ((_voltage > 0) && (_current > 0))
-                        ? (100 * _active / _voltage / _current)
-                        : 100;
-
-                    if (_apparent > _active) {
-                        _reactive = fs_sqrt(_apparent * _apparent - _active * _active);
-                    } else {
-                        _reactive = 0;
+                if (_buffer[expect - 1] == checksum) {
+                    if (_status != Status::ExpectDataResponse) {
+                        consumeFirst(expect);
+                        break;
                     }
-
-                    const auto now = TimeSource::now();
-                    if (_reading) {
-                        using namespace espurna::sensor;
-                        const auto elapsed = std::chrono::duration_cast<espurna::duration::Seconds>(now - _last_reading);
-                        _energy[0] += WattSeconds(Watts{_active}, elapsed);
-                    }
-
-                    _reading = true;
-                    _last_reading = now;
-
+                    _status = Status::Update;
+                    break;
                 }
 
-                _timestamp = TimeSource::now();
-                _index = 0;
-                _state = 4;
+                _status = nextStatus(_status);
+                break;
+            }
 
-            // ... by consuming everything until our clock runs out
-            } else if (_state == 4) {
-
-                consumeAvailable(*_serial);
-                if (TimeSource::now() - _timestamp > SyncInterval) {
-                    _state = 1;
+            case Status::Update:
+            {
+                if (_size < 20) {
+                    break;
                 }
+
+                Data data;
+                std::copy(
+                    _buffer.begin() + 3,
+                    _buffer.begin() + 19,
+                    data.begin());
+                _decode(data);
+
+                consumeFirst(20);
+
+                _status = Status::Idle;
+                break;
+            }
 
             }
 
+            if ((_status != Status::Idle) && ((TimeSource::now() - _timestamp) > SyncInterval)) {
+                consumeFirst(_size);
+                _status = Status::Idle;
+            }
+        }
+
+        using Data = std::array<uint8_t, 16>;
+
+        void _decode(Data data) {
+            // 0x0119
+            _active = (double) (
+                (data[0]) +
+                (data[1] << 8) +
+                (data[2] << 16) +
+                (data[3] << 24)
+            ) / _power_active_ratio;
+
+            // TODO with a known ratio, consider parsing
+            // 0x011a
+            // _reactive = (double) (
+            //     (data[4]) +
+            //     (data[5] <<  8) +
+            //     (data[6] << 16) +
+            //     (data[7] << 24);
+
+            // 0x011b
+            _voltage = (double) (
+                (data[8]) +
+                (data[9] <<  8) +
+                (data[10] << 16) +
+                (data[11] << 24)
+            ) / _voltage_ratio;
+
+            // 0x011c
+            _current = (double) (
+                (data[12]) +
+                (data[13] <<  8) +
+                (data[14] << 16) +
+                (data[15] << 24)
+            ) / _current_ratio;
+
+            // note: discard negative values
+            _active = std::max(_active, 0.0);
+            _reactive = std::max(_reactive, 0.0);
+            _voltage = std::max(_voltage, 0.0);
+            _current = std::max(_current, 0.0);
+
+            _apparent = _voltage * _current;
+            _factor = ((_voltage > 0) && (_current > 0))
+                ? (100 * _active / _voltage / _current)
+                : 100;
+
+            if (_apparent > _active) {
+                _reactive = fs_sqrt(_apparent * _apparent - _active * _active);
+            } else {
+                _reactive = 0;
+            }
+
+            const auto now = TimeSource::now();
+            if (_reading) {
+                using namespace espurna::sensor;
+                const auto elapsed = std::chrono::duration_cast<espurna::duration::Seconds>(now - _last_reading);
+                _energy[0] += WattSeconds(Watts{_active}, elapsed);
+            }
+
+            _reading = true;
+            _last_reading = now;
         }
 
         static uint8_t _checksum(const uint8_t* begin, const uint8_t* end) {
@@ -273,8 +334,6 @@ class V9261FSensor : public BaseEmonSensor {
 
         // ---------------------------------------------------------------------
 
-        Stream* _serial { nullptr };
-
         using TimeSource = espurna::time::CoreClock;
         static constexpr auto SyncInterval = TimeSource::duration { V9261F_SYNC_INTERVAL };
 
@@ -287,16 +346,66 @@ class V9261FSensor : public BaseEmonSensor {
 
         double _factor { 0 };
 
+        bool _reading { false };
         TimeSource::time_point _last_reading;
         TimeSource::time_point _timestamp;
 
-        int _state { 0 };
-        bool _found { false };
-        bool _reading { false };
+        enum class Status {
+            Idle,
+            ExpectWriteResponse,
+            ExpectReadWriteRequest,
+            ExpectDataResponse,
+            Update,
+        };
 
-        uint8_t _data[24] {0};
-        size_t _index { 0 };
+        static Status nextStatus(Status status) {
+            switch (status) {
+            case Status::Idle:
+                break;
+            case Status::ExpectWriteResponse:
+                return Status::ExpectReadWriteRequest;
+            case Status::ExpectReadWriteRequest:
+                return Status::ExpectDataResponse;
+            case Status::ExpectDataResponse:
+            case Status::Update:
+                break;
+            }
 
+            return Status::Idle;
+        }
+
+        static size_t expectedLength(Status status) {
+            switch (status) {
+            case Status::Idle:
+                break;
+            case Status::ExpectWriteResponse:
+                return 4;
+            case Status::ExpectReadWriteRequest:
+                return 8;
+            case Status::ExpectDataResponse:
+                return 20;
+            case Status::Update:
+                break;
+            }
+
+            return 0;
+        }
+
+        void consumeFirst(size_t size) {
+            std::copy_backward(
+                _buffer.begin() + size,
+                _buffer.begin() + _size,
+                _buffer.begin());
+            _size -= size;
+        }
+
+        Status _status { Status::Idle };
+
+        using Buffer = std::array<uint8_t, 48>;
+        Buffer _buffer;
+        size_t _size { 0 };
+
+        Stream* _serial { nullptr };
 };
 
 #if __cplusplus < 201703L
