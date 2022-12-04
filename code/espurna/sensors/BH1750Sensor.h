@@ -19,8 +19,11 @@
 #define BH1750_ONE_TIME_LOW_RES_MODE        0x23    // Start measurement at 1lx resolution. Measurement time is approx 120ms.
                                                     // Device is automatically set to Power Down after measurement.
 
-class BH1750Sensor : public I2CSensor<> {
+static constexpr bool bh1750_is_mode2(unsigned char mode) {
+    return (mode == BH1750_CONTINUOUS_HIGH_RES_MODE_2) || (mode == BH1750_ONE_TIME_HIGH_RES_MODE_2);
+}
 
+class BH1750Sensor : public I2CSensor<> {
     public:
 
         void setMode(unsigned char mode) {
@@ -48,7 +51,9 @@ class BH1750Sensor : public I2CSensor<> {
         // Initialization method, must be idempotent
         void begin() override {
 
-            if (!_dirty) return;
+            if (!_dirty) {
+                return;
+            }
 
             // I2C auto-discover
             static constexpr uint8_t addresses[] {0x23, 0x5C};
@@ -90,10 +95,18 @@ class BH1750Sensor : public I2CSensor<> {
             return 0;
         }
 
+        // Number of decimals for a unit (or -1 for default)
+        signed char decimals(espurna::sensor::Unit unit) const {
+            if (bh1750_is_mode2(_mode)) {
+                return 2;
+            }
+
+            return 1;
+        }
+
     protected:
 
         double _read(uint8_t address) {
-
             // For one-shot modes reconfigure sensor & wait for conversion
             if (_run_configure) {
 
@@ -108,7 +121,7 @@ class BH1750Sensor : public I2CSensor<> {
                     espurna::duration::Milliseconds { (_mode & 0x02) ? 24 : 180 });
 
                 // Keep on running configure each time if one-shot mode
-                _run_configure = _mode & 0x20;
+                _run_configure = (_mode & 0x20) > 0;
 
             }
 
@@ -119,12 +132,16 @@ class BH1750Sensor : public I2CSensor<> {
                 return 0;
             }
 
-            return ((double) level) / 1.2;
+            // When using HIGH Mode2, value is halved
+            const auto multiplier = bh1750_is_mode2(_mode) ? 0.5 : 1.0;
 
+            // TODO also * MTreg?
+            return ((double)level / 1.2) * multiplier;
         }
 
         unsigned char _mode;
         bool _run_configure = false;
+
         double _lux = 0;
 
 };
