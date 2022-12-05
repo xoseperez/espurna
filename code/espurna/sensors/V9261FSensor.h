@@ -305,6 +305,9 @@ class V9261FSensor : public BaseEmonSensor {
             _factor = ((_voltage > 0) && (_current > 0))
                 ? (100 * _active / _voltage / _current)
                 : 100;
+            if (_factor > 100) {
+                _factor = 100;
+            }
 
             if (_apparent > _active) {
                 _reactive = fs_sqrt(_apparent * _apparent - _active * _active);
