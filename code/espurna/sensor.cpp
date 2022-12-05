@@ -2043,6 +2043,8 @@ void load() {
     {
         auto* sensor = new BH1750Sensor();
         sensor->setAddress(BH1750_ADDRESS);
+        sensor->setAccuracy(BH1750_ACCURACY);
+        sensor->setSensitivity(BH1750_SENSITIVITY);
         sensor->setMode(BH1750_MODE);
         add(sensor);
     }

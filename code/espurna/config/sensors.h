@@ -148,6 +148,22 @@
 #define BH1750_ADDRESS                  0x00    // 0x00 means auto
 #endif
 
+#ifndef BH1750_ACCURACY
+#define BH1750_ACCURACY                 1.2     // RAW value conversion ratio
+                                                // Allowed values are 0.96...1.44
+#endif
+
+#ifndef BH1750_SENSITIVITY
+#define BH1750_SENSITIVITY              1.0     // Measurement sensitivity; value is derived from 'MTreg CURRENT'
+                                                // `SENSITIVITY = MTreg CURRENT / MTreg DEFAULT` (up to 2 decimal places)
+                                                // e.g. for MTreg allowed values of 31...254
+                                                // * 31 -> 0.45 (min)
+                                                // * 69 -> 1.0
+                                                // * 138 -> 2.0
+                                                // * 207 -> 3.0
+                                                // * 254 -> 3.68 (max)
+#endif
+
 #ifndef BH1750_MODE
 #define BH1750_MODE                     BH1750_CONTINUOUS_HIGH_RES_MODE
 #endif
