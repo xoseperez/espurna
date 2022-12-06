@@ -69,6 +69,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Reduce IRAM usage in sensors using attachInterrupt() ([9db679f9](https://github.com/xoseperez/espurna/commit/9db679f93a61114dec8dad5f2953e59b7663c86a))
 - Show all of correction / offset settings in the WebUI ([#2491](https://github.com/xoseperez/espurna/issues/2491), [62b2edad](https://github.com/xoseperez/espurna/commit/62b2edadc4649d1e3810c6dd27261e8a45739664))
 - Correctly scale NTC value based on input voltage ([#2500](https://github.com/xoseperez/espurna/issues/2500), [1b49326e](https://github.com/xoseperez/espurna/commit/1b49326e12676112163ad5d10aa1574f727b85e7))
+- Fix V9261F UART parity mode ([6154f40a](https://github.com/xoseperez/espurna/commit/6154f40a))
+- Really parse V9261F messages, including writes and write acks ([bea8508e](https://github.com/xoseperez/espurna/commit/bea8508e))
+- Power factor value is between 0 and 100 ([52266684](https://github.com/xoseperez/espurna/commit/52266684))
+- Increase BH1750 MODE2 decimal places ([b8921b9a](https://github.com/xoseperez/espurna/commit/b8921b9a))
 #### Settings
 - Fix saving base2 integers ([71ddf350](https://github.com/xoseperez/espurna/commit/71ddf35022678667d0269ecc9c60c69bdab68079))
 #### System
@@ -87,6 +91,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Remove hard-coded group keys list ([1627e311](https://github.com/xoseperez/espurna/commit/1627e3119fe9084398b8e8c0ec794b8ed3a4f6b6))
 - Send alert messages directly ([458fb7d9](https://github.com/xoseperez/espurna/commit/458fb7d936ec9d266cfce275f999dd629fb82e2f))
 - Set websocket buffer to `nullptr` before returning control to the webserver, which will try to `free()` it ([256e790e](https://github.com/xoseperez/espurna/commit/256e790e4d7374e12430dad57e25ece7b880be25))
+- Avoid printing raw network buffers or error strings that are not null-terminated ([7296eca2](https://github.com/xoseperez/espurna/commit/7296eca2))
 
 ### Added
 #### Buttons
@@ -232,6 +237,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Controlling global state no longer requires `RELAY_SUPPORT` or specifying a virtual relay in the configuration. Updated modules and APIs to use light controls directly ([2f39d0db](https://github.com/xoseperez/espurna/commit/2f39d0db8a71533dac0cf7c27a719d0097a001d2))
 - Do not call the provider or run any transitions when channel values remain unchanged ([2f39d0db](https://github.com/xoseperez/espurna/commit/2f39d0db8a71533dac0cf7c27a719d0097a001d2))
 - Color mode white factor calculations no longer ignore the fractional part of the number ([32aae703](https://github.com/xoseperez/espurna/commit/32aae70374833bf47a47fd56e89f8416dc28700f))
+- Do not update brightness when changing HSV ([2471c16f](https://github.com/xoseperez/espurna/commit/2471c16f))
+- Separate RGB color temperature in color and non-color modes ([9126a983](https://github.com/xoseperez/espurna/commit/9126a983))
 #### MQTT
 - Set keepalive to be less than heartbeat interval ([#2154](https://github.com/xoseperez/espurna/issues/2154))
 - Always buffer incoming data ([#2181](https://github.com/xoseperez/espurna/issues/2181))
@@ -263,7 +270,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Further EmonSensor fixes and refactoring ([b19905a3](https://github.com/xoseperez/espurna/commit/b19905a3065672412351c38d859fc3f6cd7ad5cd))
 - Rename generic pwr keys with a typed prefix ([1a36efb8](https://github.com/xoseperez/espurna/commit/1a36efb8f2032ac81c5aaa51623a71234b1c4287))
 - Tweak analogRead() frequency in Emon sensor ([c136678a](https://github.com/xoseperez/espurna/commit/c136678a4f02b7cae2e59fe843c3910a660f49d1))
-- Remove `PZ.RESET` and `PZ.VALUE` commands in favour of `EXPECTED`, `ENERGY` and `MAGNITUDES` [8f7f1c96](https://github.com/xoseperez/espurna/commit/8f7f1c968f92c42f4f80c53ddfb617af18b68a85)
+- Remove `PZ.RESET` and `PZ.VALUE` commands in favour of `EXPECTED`, `ENERGY` and `MAGNITUDES` ([8f7f1c96](https://github.com/xoseperez/espurna/commit/8f7f1c968f92c42f4f80c53ddfb617af18b68a85))
+- Configure BH1750 accuracy and sensitivity ([988a9724](https://github.com/xoseperez/espurna/commit/988a9724))
 #### Settings
 - Refactor get/set/del/hasSetting ([#2048](https://github.com/xoseperez/espurna/issues/2048))
 - Update migrate configuration & conditions, allow each module to access the current & previous version ([#2176](https://github.com/xoseperez/espurna/issues/2176))
