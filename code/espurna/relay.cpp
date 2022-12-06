@@ -793,7 +793,7 @@ PROGMEM_STRING(Sync, "relaySync");
 
 PROGMEM_STRING(PayloadOn, "relayPayloadOn");
 PROGMEM_STRING(PayloadOff, "relayPayloadOff");
-PROGMEM_STRING(PayloadToggle, "relayPayloadOff");
+PROGMEM_STRING(PayloadToggle, "relayPayloadToggle");
 
 } // namespace
 } // namespace keys

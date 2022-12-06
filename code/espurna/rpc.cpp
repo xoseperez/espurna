@@ -53,7 +53,7 @@ PayloadStatus parse(StringView payload, RpcPayloadCheck check) {
             return PayloadStatus::Off;
         case '1':
             return PayloadStatus::On;
-        case 2:
+        case '2':
             return PayloadStatus::Toggle;
         }
         return PayloadStatus::Unknown;
