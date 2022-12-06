@@ -147,20 +147,20 @@ struct LineView {
     {}
 
     StringView line() {
-        const auto begin = _lines.begin() + _cursor;
-        const auto end = _lines.end();
+        const auto Begin = begin();
+        const auto End = begin();
 
-        if (begin != end) {
-            const auto eol = std::find(begin, end, '\n');
-            if (eol != end) {
+        if (Begin != End) {
+            const auto eol = std::find(begin(), end(), '\n');
+            if (eol != End) {
                 const auto after = std::next(eol);
-                if (after != end) {
+                if (after != End) {
                     _cursor = std::distance(_lines.begin(), after);
                 } else {
                     _cursor = _lines.length();
                 }
 
-                return StringView{begin, after};
+                return StringView{Begin, after};
             }
         }
 
@@ -169,6 +169,22 @@ struct LineView {
 
     explicit operator bool() const {
         return _cursor != _lines.length();
+    }
+
+    const char* begin() const {
+        return _lines.begin() + _cursor;
+    }
+
+    const char* end() const {
+        return _lines.end();
+    }
+
+    size_t length() const {
+        return std::distance(begin(), end());
+    }
+
+    StringView get() const {
+        return StringView{begin(), end()};
     }
 
 private:

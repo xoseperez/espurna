@@ -54,6 +54,8 @@ constexpr bool isEspurnaMinimal() {
 
 namespace build {
 
+constexpr size_t LineBufferSize { TELNET_LINE_BUFFER_SIZE };
+
 constexpr size_t ClientsMax { TELNET_MAX_CLIENTS };
 static_assert(ClientsMax > 0, "");
 
@@ -269,6 +271,7 @@ namespace message {
 
 PROGMEM_STRING(PasswordRequest, "Password (disconnects after 1 failed attempt): ");
 PROGMEM_STRING(InvalidPassword, "-ERROR: Invalid password\n");
+PROGMEM_STRING(BufferOverflow, "-ERROR: Buffer overflow\n");
 PROGMEM_STRING(OkPassword, "+OK\n");
 
 } // namespace message
@@ -311,6 +314,11 @@ struct Address {
     ip_addr_t ip;
     uint16_t port;
 };
+
+::terminal::LineView line_view(pbuf* pb) {
+    auto* payload = reinterpret_cast<const char*>(pb->payload);
+    return StringView{payload, payload + pb->len};
+}
 
 Address address(tcp_pcb* pcb) {
     Address out;
@@ -530,46 +538,100 @@ private:
     }
 #endif
 
+    struct ProcessLineResult {
+        StringView message;
+        bool close { false };
+    };
+
+    auto process_line(StringView line) -> ProcessLineResult {
+        ProcessLineResult out;
+        if (!line.length()) {
+            return out;
+        }
+
+        switch (_state) {
+        case State::Idle:
+        case State::Connecting:
+            break;
+        case State::Active:
+#if TERMINAL_SUPPORT
+            process(line.toString());
+#endif
+            break;
+        case State::Authenticating:
+            if (!systemPasswordEquals(stripNewline(line))) {
+                out.message = StringView{message::InvalidPassword};
+                out.close = true;
+                return out;
+            }
+
+            out.message = StringView{message::OkPassword};
+            _state = State::Active;
+            break;
+        }
+
+        return out;
+    }
+
     err_t on_tcp_recv(pbuf* pb, err_t err) {
         if (!pb || (err != ERR_OK)) {
             return close();
         }
 
-        const auto* payload = reinterpret_cast<const char*>(pb->payload);
-        espurna::terminal::LineView lines({payload, payload + pb->len});
-
-        while (lines) {
-            const auto line = lines.line();
-            if (!line.length()) {
-                break;
+        // We always attempt to parse the network buffer directly first,
+        // socat, netcat, etc. usually send a single packet per line.
+        // Otherwise, try to buffer it and everything else in the chain.
+        for (auto it = pb; it != nullptr; it = it->next) {
+            auto view = line_view(it);
+            if (_line_buffer.size()) {
+                goto next;
             }
 
-            switch (_state) {
-            case State::Idle:
-            case State::Connecting:
-                break;
-            case State::Active:
-#if TERMINAL_SUPPORT
-                process(String(line));
-#endif
-                break;
-            case State::Authenticating:
-                if (!systemPasswordEquals(stripNewline(line))) {
-                    write_message(message::InvalidPassword);
-                    return close();
+            for (auto line = view.line(); line.length() > 0; line = view.line()) {
+                auto result = process_line(line);
+                if (result.message.length()) {
+                    write_message(result.message);
                 }
 
-                write_message(message::OkPassword);
+                if (result.close) {
+                    return close();
+                }
+            }
 
-                _state = State::Active;
-                break;
+next:
+            if (view.length()) {
+                _line_buffer.append(view.get());
             }
         }
 
-        // Right now, only accept simple payloads that are limited by TCP_MSS
-        // In case there are more than one `pbuf` chained together, we discrard
-        // everything else and only use the first available one
-        // (and, only if it contains line breaks; everything else is lost)
+        if (_line_buffer.overflow()) {
+            write_message(message::BufferOverflow);
+            return close();
+        }
+
+        for (;;) {
+            const auto line_result = _line_buffer.line();
+            if (line_result.overflow) {
+                write_message(message::BufferOverflow);
+                return close();
+            }
+
+            if (!line_result.line.length()) {
+                break;
+            }
+
+            auto result = process_line(line_result.line);
+            if (result.message.length()) {
+                write_message(result.message);
+            }
+
+            if (result.close) {
+                return close();
+            }
+        }
+
+        // expect everything to be handled above, we don't allow lingering pbufs
+        // (as extra buffers, for retries, or anything else)
         tcp_recved(_pcb, pb->tot_len);
         pbuf_free(pb);
 
@@ -608,6 +670,7 @@ private:
     bool _request_auth { false };
 
 #if TERMINAL_SUPPORT
+    ::terminal::LineBuffer<build::LineBufferSize> _line_buffer;
     std::list<String> _cmds;
 #endif
     ClientWriter _writer;

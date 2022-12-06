@@ -143,6 +143,10 @@
 #define TELNET_MAX_CLIENTS      1               // Max number of concurrent telnet clients
 #endif
 
+#ifndef TELNET_LINE_BUFFER_SIZE
+#define TELNET_LINE_BUFFER_SIZE 256             // Temporary buffer, when data arrives in multiple packets without a new-line
+#endif
+
 // Enable this flag to add support for reverse telnet (+800 bytes)
 // This is useful to telnet to a device behind a NAT or firewall
 // To use this feature, start a listen server on a publicly reachable host with e.g. "ncat -vlp <port>" and use the MQTT reverse telnet command to connect
