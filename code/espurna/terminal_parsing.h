@@ -148,10 +148,10 @@ struct LineView {
 
     StringView line() {
         const auto Begin = begin();
-        const auto End = begin();
+        const auto End = end();
 
         if (Begin != End) {
-            const auto eol = std::find(begin(), end(), '\n');
+            const auto eol = std::find(Begin, End, '\n');
             if (eol != End) {
                 const auto after = std::next(eol);
                 if (after != End) {
