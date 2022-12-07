@@ -3,10 +3,19 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## Pending changes
+- Handle telnet socket buffer when eol is missing; fix PuTTY ([542188dd](https://github.com/xoseperez/espurna/commit/542188dd), [53633cfc](https://github.com/xoseperez/espurna/commit/53633cfc))
+- Configurable accuracy and sensitivity (mtreg) for BH1750 ([988a9724](https://github.com/xoseperez/espurna/commit/988a9724))
+- Power factor allowed values are 0...100 ([52266684](https://github.com/xoseperez/espurna/commit/52266684))
+
 ## [1.15.0-dev] Snapshot build 2022-12-04
 - Really parse V9261F messages, including writes and write acks ([bea8508e](https://github.com/xoseperez/espurna/commit/bea8508e))
 - Increase BH1750 MODE2 decimal places ([b8921b9a](https://github.com/xoseperez/espurna/commit/b8921b9a))
 - Separate RGB color temperature in color and non-color modes ([9126a983](https://github.com/xoseperez/espurna/commit/9126a983))
+- Revert default PWM frequency to 500Hz (or its equivalent) ([d664b9d4](https://github.com/xoseperez/espurna/commit/d664b9d4))
+- Prevent GPIOs configured as relays from being initialized on software reset ([824e1214](https://github.com/xoseperez/espurna/commit/824e1214))
+- Fix inverted relays being incorrectly initialized on boot ([d78d7835](https://github.com/xoseperez/espurna/commit/d78d7835))
+- Consistent warm and cold lights channel order in hardware header ([144f2a72](https://github.com/xoseperez/espurna/commit/144f2a72))
 
 ## [1.15.0-dev] Snapshot build 2022-11-16
 - Fix V9261F UART parity mode ([6154f40a](https://github.com/xoseperez/espurna/commit/6154f40a))
@@ -31,6 +40,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Add `pio run -e $env -t build-and-copy`, more configuration options for the version string ([6f122f5e](https://github.com/xoseperez/espurna/commit/6f122f5ecb2af5bb0af0cbdedbe1166f1b92262d), [4c33cacf](https://github.com/xoseperez/espurna/commit/4c33cacfdbe4c51ff52ffb9f530006dfa7037a6b))
 
 ## [1.15.0-dev] Snapshot build 2022-08-16
+- Move -dev builds from [mcspr/espurna-nightly-builder](https://github.com/mcspr/espurna-nightly-builder) to [xoseperez/espurna](https://github.com/xoseperez/espurna) releases
 - Correctly scale NTC value based on input voltage ([#2500](https://github.com/xoseperez/espurna/issues/2500), [1b49326e](https://github.com/xoseperez/espurna/commit/1b49326e12676112163ad5d10aa1574f727b85e7))
 - Arduino Core (`analogWrite()`) PWM provider (optional, configured at build-time) ([b0da3e8c](https://github.com/xoseperez/espurna/commit/b0da3e8c7f13e7edc7a092873466e8cd49d83e54), [2365d08b](https://github.com/xoseperez/espurna/commit/2365d08b88bcb810b2c2be3c47eacfee99184fc6))
 - Generic conversion for metric units, in both directions ([b366d77a](https://github.com/xoseperez/espurna/commit/b366d77a5e34c520337727bec1b3fa51fe8764b3))
