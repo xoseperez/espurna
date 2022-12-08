@@ -443,26 +443,41 @@ auto find(size_t id) -> decltype(internal::timers.begin()) {
 }
 
 void trigger(Duration duration, size_t id, bool target) {
-    const char* notify { nullptr };
+    if (duration.count() == 0) {
+        bool found { false };
+        internal::timers.remove_if(
+            [&](const Timer& timer) {
+                if (id == timer.id()) {
+                    found = true;
+                    return true;
+                }
 
+                return false;
+            });
+
+        if (found) {
+            DEBUG_MSG_P(PSTR("[RELAY] #%zu pulse stopped\n"), id);
+        }
+
+        return;
+    }
+
+    bool rescheduled { false };
     auto it = find(id);
-    if (it == internal::timers.end()) {
+    if (it != internal::timers.end()) {
+        (*it).update(duration, target);
+        rescheduled = true;
+    } else {
         internal::timers.emplace_front(duration, id, target);
         it = internal::timers.begin();
-        notify = "started";
-    } else {
-        (*it).update(duration, target);
-        notify = "rescheduled";
     }
 
     (*it).start();
 
-    if (notify) {
-        DEBUG_MSG_P(PSTR("[RELAY] #%u pulse %s %s in %lu (ms)\n"),
-                id, target ? "ON" : "OFF",
-                notify,
-                duration.count());
-    }
+    DEBUG_MSG_P(PSTR("[RELAY] #%zu pulse %s %sscheduled in %lu (ms)\n"),
+        id, target ? "ON" : "OFF",
+        rescheduled ? "re" : "",
+        duration.count());
 }
 
 // Update the pulse counter when the relay is already in the opposite state (#454)
