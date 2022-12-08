@@ -2606,7 +2606,7 @@ PROGMEM_STRING(PulseCommand, "PULSE");
 
 static void _relayCommandPulse(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() < 3) {
-        terminalError(ctx, F("PULSE <ID> <TIME> [<NORMAL STATUS>]"));
+        terminalError(ctx, F("PULSE <ID> <TIME> [<TOGGLE>]"));
         return;
     }
 
@@ -2616,14 +2616,29 @@ static void _relayCommandPulse(::terminal::CommandContext&& ctx) {
         return;
     }
 
-    if ((ctx.argv.size() == 4) && !_relayHandlePayload(id, ctx.argv[3])) {
-        terminalError(ctx, F("Invalid relay status"));
+    const auto pulse = espurna::relay::pulse::parse(ctx.argv[2]);
+    if (!pulse) {
+        terminalError(ctx, F("Invalid pulse time"));
         return;
     }
 
-    if (!_relayHandlePulsePayload(id, ctx.argv[2])) {
-        terminalError(ctx, F("Normal state conflict"));
+    bool toggle = true;
+    if (ctx.argv.size() == 4) {
+        auto* convert= espurna::settings::internal::convert<bool>;
+        toggle = convert(ctx.argv[3]);
+    }
+
+    const auto status = relayStatus(id);
+    if (toggle && _relayPulseActive(id, status)) {
+        terminalError(ctx, F("Pulse already active!"));
         return;
+    }
+
+    const auto duration = pulse.duration();
+    const auto target = toggle ? status : !status;
+    espurna::relay::pulse::trigger(duration, id, target);
+    if ((duration.count() > 0) && toggle) {
+        relayToggle(id, true, false);
     }
 
     terminalOK(ctx);
