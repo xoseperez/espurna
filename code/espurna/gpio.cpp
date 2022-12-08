@@ -814,18 +814,20 @@ GpioBase* gpioBase(GpioType type) {
     return ptr;
 }
 
-BasePinPtr gpioRegister(GpioBase& base, unsigned char gpio) {
+BasePinPtr gpioRegister(GpioBase& base, unsigned char gpio,
+        espurna::SourceLocation source_location)
+{
     BasePinPtr result;
 
-    if (gpioLock(base, gpio)) {
+    if (gpioLock(base, gpio, source_location)) {
         result = base.pin(gpio);
     }
 
     return result;
 }
 
-BasePinPtr gpioRegister(unsigned char gpio) {
-    return gpioRegister(hardwareGpio(), gpio);
+BasePinPtr gpioRegister(unsigned char gpio, espurna::SourceLocation source_location) {
+    return gpioRegister(hardwareGpio(), gpio, source_location);
 }
 
 void gpioSetup() {

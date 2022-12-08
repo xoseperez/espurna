@@ -55,9 +55,6 @@ GpioBase* gpioBase(GpioType);
 GpioBase& hardwareGpio();
 void hardwareGpioIgnore(unsigned char gpio);
 
-BasePinPtr gpioRegister(GpioBase& base, unsigned char gpio);
-BasePinPtr gpioRegister(unsigned char gpio);
-
 void gpioLockOrigin(espurna::gpio::Origin);
 
 void gpioSetup();
@@ -131,3 +128,8 @@ inline bool gpioLocked(const GpioBase& base, unsigned char gpio) {
 inline bool gpioLocked(unsigned char gpio) {
     return gpioLocked(hardwareGpio(), gpio);
 }
+
+BasePinPtr gpioRegister(GpioBase& base, unsigned char gpio,
+        espurna::SourceLocation source_location = espurna::make_source_location());
+BasePinPtr gpioRegister(unsigned char gpio,
+        espurna::SourceLocation source_location = espurna::make_source_location());
