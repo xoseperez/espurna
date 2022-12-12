@@ -4,6 +4,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Pending changes
+
+*...*
+
+## [1.15.0-dev] Snapshot build 2022-12-12
 - Handle telnet socket buffer when eol is missing; fix PuTTY ([542188dd](https://github.com/xoseperez/espurna/commit/542188dd), [53633cfc](https://github.com/xoseperez/espurna/commit/53633cfc))
 - Configurable accuracy and sensitivity (mtreg) for BH1750 ([988a9724](https://github.com/xoseperez/espurna/commit/988a9724))
 - Power factor allowed values are 0...100 ([52266684](https://github.com/xoseperez/espurna/commit/52266684))
