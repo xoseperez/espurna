@@ -2228,7 +2228,6 @@ function colorInit(value) {
         layout.push(colorBox());
         layout.push(colorSlider("hue"));
         layout.push(colorSlider("saturation"));
-        layout.push(colorSlider("value"));
         change = (color) => {
             sendAction("light", {
                 hsv: colorToHsvString(color)
@@ -2236,6 +2235,7 @@ function colorInit(value) {
         };
     }
 
+    layout.push(colorSlider("value"));
     styleInject(rules);
 
     ColorPicker = new iro.ColorPicker("#light-picker", {layout});
