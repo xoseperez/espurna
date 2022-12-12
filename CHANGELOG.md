@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - More GPIO source locations ([b9dcf3e0](https://github.com/xoseperez/espurna/commit/b9dcf3e0))
 - API setting relay pulse to zero should stop the timer ([bc2ce115](https://github.com/xoseperez/espurna/commit/bc2ce115))
 - Fix `PULSE` terminal command behaviour when we don't want to toggle relay status. Rename `NORMAL STATUS` to `TOGGLE` (`PULSE <ID> <TIME> [<TOGGLE>]`, `TOGGLE` set to `true` by default) ([69471b0a](https://github.com/xoseperez/espurna/commit/69471b0a))
+- Fix overflow detection when parsing unsigned numbers ([997c4d01](https://github.com/xoseperez/espurna/commit/997c4d01))
+- Add 'value' slider to recover from a fully black RGB color picker ([767cd72e](https://github.com/xoseperez/espurna/commit/767cd72e361302534a70f4586ec69dc59b7cbb2f))
 
 ## [1.15.0-dev] Snapshot build 2022-12-04
 - Really parse V9261F messages, including writes and write acks ([bea8508e](https://github.com/xoseperez/espurna/commit/bea8508e))
