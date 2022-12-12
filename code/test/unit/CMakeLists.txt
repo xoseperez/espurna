@@ -59,12 +59,12 @@ target_compile_options(unity BEFORE PRIVATE
     -DUNITY_OUTPUT_COLOR
 )
 
-set(esp8266_version 313b3c07ecccbe6fee24aa9fa447c4aed16ca499)
+set(esp8266_version a4a8782c5611c02df3c0dd4744c86d02a4f037d3)
 
 FetchContent_Declare(
     esp8266git
     GIT_REPOSITORY https://github.com/esp8266/Arduino/
-    GIT_TAG 9fcf14f81fa9be589530e9596b7c5a264dc81ee8
+    GIT_TAG ${esp8266_version}
     GIT_CONFIG core.autocrlf=false core.eol=lf
     SOURCE_DIR ${CMAKE_SOURCE_DIR}/cache/esp8266git-${esp8266_version}-src
     SUBBUILD_DIR ${CMAKE_SOURCE_DIR}/cache/esp8266git-${esp8266_version}-subbuild
@@ -107,10 +107,10 @@ add_library(esp8266 STATIC
     ${esp8266git_SOURCE_DIR}/tests/host/common/MockUART.cpp
     ${esp8266git_SOURCE_DIR}/tests/host/common/MockTools.cpp
     ${esp8266git_SOURCE_DIR}/tests/host/common/MocklwIP.cpp
-    ${esp8266git_SOURCE_DIR}/tests/host/common/MockDigital.cpp
     ${esp8266git_SOURCE_DIR}/tests/host/common/MockEsp.cpp
     ${esp8266git_SOURCE_DIR}/tests/host/common/UdpContextSocket.cpp
     ${esp8266git_SOURCE_DIR}/tests/host/common/user_interface.cpp
+    ${esp8266git_SOURCE_DIR}/tests/host/common/HostWiring.cpp
     ${esp8266git_SOURCE_DIR}/tests/host/common/md5.c
     ${esp8266git_SOURCE_DIR}/tests/host/common/noniso.c
     ${esp8266git_SOURCE_DIR}/tests/host/common/flash_hal_mock.cpp
