@@ -6,12 +6,9 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#include "espurna.h"
-
-#include "ntp.h"
+#include "utils.h"
 
 #include <limits>
-#include <random>
 
 // We can only return small values (max 'z' aka 122)
 static constexpr uint8_t InvalidByte { 255u };
@@ -191,24 +188,6 @@ bool sslFingerPrintChar(const char * fingerprint, char * destination) {
 // -----------------------------------------------------------------------------
 // Helper functions
 // -----------------------------------------------------------------------------
-
-// using 'random device' as-is, while most common implementations
-// would've used it as a seed for some generator func
-// TODO notice that stdlib std::mt19937 struct needs ~2KiB for it's internal
-// `result_type state[std::mt19937::state_size]` (ref. sizeof())
-uint32_t randomNumber(uint32_t minimum, uint32_t maximum) {
-    using Device = espurna::system::RandomDevice;
-    using Type = Device::result_type;
-
-    static Device random;
-    auto distribution = std::uniform_int_distribution<Type>(minimum, maximum);
-
-    return distribution(random);
-}
-
-uint32_t randomNumber() {
-    return (espurna::system::RandomDevice{})();
-}
 
 double roundTo(double num, unsigned char positions) {
     double multiplier = 1;

@@ -10,7 +10,7 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <Arduino.h>
 
-#include "system.h"
+#include "types.h"
 
 String prettyDuration(espurna::duration::Seconds);
 
@@ -21,9 +21,6 @@ bool sslFingerPrintChar(const char * fingerprint, char * destination);
 char* strnstr(const char* buffer, const char* token, size_t n);
 bool isNumber(const char* begin, const char* end);
 bool isNumber(const String&);
-
-uint32_t randomNumber();
-uint32_t randomNumber(uint32_t minimum, uint32_t maximum);
 
 double roundTo(double num, unsigned char positions);
 bool almostEqual(double lhs, double rhs, int ulp);

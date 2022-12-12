@@ -10,6 +10,7 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include <Arduino.h>
 #include <sys/pgmspace.h>
 
+#include <chrono>
 #include <memory>
 
 #include "compat.h"
@@ -18,6 +19,20 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 extern "C" int memcmp_P(const void*, const void*, size_t);
 
 namespace espurna {
+namespace duration {
+
+// Only micros are 64bit, millis stored as 32bit to match what is actually returned & used by Core functions
+using Microseconds = std::chrono::duration<uint64_t, std::micro>;
+using Milliseconds = std::chrono::duration<uint32_t, std::milli>;
+
+// Our own helper types, a lot of things are based off of the `millis()`
+// (and it can be seamlessly used with any Core functions accepting u32 millisecond inputs)
+using Seconds = std::chrono::duration<uint32_t, std::ratio<1> >;
+using Minutes = std::chrono::duration<uint32_t, std::ratio<60> >;
+using Hours = std::chrono::duration<uint32_t, std::ratio<Minutes::period::num * 60> >;
+using Days = std::chrono::duration<uint32_t, std::ratio<Hours::period::num * 24> >;
+
+} // namespace duration
 
 // base class for loop / oneshot / generic callbacks that do not need arguments
 // *not expected* to be used instead of std function at all times.

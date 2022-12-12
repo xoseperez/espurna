@@ -26,6 +26,7 @@ set(COMMON_FLAGS
     -DCORE_MOCK
     -DHOST_MOCK=1
     -DLWIP_IPV6=0
+    -Dstrnlen_P=strnlen
     -Dmemcmp_P=memcmp
     -Dstrncasecmp_P=strncasecmp
 )
@@ -148,19 +149,21 @@ target_compile_options(esp8266 PUBLIC
 target_link_libraries(esp8266 PUBLIC common)
 
 # our library source (maybe some day this will be a simple glob)
-add_library(terminal STATIC
+add_library(espurna STATIC
     ${ESPURNA_PATH}/code/espurna/terminal_commands.cpp
     ${ESPURNA_PATH}/code/espurna/terminal_parsing.cpp
     ${ESPURNA_PATH}/code/espurna/types.cpp
+    ${ESPURNA_PATH}/code/espurna/utils.cpp
 )
-target_link_libraries(terminal PUBLIC esp8266)
-target_include_directories(terminal PUBLIC
+target_link_libraries(espurna PUBLIC esp8266)
+target_include_directories(espurna PUBLIC
     ${ESPURNA_PATH}/code/
+    ${CMAKE_SOURCE_DIR}/cache/arduinojson-${arduinojson_version}-src/src
 )
-target_compile_options(terminal PUBLIC
+target_compile_options(espurna PUBLIC
     ${COMMON_FLAGS}
 )
-target_compile_options(terminal PRIVATE
+target_compile_options(espurna PRIVATE
     -Wall
     -Wextra
 )
@@ -172,7 +175,7 @@ list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")
 function(build_tests)
     foreach(ARG IN LISTS ARGN)
         add_executable(test-${ARG} src/${ARG}/${ARG}.cpp)
-        target_link_libraries(test-${ARG} terminal unity)
+        target_link_libraries(test-${ARG} espurna unity)
         target_compile_options(test-${ARG} PRIVATE
             ${COMMON_FLAGS}
             -Wall
@@ -183,4 +186,12 @@ function(build_tests)
     endforeach()
 endfunction()
 
-build_tests(basic settings terminal tuya types url)
+build_tests(
+    basic
+    settings
+    terminal
+    tuya
+    types
+    url
+    utils
+)

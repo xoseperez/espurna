@@ -9,6 +9,7 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 #pragma once
 
 #include "settings.h"
+#include "types.h"
 
 #include <chrono>
 #include <cstdint>
@@ -61,17 +62,6 @@ namespace duration {
 // TODO: cpu frequency value might not always be true at build-time, detect at boot instead?
 // (also notice the discrepancy when OTA'ing between different values, as CPU *may* keep the old value)
 using ClockCycles = std::chrono::duration<uint32_t, std::ratio<1, F_CPU>>;
-
-// Only micros are 64bit, millis stored as 32bit to match what is actually returned & used by Core functions
-using Microseconds = std::chrono::duration<uint64_t, std::micro>;
-using Milliseconds = std::chrono::duration<uint32_t, std::milli>;
-
-// Our own helper types, a lot of things are based off of the `millis()`
-// (and it can be seamlessly used with any Core functions accepting u32 millisecond inputs)
-using Seconds = std::chrono::duration<uint32_t, std::ratio<1>>;
-using Minutes = std::chrono::duration<uint32_t, std::ratio<60>>;
-using Hours = std::chrono::duration<uint32_t, std::ratio<Minutes::period::num * 60>>;
-using Days = std::chrono::duration<uint32_t, std::ratio<Hours::period::num * 24>>;
 
 namespace critical {
 
@@ -365,6 +355,9 @@ String serialize(duration::ClockCycles);
 } // namespace internal
 } // namespace settings
 } // namespace espurna
+
+uint32_t randomNumber(uint32_t minimum, uint32_t maximum);
+uint32_t randomNumber();
 
 unsigned long systemFreeStack();
 

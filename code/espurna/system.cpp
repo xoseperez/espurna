@@ -15,6 +15,7 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <cstdint>
 #include <cstring>
 #include <forward_list>
+#include <random>
 #include <vector>
 
 extern "C" {
@@ -1214,6 +1215,24 @@ void setup() {
 } // namespace espurna
 
 // -----------------------------------------------------------------------------
+
+// using 'random device' as-is, while most common implementations
+// would've used it as a seed for some generator func
+// TODO notice that stdlib std::mt19937 struct needs ~2KiB for it's internal
+// `result_type state[std::mt19937::state_size]` (ref. sizeof())
+uint32_t randomNumber(uint32_t minimum, uint32_t maximum) {
+    using Device = espurna::system::RandomDevice;
+    using Type = Device::result_type;
+
+    static Device random;
+    auto distribution = std::uniform_int_distribution<Type>(minimum, maximum);
+
+    return distribution(random);
+}
+
+uint32_t randomNumber() {
+    return (espurna::system::RandomDevice{})();
+}
 
 unsigned long systemFreeStack() {
     return espurna::memory::freeStack();
