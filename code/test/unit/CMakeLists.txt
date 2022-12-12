@@ -73,6 +73,21 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(esp8266git)
 FetchContent_GetProperties(esp8266git SOURCE_DIR)
 
+set(arduinojson_version v5.13.5)
+
+FetchContent_Declare(
+    ArduinoJson
+    GIT_REPOSITORY https://github.com/bblanchon/ArduinoJson
+    GIT_TAG ${arduinojson_version}
+    GIT_CONFIG core.autocrlf=false core.eol=lf
+    SOURCE_DIR ${CMAKE_SOURCE_DIR}/cache/arduinojson-${arduinojson_version}-src
+    SOURCE_SUBDIR src
+    SUBBUILD_DIR ${CMAKE_SOURCE_DIR}/cache/arduinojson-${arduinojson_version}-subbuild
+)
+
+FetchContent_MakeAvailable(ArduinoJson)
+FetchContent_GetProperties(ArduinoJson SOURCE_DIR)
+
 # mock'ed Arduino Core headers sometimes expect to be included with some pre-requisites, which we obviously don't have
 add_library(common INTERFACE)
 target_compile_options(common INTERFACE
