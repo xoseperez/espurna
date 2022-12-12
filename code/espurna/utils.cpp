@@ -89,13 +89,15 @@ static ParseUnsignedResult parseUnsignedImpl(espurna::StringView value, int base
         }
 
         const auto value = out.value;
-        out.value = (out.value * uint32_t(base)) + uint32_t(digit);
+        out.value = out.value * uint32_t(base);
+
         // TODO explicitly set the output bit width?
         if (value > out.value) {
             out.ok = false;
             goto err;
         }
 
+        out.value += uint32_t(digit);
         out.ok = true;
     }
 
