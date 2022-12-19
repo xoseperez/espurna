@@ -1569,7 +1569,6 @@ String _lightGroupPayload() {
 
 // Basic value adjustments. Expression can be:
 // +offset, -offset or the new value
-    
 long _lightAdjustValue(long value, espurna::StringView operation) {
     const auto dot = std::find(operation.begin(), operation.end(), '.');
     if (dot != operation.end()) {
