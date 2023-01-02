@@ -439,7 +439,7 @@ namespace api {
 namespace keys {
 
 PROGMEM_STRING(Enabled, "enabled");
-PROGMEM_STRING(Target, "enabled");
+PROGMEM_STRING(Target, "target");
 PROGMEM_STRING(Type, "type");
 PROGMEM_STRING(Action, "action");
 PROGMEM_STRING(Restore, "restore");

@@ -196,7 +196,7 @@ static void learn(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
-PROGMEM_STRING(Clear, "LIGHTFOX.LEARN");
+PROGMEM_STRING(Clear, "LIGHTFOX.CLEAR");
 
 static void clear(::terminal::CommandContext&& ctx) {
     lightfox::clear();
