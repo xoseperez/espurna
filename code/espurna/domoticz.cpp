@@ -121,11 +121,11 @@ PROGMEM_STRING(TopicOut, "dczTopicOut");
 PROGMEM_STRING(TopicIn, "dczTopicIn");
 
 #if RELAY_SUPPORT
-PROGMEM_STRING(RelayIdx, "dczTopicIn");
+PROGMEM_STRING(RelayIdx, "dczRelayIdx");
 #endif
 
 #if SENSOR_SUPPORT
-PROGMEM_STRING(MagnitudeIdx, "dczTopicIn");
+PROGMEM_STRING(MagnitudeIdx, "dczMagnitude");
 #endif
 
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
