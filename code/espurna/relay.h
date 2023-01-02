@@ -18,49 +18,6 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 constexpr size_t RelaysMax { 32ul };
 
-enum class RelayBoot {
-    Off,
-    On,
-    Same,
-    Toggle,
-    LockedOff,
-    LockedOn
-};
-
-enum class RelayLock {
-    None,
-    Off,
-    On
-};
-
-enum class RelayType {
-    Normal,
-    Inverse,
-    Latched,
-    LatchedInverse
-};
-
-enum class RelayMqttTopicMode {
-    Normal,
-    Inverse
-};
-
-enum class RelayProvider {
-    None,
-    Dummy,
-    Gpio,
-    Dual,
-    Stm
-};
-
-enum class RelaySync {
-    None,
-    ZeroOrOne,
-    JustOne,
-    All,
-    First
-};
-
 class RelayProviderBase {
 public:
     RelayProviderBase() = default;
@@ -79,7 +36,7 @@ public:
     virtual void change(bool status) = 0;
 
     // unique id of the provider
-    virtual const char* id() const = 0;
+    virtual espurna::StringView id() const = 0;
 };
 
 PayloadStatus relayParsePayload(espurna::StringView);
@@ -113,7 +70,15 @@ void relaySave(bool persist);
 using RelayStatusCallback = void(*)(size_t id, bool status);
 using RelayProviderBasePtr = std::unique_ptr<RelayProviderBase>;
 
-bool relayAdd(RelayProviderBasePtr&& provider);
+struct RelayAddResult {
+    size_t id { RelaysMax };
+
+    explicit operator bool() const {
+        return id != RelaysMax;
+    }
+};
+
+RelayAddResult relayAdd(RelayProviderBasePtr&& provider);
 void relayOnStatusNotify(RelayStatusCallback);
 void relayOnStatusChange(RelayStatusCallback);
 

@@ -257,8 +257,8 @@ void setup() {
 #endif
 
     for (size_t relay = 0; relay < build::relays(); ++relay) {
-        size_t relayId { relayCount() };
-        if (!relayAdd(std::make_unique<RelayProvider>(relayId))) {
+        const auto result = relayAdd(std::make_unique<RelayProvider>(relay));
+        if (!result) {
             break;
         }
     }

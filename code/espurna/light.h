@@ -278,4 +278,7 @@ void lightOnReport(LightReportListener);
 void lightSetProvider(std::unique_ptr<LightProvider>&&);
 bool lightAdd();
 
+class RelayProviderBase;
+std::unique_ptr<RelayProviderBase> lightMakeStateRelayProvider(size_t);
+
 void lightSetup();

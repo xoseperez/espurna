@@ -614,15 +614,13 @@ input::placeholder {
 }
 
 #light-cct,
-#light-picker,
-#light-state {
+#light-picker {
     display: none;
 }
 
 #light.light-cct #light-cct,
 #light.light-cct:not(.light-white) #light-channel-c,
 #light.light-cct:not(.light-white) #light-channel-w,
-#light.light-color.light-on:not(.light-cct) #light-picker,
-#light.light-state #light-state {
+#light.light-color.light-on:not(.light-cct) #light-picker {
     display: block;
 }

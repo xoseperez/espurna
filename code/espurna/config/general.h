@@ -1214,10 +1214,6 @@
 #define LIGHT_TRANSITION_TIME   500         // Time in millis from color to color
 #endif
 
-#ifndef LIGHT_RELAY_ENABLED
-#define LIGHT_RELAY_ENABLED     1           // Add a virtual switch that controls the global light state. Depends on RELAY_SUPPORT
-#endif
-
 // -----------------------------------------------------------------------------
 // DOMOTICZ
 // -----------------------------------------------------------------------------

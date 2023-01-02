@@ -2170,12 +2170,6 @@ function colorUpdate(mode, value) {
     }
 }
 
-function lightStateEnabled(value) {
-    if (!value) {
-        lightAddClass("light-state");
-    }
-}
-
 function initLightState() {
     const toggle = document.getElementById("light-state-value");
     toggle.addEventListener("change", (event) => {
@@ -2641,10 +2635,6 @@ function processData(data) {
         if ("light" === key) {
             updateLight(value);
             return;
-        }
-
-        if ("ltRelay" === key) {
-            lightStateEnabled(value);
         }
 
         if ("useWhite" === key) {
