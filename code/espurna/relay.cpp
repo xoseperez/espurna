@@ -2420,6 +2420,16 @@ void _relayMqttReportAll() {
     }
 }
 
+void _relayMqttReportDescription() {
+    static const char Topic[] = MQTT_TOPIC_DESCRIPTION "/" MQTT_TOPIC_RELAY;
+    for (size_t id = 0; id < _relays.size(); ++id) {
+        const auto name = espurna::relay::settings::name(id);
+        if (name.length()) {
+            mqttSend(Topic, id, name.c_str());
+        }
+    }
+}
+
 } // namespace
 
 void relayStatusWrap(size_t id, PayloadStatus value, bool is_group_topic) {
@@ -2449,8 +2459,13 @@ void relayStatusWrap(size_t id, PayloadStatus value, bool is_group_topic) {
 namespace {
 
 bool _relayMqttHeartbeat(espurna::heartbeat::Mask mask) {
-    if (mask & espurna::heartbeat::Report::Relay)
+    if (mask & espurna::heartbeat::Report::Relay) {
         _relayMqttReportAll();
+    }
+
+    if (mask & espurna::heartbeat::Report::Description) {
+        _relayMqttReportDescription();
+    }
 
     return mqttConnected();
 }
