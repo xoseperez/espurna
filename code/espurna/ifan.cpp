@@ -138,13 +138,12 @@ struct StatePins {
 private:
     // XXX: while these are hard-coded, we don't really benefit from having these in the hardware cfg
     bool _initialized { false };
-    Pins _pins{
+    Pins _pins{{
         Pin{5, nullptr},
         Pin{4, nullptr},
-        Pin{15, nullptr}
-    };
+        Pin{15, nullptr}}};
 
-    State _state {LOW, LOW, LOW};
+    State _state{{LOW, LOW, LOW}};
 };
 
 StatePins::State StatePins::state(FanSpeed speed) {

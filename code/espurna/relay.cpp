@@ -511,7 +511,7 @@ void trigger(Duration duration, size_t id, bool target) {
         return;
     }
 
-    bool rescheduled { false };
+    bool rescheduled [[gnu::unused]] { false };
     auto it = find(id);
     if (it != internal::timers.end()) {
         (*it).update(duration, target);

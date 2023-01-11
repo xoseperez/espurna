@@ -112,6 +112,12 @@ def main(args):
     configurations = []
     if not args.no_default:
         configurations = list(pathlib.Path(".").glob(args.default_configurations))
+        if args.start_from:
+            try:
+                offset = configurations.index(pathlib.Path(args.start_from))
+                configurations = configurations[offset:]
+            except ValueError:
+                pass
 
     if args.add:
         configurations.extend(args.add)
@@ -149,17 +155,26 @@ if __name__ == "__main__":
     )
 
     parser.add_argument("-e", "--environment", help="PIO environment")
+
     parser.add_argument(
         "--default-configurations",
         default="test/build/*.h",
         help="(glob) default configuration headers",
     )
+
+    parser.add_argument(
+        "--start-from",
+        help="When using default configuration, skip everything until this name",
+    )
+
     parser.add_argument(
         "--no-silent", action="store_true", help="Do not silence pio-run"
     )
+
     parser.add_argument(
         "--no-single-source", action="store_true", help="Disable 'unity' build"
     )
+
     parser.add_argument(
         "--no-build",
         action="store_true",
