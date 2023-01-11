@@ -35,8 +35,6 @@
 #define BUTTON_ACTION_FAN_MEDIUM      ButtonAction::FanMedium
 #define BUTTON_ACTION_FAN_HIGH        ButtonAction::FanHigh
 
-#define BUTTON_ACTION_MAX             ButtonsActionMax
-
 // Deprecated: legacy mapping, changed to action from above
 #define BUTTON_MODE_NONE              BUTTON_ACTION_NONE
 #define BUTTON_MODE_TOGGLE            BUTTON_ACTION_TOGGLE

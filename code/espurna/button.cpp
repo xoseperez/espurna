@@ -29,6 +29,51 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 
 // -----------------------------------------------------------------------------
 
+static constexpr auto ButtonsPresetMax [[gnu::unused]] = size_t(8);
+
+enum class ButtonProvider {
+    None,
+    Dummy,
+    Gpio,
+    Analog
+};
+
+struct ButtonActions {
+    ButtonAction pressed;
+    ButtonAction released;
+    ButtonAction click;
+    ButtonAction dblclick;
+    ButtonAction lngclick;
+    ButtonAction lnglngclick;
+    ButtonAction trplclick;
+};
+
+struct ButtonEventDelays {
+    unsigned long debounce;
+    unsigned long repeat;
+    unsigned long lngclick;
+    unsigned long lnglngclick;
+};
+
+using ButtonEventEmitterPtr = std::unique_ptr<debounce_event::EventEmitter>;
+
+struct Button {
+    Button() = delete;
+
+    Button(ButtonActions&& actions, ButtonEventDelays&& delays);
+    Button(BasePinPtr&& pin, const debounce_event::types::Config& config,
+        ButtonActions&& actions, ButtonEventDelays&& delays);
+
+    bool state();
+    ButtonEvent loop();
+
+    ButtonEventEmitterPtr event_emitter;
+
+    ButtonActions actions;
+    ButtonEventDelays event_delays;
+};
+
+
 namespace espurna {
 namespace button {
 namespace settings {
@@ -99,11 +144,13 @@ static constexpr std::array<Enumeration<debounce_event::types::PinMode>, 3> Debo
 };
 
 PROGMEM_STRING(None, "none");
+PROGMEM_STRING(Dummy, "dummy");
 PROGMEM_STRING(Gpio, "gpio");
 PROGMEM_STRING(Analog, "analog");
 
-static constexpr std::array<Enumeration<ButtonProvider>, 3> ButtonProviderOptions PROGMEM {
+static constexpr std::array<Enumeration<ButtonProvider>, 4> ButtonProviderOptions PROGMEM {
     {{ButtonProvider::None, None},
+     {ButtonProvider::Dummy, Dummy},
      {ButtonProvider::Gpio, Gpio},
      {ButtonProvider::Analog, Analog}}
 };
@@ -842,20 +889,6 @@ debounce_event::types::Config _buttonRuntimeConfig(size_t index) {
 
 // -----------------------------------------------------------------------------
 
-ButtonEventDelays::ButtonEventDelays() :
-    debounce(espurna::button::build::debounceDelay()),
-    repeat(espurna::button::build::repeatDelay()),
-    lngclick(espurna::button::build::longClickDelay()),
-    lnglngclick(espurna::button::build::longLongClickDelay())
-{}
-
-ButtonEventDelays::ButtonEventDelays(unsigned long debounce, unsigned long repeat, unsigned long lngclick, unsigned long lnglngclick) :
-    debounce(debounce),
-    repeat(repeat),
-    lngclick(lngclick),
-    lnglngclick(lnglngclick)
-{}
-
 Button::Button(ButtonActions&& actions_, ButtonEventDelays&& delays_) :
     actions(std::move(actions_)),
     event_delays(std::move(delays_))
@@ -1365,29 +1398,37 @@ BasePinPtr _buttonGpioPin(size_t index, ButtonProvider provider) {
 }
 
 ButtonActions _buttonActions(size_t index) {
-  return {.pressed = espurna::button::settings::press(index),
-          .released = espurna::button::settings::release(index),
-          .click = espurna::button::settings::click(index),
-          .dblclick = espurna::button::settings::doubleClick(index),
-          .lngclick = espurna::button::settings::longClick(index),
-          .lnglngclick = espurna::button::settings::longLongClick(index),
-          .trplclick = espurna::button::settings::tripleClick(index)};
+  return ButtonActions{
+      .pressed = espurna::button::settings::press(index),
+      .released = espurna::button::settings::release(index),
+      .click = espurna::button::settings::click(index),
+      .dblclick = espurna::button::settings::doubleClick(index),
+      .lngclick = espurna::button::settings::longClick(index),
+      .lnglngclick = espurna::button::settings::longLongClick(index),
+      .trplclick = espurna::button::settings::tripleClick(index)};
 }
 
 // Note that we use settings without indexes as default values to preserve backwards compatibility
 
 ButtonEventDelays _buttonDelays(size_t index) {
-    return {
-        espurna::button::settings::debounceDelay(index),
-        espurna::button::settings::repeatDelay(index),
-        espurna::button::settings::longClickDelay(index),
-        espurna::button::settings::longLongClickDelay(index)};
+    return ButtonEventDelays{
+        .debounce = espurna::button::settings::debounceDelay(index),
+        .repeat = espurna::button::settings::repeatDelay(index),
+        .lngclick = espurna::button::settings::longClickDelay(index),
+        .lnglngclick = espurna::button::settings::longLongClickDelay(index)};
 }
 
 bool _buttonSetupProvider(size_t index, ButtonProvider provider) {
     bool result { false };
 
     switch (provider) {
+    case ButtonProvider::Dummy:
+        espurna::button::internal::buttons.emplace_back(
+            _buttonActions(index),
+            _buttonDelays(index));
+        result = true;
+        break;
+
     case ButtonProvider::Analog:
     case ButtonProvider::Gpio: {
 #if BUTTON_PROVIDER_GPIO_SUPPORT || BUTTON_PROVIDER_ANALOG_SUPPORT
@@ -1408,6 +1449,7 @@ bool _buttonSetupProvider(size_t index, ButtonProvider provider) {
 
     case ButtonProvider::None:
         break;
+
     }
 
     return result;
