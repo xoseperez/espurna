@@ -4677,11 +4677,11 @@
     #define TUYA_SUPPORT        1
     #define TUYA_PORT           1
 
-    #define TUYA_CH_STATE_DPID  1
-    #define TUYA_CH1_DPID       2
+    #define LIGHT_PROVIDER          LIGHT_PROVIDER_CUSTOM
+    #define TUYA_LIGHT_CH1_DPID     2
+    #define TUYA_LIGHT_STATE_DPID   1
 
-    #define LIGHT_PROVIDER      LIGHT_PROVIDER_CUSTOM
-    #define RELAY1_PROVIDER     RELAY_PROVIDER_NONE
+    #define RELAY1_PROVIDER         RELAY_PROVIDER_LIGHT_STATE
 
     #define LED1_GPIO           14
 

@@ -14,6 +14,7 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include "api.h"
 #include "mqtt.h"
 #include "relay.h"
+#include "tuya.h"
 #include "rpc.h"
 #include "rtcmem.h"
 #include "light.h"
@@ -68,6 +69,7 @@ enum class RelayProvider {
     LightState,
     Fan,
     Lightfox,
+    Tuya,
 };
 
 enum class RelaySync {
@@ -2945,6 +2947,12 @@ RelayProviderBasePtr _relaySetupProvider(size_t index) {
     case RelayProvider::Lightfox:
 #ifdef FOXEL_LIGHTFOX_DUAL
         result = lightfoxMakeRelayProvider(index);
+#endif
+        break;
+
+    case RelayProvider::Tuya:
+#if TUYA_SUPPORT
+        result = tuya::makeRelayProvider(index);
 #endif
         break;
 

@@ -101,13 +101,14 @@ namespace tuya {
             _dp(dp)
         {}
 
-        const char* id() const {
-            return "tuya";
+        espurna::StringView id() const {
+            return STRING_VIEW("tuya");
         }
 
         void change(bool status) {
             send(_dp, status);
         }
+
     private:
         unsigned char _dp;
     };
@@ -363,7 +364,6 @@ error:
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
                     setupChannels();
 #endif
-                    setupSwitches();
                 }
 
                 DEBUG_MSG_P(PSTR("[TUYA] Starting discovery\n"));
@@ -518,26 +518,26 @@ error:
     namespace build {
 
     constexpr unsigned char channelDpId(size_t index) {
-        return (index == 0) ? TUYA_CH1_DPID :
-            (index == 1) ? TUYA_CH2_DPID :
-            (index == 2) ? TUYA_CH3_DPID :
-            (index == 3) ? TUYA_CH4_DPID :
-            (index == 4) ? TUYA_CH5_DPID : 0u;
+        return (index == 0) ? TUYA_LIGHT_CH1_DPID :
+            (index == 1) ? TUYA_LIGHT_CH2_DPID :
+            (index == 2) ? TUYA_LIGHT_CH3_DPID :
+            (index == 3) ? TUYA_LIGHT_CH4_DPID :
+            (index == 4) ? TUYA_LIGHT_CH5_DPID : 0u;
     }
 
     constexpr unsigned char switchDpId(size_t index) {
-        return (index == 0) ? TUYA_SW1_DPID :
-            (index == 1) ? TUYA_SW2_DPID :
-            (index == 2) ? TUYA_SW3_DPID :
-            (index == 3) ? TUYA_SW4_DPID :
-            (index == 4) ? TUYA_SW5_DPID :
-            (index == 5) ? TUYA_SW6_DPID :
-            (index == 6) ? TUYA_SW7_DPID :
-            (index == 7) ? TUYA_SW8_DPID : 0u;
+        return (index == 0) ? TUYA_RELAY1_DPID :
+            (index == 1) ? TUYA_RELAY2_DPID :
+            (index == 2) ? TUYA_RELAY3_DPID :
+            (index == 3) ? TUYA_RELAY4_DPID :
+            (index == 4) ? TUYA_RELAY5_DPID :
+            (index == 5) ? TUYA_RELAY6_DPID :
+            (index == 6) ? TUYA_RELAY7_DPID :
+            (index == 7) ? TUYA_RELAY8_DPID : 0u;
     }
 
     constexpr unsigned char channelStateDpId() {
-        return TUYA_CH_STATE_DPID;
+        return TUYA_LIGHT_STATE_DPID;
     }
 
     } // namespace build
@@ -545,30 +545,6 @@ error:
     // Predefined DP<->SWITCH, DP<->CHANNEL associations
     // Respective provider setup should be called before state restore,
     // so we can use dummy values
-
-    void setupSwitches() {
-        bool done { false };
-        for (size_t id = 0; id < RelaysMax; ++id) {
-            auto dp = getSetting({"tuyaSwitch", id}, build::switchDpId(id));
-            if (!dp) {
-                break;
-            }
-
-            if (!switchIds.add(relayCount(), dp)) {
-                break;
-            }
-
-            if (!relayAdd(std::make_unique<TuyaRelayProvider>(dp))) {
-                break;
-            }
-
-            done = true;
-        }
-
-        if (done) {
-            configDone.set();
-        }
-    }
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
 
@@ -653,6 +629,18 @@ error:
         espurna::terminal::add(TuyaCommands);
     }
 #endif
+
+    RelayProviderBasePtr makeRelayProvider(size_t index) {
+        RelayProviderBasePtr out;
+
+        const auto dpId = build::switchDpId(index);
+        if (!switchIds.add(index, dpId)) {
+            out = std::make_unique<TuyaRelayProvider>(dpId);
+            configDone.set();
+        }
+
+        return out;
+    }
 
     void setup() {
         const auto port = uartPort(TUYA_PORT - 1);

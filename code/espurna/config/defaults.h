@@ -1344,60 +1344,60 @@
 // Tuya
 // -----------------------------------------------------------------------------
 
-#ifndef TUYA_CH_STATE_DPID
-#define TUYA_CH_STATE_DPID  0
+#ifndef TUYA_LIGHT_STATE_DPID
+#define TUYA_LIGHT_STATE_DPID  0
 #endif
 
-#ifndef TUYA_CH1_DPID
-#define TUYA_CH1_DPID       0
+#ifndef TUYA_LIGHT_CH1_DPID
+#define TUYA_LIGHT_CH1_DPID       0
 #endif
 
-#ifndef TUYA_CH2_DPID
-#define TUYA_CH2_DPID       0
+#ifndef TUYA_LIGHT_CH2_DPID
+#define TUYA_LIGHT_CH2_DPID       0
 #endif
 
-#ifndef TUYA_CH3_DPID
-#define TUYA_CH3_DPID       0
+#ifndef TUYA_LIGHT_CH3_DPID
+#define TUYA_LIGHT_CH3_DPID       0
 #endif
 
-#ifndef TUYA_CH4_DPID
-#define TUYA_CH4_DPID       0
+#ifndef TUYA_LIGHT_CH4_DPID
+#define TUYA_LIGHT_CH4_DPID       0
 #endif
 
-#ifndef TUYA_CH5_DPID
-#define TUYA_CH5_DPID       0
+#ifndef TUYA_LIGHT_CH5_DPID
+#define TUYA_LIGHT_CH5_DPID       0
 #endif
 
-#ifndef TUYA_SW1_DPID
-#define TUYA_SW1_DPID       0
+#ifndef TUYA_RELAY1_DPID
+#define TUYA_RELAY1_DPID          0
 #endif
 
-#ifndef TUYA_SW2_DPID
-#define TUYA_SW2_DPID       0
+#ifndef TUYA_RELAY2_DPID
+#define TUYA_RELAY2_DPID          0
 #endif
 
-#ifndef TUYA_SW3_DPID
-#define TUYA_SW3_DPID       0
+#ifndef TUYA_RELAY3_DPID
+#define TUYA_RELAY3_DPID          0
 #endif
 
-#ifndef TUYA_SW4_DPID
-#define TUYA_SW4_DPID       0
+#ifndef TUYA_RELAY4_DPID
+#define TUYA_RELAY4_DPID          0
 #endif
 
-#ifndef TUYA_SW5_DPID
-#define TUYA_SW5_DPID       0
+#ifndef TUYA_RELAY5_DPID
+#define TUYA_RELAY5_DPID          0
 #endif
 
-#ifndef TUYA_SW6_DPID
-#define TUYA_SW6_DPID       0
+#ifndef TUYA_RELAY6_DPID
+#define TUYA_RELAY6_DPID          0
 #endif
 
-#ifndef TUYA_SW7_DPID
-#define TUYA_SW7_DPID       0
+#ifndef TUYA_RELAY7_DPID
+#define TUYA_RELAY7_DPID          0
 #endif
 
-#ifndef TUYA_SW8_DPID
-#define TUYA_SW8_DPID       0
+#ifndef TUYA_RELAY8_DPID
+#define TUYA_RELAY8_DPID          0
 #endif
 
 // -----------------------------------------------------------------------------

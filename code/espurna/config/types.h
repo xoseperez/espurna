@@ -109,6 +109,7 @@
 #define RELAY_PROVIDER_LIGHT_STATE  RelayProvider::LightState
 #define RELAY_PROVIDER_FAN          RelayProvider::Fan
 #define RELAY_PROVIDER_LIGHTFOX     RelayProvider::Lightfox
+#define RELAY_PROVIDER_TUYA         RelayProvider::Tuya
 
 #define RFB_PROVIDER_RCSWITCH       0
 #define RFB_PROVIDER_EFM8BB1        1
