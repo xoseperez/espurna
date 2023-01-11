@@ -66,6 +66,7 @@ enum class RelayProvider {
     Dual,
     Stm,
     LightState,
+    Fan,
 };
 
 enum class RelaySync {
@@ -643,14 +644,16 @@ PROGMEM_STRING(RelayProviderGpio, "gpio");
 PROGMEM_STRING(RelayProviderDual, "dual");
 PROGMEM_STRING(RelayProviderStm, "stm");
 PROGMEM_STRING(RelayProviderLightState, "light-state");
+PROGMEM_STRING(RelayProviderFan, "fan");
 
-static constexpr std::array<Enumeration<RelayProvider>, 6> RelayProviderOptions PROGMEM {
+static constexpr std::array<Enumeration<RelayProvider>, 7> RelayProviderOptions PROGMEM {
     {{RelayProvider::None, RelayProviderNone},
     {RelayProvider::Dummy, RelayProviderDummy},
     {RelayProvider::Gpio, RelayProviderGpio},
     {RelayProvider::Dual, RelayProviderDual},
     {RelayProvider::Stm, RelayProviderStm},
-    {RelayProvider::LightState, RelayProviderLightState}}
+    {RelayProvider::LightState, RelayProviderLightState},
+    {RelayProvider::Fan, RelayProviderFan}}
 };
 
 PROGMEM_STRING(RelayTypeNormal, "normal");
@@ -2929,6 +2932,12 @@ RelayProviderBasePtr _relaySetupProvider(size_t index) {
     case RelayProvider::LightState:
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
         result = lightMakeStateRelayProvider(index);
+#endif
+        break;
+
+    case RelayProvider::Fan:
+#if FAN_SUPPORT
+        result = fanMakeRelayProvider(index);
 #endif
         break;
 

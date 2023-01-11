@@ -107,6 +107,7 @@
 #define RELAY_PROVIDER_DUAL         RelayProvider::Dual
 #define RELAY_PROVIDER_STM          RelayProvider::Stm
 #define RELAY_PROVIDER_LIGHT_STATE  RelayProvider::LightState
+#define RELAY_PROVIDER_FAN          RelayProvider::Fan
 
 #define RFB_PROVIDER_RCSWITCH       0
 #define RFB_PROVIDER_EFM8BB1        1

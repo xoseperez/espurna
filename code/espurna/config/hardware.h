@@ -1099,6 +1099,9 @@
     #define BUTTON4_PIN             14
     #define BUTTON4_CLICK           BUTTON_ACTION_FAN_HIGH
 
+    // Relay
+    #define RELAY1_PROVIDER         RELAY_PROVIDER_FAN
+
     // LEDs
     #define LED1_PIN                13
     #define LED1_PIN_INVERSE        1
