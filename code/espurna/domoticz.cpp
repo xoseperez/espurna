@@ -317,7 +317,10 @@ void callback(unsigned int type, espurna::StringView topic, espurna::StringView 
             }
 #endif
 
+#if RELAY_SUPPORT
             espurna::domoticz::relay::status(idx, nvalue > 0);
+#endif
+
             return;
         }
     }
@@ -344,6 +347,7 @@ void send(Idx idx, int nvalue, const char* svalue) {
     mqttSendRaw(settings::topicIn().c_str(), payload);
 }
 
+[[gnu::unused]]
 void send(Idx idx, int nvalue) {
     send(idx, nvalue, "");
 }
@@ -458,12 +462,14 @@ void onConnected(JsonObject& root) {
     root[FPSTR(settings::keys::LightIdx)] = settings::lightIdx().value();
 #endif
 
+#if RELAY_SUPPORT
     const size_t Relays { relayCount() };
 
     JsonArray& relays = root.createNestedArray(F("dczRelays"));
     for (size_t id = 0; id < Relays; ++id) {
         relays.add(settings::relayIdx(id).value());
     }
+#endif
 
 #if SENSOR_SUPPORT
     sensorWebSocketMagnitudes(root, PSTR("dcz"), [](JsonArray& out, size_t index) {

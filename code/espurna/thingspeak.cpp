@@ -704,10 +704,12 @@ void onConnected(JsonObject& root) {
     root[FPSTR(settings::keys::ClearCache)] = settings::clearCache();
     root[FPSTR(settings::keys::Address)] = settings::address();
 
+#if RELAY_SUPPORT
     JsonArray& relays = root.createNestedArray(F("tspkRelays"));
     for (size_t i = 0; i < relayCount(); ++i) {
         relays.add(settings::relay(i));
     }
+#endif
 
 #if SENSOR_SUPPORT
     sensorWebSocketMagnitudes(root, Prefix, [](JsonArray& out, size_t index) {

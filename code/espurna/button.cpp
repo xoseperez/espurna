@@ -658,6 +658,7 @@ unsigned long repeatDelay(size_t index) {
     return internal::indexedThenGlobal(keys::RepeatDelay, index, build::repeatDelay(index));
 }
 
+[[gnu::unused]]
 size_t relay(size_t index) {
     return getSetting({keys::Relay, index}, build::relay(index));
 }

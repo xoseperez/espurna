@@ -543,9 +543,13 @@ LedMode mode(size_t id) {
     return getSetting({keys::Mode, id}, build::mode(id));
 }
 
+#if RELAY_SUPPORT
+
 size_t relay(size_t id) {
     return getSetting({keys::Relay, id}, build::relay(id));
 }
+
+#endif
 
 Pattern pattern(size_t id) {
     return Pattern(getSetting({keys::Pattern, id}));
@@ -602,7 +606,10 @@ String NAME (size_t id) {\
 ID_VALUE(pin)
 ID_VALUE(inverse)
 ID_VALUE(mode)
+
+#if RELAY_SUPPORT
 ID_VALUE(relay)
+#endif
 
 #undef ID_VALUE
 
