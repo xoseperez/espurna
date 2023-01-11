@@ -1251,7 +1251,7 @@ public:
     String description() const override {
         char buffer[64];
         snprintf_P(buffer, sizeof(buffer),
-            PSTR("%s @ level %d (%d...%d)\n"),
+            PSTR("%s @ level %d (%d...%d)"),
             id(), _expected, _from, _to);
 
         return buffer;
