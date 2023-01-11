@@ -26,10 +26,6 @@ static_assert(1 == (BUTTON_SUPPORT), "");
 #define LIGHTFOX_BUTTONS 4
 #endif
 
-#ifndef LIGHTFOX_RELAYS
-#define LIGHTFOX_RELAYS 2
-#endif
-
 #ifndef LIGHTFOX_PORT
 #define LIGHTFOX_PORT 1
 #endif
@@ -43,10 +39,6 @@ namespace build {
 
 constexpr size_t buttons() {
     return LIGHTFOX_BUTTONS;
-}
-
-constexpr size_t relays() {
-    return LIGHTFOX_RELAYS;
 }
 
 constexpr size_t port() {
@@ -109,8 +101,8 @@ public:
             _instances.end());
     }
 
-    const char* id() const override {
-        return "lightfox";
+    espurna::StringView id() const override {
+        return STRING_VIEW("lightfox");
     }
 
     bool setup() override {
@@ -150,6 +142,10 @@ void RelayProvider::flush() {
     uint8_t buffer[4] { 0xa0, 0x04, static_cast<uint8_t>(mask), 0xa1 };
     internal::port->write(buffer, sizeof(buffer));
     internal::port->flush();
+}
+
+RelayProviderBasePtr make_relay(size_t index) {
+    return std::make_unique<RelayProvider>(index);
 }
 
 // -----------------------------------------------------------------------------
@@ -256,13 +252,6 @@ void setup() {
     terminal::setup();
 #endif
 
-    for (size_t relay = 0; relay < build::relays(); ++relay) {
-        const auto result = relayAdd(std::make_unique<RelayProvider>(relay));
-        if (!result) {
-            break;
-        }
-    }
-
     internal::button_offset = buttonCount();
     for (size_t index = 0; index < build::buttons(); ++index) {
         if (buttonAdd()) {
@@ -277,6 +266,10 @@ void setup() {
 } // namespace lightfox
 } // namespace hardware
 } // namespace espurna
+
+RelayProviderBasePtr lightfoxMakeRelayProvider(size_t index) {
+    return espurna::hardware::lightfox::make_relay(index);
+}
 
 void lightfoxSetup() {
     espurna::hardware::lightfox::setup();

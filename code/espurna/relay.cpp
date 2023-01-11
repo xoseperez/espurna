@@ -67,6 +67,7 @@ enum class RelayProvider {
     Stm,
     LightState,
     Fan,
+    Lightfox,
 };
 
 enum class RelaySync {
@@ -2938,6 +2939,12 @@ RelayProviderBasePtr _relaySetupProvider(size_t index) {
     case RelayProvider::Fan:
 #if FAN_SUPPORT
         result = fanMakeRelayProvider(index);
+#endif
+        break;
+
+    case RelayProvider::Lightfox:
+#ifdef FOXEL_LIGHTFOX_DUAL
+        result = lightfoxMakeRelayProvider(index);
 #endif
         break;
 

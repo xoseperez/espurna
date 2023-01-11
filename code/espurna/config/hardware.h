@@ -4493,7 +4493,8 @@
     #define LIGHTFOX_PORT           1
 
     // Relays
-    #define LIGHTFOX_RELAYS         2
+    #define RELAY1_PROVIDER         RELAY_PROVIDER_LIGHTFOX
+    #define RELAY2_PROVIDER         RELAY_PROVIDER_LIGHTFOX
 
     // Buttons
     #define LIGHTFOX_BUTTONS        4
