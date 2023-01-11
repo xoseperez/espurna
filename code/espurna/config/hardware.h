@@ -4497,16 +4497,20 @@
     #define RELAY2_PROVIDER         RELAY_PROVIDER_LIGHTFOX
 
     // Buttons
-    #define LIGHTFOX_BUTTONS        4
-
+    #define BUTTON1_PROVIDER        BUTTON_PROVIDER_LIGHTFOX
     #define BUTTON1_CLICK           BUTTON_ACTION_TOGGLE
-    #define BUTTON2_CLICK           BUTTON_ACTION_TOGGLE
-    #define BUTTON3_CLICK           BUTTON_ACTION_TOGGLE
-    #define BUTTON4_CLICK           BUTTON_ACTION_TOGGLE
-
     #define BUTTON1_RELAY           1
+
+    #define BUTTON2_PROVIDER        BUTTON_PROVIDER_LIGHTFOX
+    #define BUTTON2_CLICK           BUTTON_ACTION_TOGGLE
     #define BUTTON2_RELAY           2
+
+    #define BUTTON3_PROVIDER        BUTTON_PROVIDER_LIGHTFOX
+    #define BUTTON3_CLICK           BUTTON_ACTION_TOGGLE
     #define BUTTON3_RELAY           2
+
+    #define BUTTON4_PROVIDER        BUTTON_PROVIDER_LIGHTFOX
+    #define BUTTON4_CLICK           BUTTON_ACTION_TOGGLE
     #define BUTTON4_RELAY           1
 
 // -----------------------------------------------------------------------------

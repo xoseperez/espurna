@@ -22,10 +22,6 @@ static_assert(1 == (BUTTON_SUPPORT), "");
 #include <array>
 #include <vector>
 
-#ifndef LIGHTFOX_BUTTONS
-#define LIGHTFOX_BUTTONS 4
-#endif
-
 #ifndef LIGHTFOX_PORT
 #define LIGHTFOX_PORT 1
 #endif
@@ -36,10 +32,6 @@ namespace lightfox {
 namespace {
 
 namespace build {
-
-constexpr size_t buttons() {
-    return LIGHTFOX_BUTTONS;
-}
 
 constexpr size_t port() {
     return LIGHTFOX_PORT - 1;
@@ -52,9 +44,6 @@ constexpr size_t port() {
 namespace internal {
 
 Stream* port { nullptr };
-
-size_t button_offset { 0 };
-size_t buttons { 0 };
 
 } // namespace internal
 
@@ -213,29 +202,98 @@ void setup() {
 
 // -----------------------------------------------------------------------------
 
-void loop() {
-    if (internal::port->available() < 4) {
-        return;
+class ButtonPin final : public BasePin {
+public:
+    ButtonPin() = delete;
+    explicit ButtonPin(size_t index) :
+        _index(index)
+    {
+        _readings.push_back(Reading{});
     }
 
-    unsigned char bytes[4] = {0};
-    internal::port->readBytes(bytes, 4);
-    if ((bytes[0] != 0xA0) && (bytes[1] != 0x04) && (bytes[3] != 0xA1)) {
-        return;
+    String description() const override {
+        String out;
+
+        out += STRING_VIEW("lightfox id:");
+        out += _index;
+        out += STRING_VIEW(" status:#");
+        out += _readings[_index].status ? 't' : 'f';
+
+        return out;
     }
 
-    // Unlike DUAL, inputs may have different IDs than the outputs
-    // ref. https://github.com/foxel/esp-dual-rf-switch
-    constexpr unsigned long InputsMask { 0xf };
-    unsigned long mask { static_cast<unsigned long>(bytes[2]) & InputsMask };
-    unsigned long id { 0 };
+    static void loop() {
+        const auto now = TimeSource::now();
 
-    for (size_t button = 0; id < internal::buttons; ++button) {
-        if (mask & (1ul << button)) {
-            buttonEvent(button + internal::button_offset, ButtonEvent::Click);
+        // Emulate 'Click' behaviour by expiring our readings
+        // But, unlike previous version, we could make either a switch or a button
+        for (auto& reading : _readings) {
+            if (reading.status && ((now - reading.last) > ReadInterval)) {
+                reading.status = false;
+            }
+        }
+
+        if (internal::port->available() < 4) {
+            return;
+        }
+
+        uint8_t bytes[4] = {0};
+        internal::port->readBytes(bytes, 4);
+        if ((bytes[0] != 0xA0) && (bytes[1] != 0x04) && (bytes[3] != 0xA1)) {
+            return;
+        }
+
+        // Unlike DUAL, inputs may have different IDs than the outputs
+        // ref. https://github.com/foxel/esp-dual-rf-switch
+        static constexpr uint8_t Digits { std::numeric_limits<uint8_t>::digits };
+        const auto mask = bytes[2];
+
+        for (uint8_t index = 0; index < Digits; ++index) {
+            if (((mask & index) > 0) && (index < _readings.size())) {
+                _readings[index].status = true;
+                _readings[index].last = now;
+            }
         }
     }
+
+    unsigned char pin() const override {
+        return _index;
+    }
+
+    const char* id() const override {
+        return "LightfoxPin";
+    }
+
+    // Simulate LOW level when the range matches and HIGH when it does not
+    int digitalRead() override {
+        return _readings[_index].status;
+    }
+
+    void pinMode(int8_t) override {
+    }
+
+    void digitalWrite(int8_t val) override {
+    }
+
+private:
+    using TimeSource = time::SystemClock;
+    static constexpr TimeSource::duration ReadInterval
+        = duration::Milliseconds{ 100 };
+
+    struct Reading {
+        bool status { false };
+        TimeSource::time_point last;
+    };
+
+    size_t _index;
+    static std::vector<Reading> _readings;
+};
+
+BasePinPtr make_button(size_t index) {
+    return std::make_unique<ButtonPin>(index);
 }
+
+std::vector<ButtonPin::Reading> ButtonPin::_readings;
 
 void setup() {
     const auto port = uartPort(build::port());
@@ -252,20 +310,17 @@ void setup() {
     terminal::setup();
 #endif
 
-    internal::button_offset = buttonCount();
-    for (size_t index = 0; index < build::buttons(); ++index) {
-        if (buttonAdd()) {
-            ++internal::buttons;
-        }
-    }
-
-    ::espurnaRegisterLoop(lightfox::loop);
+    ::espurnaRegisterLoop(ButtonPin::loop);
 }
 
 } // namespace
 } // namespace lightfox
 } // namespace hardware
 } // namespace espurna
+
+BasePinPtr lightfoxMakeButtonPin(size_t index) {
+    return espurna::hardware::lightfox::make_button(index);
+}
 
 RelayProviderBasePtr lightfoxMakeRelayProvider(size_t index) {
     return espurna::hardware::lightfox::make_relay(index);

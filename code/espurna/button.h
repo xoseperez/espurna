@@ -57,7 +57,5 @@ ButtonAction buttonAction(size_t id, const ButtonEvent event);
 void buttonEvent(size_t id, ButtonEvent event);
 void buttonOnEvent(ButtonEventHandler);
 
-bool buttonAdd();
-
 size_t buttonCount();
 void buttonSetup();

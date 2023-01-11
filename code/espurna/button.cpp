@@ -16,6 +16,7 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include "fan.h"
 #include "gpio.h"
 #include "light.h"
+#include "lightfox.h"
 #include "mqtt.h"
 #include "relay.h"
 #include "system.h"
@@ -35,7 +36,8 @@ enum class ButtonProvider {
     None,
     Dummy,
     Gpio,
-    Analog
+    Analog,
+    Lightfox,
 };
 
 struct ButtonActions {
@@ -147,12 +149,14 @@ PROGMEM_STRING(None, "none");
 PROGMEM_STRING(Dummy, "dummy");
 PROGMEM_STRING(Gpio, "gpio");
 PROGMEM_STRING(Analog, "analog");
+PROGMEM_STRING(Lightfox, "lightfox");
 
-static constexpr std::array<Enumeration<ButtonProvider>, 4> ButtonProviderOptions PROGMEM {
+static constexpr std::array<Enumeration<ButtonProvider>, 5> ButtonProviderOptions PROGMEM {
     {{ButtonProvider::None, None},
      {ButtonProvider::Dummy, Dummy},
      {ButtonProvider::Gpio, Gpio},
-     {ButtonProvider::Analog, Analog}}
+     {ButtonProvider::Analog, Analog},
+     {ButtonProvider::Lightfox, Lightfox}}
 };
 
 [[gnu::unused]] PROGMEM_STRING(Toggle, "relay-toggle");
@@ -1418,6 +1422,14 @@ ButtonEventDelays _buttonDelays(size_t index) {
         .lnglngclick = espurna::button::settings::longLongClickDelay(index)};
 }
 
+void _buttonAddWithPin(size_t index, BasePinPtr&& pin) {
+    espurna::button::internal::buttons.emplace_back(
+        std::move(pin),
+        _buttonRuntimeConfig(index),
+        _buttonActions(index),
+        _buttonDelays(index));
+}
+
 bool _buttonSetupProvider(size_t index, ButtonProvider provider) {
     bool result { false };
 
@@ -1437,15 +1449,18 @@ bool _buttonSetupProvider(size_t index, ButtonProvider provider) {
             break;
         }
 
-        espurna::button::internal::buttons.emplace_back(
-            std::move(pin),
-            _buttonRuntimeConfig(index),
-            _buttonActions(index),
-            _buttonDelays(index));
+        _buttonAddWithPin(index, std::move(pin));
         result = true;
 #endif
         break;
     }
+
+    case ButtonProvider::Lightfox:
+#ifdef FOXEL_LIGHTFOX_DUAL
+        _buttonAddWithPin(index, lightfoxMakeButtonPin(index));
+        result = true;
+#endif
+        break;
 
     case ButtonProvider::None:
         break;
@@ -1463,18 +1478,6 @@ void _buttonSettingsMigrate(int version) {
 }
 
 } // namespace
-
-bool buttonAdd() {
-    const size_t index { buttonCount() };
-    if ((index + 1) < ButtonsMax) {
-        espurna::button::internal::buttons.emplace_back(
-            _buttonActions(index),
-            _buttonDelays(index));
-        return true;
-    }
-
-    return false;
-}
 
 void buttonSetup() {
     migrateVersion(_buttonSettingsMigrate);

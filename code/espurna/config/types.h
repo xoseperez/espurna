@@ -61,8 +61,10 @@
 
 // configure where do we get the button events
 #define BUTTON_PROVIDER_NONE        ButtonProvider::None
+#define BUTTON_PROVIDER_DUMMY       ButtonProvider::Dummy
 #define BUTTON_PROVIDER_GPIO        ButtonProvider::Gpio
 #define BUTTON_PROVIDER_ANALOG      ButtonProvider::Analog
+#define BUTTON_PROVIDER_LIGHTFOX    ButtonProvider::Lightfox
 
 //------------------------------------------------------------------------------
 // ENCODER
