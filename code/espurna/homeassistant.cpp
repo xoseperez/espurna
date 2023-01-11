@@ -341,7 +341,8 @@ public:
     }
 
     bool ok() const override {
-        return (_relays) && (_index < _relays);
+        return (_relays > 0)
+            && (_index < _relays);
     }
 
     const String& uniqueId() {
@@ -692,7 +693,11 @@ public:
     explicit SensorDiscovery(Context& ctx) :
         _ctx(ctx),
         _magnitudes(magnitudeCount())
-    {}
+    {
+        if (_magnitudes > 0) {
+            _info = magnitudeInfo(_index);
+        }
+    }
 
     JsonObject& root() {
         if (!_root) {
@@ -703,7 +708,8 @@ public:
     }
 
     bool ok() const override {
-        return _index < _magnitudes;
+        return (_magnitudes > 0)
+            && (_index < _magnitudes);
     }
 
     const String& topic() override {
