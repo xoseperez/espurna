@@ -2116,7 +2116,11 @@ void remove() {
 void check();
 
 void schedule() {
-    internal::timer.once(internal::timeout, check);
+    internal::timer.repeat(
+        internal::timeout,
+        []() {
+            wifi::action(wifi::Action::AccessPointFallbackCheck);
+        });
 }
 
 void check() {
@@ -2124,12 +2128,9 @@ void check() {
         && wifi::sta::connected()
         && !wifi::ap::stations())
     {
-        remove();
         wifi::action(wifi::Action::AccessPointStop);
         return;
     }
-
-    schedule();
 }
 
 } // namespace fallback
@@ -2320,6 +2321,11 @@ void wifi(::terminal::CommandContext&& ctx) {
             wifi::debug::authmode(current.authmode).c_str(),
             current.ssid.c_str(),
             current.passphrase.c_str());
+
+        if (wifi::ap::fallback::enabled() && wifi::ap::fallback::internal::timer) {
+            ctx.output.printf_P(PSTR("fallback check every %u ms\n"),
+                wifi::ap::fallback::build::Timeout.count());
+        }
     }
 
     if (mode & OpmodeSta) {
