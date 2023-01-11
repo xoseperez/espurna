@@ -648,15 +648,19 @@ PROGMEM_STRING(RelayProviderDual, "dual");
 PROGMEM_STRING(RelayProviderStm, "stm");
 PROGMEM_STRING(RelayProviderLightState, "light-state");
 PROGMEM_STRING(RelayProviderFan, "fan");
+PROGMEM_STRING(RelayProviderLightfox, "lightfox");
+PROGMEM_STRING(RelayProviderTuya, "tuya");
 
-static constexpr std::array<Enumeration<RelayProvider>, 7> RelayProviderOptions PROGMEM {
+static constexpr std::array<Enumeration<RelayProvider>, 9> RelayProviderOptions PROGMEM {
     {{RelayProvider::None, RelayProviderNone},
     {RelayProvider::Dummy, RelayProviderDummy},
     {RelayProvider::Gpio, RelayProviderGpio},
     {RelayProvider::Dual, RelayProviderDual},
     {RelayProvider::Stm, RelayProviderStm},
     {RelayProvider::LightState, RelayProviderLightState},
-    {RelayProvider::Fan, RelayProviderFan}}
+    {RelayProvider::Fan, RelayProviderFan},
+    {RelayProvider::Lightfox, RelayProviderLightfox},
+    {RelayProvider::Tuya, RelayProviderTuya}}
 };
 
 PROGMEM_STRING(RelayTypeNormal, "normal");
