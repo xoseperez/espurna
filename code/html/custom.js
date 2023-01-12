@@ -1681,6 +1681,9 @@ function relayToggle(event) {
 function initRelayToggle(id, cfg) {
     let line = loadConfigTemplate("relay-control");
 
+    let root = line.querySelector("div");
+    root.classList.add(`relay-control-${id}`);
+
     let name = line.querySelector("span[data-key='relayName']");
     name.textContent = cfg.relayName;
     name.dataset["id"] = id;
@@ -2170,6 +2173,12 @@ function colorUpdate(mode, value) {
     }
 }
 
+function lightStateHideRelay(id) {
+    styleInject([
+        styleVisible(`.relay-control-${id}`, false)
+    ]);
+}
+
 function initLightState() {
     const toggle = document.getElementById("light-state-value");
     toggle.addEventListener("change", (event) => {
@@ -2288,6 +2297,10 @@ function updateLight(data) {
         switch (key) {
         case "state":
             updateLightState(value);
+            break;
+
+        case "state_relay_id":
+            lightStateHideRelay(value);
             break;
 
         case "channels":

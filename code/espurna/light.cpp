@@ -807,6 +807,10 @@ private:
 
 LightTemperature _light_temperature;
 
+#if RELAY_SUPPORT
+auto _light_state_relay_id = RelaysMax;
+#endif
+
 bool _light_state_changed = false;
 LightStateListener _light_state_listener = nullptr;
 
@@ -2568,9 +2572,9 @@ void _lightApiSetup() {
 namespace {
 
 bool _lightWebSocketOnKeyCheck(espurna::StringView key, const JsonVariant&) {
-    return espurna::settings::query::samePrefix(key, STRING_VIEW("light"))
-        || espurna::settings::query::samePrefix(key, STRING_VIEW("use"))
-        || espurna::settings::query::samePrefix(key, STRING_VIEW("lt"));
+    return key.startsWith(STRING_VIEW("light"))
+        || key.startsWith(STRING_VIEW("use"))
+        || key.startsWith(STRING_VIEW("lt"));
 }
 
 void _lightWebSocketStatus(JsonObject& root) {
@@ -2604,6 +2608,9 @@ void _lightWebSocketOnVisible(JsonObject& root) {
     wsPayloadModule(root, PSTR("light"));
 
     JsonObject& light = root.createNestedObject("light");
+#if RELAY_SUPPORT
+    light["state_relay_id"] = _light_state_relay_id;
+#endif
 
     JsonArray& channels = light.createNestedArray("channels");
 
@@ -3589,6 +3596,7 @@ void _lightSettingsMigrate(int version) {
 RelayProviderBasePtr lightMakeStateRelayProvider(size_t id) {
 #if RELAY_SUPPORT
     if (!_light_state_listener) {
+        _light_state_relay_id = id;
         _light_state_listener = [id](bool state) {
             relayStatus(id, state);
         };
