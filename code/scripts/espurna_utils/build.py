@@ -69,6 +69,25 @@ def merge_cpp(target, source, env, encoding="utf-8"):
 def app_add_builder_single_source(env):
     # generate things in the $BUILD_DIR, so there's no need for any extra clean-up code
     source = os.path.join("${BUILD_DIR}", "espurna_single_source", "src", "main.cpp")
+    env.SetDefault(ESPURNA_SINGLE_SOURCE_TARGET=source)
+
+    # also allow to generate .E file from the .cpp, so we can inspect build flags
+    env.SetDefault(PREPROCESSCOM=env["CXXCOM"].replace("-c", "-dM -E"))
+
+    # Create pseudo-builder and add to enviroment
+    def builder_generator(target, source, env, for_signature):
+        return env.VerboseAction(
+            "$PREPROCESSCOM",
+            "Preprocessing $SOURCE",
+        )
+
+    env.Append(
+        BUILDERS={
+            "PreProcess": env.Builder(
+                generator=builder_generator, suffix=".E", src_suffix=".cpp"
+            )
+        }
+    )
 
     # substitute a single node instead of building it somewhere else as a lib or extra source dir
     # (...and since we can't seem to modify src_filter specifically for the project dir, only middleware works :/)

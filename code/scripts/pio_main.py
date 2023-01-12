@@ -70,3 +70,6 @@ app_add_target_build_and_copy(projenv)
 
 # handle special GzipFile builder
 app_add_gzip_file(projenv)
+
+# pre-processed single-source only makes sense from projenv
+projenv.PreProcess(env["ESPURNA_SINGLE_SOURCE_TARGET"])
