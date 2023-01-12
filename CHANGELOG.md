@@ -5,7 +5,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Pending changes
 
-*...*
+- Disable UART for `MAXCIO_WDE004` ([#2573](https://github.com/xoseperez/espurna/issues/2573))
 
 ## [1.15.0-dev] Snapshot build 2023-01-12
 

@@ -2465,6 +2465,9 @@
     #define LED1_PIN            13
     #define LED1_PIN_INVERSE    1
 
+    // Disable UART because of BUTTON1_PIN
+    #define UART_SUPPORT        0
+
 // -----------------------------------------------------------------------------
 // Maxcio W-UK007S
 // Like this: https://www.amazon.co.uk/Maxcio-Monitoring-Function-Compatible-Required/dp/B07BWFB55Q/ref=pd_rhf_se_p_img_2?_encoding=UTF8&psc=1&refRID=4H63A43SKHV8WV54XH19
@@ -2878,7 +2881,7 @@
     #define DEVICE                  "44EU_W"
 
     // Disable UART noise since this board uses GPIO1 and GPIO3
-    #define UART_SUPPORT        0
+    #define UART_SUPPORT            0
 
     // Buttons
     #define BUTTON1_PIN             3
