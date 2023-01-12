@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 *...*
 
+## [1.15.0-dev] Snapshot build 2023-01-12
+
+### Fixed
+
+- Fallback AP should be disabled after timeout ([f387b864](https://github.com/xoseperez/espurna/commit/f387b864dac87ffb235b893703f93735116dd894))
+- Uninitialized sensor info in Homeassistant discovery causing 'Unknown' entity ([d798052d](https://github.com/xoseperez/espurna/commit/d798052dae2a799197a6051f8805bc9bb0884297))
+- Invalid Domoticz settings strings ([#2569](https://github.com/xoseperez/espurna/issues/2569)) by **[@m-kozlowski](https://github.com/m-kozlowski)**
+- Lights value adjustments should work with floating point numbers ([#2566](https://github.com/xoseperez/espurna/issues/2566)) by **[@davebuk](https://github.com/davebuk)**
+
+### Added
+
+- Relay provider for lights state ([b5a03dac](https://github.com/xoseperez/espurna/commit/b5a03dac728a4eef34a5c03da5bb395b4d564ed6))
+- IFAN / FAN relay provider and state handling improvements ([73620687](https://github.com/xoseperez/espurna/commit/7362068717baa680adf24ee4e038897134a107e2))
+- Even more relay and button providers ([9b28d640](https://github.com/xoseperez/espurna/commit/9b28d640f7d3abe776c24704245f35d941245669), [dca13574](https://github.com/xoseperez/espurna/commit/dca13574d9a00a114b2ec617c732d46c0b8f64c1), [ef086ac0](https://github.com/xoseperez/espurna/commit/ef086ac0fce4c00695a6b9ee8468a2a99fad14cc), [f373e137](https://github.com/xoseperez/espurna/commit/f373e137193ef010db03075e77fb8e19283cd211))
+- Publish relay names to MQTT ([7514dee5](https://github.com/xoseperez/espurna/commit/7514dee5b0ff24232098fcac86c49b6cb35c4cf3))
+
 ## [1.15.0-dev] Snapshot build 2022-12-12
 - Handle telnet socket buffer when eol is missing; fix PuTTY ([542188dd](https://github.com/xoseperez/espurna/commit/542188dd), [53633cfc](https://github.com/xoseperez/espurna/commit/53633cfc))
 - Configurable accuracy and sensitivity (mtreg) for BH1750 ([988a9724](https://github.com/xoseperez/espurna/commit/988a9724))
