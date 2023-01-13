@@ -72,4 +72,6 @@ app_add_target_build_and_copy(projenv)
 app_add_gzip_file(projenv)
 
 # pre-processed single-source only makes sense from projenv
-projenv.PreProcess(env["ESPURNA_SINGLE_SOURCE_TARGET"])
+pre_process = env.get("ESPURNA_SINGLE_SOURCE_TARGET")
+if pre_process:
+    projenv.PreProcess(pre_process)
