@@ -1664,33 +1664,34 @@ void _relaySyncRelaysDelay(size_t first, size_t second) {
     });
 }
 
-void _relaySyncUnlock() {
-    bool unlock = true;
-    bool all_off = true;
-    for (const auto& relay : _relays) {
-        unlock = unlock && (relay.current_status == relay.target_status);
-        if (!unlock) break;
-        all_off = all_off && !relay.current_status;
-    }
-
-    if (unlock) {
-        static const auto action = []() {
-            _relayUnlockAll();
+void _relaySyncUnlockAction() {
+    _relayUnlockAll();
 #if WEB_SUPPORT
-            _relayScheduleWsReport();
+    _relayScheduleWsReport();
 #endif
-        };
-
-        if (all_off) {
-            _relay_sync_timer.schedule(_relay_delay_interlock, action);
-        } else {
-            action();
-        }
-    }
 }
 
-void _relaySync() {
-    _relay_sync_timer.process();
+
+void _relaySyncUnlock() {
+    bool interlock { false };
+
+    for (const auto& relay : _relays) {
+        if (relay.current_status != relay.target_status) {
+            return;
+        }
+
+        if (relay.current_status) {
+            interlock = true;
+        }
+    }
+
+    if (interlock && (_relay_delay_interlock.count() > 0)) {
+        _relay_sync_timer.schedule(
+            _relay_delay_interlock, _relaySyncUnlockAction);
+    } else {
+        _relay_sync_timer.stop();
+        _relaySyncUnlockAction();
+    }
 }
 
 void _relaySyncTryUnlock() {
@@ -1706,6 +1707,10 @@ void _relaySyncTryUnlock() {
     case RelaySync::First:
         break;
     }
+}
+
+void _relaySync() {
+    _relay_sync_timer.process();
 }
 
 } // namespace
