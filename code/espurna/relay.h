@@ -64,7 +64,6 @@ espurna::StringView relayPayload(PayloadStatus status);
 void relayPulse(size_t id, espurna::duration::Milliseconds, bool);
 void relayPulse(size_t id, espurna::duration::Milliseconds);
 void relayPulse(size_t id);
-void relaySync(size_t id);
 void relaySave(bool persist);
 
 using RelayStatusCallback = void(*)(size_t id, bool status);

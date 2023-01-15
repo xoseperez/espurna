@@ -45,7 +45,7 @@ enum class RelayBoot {
 enum class RelayLock {
     None,
     Off,
-    On
+    On,
 };
 
 enum class RelayType {
@@ -1077,7 +1077,6 @@ public:
     using PulseMode = espurna::relay::pulse::Mode;
     using PulseTime = espurna::relay::pulse::Duration;
 
-    // Struct defaults to empty relay configuration, as we allow switches to exist without real GPIOs
     Relay() = default;
 
     explicit Relay(RelayProviderBasePtr&& ptr) :
@@ -1089,29 +1088,40 @@ public:
     {}
 
     // ON / OFF actions implementation
+    // Defaults to 'DummyProvider', since we don't want to check provider existence every time
     RelayProviderBase* provider { DummyProvider::sharedInstance() };
 
-    // Timers
-    Delay delay_on { 0ul };                 // Delay to turn relay ON
-    Delay delay_off { 0ul };                // Delay to turn relay OFF
+    // *Before* changing status, waits for the specified time (ms)
+    Delay delay_on { 0ul };
+    Delay delay_off { 0ul };
 
-    PulseMode pulse { PulseMode::None };    // Sets up a timer for the opposite mode
-    PulseTime pulse_time { 0ul };           // Pulse length in millis
+    // *After* changing status, checks whether we should remain in it
+    // If not, starts a timer for the specified time (ms)
+    PulseMode pulse { PulseMode::None };
+    PulseTime pulse_time { 0ul };
 
-    TimePoint fw_start{};                   // Flood window start time
-    unsigned char fw_count { 0u };          // Number of changes within the current flood window
+    // Flood window start time
+    TimePoint fw_start{};
 
-    TimePoint change_start{};               // Time when relay was scheduled to change
-    Delay change_delay { 0ul };             // Delay until the next change
+    // Number of changes within the current flood window
+    unsigned char fw_count { 0u };
 
-    // Status
-    bool current_status { false };          // Holds the current (physical) status of the relay
-    bool target_status { false };           // Holds the target status
-    RelayLock lock { RelayLock::None };     // Holds the value of target status that persists and cannot be changed from.
+    // Time when relay was scheduled to change
+    TimePoint change_start{};
 
-    // MQTT
-    bool report { false };                  // Whether to report to own topic
-    bool group_report { false };            // Whether to report to group topic
+    // Delay until the next change
+    Delay change_delay { 0ul };
+
+    // Already applied status (passed to provider) and a pending one
+    bool current_status { false };
+    bool target_status { false };
+
+    // Holds the value of target status that persists and cannot be changed from
+    RelayLock lock { RelayLock::None };
+
+    // MQTT report on relay and / or group topic
+    bool report { false };
+    bool group_report { false };
 };
 
 namespace {
@@ -1220,7 +1230,7 @@ unsigned long _relay_flood_changes { espurna::relay::flood::build::changes() };
 espurna::duration::Milliseconds _relay_delay_interlock;
 RelaySync _relay_sync_mode { RelaySync::None };
 bool _relay_sync_reent { false };
-bool _relay_sync_locked { false };
+std::vector<RelayLock> _relay_sync_locked;
 
 RelaySaveTimer _relay_save_timer;
 RelaySyncTimer _relay_sync_timer;
@@ -1624,18 +1634,24 @@ PayloadStatus _relayPayloadStatus(size_t id) {
     return PayloadStatus::Unknown;
 }
 
-void _relayLockAll() {
+void _relaySyncLockAll() {
     for (auto& relay : _relays) {
-        relay.lock = relay.target_status ? RelayLock::On : RelayLock::Off;
+        _relay_sync_locked.push_back(relay.lock);
+        if (relay.lock == RelayLock::None) {
+            relay.lock = relay.target_status
+                ? RelayLock::On
+                : RelayLock::Off;
+        }
     }
-    _relay_sync_locked = true;
 }
 
-void _relayUnlockAll() {
-    for (auto& relay : _relays) {
-        relay.lock = RelayLock::None;
+void _relaySyncUnlockAll() {
+    for (size_t id = 0; id < _relay_sync_locked.size(); ++id) {
+        auto& relay = _relays[id];
+        relay.lock = _relay_sync_locked[id];
     }
-    _relay_sync_locked = false;
+
+    _relay_sync_locked.clear();
 }
 
 bool _relayStatusLock(Relay& relay, bool status) {
@@ -1665,43 +1681,43 @@ void _relaySyncRelaysDelay(size_t first, size_t second) {
 }
 
 void _relaySyncUnlockAction() {
-    _relayUnlockAll();
+    _relaySyncUnlockAll();
 #if WEB_SUPPORT
     _relayScheduleWsReport();
 #endif
-}
-
-
-void _relaySyncUnlock() {
-    bool interlock { false };
-
-    for (const auto& relay : _relays) {
-        if (relay.current_status != relay.target_status) {
-            return;
-        }
-
-        if (relay.current_status) {
-            interlock = true;
-        }
-    }
-
-    if (interlock && (_relay_delay_interlock.count() > 0)) {
-        _relay_sync_timer.schedule(
-            _relay_delay_interlock, _relaySyncUnlockAction);
-    } else {
-        _relay_sync_timer.stop();
-        _relaySyncUnlockAction();
-    }
 }
 
 void _relaySyncTryUnlock() {
     switch (_relay_sync_mode) {
     case RelaySync::JustOne:
     case RelaySync::ZeroOrOne:
-        if (_relay_sync_locked) {
-            _relaySyncUnlock();
+    {
+        if (!_relay_sync_locked.size()) {
+            break;
         }
+
+        bool interlock { false };
+
+        for (const auto& relay : _relays) {
+            if (relay.current_status != relay.target_status) {
+                return;
+            }
+
+            if (relay.current_status) {
+                interlock = true;
+            }
+        }
+
+        if (interlock && (_relay_delay_interlock.count() > 0)) {
+            _relay_sync_timer.schedule(
+                _relay_delay_interlock, _relaySyncUnlockAction);
+        } else {
+            _relay_sync_timer.stop();
+            _relaySyncUnlockAction();
+        }
+
         break;
+    }
     case RelaySync::None:
     case RelaySync::All:
     case RelaySync::First:
@@ -1709,7 +1725,7 @@ void _relaySyncTryUnlock() {
     }
 }
 
-void _relaySync() {
+void _relayProcessSync() {
     _relay_sync_timer.process();
 }
 
@@ -1752,13 +1768,77 @@ void relayPulse(size_t id) {
     }
 }
 
-// General relay status control
+// -----------------------------------------------------------------------------
 
-static bool _relayStatus(size_t id, bool status, bool report, bool group_report) {
+namespace {
+
+void _relaySync(size_t target) {
+    // No sync if none or only one relay
+    const auto relays = _relays.size();
+    if (relays < 2) {
+        return;
+    }
+
+    // Only call once when coming from the relayStatus(id, status)
+    auto lock = espurna::ReentryLock{ _relay_sync_reent };
+    if (!lock.initialized()) {
+        return;
+    }
+
+    bool status = _relays[target].target_status;
+
+    switch (_relay_sync_mode) {
+    case RelaySync::None:
+        break;
+
+    // aka all relays should have the same state
+    case RelaySync::All:
+        for (size_t id = 0; id < relays; ++id) {
+            if (id != target) {
+                relayStatus(id, status);
+            }
+        }
+        break;
+
+    // all relays should have the same state as first if first changes
+    case RelaySync::First:
+        if (target == 0) {
+            for (size_t id = 1; id < relays; ++id) {
+                relayStatus(id, status);
+            }
+        }
+        break;
+
+    // If any of the 'One' modes and setting ON we should set OFF all the others
+    case RelaySync::ZeroOrOne:
+    case RelaySync::JustOne:
+        if (status) {
+            for (size_t id = 0; id < relays; ++id) {
+                if (id != target) {
+                    relayStatus(id, false);
+                    if (relayStatus(id)) {
+                        _relaySyncRelaysDelay(id, target);
+                    }
+                }
+            }
+        // If we only need a single one and setting OFF we should set ON the other one
+        } else if (_relay_sync_mode == RelaySync::JustOne) {
+            const auto id = (target + 1) % relays;
+            _relaySyncRelaysDelay(target, id);
+            relayStatus(id, true);
+        }
+
+        _relaySyncLockAll();
+        break;
+    }
+}
+
+bool _relayStatus(size_t id, bool status, bool report, bool group_report) {
     auto& relay = _relays[id];
 
     if (!_relayStatusLock(relay, status)) {
-        DEBUG_MSG_P(PSTR("[RELAY] #%u is locked to %s\n"), id, relay.current_status ? "ON" : "OFF");
+        DEBUG_MSG_P(PSTR("[RELAY] #%u is locked to %s\n"),
+            id, relay.current_status ? PSTR("ON") : PSTR("OFF"));
         relay.report = true;
         relay.group_report = true;
         return false;
@@ -1814,17 +1894,19 @@ static bool _relayStatus(size_t id, bool status, bool report, bool group_report)
         relay.report = report;
         relay.group_report = group_report;
 
-        relaySync(id);
+        _relaySync(id);
         changed = true;
 
         if (relay.change_delay.count()) {
             DEBUG_MSG_P(PSTR("[RELAY] #%u scheduled %s in %u (ms)\n"),
-                id, status ? "ON" : "OFF", relay.change_delay.count());
+                id, status ? PSTR("ON") : PSTR("OFF"), relay.change_delay.count());
         }
     }
 
     return changed;
 }
+
+} // namespace
 
 bool relayStatus(size_t id, bool status, bool report, bool group_report) {
     if (id < _relays.size()) {
@@ -1855,69 +1937,6 @@ bool relayStatusTarget(size_t id) {
     return _relays[id].target_status;
 }
 
-void relaySync(size_t target) {
-    // No sync if none or only one relay
-    auto relays = _relays.size();
-    if (relays < 2) {
-        return;
-    }
-
-    // Only call once when coming from the relayStatus(id, status)
-    if (_relay_sync_reent) {
-        return;
-    }
-    _relay_sync_reent = true;
-
-    bool status = _relays[target].target_status;
-
-    switch (_relay_sync_mode) {
-    case RelaySync::None:
-        break;
-
-    // aka all relays should have the same state
-    case RelaySync::All:
-        for (decltype(relays) id = 0; id < relays; ++id) {
-            if (id != target) {
-                relayStatus(id, status);
-            }
-        }
-        break;
-
-    // all relays should have the same state as first if first changes
-    case RelaySync::First:
-        if (target == 0) {
-            for (decltype(relays) id = 1; id < relays; ++id) {
-                relayStatus(id, status);
-            }
-        }
-        break;
-
-    // If any of the 'One' modes and setting ON we should set OFF all the others
-    case RelaySync::ZeroOrOne:
-    case RelaySync::JustOne:
-        if (status) {
-            for (decltype(relays) id = 0; id < relays; ++id) {
-                if (id != target) {
-                    relayStatus(id, false);
-                    if (relayStatus(id)) {
-                        _relaySyncRelaysDelay(id, target);
-                    }
-                }
-            }
-        // If we only need a single one and setting OFF we should set ON the other one
-        } else if (_relay_sync_mode == RelaySync::JustOne) {
-            auto id = (target + 1) % relays;
-            _relaySyncRelaysDelay(target, id);
-            relayStatus(id, true);
-        }
-
-        _relayLockAll();
-        break;
-    }
-
-    _relay_sync_reent = false;
-}
-
 namespace {
 
 RelayMaskHelper _relayMaskCurrent() {
@@ -1929,9 +1948,12 @@ RelayMaskHelper _relayMaskCurrent() {
 }
 
 void _relaySave(bool persist) {
+    const auto mask = _relayMaskCurrent();
+    if (_relays.size() > 1) {
+        DEBUG_MSG_P(PSTR("[RELAY] Relay mask: %s\n"), mask.toString().c_str());
+    }
+
     // Persist only to rtcmem, unless requested to save to settings
-    auto mask = _relayMaskCurrent();
-    DEBUG_MSG_P(PSTR("[RELAY] Relay mask: %s\n"), mask.toString().c_str());
     _relayMaskRtcmem(mask);
 
     // The 'persist' flag controls whether we are commiting this change or not.
@@ -2060,6 +2082,7 @@ void _relaySettingsMigrate(int version) {
 
 void _relayBoot(size_t index, const RelayMaskHelper& mask) {
     auto status = false;
+
     auto lock = RelayLock::None;
 
     switch (espurna::relay::settings::bootMode(index)) {
@@ -2089,6 +2112,7 @@ void _relayBoot(size_t index, const RelayMaskHelper& mask) {
 
     relay.current_status = !status;
     relay.target_status = status;
+
     relay.lock = lock;
 
     relay.change_start = Relay::TimeSource::now();
@@ -2633,12 +2657,19 @@ String _relayTristateToPayload(T value) {
 }
 
 void _relayPrint(Print& out, const Relay& relay, size_t index) {
-    out.printf_P(PSTR("relay%u {Prov=%.*s TargetStatus=%s CurrentStatus=%s Lock=%s}\n"),
-        index,
-        relay.provider->id().length(), relay.provider->id().begin(),
-        relay.target_status ? "on" : "off",
-        relay.current_status ? "on" : "off",
-        _relayTristateToPayload(relay.lock).c_str());
+    const auto provider = relay.provider->id();
+
+    const char* target_status = relay.target_status
+        ? PSTR("ON") : PSTR("OFF");
+    const char* current_status = relay.current_status
+        ? PSTR("ON") : PSTR("OFF");
+
+    const auto lock = _relayTristateToPayload(relay.lock);
+
+    out.printf_P(PSTR("relay%u {Prov=%.*s TargetStatus=%s CurrentStatus=%s Lock=%.*s}\n"),
+        index, provider.length(), provider.begin(),
+        current_status, target_status,
+        lock.length(), lock.c_str());
 }
 
 void _relayPrint(Print& out, size_t start, size_t stop) {
@@ -2764,7 +2795,6 @@ void _relayReport() {
  * @bool mode Requested mode
  */
 void _relayProcess(bool mode) {
-
     const auto relays = _relays.size();
     bool changed { false };
 
@@ -2818,7 +2848,7 @@ void _relayLoop() {
     _relayProcess(false);
     _relayProcess(true);
     _relayReport();
-    _relaySync();
+    _relayProcessSync();
     _relaySave();
 }
 
