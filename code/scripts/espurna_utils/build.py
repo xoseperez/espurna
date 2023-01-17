@@ -71,8 +71,13 @@ def app_add_builder_single_source(env):
     source = os.path.join("${BUILD_DIR}", "espurna_single_source", "src", "main.cpp")
     env.SetDefault(ESPURNA_SINGLE_SOURCE_TARGET=source)
 
+    dep = os.path.join("${BUILD_DIR}", "espurna_single_source", "src", "main.cpp.d")
+    env.SetDefault(ESPURNA_SINGLE_SOURCE_DEP=dep)
+
+    env.SideEffect(dep, source)
+
     # also allow to generate .E file from the .cpp, so we can inspect build flags
-    env.SetDefault(PREPROCESSCOM=env["CXXCOM"].replace("-c", "-dM -E"))
+    env.SetDefault(PREPROCESSCOM=env["CXXCOM"].replace("-c", "-M -MF $ESPURNA_SINGLE_SOURCE_DEP -E"))
 
     # Create pseudo-builder and add to enviroment
     def builder_generator(target, source, env, for_signature):
