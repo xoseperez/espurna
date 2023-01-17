@@ -193,13 +193,19 @@ struct ReentryLock {
     ReentryLock(ReentryLock&&) = default;
     ReentryLock& operator=(ReentryLock&&) = delete;
 
-    ReentryLock(bool& handle) :
+    explicit ReentryLock(bool& handle) :
         _initialized(!handle),
         _handle(handle)
-    {}
+    {
+        lock();
+    }
 
     ~ReentryLock() {
         unlock();
+    }
+
+    explicit operator bool() const {
+        return initialized();
     }
 
     bool initialized() const {

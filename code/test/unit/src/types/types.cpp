@@ -215,6 +215,30 @@ void test_callback_swap() {
     TEST_ASSERT_EQUAL(10, output);
 }
 
+void test_reentry_helper() {
+    bool flag { false };
+
+    auto one = [&]() {
+        auto lock = ReentryLock{ flag };
+        if (!lock) {
+            return true;
+        }
+
+        return false;
+    };
+
+    auto two = [&]() {
+        auto lock = ReentryLock{ flag };
+        if (!lock) {
+            return false;
+        }
+
+        return one();
+    };
+
+    TEST_ASSERT(two());
+}
+
 } // namespace
 } // namespace test
 } // namespace espurna
@@ -223,18 +247,19 @@ int main(int, char**) {
     UNITY_BEGIN();
 
     using namespace espurna::test;
-	RUN_TEST(test_view);
-	RUN_TEST(test_view_nullptr);
-	RUN_TEST(test_view_convert);
-	RUN_TEST(test_view_compare);
-	RUN_TEST(test_callback_empty);
-	RUN_TEST(test_callback_simple);
-	RUN_TEST(test_callback_lambda);
-	RUN_TEST(test_callback_capture);
-	RUN_TEST(test_callback_capture_copy);
-	RUN_TEST(test_callback_capture_move);
+    RUN_TEST(test_view);
+    RUN_TEST(test_view_nullptr);
+    RUN_TEST(test_view_convert);
+    RUN_TEST(test_view_compare);
+    RUN_TEST(test_callback_empty);
+    RUN_TEST(test_callback_simple);
+    RUN_TEST(test_callback_lambda);
+    RUN_TEST(test_callback_capture);
+    RUN_TEST(test_callback_capture_copy);
+    RUN_TEST(test_callback_capture_move);
     RUN_TEST(test_callback_assign);
-	RUN_TEST(test_callback_swap);
+    RUN_TEST(test_callback_swap);
+    RUN_TEST(test_reentry_helper);
 
     return UNITY_END();
 }
