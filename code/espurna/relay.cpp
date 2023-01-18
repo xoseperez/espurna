@@ -2658,6 +2658,22 @@ void _relayMqttHandleDisconnect() {
     }
 }
 
+struct RelayMqttTopicHandler {
+    using Handler = bool(*)(size_t, espurna::StringView);
+    espurna::StringView topic;
+    Handler handler;
+};
+
+PROGMEM_STRING(MqttTopicRelay, MQTT_TOPIC_RELAY);
+PROGMEM_STRING(MqttTopicPulse, MQTT_TOPIC_PULSE);
+PROGMEM_STRING(MqttTopicLock, MQTT_TOPIC_LOCK);
+
+static constexpr RelayMqttTopicHandler RelayMqttTopicHandlers[] PROGMEM {
+    {MqttTopicRelay, _relayHandlePayload},
+    {MqttTopicPulse, _relayHandlePulsePayload},
+    {MqttTopicLock, _relayHandleLockPayload},
+};
+
 } // namespace
 
 void relayMQTTCallback(unsigned int type, espurna::StringView topic, espurna::StringView payload) {
@@ -2678,19 +2694,7 @@ void relayMQTTCallback(unsigned int type, espurna::StringView topic, espurna::St
     if (type == MQTT_MESSAGE_EVENT) {
         const auto t = mqttMagnitude(topic);
 
-        using Handler = bool(*)(size_t, espurna::StringView);
-        struct TopicHandler {
-            espurna::StringView topic;
-            Handler handler;
-        };
-
-        static const TopicHandler TopicHandlers[] {
-            {STRING_VIEW(MQTT_TOPIC_RELAY), _relayHandlePayload},
-            {STRING_VIEW(MQTT_TOPIC_PULSE), _relayHandlePulsePayload},
-            {STRING_VIEW(MQTT_TOPIC_LOCK), _relayHandleLockPayload},
-        };
-
-        for (const auto pair: TopicHandlers) {
+        for (const auto pair: RelayMqttTopicHandlers) {
             if (t.startsWith(pair.topic)) {
                 size_t id;
                 if (!_relayTryParseIdFromPath(t, id)) {
