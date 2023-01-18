@@ -126,6 +126,7 @@ struct Callback {
         return isSimple() && (_storage.simple == callback);
     }
 
+    void reset();
     void swap(Callback&) noexcept;
     void operator()() const;
 
@@ -158,7 +159,6 @@ private:
 
     void copy(const Callback&);
     void move(Callback&) noexcept;
-    void reset();
 
     Storage _storage { nullptr };
     StorageType _type { StorageType::Empty };
