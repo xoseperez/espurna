@@ -2398,6 +2398,22 @@ void relaySetupAPI() {
         }
     );
 
+    apiRegister(F(MQTT_TOPIC_LOCK "/+"),
+        [](ApiRequest& request) {
+            return _relayApiTryHandle(request,
+                [&](size_t id) {
+                    request.send(_relayTristateToPayload<RelayLock>(_relays[id].lock));
+                    return true;
+                });
+        },
+        [](ApiRequest& request) {
+            return _relayApiTryHandle(request,
+                [&](size_t id) {
+                    return _relayHandleLockPayload(id, request.param(F("value")));
+                });
+        }
+    );
+
 }
 
 #endif // API_SUPPORT
@@ -2653,6 +2669,7 @@ void relayMQTTCallback(unsigned int type, espurna::StringView topic, espurna::St
     if (type == MQTT_CONNECT_EVENT) {
         mqttSubscribe(MQTT_TOPIC_RELAY "/+");
         mqttSubscribe(MQTT_TOPIC_PULSE "/+");
+        mqttSubscribe(MQTT_TOPIC_LOCK "/+");
         _relayMqttSubscribeCustomTopics();
         connected = true;
         return;
@@ -2661,23 +2678,28 @@ void relayMQTTCallback(unsigned int type, espurna::StringView topic, espurna::St
     if (type == MQTT_MESSAGE_EVENT) {
         const auto t = mqttMagnitude(topic);
 
-        auto is_relay = t.startsWith(MQTT_TOPIC_RELAY);
-        auto is_pulse = t.startsWith(MQTT_TOPIC_PULSE);
-        if (is_relay || is_pulse) {
-            size_t id;
-            if (!_relayTryParseIdFromPath(t, id)) {
-                return;
-            }
+        using Handler = bool(*)(size_t, espurna::StringView);
+        struct TopicHandler {
+            espurna::StringView topic;
+            Handler handler;
+        };
 
-            if (is_relay) {
-                _relayHandlePayload(id, payload);
-                _relays[id].report = mqttForward();
-                return;
-            }
+        static const TopicHandler TopicHandlers[] {
+            {STRING_VIEW(MQTT_TOPIC_RELAY), _relayHandlePayload},
+            {STRING_VIEW(MQTT_TOPIC_PULSE), _relayHandlePulsePayload},
+            {STRING_VIEW(MQTT_TOPIC_LOCK), _relayHandleLockPayload},
+        };
 
-            if (is_pulse) {
-                _relayHandlePulsePayload(id, payload);
+        for (const auto pair: TopicHandlers) {
+            if (t.startsWith(pair.topic)) {
+                size_t id;
+                if (!_relayTryParseIdFromPath(t, id)) {
+                    return;
+                }
+
+                pair.handler(id, payload);
                 _relays[id].report = mqttForward();
+
                 return;
             }
         }

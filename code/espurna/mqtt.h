@@ -19,6 +19,7 @@ Updated secure client support by Niek van der Maas < mail at niekvandermaas dot 
 #define MQTT_TOPIC_ACTION           "action"
 #define MQTT_TOPIC_RELAY            "relay"
 #define MQTT_TOPIC_LED              "led"
+#define MQTT_TOPIC_LOCK             "lock"
 #define MQTT_TOPIC_BUTTON           "button"
 #define MQTT_TOPIC_IP               "ip"
 #define MQTT_TOPIC_SSID             "ssid"
