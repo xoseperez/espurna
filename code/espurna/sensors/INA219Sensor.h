@@ -258,7 +258,7 @@ private:
             value |= (conf.bus_mode << 7) | (conf.shunt_mode << 3);
 
             value &= ~GainMask;
-            value |= (conf.gain << 12);
+            value |= (conf.gain << 11);
 
             value &= ~BusRangeMask;
             value |= (conf.bus_range << 13);
