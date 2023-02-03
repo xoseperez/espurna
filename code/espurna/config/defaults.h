@@ -206,6 +206,10 @@
 #define BUTTON8_PIN         GPIO_NONE
 #endif
 
+#ifndef BUTTON_WAKEUP_PIN
+#define BUTTON_WAKEUP_PIN     BUTTON1_PIN
+#endif
+
 #ifndef BUTTON1_PIN_TYPE
 #define BUTTON1_PIN_TYPE    GPIO_TYPE_HARDWARE
 #endif

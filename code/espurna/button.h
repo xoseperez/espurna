@@ -45,6 +45,7 @@ enum class ButtonAction {
     BrightnessDecrease,
     DisplayOn,
     Custom,
+    Sleep,
     FanLow,
     FanMedium,
     FanHigh,
