@@ -357,9 +357,6 @@ bool sleep() {
 
 void lightSleep()
 {
-    wifiDisconnect();
-    wifiTurnOff();
-    wifi_station_disconnect();
     wifi_set_opmode_current(NULL_MODE);
     wifi_fpm_set_sleep_type(LIGHT_SLEEP_T);
     yield();
