@@ -5401,6 +5401,89 @@
     #define LED1_PIN_INVERSE            1
     #define LED1_MODE                   LED_MODE_WIFI
 
+    // Lampi RGBWW Light bulb
+    // -----------------------------------------------------------------------------
+    #elif defined(LAMPI_RGBWW)
+    #define MANUFACTURER                 "Hamed's Technological Adventures"
+    #define DEVICE                       "Lampi"
+    #define APP_NAME                     "Espurna (Lampi)"
+    #define USE_PASSWORD                 0
+
+    // RELAY
+    #define RELAY_SUPPORT                1
+    #define RELAY1_PROVIDER              RELAY_PROVIDER_LIGHT_STATE
+
+    // PWM
+    #define PWM_SUPPORT                  1
+    #define PWM_PROVIDER                 PWM_PROVIDER_ARDUINO
+    #define PWM_FREQUENCY                20000 // (Hz)
+    #define PWM_RESOLUTION               10    // (bits)
+
+    // LIGHT
+    #define LIGHT_USE_COLOR              1     // Use 3 first channels as RGB
+    #define LIGHT_USE_RGB                1     // Use RGB color selector (1=> RGB, 0=> HSV)
+    #define LIGHT_USE_CCT                0     // Use the 5th channel as Coldwhite LEDs, LIGHT_USE_WHITE must be 1.
+    #define LIGHT_USE_WHITE              0     // Use the 4th channel as (Warm-)White LEDs
+    #define LIGHT_MIN_VALUE              0     // Minimum light value
+    #define LIGHT_PROVIDER               LIGHT_PROVIDER_DIMMER
+    #define LIGHT_CH1_PIN                12    // RED
+    #define LIGHT_CH2_PIN                14    // GREEN
+    #define LIGHT_CH3_PIN                16    // BLUE
+    #define LIGHT_CH4_PIN                15    // COLD WHITE
+    #define LIGHT_CH5_PIN                13    // WARM WHITE
+
+    // DEBUG
+    #define DEBUG_SERIAL_SUPPORT         1
+
+    // Buttons
+    #define BUTTON_MQTT_SEND_ALL_EVENTS  1
+    #define BUTTON1_PIN                  0 
+    #define BUTTON1_RELAY                1
+    #define BUTTON1_CONFIG               BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_PRESS                BUTTON_MODE_NONE
+    #define BUTTON1_CLICK                BUTTON_ACTION_TOGGLE
+    #define BUTTON1_DBLCLICK             BUTTON_ACTION_DIM_UP
+    #define BUTTON1_TRIPLECLICK          BUTTON_ACTION_DIM_DOWN
+    #define BUTTON1_LNGCLICK             BUTTON_MODE_NONE
+    #define BUTTON1_LNGLNGCLICK          BUTTON_ACTION_FACTORY
+
+    //SENSOR
+    #define SENSOR_SUPPORT               1
+    #define SENSOR_DEBUG                 0
+    #define SENSOR_POWER_CHECK_STATUS    0  // If set to 1 the reported power/current/energy will be 0 if the relay[0] is OFF
+
+    //Temperature
+    #define NTC_SUPPORT                  1
+    #define NTC_BETA                     3950
+    #define NTC_R_UP                     1000 * 1000
+    #define NTC_R_DOWN                   0//10 * 1000 
+    #define NTC_R0                       100 * 1000 
+    #define NTC_T0                       298.15  // 25 Celsius
+    #define NTC_INPUT_VOLTAGE            3.3 
+
+    //INA219
+    #define I2C_SUPPORT                  1
+    #define INA219_SUPPORT               1
+    #define INA219_ADDRESS               0x00 // 0x00 means auto
+    #define INA219_OPERATING_MODE        SHUNT_AND_BUS_CONTINUOUS
+    #define INA219_SHUNT_MODE            SAMPLE_MODE_2
+    #define INA219_BUS_MODE              SAMPLE_MODE_2
+    #define INA219_BUS_RANGE             BRNG_16
+    #define INA219_GAIN                  PG_320
+    #define INA219_SHUNT_RESISTANCE      0.04
+    #define INA219_MAX_EXPECTED_CURRENT  8   // A
+
+    //STATUS LED
+    #define LED1_PIN                     2
+    #define LED1_MODE                    LED_MODE_WIFI
+    #define LED1_PIN_INVERSE             1
+
+    // Home Automations
+    #define ALEXA_SUPPORT                1
+    #define DOMOTICZ_SUPPORT             0
+    #define HOMEASSISTANT_SUPPORT        0
+    #define THINGSPEAK_SUPPORT           0
+
 #else
 
     #error "UNSUPPORTED HARDWARE!!"
