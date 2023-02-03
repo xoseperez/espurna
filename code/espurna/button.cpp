@@ -1182,10 +1182,7 @@ void buttonEvent(size_t id, ButtonEvent event) {
         break;
 
     case ButtonAction::Sleep:
-         if (lightState())
-         {
-            _buttonRelayAction(id, ButtonAction::Off);
-         } else {lightSleep();}
+        lightSleep();
          
         break;
     case ButtonAction::None:
