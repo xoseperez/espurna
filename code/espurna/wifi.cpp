@@ -355,6 +355,23 @@ bool sleep() {
     return false;
 }
 
+void lightSleep()
+{
+    wifiDisconnect();
+    wifiTurnOff();
+    wifi_station_disconnect();
+    wifi_set_opmode_current(NULL_MODE);
+    wifi_fpm_set_sleep_type(LIGHT_SLEEP_T);
+    yield();
+    wifi_fpm_open();
+    yield();
+    gpio_pin_wakeup_enable(GPIO_ID_PIN(BUTTON_WAKEUP_PIN), GPIO_PIN_INTR_LOLEVEL);
+    wifi_fpm_do_sleep(0xFFFFFFF);
+    delay(10);
+    wifi_fpm_close();
+    wifiTurnOn();
+}
+
 bool wakeup() {
     if (wifi_fpm_get_sleep_type() != NONE_SLEEP_T) {
         wifi_fpm_do_wakeup();
@@ -3040,4 +3057,8 @@ IPAddress wifiApIp() {
 
 void wifiSetup() {
     espurna::wifi::setup();
+}
+
+void lightSleep() {
+    espurna::wifi::lightSleep();
 }

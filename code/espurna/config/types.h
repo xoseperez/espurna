@@ -30,6 +30,7 @@
 #define BUTTON_ACTION_DIM_UP          ButtonAction::BrightnessIncrease
 #define BUTTON_ACTION_DIM_DOWN        ButtonAction::BrightnessDecrease
 #define BUTTON_ACTION_DISPLAY_ON      ButtonAction::DisplayOn
+#define BUTTON_ACTION_SLEEP           ButtonAction::Sleep
 #define BUTTON_ACTION_CUSTOM          ButtonAction::Custom
 #define BUTTON_ACTION_FAN_LOW         ButtonAction::FanLow
 #define BUTTON_ACTION_FAN_MEDIUM      ButtonAction::FanMedium
@@ -49,6 +50,7 @@
 #define BUTTON_MODE_DIM_UP            BUTTON_ACTION_DIM_UP
 #define BUTTON_MODE_DIM_DOWN          BUTTON_ACTION_DIM_DOWN
 #define BUTTON_MODE_DISPLAY_ON        BUTTON_ACTION_DISPLAY_ON
+#define BUTTON_MODE_SLEEP             BUTTON_ACTION_SLEEP
 
 // compat definitions for DebounceEvent
 #define BUTTON_PUSHBUTTON           ButtonMask::Pushbutton

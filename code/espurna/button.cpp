@@ -21,6 +21,7 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include "relay.h"
 #include "system.h"
 #include "ws.h"
+#include "wifi.h"
 
 #include "mcp23s08_pin.h"
 
@@ -1180,6 +1181,13 @@ void buttonEvent(size_t id, ButtonEvent event) {
 #endif
         break;
 
+    case ButtonAction::Sleep:
+         if (lightState())
+         {
+            _buttonRelayAction(id, ButtonAction::Off);
+         } else {lightSleep();}
+         
+        break;
     case ButtonAction::None:
         break;
 

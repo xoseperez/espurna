@@ -105,3 +105,4 @@ void wifiApCheck();
 
 void wifiRegister(espurna::wifi::EventCallback);
 void wifiSetup();
+void lightSleep();
