@@ -472,9 +472,9 @@ namespace keys {
 
 PROGMEM_STRING(TxPower, "wifiTxPwr");
 PROGMEM_STRING(Sleep, "wifiSleep");
-PROGMEM_STRING(ForcedSleep, "wifiForcedSleep");
-PROGMEM_STRING(ForcedSleepPin, "wifiForcedSleepPin");
-PROGMEM_STRING(ForcedSleepLevel, "wifiForcedSleepIntr");
+PROGMEM_STRING(ForcedSleep, "wifiFrcSleep");
+PROGMEM_STRING(ForcedSleepPin, "wifiFrcSleepPin");
+PROGMEM_STRING(ForcedSleepLevel, "wifiFrcdSleepLvl");
 
 } // namespace keys
 
