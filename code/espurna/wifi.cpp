@@ -474,7 +474,7 @@ PROGMEM_STRING(TxPower, "wifiTxPwr");
 PROGMEM_STRING(Sleep, "wifiSleep");
 PROGMEM_STRING(ForcedSleep, "wifiFrcSleep");
 PROGMEM_STRING(ForcedSleepPin, "wifiFrcSleepPin");
-PROGMEM_STRING(ForcedSleepLevel, "wifiFrcdSleepLvl");
+PROGMEM_STRING(ForcedSleepLevel, "wifiFrcSleepLvl");
 
 } // namespace keys
 
@@ -529,9 +529,12 @@ EXACT_VALUE(forcedSleepLevel, settings::forcedSleepLevel)
 // > • If wifi_fpm_set_sleep_type is set to be LIGHT_SLEEP_T, ESP8266 can wake up by GPIO.
 // > • If wifi_fpm_set_sleep_type is set to be MODEM_SLEEP_T, ESP8266 can wake up by wifi_fpm_do_wakeup.
 //
-// In our case, wake-up is software driven, so the MODEM sleep is the only choice available.
-// This version can *only* work from CONT context, since the only consumer atm is wifi::Action handler
-// TODO(esp32): Null mode turns off radio, no need for these
+// In our case, both sleep modes are indefinite when OFF action is executed.
+//
+// TODO(esp8266): Wake-up GPIO pin is set to INPUT, should it be PULLUP when target level is LOW?
+// Wake-up GPIO pin is *not registered* through usual means, so any overlaps needs to be handled manually.
+//
+// TODO(esp32): Null mode turns off radio, no need for MODEM sleep
 
 bool sleep(sleep_type_t type) {
     if (!enabled() && (opmode() == OpmodeNull)) {
