@@ -62,6 +62,18 @@ constexpr WiFiSleepType_t sleep() {
     return WIFI_SLEEP_MODE;
 }
 
+constexpr sleep_type_t forcedSleep() {
+    return MODEM_SLEEP_T;
+}
+
+constexpr uint8_t forcedSleepPin() {
+    return GPIO_NONE;
+}
+
+constexpr GPIO_INT_TYPE forcedSleepLevel() {
+    return GPIO_PIN_INTR_LOLEVEL;
+}
+
 } // namespace build
 
 namespace ap {
@@ -89,10 +101,23 @@ PROGMEM_STRING(None, "none");
 PROGMEM_STRING(Modem, "modem");
 PROGMEM_STRING(Light, "light");
 
+PROGMEM_STRING(Low, "low");
+PROGMEM_STRING(High, "high");
+
 static constexpr espurna::settings::options::Enumeration<WiFiSleepType_t> WiFiSleepTypeOptions[] PROGMEM {
     {WIFI_NONE_SLEEP, None},
     {WIFI_MODEM_SLEEP, Modem},
     {WIFI_LIGHT_SLEEP, Light},
+};
+
+static constexpr espurna::settings::options::Enumeration<sleep_type_t> ForcedSleepTypeOptions[] PROGMEM {
+    {MODEM_SLEEP_T, Modem},
+    {LIGHT_SLEEP_T, Light},
+};
+
+static constexpr espurna::settings::options::Enumeration<GPIO_INT_TYPE> ForcedSleepLevelOptions[] PROGMEM {
+    {GPIO_PIN_INTR_LOLEVEL, Low},
+    {GPIO_PIN_INTR_HILEVEL, High},
 };
 
 } // namespace options
@@ -131,6 +156,24 @@ WiFiSleepType_t convert(const String& value) {
 
 String serialize(WiFiSleepType_t sleep) {
     return serialize(wifi::settings::options::WiFiSleepTypeOptions, sleep);
+}
+
+template <>
+sleep_type_t convert(const String& value) {
+    return convert(wifi::settings::options::ForcedSleepTypeOptions, value, wifi::build::forcedSleep());
+}
+
+String serialize(sleep_type_t sleep) {
+    return serialize(wifi::settings::options::ForcedSleepTypeOptions, sleep);
+}
+
+template <>
+GPIO_INT_TYPE convert(const String& value) {
+    return convert(wifi::settings::options::ForcedSleepLevelOptions, value, wifi::build::forcedSleepLevel());
+}
+
+String serialize(GPIO_INT_TYPE interrupt) {
+    return serialize(wifi::settings::options::ForcedSleepLevelOptions, interrupt);
 }
 
 template <>
@@ -230,7 +273,7 @@ enum class Action {
     AccessPointStart,
     AccessPointStop,
     TurnOff,
-    TurnOn
+    TurnOn,
 };
 
 using Actions = std::list<Action>;
@@ -326,44 +369,6 @@ void action(Action value) {
 
 ActionsQueue& actions() {
     return internal::actions;
-}
-
-// ::forceSleepBegin() remembers the previous mode and ::forceSleepWake() calls station connect when it has STA in it :/
-// while we *do* set opmode to 0 to avoid this uncertainty, preper to call wake through SDK instead of the Arduino wrapper
-//
-// 0xFFFFFFF is a magic number per the NONOS API reference, 3.7.5 wifi_fpm_do_sleep:
-// > If sleep_time_in_us is 0xFFFFFFF, the ESP8266 will sleep till be woke up as below:
-// > • If wifi_fpm_set_sleep_type is set to be LIGHT_SLEEP_T, ESP8266 can wake up by GPIO.
-// > • If wifi_fpm_set_sleep_type is set to be MODEM_SLEEP_T, ESP8266 can wake up by wifi_fpm_do_wakeup.
-//
-// In our case, wake-up is software driven, so the MODEM sleep is the only choice available.
-// This version can *only* work from CONT context, since the only consumer atm is wifi::Action handler
-// TODO(esp32): Null mode turns off radio, no need for these
-
-bool sleep() {
-    if (opmode() == OpmodeNull) {
-        wifi_fpm_set_sleep_type(MODEM_SLEEP_T);
-        yield();
-        wifi_fpm_open();
-        yield();
-        if (0 == wifi_fpm_do_sleep(0xFFFFFFF)) {
-            delay(10);
-            return true;
-        }
-    }
-
-    return false;
-}
-
-bool wakeup() {
-    if (wifi_fpm_get_sleep_type() != NONE_SLEEP_T) {
-        wifi_fpm_do_wakeup();
-        wifi_fpm_close();
-        delay(10);
-        return true;
-    }
-
-    return false;
 }
 
 namespace debug {
@@ -467,6 +472,9 @@ namespace keys {
 
 PROGMEM_STRING(TxPower, "wifiTxPwr");
 PROGMEM_STRING(Sleep, "wifiSleep");
+PROGMEM_STRING(ForcedSleep, "wifiForcedSleep");
+PROGMEM_STRING(ForcedSleepPin, "wifiForcedSleepPin");
+PROGMEM_STRING(ForcedSleepLevel, "wifiForcedSleepIntr");
 
 } // namespace keys
 
@@ -476,6 +484,18 @@ float txPower() {
 
 WiFiSleepType_t sleep() {
     return getSetting(keys::Sleep, wifi::build::sleep());
+}
+
+sleep_type_t forcedSleep() {
+    return getSetting(keys::ForcedSleep, wifi::build::forcedSleep());
+}
+
+uint8_t forcedSleepPin() {
+    return getSetting(keys::ForcedSleepPin, wifi::build::forcedSleepPin());
+}
+
+GPIO_INT_TYPE forcedSleepLevel() {
+    return getSetting(keys::ForcedSleepLevel, wifi::build::forcedSleepLevel());
 }
 
 namespace query {
@@ -493,10 +513,63 @@ String NAME (size_t id) {\
 
 EXACT_VALUE(sleep, settings::sleep)
 EXACT_VALUE(txPower, settings::txPower)
+EXACT_VALUE(forcedSleep, settings::forcedSleep)
+EXACT_VALUE(forcedSleepPin, settings::forcedSleepPin)
+EXACT_VALUE(forcedSleepLevel, settings::forcedSleepLevel)
 
 } // namespace internal
 } // namespace query
 } // namespace settings
+
+// ::forceSleepBegin() remembers the previous mode and ::forceSleepWake() calls station connect when it has STA in it :/
+// while we *do* set opmode to 0 to avoid this uncertainty, preper to call wake through SDK instead of the Arduino wrapper
+//
+// 0xFFFFFFF is a magic number per the NONOS API reference, 3.7.5 wifi_fpm_do_sleep:
+// > If sleep_time_in_us is 0xFFFFFFF, the ESP8266 will sleep till be woke up as below:
+// > • If wifi_fpm_set_sleep_type is set to be LIGHT_SLEEP_T, ESP8266 can wake up by GPIO.
+// > • If wifi_fpm_set_sleep_type is set to be MODEM_SLEEP_T, ESP8266 can wake up by wifi_fpm_do_wakeup.
+//
+// In our case, wake-up is software driven, so the MODEM sleep is the only choice available.
+// This version can *only* work from CONT context, since the only consumer atm is wifi::Action handler
+// TODO(esp32): Null mode turns off radio, no need for these
+
+bool sleep(sleep_type_t type) {
+    if (!enabled() && (opmode() == OpmodeNull)) {
+        if (type == LIGHT_SLEEP_T) {
+            const auto pin = settings::forcedSleepPin();
+            if (pin == GPIO_NONE) {
+                return false;
+            }
+
+            pinMode(pin, INPUT);
+            gpio_pin_wakeup_enable(pin, settings::forcedSleepLevel());
+        }
+
+        wifi_fpm_set_sleep_type(type);
+        yield();
+        wifi_fpm_open();
+        yield();
+
+        if (0 == wifi_fpm_do_sleep(0xFFFFFFF)) {
+            delay(10);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool wakeup() {
+    if (wifi_fpm_get_sleep_type() != NONE_SLEEP_T) {
+        wifi_fpm_do_wakeup();
+        wifi_fpm_close();
+        delay(10);
+        return true;
+    }
+
+    return false;
+}
+
 
 // We are guaranteed to have '\0' when <32 b/c the SDK zeroes out the data
 // But, these are byte arrays, not C strings. When ssid_len is available, use it.
@@ -2161,7 +2234,7 @@ void configure() {
 namespace settings {
 namespace query {
 
-static constexpr std::array<espurna::settings::query::Setting, 10> Settings PROGMEM {
+static constexpr std::array<espurna::settings::query::Setting, 13> Settings PROGMEM {
     {{wifi::ap::settings::keys::Ssid, wifi::ap::settings::ssid},
      {wifi::ap::settings::keys::Passphrase, wifi::ap::settings::passphrase},
      {wifi::ap::settings::keys::Captive, wifi::ap::settings::query::internal::captive},
@@ -2171,7 +2244,10 @@ static constexpr std::array<espurna::settings::query::Setting, 10> Settings PROG
      {wifi::sta::scan::settings::keys::Enabled, wifi::sta::scan::settings::query::enabled},
      {wifi::sta::scan::periodic::settings::keys::Threshold, wifi::sta::scan::periodic::settings::query::threshold},
      {wifi::settings::keys::TxPower, espurna::wifi::settings::query::internal::txPower},
-     {wifi::settings::keys::Sleep, espurna::wifi::settings::query::internal::sleep}}
+     {wifi::settings::keys::Sleep, espurna::wifi::settings::query::internal::sleep},
+     {wifi::settings::keys::ForcedSleep, espurna::wifi::settings::query::internal::forcedSleep},
+     {wifi::settings::keys::ForcedSleepPin, espurna::wifi::settings::query::internal::forcedSleepPin},
+     {wifi::settings::keys::ForcedSleepLevel, espurna::wifi::settings::query::internal::forcedSleepLevel}}
 };
 
 // indexed settings for 'sta' connections
@@ -2369,6 +2445,20 @@ void access_point(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
+PROGMEM_STRING(Off, "WIFI.OFF");
+
+void off(::terminal::CommandContext&& ctx) {
+    wifi::action(Action::TurnOff);
+    terminalOK(ctx);
+}
+
+PROGMEM_STRING(On, "WIFI.ON");
+
+void on(::terminal::CommandContext&& ctx) {
+    wifi::action(Action::TurnOn);
+    terminalOK(ctx);
+}
+
 PROGMEM_STRING(Scan, "WIFI.SCAN");
 
 void scan(::terminal::CommandContext&& ctx) {
@@ -2396,6 +2486,8 @@ static constexpr ::terminal::Command List[] PROGMEM {
     {Station, commands::station},
     {AccessPoint, commands::access_point},
     {Scan, commands::scan},
+    {Off, commands::off},
+    {On, commands::on},
 };
 
 } // namespace commands
@@ -2698,7 +2790,14 @@ State handleAction(State& state, Action action) {
             wifi::sta::disable();
             wifi::disable();
             publish(wifi::Event::Mode);
-            if (!wifi::sleep()) {
+
+            const auto type = settings::forcedSleep();
+            if (!wifi::sleep(type)) {
+                wifi::action(wifi::Action::TurnOn);
+                break;
+            }
+
+            if (type == LIGHT_SLEEP_T) {
                 wifi::action(wifi::Action::TurnOn);
                 break;
             }

@@ -1630,7 +1630,6 @@ void _relayProcessActivePulse(const Relay& relay, size_t id, bool status) {
 }
 
 // start pulse for the current status as 'target'
-// TODO: special suffixes for minutes, hours and days
 [[gnu::unused]]
 bool _relayHandlePulsePayload(size_t id, espurna::StringView payload) {
     const auto status = relayStatus(id);
