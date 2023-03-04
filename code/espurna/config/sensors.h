@@ -824,6 +824,14 @@
                                               // (needs `UART[1-3]_BAUDRATE 9600`)
 #endif
 
+#ifndef MHZ19_CALIBRATE_AUTO
+#define MHZ19_CALIBRATE_AUTO            0
+#endif
+
+#ifndef MHZ19_DETECTION_RANGE
+#define MHZ19_DETECTION_RANGE           2000
+#endif
+
 //------------------------------------------------------------------------------
 // MICS-2710 (and MICS-4514) NO2 sensor
 // Enable support by passing MICS2710_SUPPORT=1 build flag

@@ -2296,7 +2296,10 @@ void load() {
 
         auto* sensor = new MHZ19Sensor();
         sensor->setPort(port->stream);
-        sensor->setCalibrateAuto(getSetting("mhz19CalibrateAuto", false));
+        sensor->setCalibrateAuto(
+            getSetting("mhz19CalibrateAuto", MHZ19_CALIBRATE_AUTO == 1));
+        sensor->setDetectionRange(
+            getSetting("mhz19DetectionRange", uint32_t{ MHZ19_DETECTION_RANGE }));
         add(sensor);
     }
 #endif
