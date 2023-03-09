@@ -621,10 +621,7 @@ void _wsParse(AsyncWebSocketClient* client, uint8_t* payload, size_t length) {
 }
 
 bool _wsOnKeyCheck(espurna::StringView key, const JsonVariant&) {
-    return (key == STRING_VIEW("adminPass"))
-        || (key == STRING_VIEW("hostname"))
-        || (key == STRING_VIEW("desc"))
-        || (key == STRING_VIEW("webPort"))
+    return (key == STRING_VIEW("webPort"))
         || key.startsWith(STRING_VIEW("ws"));
 }
 

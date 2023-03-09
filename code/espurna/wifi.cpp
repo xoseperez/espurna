@@ -275,6 +275,7 @@ void ensure_opmode(uint8_t mode) {
     // since we should enforce mode changes to happen *only* through the configuration loop
 
     if (!is_set()) {
+        const auto current = wifi_get_opmode();
         wifi_set_opmode_current(mode);
 
         espurna::time::blockingDelay(
@@ -286,6 +287,10 @@ void ensure_opmode(uint8_t mode) {
 
         if (!is_set()) {
             abort();
+        }
+
+        if (current == OpmodeNull) {
+            wakeupModemForcedSleep();
         }
     }
 }

@@ -39,6 +39,17 @@ enum class CustomResetReason : uint8_t {
 };
 
 namespace espurna {
+namespace sleep {
+
+// Both LIGHT and DEEP sleep accept microseconds as input
+// Effective limit is ~31bit - 1 in size
+using Microseconds = std::chrono::duration<uint32_t, std::micro>;
+
+constexpr auto FpmSleepMin = Microseconds{ 1000 };
+constexpr auto FpmSleepIndefinite = Microseconds{ 0xFFFFFFF };
+
+} // namespace sleep
+
 namespace system {
 
 struct RandomDevice {
@@ -335,6 +346,15 @@ Mode currentMode();
 
 } // namespace heartbeat
 
+namespace sleep {
+
+enum class Interrupt {
+    Low,
+    High,
+};
+
+} // namespace sleep
+
 namespace settings {
 namespace internal {
 
@@ -343,6 +363,9 @@ heartbeat::Mode convert(const String&);
 
 template <>
 duration::Milliseconds convert(const String&);
+
+template <>
+duration::Microseconds convert(const String&);
 
 template <>
 std::chrono::duration<float> convert(const String&);
@@ -385,6 +408,15 @@ String customResetReasonToPayload(CustomResetReason);
 void deferredReset(espurna::duration::Milliseconds, CustomResetReason);
 void prepareReset(CustomResetReason);
 bool pendingDeferredReset();
+
+bool wakeupModemForcedSleep();
+bool prepareModemForcedSleep();
+
+bool instantLightSleep();
+bool instantLightSleep(espurna::sleep::Microseconds);
+bool instantLightSleep(uint8_t pin, espurna::sleep::Interrupt);
+
+bool instantDeepSleep(espurna::sleep::Microseconds);
 
 unsigned long systemLoadAverage();
 
