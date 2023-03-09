@@ -256,7 +256,7 @@ namespace internal {
 // current task and is free to take up another one. Allow to toggle OFF for the whole module,
 // discarding any actions involving an active WiFi. Default is ON
 
-bool enabled { true };
+bool enabled { false };
 ActionsQueue actions;
 
 } // namespace internal
@@ -455,66 +455,10 @@ String NAME (size_t id) {\
 
 EXACT_VALUE(sleep, settings::sleep)
 EXACT_VALUE(txPower, settings::txPower)
-EXACT_VALUE(forcedSleep, settings::forcedSleep)
-EXACT_VALUE(forcedSleepPin, settings::forcedSleepPin)
-EXACT_VALUE(forcedSleepLevel, settings::forcedSleepLevel)
 
 } // namespace internal
 } // namespace query
 } // namespace settings
-
-// ::forceSleepBegin() remembers the previous mode and ::forceSleepWake() calls station connect when it has STA in it :/
-// while we *do* set opmode to 0 to avoid this uncertainty, preper to call wake through SDK instead of the Arduino wrapper
-//
-// 0xFFFFFFF is a magic number per the NONOS API reference, 3.7.5 wifi_fpm_do_sleep:
-// > If sleep_time_in_us is 0xFFFFFFF, the ESP8266 will sleep till be woke up as below:
-// > • If wifi_fpm_set_sleep_type is set to be LIGHT_SLEEP_T, ESP8266 can wake up by GPIO.
-// > • If wifi_fpm_set_sleep_type is set to be MODEM_SLEEP_T, ESP8266 can wake up by wifi_fpm_do_wakeup.
-//
-// In our case, both sleep modes are indefinite when OFF action is executed.
-//
-// TODO(esp8266): Wake-up GPIO pin is set to INPUT, should it be PULLUP when target level is LOW?
-// Wake-up GPIO pin is *not registered* through usual means, so any overlaps needs to be handled manually.
-//
-// TODO(esp32): Null mode turns off radio, no need for MODEM sleep
-
-bool sleep(sleep_type_t type) {
-    if (!enabled() && (opmode() == OpmodeNull)) {
-        if (type == LIGHT_SLEEP_T) {
-            const auto pin = settings::forcedSleepPin();
-            if (pin == GPIO_NONE) {
-                return false;
-            }
-
-            pinMode(pin, INPUT);
-            gpio_pin_wakeup_enable(pin, settings::forcedSleepLevel());
-        }
-
-        wifi_fpm_set_sleep_type(type);
-        yield();
-        wifi_fpm_open();
-        yield();
-
-        if (0 == wifi_fpm_do_sleep(0xFFFFFFF)) {
-            delay(10);
-            return true;
-        }
-    }
-
-    return false;
-}
-
-bool wakeup() {
-    if (wifi_fpm_get_sleep_type() != NONE_SLEEP_T) {
-        wifi_fpm_do_wakeup();
-        wifi_fpm_close();
-        delay(10);
-        return true;
-    }
-
-    return false;
-}
-
 
 // We are guaranteed to have '\0' when <32 b/c the SDK zeroes out the data
 // But, these are byte arrays, not C strings. When ssid_len is available, use it.
@@ -2739,7 +2683,6 @@ State handleAction(State& state, Action action) {
     case Action::TurnOn:
         if (!wifi::enabled()) {
             wifi::enable();
-            wifi::wakeup();
             wifi::settings::configure();
         }
         break;
@@ -2957,12 +2900,14 @@ void setup() {
     internal::init();
 
     migrateVersion(settings::migrate);
-    settings::configure();
     settings::query::setup();
+
+    action(wifi::Action::TurnOn);
 
 #if SYSTEM_CHECK_ENABLED
     if (!systemCheck()) {
         actions() = wifi::ActionsQueue{};
+        action(wifi::Action::TurnOn);
         action(wifi::Action::AccessPointStart);
     }
 #endif
@@ -3040,6 +2985,18 @@ void wifiToggleSta() {
 void wifiStartAp() {
     espurna::wifi::action(
         espurna::wifi::Action::AccessPointStart);
+}
+
+bool wifiDisabled() {
+    return espurna::wifi::opmode()
+        == espurna::wifi::OpmodeNull;
+}
+
+void wifiDisable() {
+    espurna::wifi::ap::fallback::remove();
+    espurna::wifi::sta::scan::periodic::stop();
+    espurna::wifi::ensure_opmode(
+        espurna::wifi::OpmodeNull);
 }
 
 void wifiTurnOff() {

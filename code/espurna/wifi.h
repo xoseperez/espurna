@@ -97,6 +97,9 @@ void wifiToggleSta();
 void wifiDisconnect();
 
 // Toggle WiFi modem
+bool wifiDisabled();
+void wifiDisable();
+
 void wifiTurnOff();
 void wifiTurnOn();
 
