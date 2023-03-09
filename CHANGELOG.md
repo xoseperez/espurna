@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Preserve existing relay locks when using sync modes ([30f3123c](https://github.com/xoseperez/espurna/commit/30f3123cae68588410899f059d13fc19172ebc9c), [d3c113b7](https://github.com/xoseperez/espurna/commit/d3c113b73da27a7ab02df1092345b58d777f9ef4))
 - Fix Zero-Or-One and Just-One sync modes causing relays to stay locked forever ([#2574](https://github.com/xoseperez/espurna/issues/2574)) ([11c89789](https://github.com/xoseperez/espurna/commit/11c897898d00c98b274769a60ff3948f4f68d946))
 - Disable UART for `MAXCIO_WDE004` ([#2573](https://github.com/xoseperez/espurna/issues/2573))
+- Fix MHZ19 out-of-range and timeout error handling.
+- MHZ19 calibration and detection range options.
 
 ## [1.15.0-dev] Snapshot build 2023-01-12
 

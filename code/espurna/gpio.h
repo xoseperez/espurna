@@ -29,6 +29,12 @@ struct Origin {
     SourceLocation location;
 };
 
+struct Mode {
+    int8_t value;
+};
+
+Mode pin_mode(uint8_t);
+
 } // namespace gpio
 
 namespace settings {

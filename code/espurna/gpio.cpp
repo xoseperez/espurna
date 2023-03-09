@@ -406,6 +406,75 @@ void mode(uint8_t pin, uint8_t mode) {
 namespace gpio {
 namespace {
 
+struct PinInfo {
+    int8_t mode;
+    bool reading;
+};
+
+struct Info {
+    uint32_t outputs;
+    uint32_t readings;
+
+    bool gpio16_output;
+    bool gpio16_reading;
+    bool gpio16_pulldown;
+};
+
+Info info() {
+    using peripherals::reg_read;
+    using namespace peripherals;
+
+    return Info{
+        .outputs = reg_read(pin::GpioEnable),
+        .readings = reg_read(pin::GpioInput),
+        .gpio16_output = (reg_read(rtc::GpioEnable) & 0b1) != 0,
+        .gpio16_reading = (reg_read(rtc::GpioInput) & 0b1) != 0,
+        .gpio16_pulldown = (reg_read(rtc::PadXpdDcdcConf) & rtc::Pulldown) != 0,
+    };
+}
+
+struct Reading {
+    bool value;
+};
+
+Reading pin_reading(uint8_t pin, Info info) {
+    Reading out;
+    if (pin == 16) {
+        out.value = info.gpio16_reading;
+    } else {
+        out.value = (info.readings & (1 << pin)) != 0;
+    }
+
+    return out;
+}
+
+Mode pin_mode(uint8_t pin, Info info) {
+    Mode out;
+    out.value = OUTPUT;
+
+    if (((pin == 16) && info.gpio16_output)
+        || ((info.outputs & (pin << pin)) != 0))
+    {
+        return out;
+    }
+
+    if ((pin == 16) && (info.gpio16_pulldown)) {
+        out.value = INPUT_PULLDOWN;
+        return out;
+    }
+
+    using namespace peripherals;
+
+    const auto iomux = reg_read(pin::ioMuxAddress(pin));
+    if ((iomux & pin::PullupMask) != 0) {
+        out.value = INPUT_PULLUP;
+    } else {
+        out.value = INPUT;
+    }
+
+    return out;
+}
+
 namespace settings {
 namespace options {
 
@@ -636,13 +705,7 @@ void gpio_read_write(::terminal::CommandContext&& ctx) {
     int start = 0;
     int end = gpioPins();
 
-    using namespace peripherals;
-
-    const auto outputs = reg_read(pin::GpioEnable);
-    const auto readings = reg_read(pin::GpioInput);
-
-    const auto gpio16output = reg_read(rtc::GpioEnable);
-    const auto gpio16reading = reg_read(rtc::GpioInput);
+    const auto gpio_info = info();
 
     switch (ctx.argv.size()) {
     case 3:
@@ -651,9 +714,9 @@ void gpio_read_write(::terminal::CommandContext&& ctx) {
         // (like it is used in software I2C implementation with INPUT_PULLUP)
         const bool status = espurna::settings::internal::convert<bool>(ctx.argv[2]);
         if (pin == 16) {
-            rtc::gpio16_set(status);
+            peripherals::rtc::gpio16_set(status);
         } else {
-            pin::set(pin, status);
+            peripherals::pin::set(pin, status);
         }
         break;
     }
@@ -665,29 +728,23 @@ void gpio_read_write(::terminal::CommandContext&& ctx) {
 
     case 1:
         for (auto current = start; current < end; ++current) {
-            if (gpioValid(current)) {
-                const bool reading = (current == 16)
-                    ? ((gpio16reading & 0b1) != 0)
-                    : ((readings & (1 << current)) != 0);
-
-                const bool output = (current == 16)
-                    ? ((gpio16output & 0b1) != 0)
-                    : (outputs & (1 << current));
-
-                ctx.output.printf_P(
-                    PSTR("%c %6s @ GPIO%02d%s\n"),
-                        gpioLocked(current) ? '*' : ' ',
-                        output
-                            ? "OUTPUT"
-                            : "INPUT",
-                        current,
-                        !output
-                            ? reading
-                                ? " (HIGH)"
-                                : " (LOW)"
-                            : ""
-                    );
+            if (!gpioValid(current)) {
+                continue;
             }
+
+            const auto mode = pin_mode(current, gpio_info);
+            ctx.output.printf_P(
+                PSTR("%c %6s @ GPIO%02d%s\n"),
+                    gpioLocked(current) ? '*' : ' ',
+                    (mode.value == OUTPUT)
+                        ? PSTR("OUTPUT")
+                        : PSTR("INPUT"),
+                    current,
+                    (mode.value == OUTPUT)
+                        ? ""
+                        : pin_reading(current, gpio_info).value
+                            ? PSTR(" (HIGH)")
+                            : PSTR(" (LOW)"));
         }
 
         break;
@@ -747,6 +804,11 @@ void setup() {
 #endif
 
 } // namespace
+
+Mode pin_mode(uint8_t pin) {
+    return pin_mode(pin, info());
+}
+
 } // namespace gpio
 
 namespace settings {
