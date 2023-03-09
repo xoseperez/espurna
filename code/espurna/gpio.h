@@ -89,7 +89,7 @@ inline bool gpioLock(GpioBase& base, unsigned char pin, bool value,
             .base = base.id(),
             .pin = pin,
             .lock = value,
-            .location = source_location
+            .location = trim_source_location(source_location)
         });
 
         bool old = base.lock(pin);

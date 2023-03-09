@@ -171,6 +171,16 @@ struct SourceLocation {
     const char* func;
 };
 
+inline SourceLocation trim_source_location(SourceLocation value) {
+    for (auto* ptr = value.file; *ptr != '\0'; ++ptr) {
+        if ((*ptr == '/') || (*ptr == '\\')) {
+            value.file = ptr + 1;
+        }
+    }
+
+    return value;
+}
+
 inline constexpr SourceLocation make_source_location(
         int line = __builtin_LINE(),
         const char* file = __builtin_FILE(),
