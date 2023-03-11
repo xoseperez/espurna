@@ -1135,22 +1135,19 @@ void init(rpn_context& context) {
 
 namespace system {
 
-void sleep(uint64_t duration, RFMode mode);
+using SystemSleepAction = bool(*)(sleep::Microseconds);
 
-void scheduleSleep(uint64_t duration, RFMode mode) {
-    espurnaRegisterOnce([duration, mode]() {
-        sleep(duration, mode);
-    });
-}
-
-void sleep(uint64_t duration, RFMode mode) {
-    if (wifi_get_opmode() != NULL_MODE) {
-        wifiTurnOff();
-        scheduleSleep(duration, mode);
-        return;
+rpn_error with_sleep_duration(rpn_context& ctxt, SystemSleepAction action) {
+    auto value = rpn_stack_pop(ctxt).checkedToUint();
+    if (!value.ok()) {
+        return value.error();
     }
 
-    ESP.deepSleep(duration, mode);
+    if (!action(sleep::Microseconds{ value.value() })) {
+        return rpn_operator_error::CannotContinue;
+    }
+
+    return 0;
 }
 
 void init(rpn_context& context) {
@@ -1181,28 +1178,14 @@ void init(rpn_context& context) {
         return 0;
     });
 
-    rpn_operator_set(context, "sleep", 2, [](rpn_context& ctxt) -> rpn_error {
-        static bool once { false };
-        if (once) {
-            return rpn_operator_error::CannotContinue;
-        }
+    rpn_operator_set(context, "light_sleep", 1, [](rpn_context& ctxt) -> rpn_error {
+        return with_sleep_duration(ctxt, [](sleep::Microseconds time) -> bool {
+            return instantLightSleep(time);
+        });
+    });
 
-        auto value = rpn_stack_pop(ctxt).checkedToUint();
-        if (!value.ok()) {
-            return value.error();
-        }
-
-        uint64_t duration = value.value();
-        if (!duration) {
-            return rpn_operator_error::CannotContinue;
-        }
-
-        auto mode = rpn_stack_pop(ctxt).toUint();
-
-        once = true;
-        sleep(duration * 1000000ull, static_cast<RFMode>(mode));
-
-        return 0;
+    rpn_operator_set(context, "deep_sleep", 1, [](rpn_context& ctxt) -> rpn_error {
+        return with_sleep_duration(ctxt, instantDeepSleep);
     });
 
     rpn_operator_set(context, "mem?", 0, [](rpn_context& ctxt) -> rpn_error {
