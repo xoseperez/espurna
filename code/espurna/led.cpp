@@ -773,6 +773,12 @@ bool status(size_t id, bool value) {
     return status(internal::leds[id], value);
 }
 
+void turn_off() {
+    for (auto& led : internal::leds) {
+        status(led, false);
+    }
+}
+
 [[gnu::unused]]
 void pattern(Led& led, Pattern&& other) {
     led.pattern(std::move(other));
@@ -1075,6 +1081,9 @@ void setup() {
 #if TERMINAL_SUPPORT
         terminal::setup();
 #endif
+
+        systemBeforeSleep(turn_off);
+        systemAfterSleep(schedule);
 
         ::espurnaRegisterLoop(loop);
 

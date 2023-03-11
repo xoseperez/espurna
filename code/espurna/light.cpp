@@ -3484,6 +3484,30 @@ void _lightConfigure() {
     }
 }
 
+void _lightSleepSetup() {
+    systemBeforeSleep(
+        []() {
+            size_t id = 0;
+            for (auto& channel : _light_channels) {
+                _lightProviderHandleValue(id, 0);
+                ++id;
+
+                channel.value = 0;
+            }
+
+            _lightProviderHandleState(false);
+            _lightProviderHandleUpdate();
+            espurna::time::blockingDelay(
+                espurna::duration::Milliseconds{ 100 });
+        });
+
+    systemAfterSleep(
+        []() {
+            _lightUpdate(false);
+            _light_state_changed = true;
+        });
+}
+
 void _lightBoot() {
     const size_t Channels { _light_channels.size() };
     if (Channels) {
@@ -3683,6 +3707,8 @@ void lightSetup() {
     #if TERMINAL_SUPPORT
         _lightInitCommands();
     #endif
+
+        _lightSleepSetup();
 
     espurnaRegisterReload(_lightConfigure);
     espurnaRegisterLoop([]() {

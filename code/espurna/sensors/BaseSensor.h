@@ -137,6 +137,13 @@ public:
     virtual void begin() {
     }
 
+    // Suspend / resume sensor operation
+    virtual void suspend() {
+    }
+
+    virtual void resume() {
+    }
+
     // Loop-like method, call it in your main loop
     virtual void tick() {
     }

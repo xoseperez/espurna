@@ -143,6 +143,13 @@ String serialize(espurna::duration::ClockCycles value) {
 namespace sleep {
 namespace {
 
+namespace internal {
+
+std::forward_list<SleepCallback> before;
+std::forward_list<SleepCallback> after;
+
+} // namespace internal
+
 constexpr auto DeepSleepWakeupPin = uint8_t{ 16 };
 
 namespace build {
@@ -268,6 +275,9 @@ private:
 FpmLightSleep::~FpmLightSleep() {
     if (_ok) {
         wifi_fpm_close();
+        for (auto callback : internal::after) {
+            callback();
+        }
     }
 
     wifi_fpm_auto_sleep_set_in_null_mode(1);
@@ -292,6 +302,10 @@ FpmLightSleep::FpmLightSleep() {
     // ...before FPM type can be changed yet again
     wifi_fpm_set_sleep_type(LIGHT_SLEEP_T);
     wifi_fpm_open();
+
+    for (auto callback : internal::before) {
+        callback();
+    }
 
     _ok = true;
 }
@@ -396,11 +410,23 @@ bool deep_sleep(sleep::Microseconds time) {
 
     system_deep_sleep_set_option(RF_DEFAULT);
     if (system_deep_sleep(time.count())) {
+        for (auto callback : internal::before) {
+            callback();
+        }
+
         yield();
         return true;
     }
 
     return false;
+}
+
+void before(SleepCallback callback) {
+    internal::before.push_front(callback);
+}
+
+void after(SleepCallback callback) {
+    internal::after.push_front(callback);
 }
 
 // Force WiFi RF peripheral to power down when NULL opmode is selected
@@ -1625,6 +1651,14 @@ bool prepareModemForcedSleep() {
 
 bool wakeupModemForcedSleep() {
     return espurna::sleep::forced_wakeup();
+}
+
+void systemBeforeSleep(SleepCallback callback) {
+    espurna::sleep::before(callback);
+}
+
+void systemAfterSleep(SleepCallback callback) {
+    espurna::sleep::after(callback);
 }
 
 bool instantLightSleep() {

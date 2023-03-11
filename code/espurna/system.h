@@ -412,6 +412,10 @@ bool pendingDeferredReset();
 bool wakeupModemForcedSleep();
 bool prepareModemForcedSleep();
 
+using SleepCallback = void (*)();
+void systemBeforeSleep(SleepCallback);
+void systemAfterSleep(SleepCallback);
+
 bool instantLightSleep();
 bool instantLightSleep(espurna::sleep::Microseconds);
 bool instantLightSleep(uint8_t pin, espurna::sleep::Interrupt);
