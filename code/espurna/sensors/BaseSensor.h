@@ -160,14 +160,14 @@ public:
     virtual void calibrate() {
     }
 
-    // Kind of sensor
-    virtual ClassKind kind() const {
-        return Kind;
-    }
-
     // Number of decimals for a unit (or -1 for default)
     virtual signed char decimals(espurna::sensor::Unit) const {
         return -1;
+    }
+
+    // Kind of sensor
+    virtual ClassKind kind() const {
+        return Kind;
     }
 
     // Sensor ID, must be unique

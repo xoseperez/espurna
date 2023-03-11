@@ -41,6 +41,7 @@
 #define BMX280_REGISTER_CAL26           0xE1
 
 #define BMX280_REGISTER_CONTROLHUMID    0xF2
+#define BMX280_REGISTER_STATUS          0xF3
 #define BMX280_REGISTER_CONTROL         0xF4
 #define BMX280_REGISTER_CONFIG          0xF5
 #define BMX280_REGISTER_PRESSUREDATA    0xF7
@@ -145,25 +146,28 @@ class BMX280Sensor : public I2CSensor<> {
 
         // Pre-read hook (usually to populate registers with up-to-date data)
         void pre() override {
-
             if (_run_init) {
                 i2cClearBus();
-                _init();
+                _init(lockedAddress());
             }
 
             if (_chip == 0) {
                 return;
             }
+
             _error = SENSOR_ERROR_OK;
 
             const auto address = lockedAddress();
-
 #if BMX280_MODE == 1
             _forceRead(address);
 #endif
 
-            _error = _read(address);
+            if (!_wait(address)) {
+                _error = SENSOR_ERROR_NOT_READY;
+                return;
+            }
 
+            _error = _read(address);
             if (_error != SENSOR_ERROR_OK) {
                 _run_init = true;
             }
@@ -192,27 +196,33 @@ class BMX280Sensor : public I2CSensor<> {
         // Initialization method, must be idempotent
         void begin() override {
             if (!_dirty) return;
-            _init();
+            if (!_find()) return;
+            _init(lockedAddress());
             _dirty = !_ready;
+        }
+
+        void suspend() override {
+            if (_chip != 0) {
+                i2c_write_uint8(lockedAddress(), BMX280_REGISTER_CONTROL, 0);
+                _ready = false;
+            }
+        }
+
+        void resume() override {
+            _run_init = true;
         }
 
     protected:
 
-        void _init() {
-
-            // Make sure sensor had enough time to turn on. BMX280 requires 2ms to start up
-            espurna::time::blockingDelay(espurna::duration::Milliseconds(10));
-
-            // No chip ID by default
+        bool _find() {
             _chip = 0;
             _count = 0;
             _magnitudes = nullptr;
 
-            // I2C auto-discover
             static constexpr uint8_t addresses[] {0x76, 0x77};
             auto address = findAndLock(addresses);
             if (address == 0) {
-                return;
+                return false;
             }
 
             // Check sensor correctly initialized
@@ -231,12 +241,25 @@ class BMX280Sensor : public I2CSensor<> {
             if (!_magnitudes || !_count) {
                 resetUnknown();
                 _chip = 0;
+            }
+
+            return _chip != 0;
+        }
+
+        void _init(uint8_t address) {
+            if (_chip == 0) {
+                return;
+            }
+
+            i2c_write_uint8(address, BMX280_REGISTER_SOFTRESET, 0xB6);
+            if (!_wait(address)) {
+                _error = SENSOR_ERROR_NOT_READY;
                 return;
             }
 
             _readCoefficients(address);
 
-            unsigned char data = 0;
+            uint8_t data = 0;
             i2c_write_uint8(address, BMX280_REGISTER_CONTROL, data);
 
         	data =  (BMX280_STANDBY << 0x5) & 0xE0;
@@ -252,9 +275,31 @@ class BMX280Sensor : public I2CSensor<> {
             i2c_write_uint8(address, BMX280_REGISTER_CONTROL, data);
 
             _measurement_delay = _measurementTime();
+
             _run_init = false;
             _ready = true;
 
+        }
+
+        static bool _measurementsReady(uint8_t status) {
+            constexpr auto Measuring = uint8_t{ 1 << 3 };
+            constexpr auto InternalMemoryUpdate = uint8_t{ 1 };
+
+            return (status & (Measuring | InternalMemoryUpdate)) == 0;
+        }
+
+        static bool _wait(uint8_t address) {
+            uint8_t status = 0;
+
+            espurna::time::blockingDelay(
+                espurna::duration::Milliseconds{ 100 },
+                StatusDelay,
+                [&]() {
+                    status = i2c_read_uint8(address, BMX280_REGISTER_STATUS);
+                    return !_measurementsReady(status);
+                });
+
+            return _measurementsReady(status);
         }
 
         void _readCoefficients(unsigned char address) {
@@ -307,7 +352,6 @@ class BMX280Sensor : public I2CSensor<> {
         }
 
         void _forceRead(unsigned char address) {
-
             // We set the sensor in "forced mode" to force a reading.
             // After the reading the sensor will go back to sleep mode.
             uint8_t value = i2c_read_uint8(address, BMX280_REGISTER_CONTROL);
@@ -315,7 +359,6 @@ class BMX280Sensor : public I2CSensor<> {
             i2c_write_uint8(address, BMX280_REGISTER_CONTROL, value);
 
             espurna::time::blockingDelay(_measurement_delay);
-
         }
 
         unsigned char _read(unsigned char address) {
@@ -406,6 +449,9 @@ class BMX280Sensor : public I2CSensor<> {
 
         // ---------------------------------------------------------------------
 
+        // Make sure sensor had enough time to turn on. BMX280 requires at least 2ms to start up
+        static constexpr auto StatusDelay = espurna::duration::Milliseconds{ 2 };
+
         espurna::duration::Milliseconds _measurement_delay;
 
         bool _run_init = false;
@@ -448,6 +494,7 @@ class BMX280Sensor : public I2CSensor<> {
 #if __cplusplus < 201703L
 constexpr BaseSensor::Magnitude BMX280Sensor::Bmp280Magnitudes[];
 constexpr BaseSensor::Magnitude BMX280Sensor::Bme280Magnitudes[];
+constexpr espurna::duration::Milliseconds BMX280Sensor::StatusDelay;
 #endif
 
 #endif // SENSOR_SUPPORT && BMX280_SUPPORT
