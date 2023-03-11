@@ -327,8 +327,6 @@ enum class Mode {
 } // namespace relay
 } // namespace espurna
 
-#include "relay_pulse.ipp"
-
 namespace espurna {
 namespace relay {
 namespace pulse {
@@ -385,13 +383,36 @@ PROGMEM_STRING(Mode, "relayPulse");
 
 namespace {
 
-Result time(size_t index) {
-    const auto time = espurna::settings::get(espurna::settings::Key{keys::Time, index}.value());
-    if (!time) {
-        return Result(std::chrono::duration_cast<Duration>(build::time(index)));
+using ParseResult = espurna::settings::internal::duration_convert::Result;
+
+Duration native_duration(ParseResult result) {
+    using namespace espurna::settings::internal;
+
+    if (result.ok) {
+        return duration_convert::to_chrono_duration<Duration>(result.value);
     }
 
-    return parse(time.ref());
+    return Duration::min();
+}
+
+ParseResult parse_time(StringView view) {
+    using namespace espurna::settings::internal;
+    return duration_convert::parse(view, Seconds::period{});
+}
+
+Duration native_duration(StringView view) {
+    return native_duration(parse_time(view));
+}
+
+Duration time(size_t index) {
+    const auto time = espurna::settings::get(
+        espurna::settings::Key{keys::Time, index}.value());
+
+    if (!time) {
+        return std::chrono::duration_cast<Duration>(build::time(index));
+    }
+
+    return native_duration(time.view());
 }
 
 Mode mode(size_t index) {
@@ -1001,7 +1022,9 @@ ID_VALUE(delayOff, settings::delayOff)
 ID_VALUE(pulseMode, pulse::settings::mode)
 String pulseTime(size_t index) {
     const auto result = pulse::settings::time(index);
-    const auto as_seconds = std::chrono::duration_cast<pulse::Seconds>(result.duration());
+    const auto as_seconds =
+        std::chrono::duration_cast<pulse::Seconds>(result);
+
     return espurna::settings::internal::serialize(as_seconds.count());
 }
 
@@ -1637,10 +1660,11 @@ bool _relayHandlePulsePayload(size_t id, espurna::StringView payload) {
         return false;
     }
 
-    using namespace espurna::relay::pulse;
-    const auto pulse = parse(payload);
-    if (pulse) {
-        trigger(pulse.duration(), id, status);
+    using namespace espurna::relay::pulse::settings;
+    const auto pulse = parse_time(payload);
+
+    if (pulse.ok) {
+        espurna::relay::pulse::trigger(native_duration(pulse), id, status);
         relayToggle(id, true, false);
 
         return true;
@@ -2213,8 +2237,8 @@ void _relayConfigure() {
 
         relay.pulse = espurna::relay::pulse::settings::mode(id);
         relay.pulse_time = (relay.pulse != espurna::relay::pulse::Mode::None)
-            ? espurna::relay::pulse::settings::time(id).duration()
-            : espurna::duration::Milliseconds { 0 };
+            ? espurna::relay::pulse::settings::time(id)
+            : espurna::relay::pulse::Duration::min();
 
         relay.delay_on = espurna::relay::settings::delayOn(id);
         relay.delay_off = espurna::relay::settings::delayOff(id);
@@ -2808,11 +2832,13 @@ static void _relayCommandPulse(::terminal::CommandContext&& ctx) {
         return;
     }
 
-    const auto pulse = espurna::relay::pulse::parse(ctx.argv[2]);
-    if (!pulse) {
+    const auto time = espurna::relay::pulse::settings::parse_time(ctx.argv[2]);
+    if (!time.ok) {
         terminalError(ctx, F("Invalid pulse time"));
         return;
     }
+
+    const auto duration = espurna::relay::pulse::settings::native_duration(time);
 
     bool toggle = true;
     if (ctx.argv.size() == 4) {
@@ -2826,9 +2852,9 @@ static void _relayCommandPulse(::terminal::CommandContext&& ctx) {
         return;
     }
 
-    const auto duration = pulse.duration();
     const auto target = toggle ? status : !status;
     espurna::relay::pulse::trigger(duration, id, target);
+
     if ((duration.count() > 0) && toggle) {
         relayToggle(id, true, false);
     }

@@ -140,6 +140,10 @@ struct ValueResult {
         return moved;
     }
 
+    espurna::StringView view() const {
+        return _value;
+    }
+
     const String& ref() const {
         return _value;
     }

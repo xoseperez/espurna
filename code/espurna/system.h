@@ -361,15 +361,6 @@ namespace internal {
 template <>
 heartbeat::Mode convert(const String&);
 
-template <>
-duration::Milliseconds convert(const String&);
-
-template <>
-duration::Microseconds convert(const String&);
-
-template <>
-std::chrono::duration<float> convert(const String&);
-
 String serialize(heartbeat::Mode);
 String serialize(duration::Seconds);
 String serialize(duration::Milliseconds);

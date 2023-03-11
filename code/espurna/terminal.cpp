@@ -83,6 +83,53 @@ void help(CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
+PROGMEM_STRING(LightSleep, "SLEEP.LIGHT");
+
+void light_sleep(CommandContext&& ctx) {
+    if (ctx.argv.size() == 2) {
+        using namespace espurna::settings::internal::duration_convert;
+
+        const auto result = parse(ctx.argv[1], std::micro{});
+        if (!result.ok) {
+            terminalError(ctx, F("Invalid time"));
+            return;
+        }
+
+        const auto duration = to_chrono_duration<sleep::Microseconds>(result.value);
+        if (!instantLightSleep(duration)) {
+            terminalError(ctx, F("Could not sleep"));
+            return;
+        }
+
+        return;
+    }
+
+    instantLightSleep();
+}
+
+PROGMEM_STRING(DeepSleep, "SLEEP.DEEP");
+
+void deep_sleep(CommandContext&& ctx) {
+    if (ctx.argv.size() != 2) {
+        terminalError(ctx, F("SLEEP.DEEP <TIME (MICROSECONDS)>"));
+        return;
+    }
+
+    using namespace espurna::settings::internal::duration_convert;
+    const auto result = parse(ctx.argv[1], std::micro{});
+
+    if (!result.ok) {
+        terminalError(ctx, F("Invalid time"));
+        return;
+    }
+
+    const auto duration = to_chrono_duration<sleep::Microseconds>(result.value);
+    if (!instantDeepSleep(duration)) {
+        terminalError(ctx, F("Could not sleep"));
+        return;
+    }
+}
+
 PROGMEM_STRING(Reset, "RESET");
 
 void reset(CommandContext&& ctx) {
@@ -360,6 +407,9 @@ static constexpr ::terminal::Command List[] PROGMEM {
     {Heap, commands::heap},
 
     {Adc, commands::adc},
+
+    {LightSleep, commands::light_sleep},
+    {DeepSleep, commands::deep_sleep},
 
     {Reset, commands::reset},
     {EraseConfig, commands::erase_config},

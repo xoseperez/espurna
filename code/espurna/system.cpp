@@ -102,28 +102,8 @@ String serialize(espurna::heartbeat::Mode mode) {
     return serialize(system::settings::options::HeartbeatModeOptions, mode);
 }
 
-template <>
-duration::Seconds convert(const String& value) {
-    return duration::Seconds(convert<duration::Seconds::rep>(value));
-}
-
 String serialize(espurna::duration::Seconds value) {
     return serialize(value.count());
-}
-
-template <>
-std::chrono::duration<float> convert(const String& value) {
-    return std::chrono::duration<float>(convert<float>(value));
-}
-
-template <typename T>
-T duration_convert(const String& value) {
-    return T{ convert<typename T::rep>(value) };
-}
-
-template <>
-duration::Milliseconds convert(const String& value) {
-    return duration_convert<duration::Milliseconds>(value);
 }
 
 String serialize(espurna::duration::Milliseconds value) {

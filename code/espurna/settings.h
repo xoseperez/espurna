@@ -91,9 +91,51 @@ void foreach_prefix(PrefixResultCallback&&, settings::query::StringViewIterator)
 // --------------------------------------------------------------------------
 
 namespace internal {
+namespace duration_convert {
+
+// A more losely typed duration, so we could have a single type
+struct Pair {
+    duration::Seconds seconds{};
+    duration::Microseconds microseconds{};
+};
+
+struct Result {
+    Pair value;
+    bool ok { false };
+};
+
+template <typename T, typename Rep = typename T::rep, typename Period = typename T::period>
+std::chrono::duration<Rep, Period> to_chrono_duration(Pair result) {
+    using Type = std::chrono::duration<Rep, Period>;
+    return std::chrono::duration_cast<Type>(result.seconds)
+        + std::chrono::duration_cast<Type>(result.microseconds);
+}
+
+// Attempt to parse the given string with the specific ratio
+// Same as chrono, std::ratio<1> is a second
+Result parse(StringView, int num, int den);
+
+template <intmax_t Num, intmax_t Den>
+Result parse(StringView view, std::ratio<Num, Den> ratio) {
+    return parse(view, Num, Den);
+}
+
+} // namespace duration_convert
 
 template <typename T>
 T convert(const String& value);
+
+template <>
+duration::Microseconds convert(const String&);
+
+template <>
+duration::Milliseconds convert(const String&);
+
+template <>
+duration::Seconds convert(const String&);
+
+template <>
+std::chrono::duration<float> convert(const String&);
 
 template <>
 float convert(const String& value);
