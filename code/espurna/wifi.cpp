@@ -654,8 +654,7 @@ struct IpSettings {
     explicit operator bool() const {
         return _ip.isSet()
             && _netmask.isSet()
-            && _gateway.isSet()
-            && _dns.isSet();
+            && _gateway.isSet();
     }
 
     ip_info toIpInfo() const {
