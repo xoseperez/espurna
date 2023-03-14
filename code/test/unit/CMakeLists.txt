@@ -165,6 +165,7 @@ target_link_libraries(esp8266 PUBLIC common)
 
 # our library source (maybe some day this will be a simple glob)
 add_library(espurna STATIC
+    ${ESPURNA_PATH}/code/espurna/settings_convert.cpp
     ${ESPURNA_PATH}/code/espurna/terminal_commands.cpp
     ${ESPURNA_PATH}/code/espurna/terminal_parsing.cpp
     ${ESPURNA_PATH}/code/espurna/types.cpp
@@ -203,6 +204,7 @@ endfunction()
 
 build_tests(
     basic
+    embedis
     settings
     terminal
     tuya

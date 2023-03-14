@@ -1068,12 +1068,13 @@ constexpr StringView get(unsigned char type) {
 namespace suffix {
 namespace {
 
-PROGMEM_STRING(Units, "Units");
-PROGMEM_STRING(Ratio, "Ratio");
 PROGMEM_STRING(Correction, "Correction");
-PROGMEM_STRING(ZeroThreshold, "ZeroThreshold");
-PROGMEM_STRING(MinDelta, "MinDelta");
 PROGMEM_STRING(MaxDelta, "MaxDelta");
+PROGMEM_STRING(MinDelta, "MinDelta");
+PROGMEM_STRING(Precision, "Precision");
+PROGMEM_STRING(Ratio, "Ratio");
+PROGMEM_STRING(Units, "Units");
+PROGMEM_STRING(ZeroThreshold, "ZeroThreshold");
 
 PROGMEM_STRING(Mains, "Mains");
 PROGMEM_STRING(Reference, "Reference");
@@ -4118,9 +4119,11 @@ void configure() {
         // (specifically, when sensor has more or less precision than we expect)
         {
             const auto decimals = magnitude.sensor->decimals(magnitude.units);
-            magnitude.decimals = (decimals >= 0)
-                ? static_cast<unsigned char>(decimals)
-                : magnitude::decimals(magnitude.units);
+            magnitude.decimals = getSetting(
+                settings::keys::get(magnitude, settings::suffix::Precision),
+                    (decimals >= 0)
+                        ? static_cast<unsigned char>(decimals)
+                        : magnitude::decimals(magnitude.units));
         }
 
         // Per-magnitude min & max delta settings for reporting the value
