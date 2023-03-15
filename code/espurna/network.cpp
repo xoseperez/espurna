@@ -8,9 +8,10 @@ Copyright (C) 2022 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #include "espurna.h"
 
+#include <forward_list>
 #include <functional>
-#include <utility>
 #include <memory>
+#include <utility>
 
 #include <lwip/init.h>
 #include <lwip/dns.h>
@@ -26,78 +27,132 @@ extern "C" struct tcp_pcb *tcp_tw_pcbs;
 
 namespace espurna {
 namespace network {
+namespace dns {
 namespace {
 
-namespace dns {
-namespace internal {
-
-struct Task {
-    Task() = delete;
-    explicit Task(String hostname, IpFoundCallback callback) :
-        _hostname(std::move(hostname)),
-        _callback(std::move(callback))
-    {}
-
-    IPAddress addr() const {
-        return _addr;
-    }
-
-    const String& hostname() const {
-        return _hostname;
-    }
-
-    void found_callback(const char* name, const ip_addr_t* addr, void*) {
-        _callback(name, addr);
-    }
-
-    void found_callback() {
-        _callback(_hostname, _addr);
-    }
-
-private:
-    IPAddress _addr { IPADDR_NONE };
-    String _hostname;
-
-    IpFoundCallback _callback;
+struct PendingHost {
+    HostPtr ptr;
+    HostCallback callback;
 };
 
-using TaskPtr = std::unique_ptr<Task>;
-TaskPtr task;
+namespace internal {
 
-void found_callback(const char* name, const ip_addr_t* addr, void* arg) {
-    if (task) {
-        task->found_callback(name, addr, arg);
-        task.reset();
-    }
-}
+using Pending = std::forward_list<PendingHost>;
+Pending pending;
 
 } // namespace internal
 
-bool started() {
-    return static_cast<bool>(internal::task);
+void dns_found_callback_impl(const char* name, const ip_addr_t* addr, void* arg) {
+    auto* pending = reinterpret_cast<Host*>(arg);
+
+    if (addr) {
+        pending->addr = addr;
+        pending->err = ERR_OK;
+    } else {
+        pending->err = ERR_ABRT;
+    }
+
+    internal::pending.remove_if(
+        [&](const PendingHost& lhs) {
+            if (lhs.ptr.get() == pending) {
+                if (lhs.callback) {
+                    lhs.callback(lhs.ptr);
+                }
+
+                return true;
+            }
+
+            return false;
+        });
 }
 
-void start(String hostname, IpFoundCallback callback) {
-    auto task = std::make_unique<internal::Task>(
-            std::move(hostname), std::move(callback));
+HostPtr resolve_impl(String hostname, HostCallback callback) {
+    auto host = std::make_shared<Host>(
+        Host{
+            .name = std::move(hostname),
+            .addr = IPAddress{},
+            .err = ERR_INPROGRESS,
+        });
 
-    const auto result = dns_gethostbyname(
-            task->hostname().c_str(), task->addr(),
-            internal::found_callback, nullptr);
+    const auto err = dns_gethostbyname(
+        host->name.c_str(),
+        host->addr,
+        dns_found_callback_impl,
+        host.get());
 
-    switch (result) {
-    // No need to wait, return result immediately
+    host->err = err;
+
+    switch (err) {
     case ERR_OK:
-        task->found_callback();
+    case ERR_MEM:
+        if (callback) {
+            callback(host);
+        }
         break;
-    // Task needs to linger for a bit
+
     case ERR_INPROGRESS:
-        internal::task = std::move(task);
+        internal::pending.push_front(
+            PendingHost{
+                .ptr = host,
+                .callback = std::move(callback)
+            });
         break;
     }
+
+    return host;
+}
+
+} // namespace
+
+HostPtr resolve(String hostname) {
+    return resolve_impl(hostname, nullptr);
+}
+
+void resolve(String hostname, HostCallback callback) {
+    if (!callback) {
+        return;
+    }
+
+    resolve_impl(std::move(hostname), std::move(callback));
+}
+
+bool wait_for(HostPtr ptr, duration::Milliseconds timeout) {
+    if (ptr->err == ERR_OK) {
+        return true;
+    }
+
+    if (ptr->err != ERR_INPROGRESS) {
+        return false;
+    }
+
+    time::blockingDelay(
+        timeout,
+        duration::Milliseconds{ 10 },
+        [&]() {
+            return ptr->err == ERR_INPROGRESS;
+        });
+
+    return ptr->err == ERR_OK;
+}
+
+IPAddress gethostbyname(String hostname, duration::Milliseconds timeout) {
+    IPAddress out;
+
+    auto result = resolve(hostname);
+    if (wait_for(result, timeout)) {
+        out = result->addr;
+    }
+
+    return out;
+}
+
+IPAddress gethostbyname(String hostname) {
+    return gethostbyname(hostname, duration::Seconds{ 3 });
 }
 
 } // namespace dns
+
+namespace {
 
 #if TERMINAL_SUPPORT
 namespace terminal {
@@ -111,20 +166,15 @@ void host(::terminal::CommandContext&& ctx) {
         return;
     }
 
-    dns::start(std::move(ctx.argv[1]),
-        [&](const String& name, IPAddress addr) {
-            if (!addr) {
-                ctx.output.printf_P(PSTR("%s not found\n"), name.c_str());
-                return;
-            }
-
-            ctx.output.printf_P(PSTR("%s has address %s\n"),
-                name.c_str(), addr.toString().c_str());
-        });
-
-    while (dns::started()) {
-        delay(10);
+    const auto result = dns::gethostbyname(ctx.argv[1]);
+    if (result.isSet()) {
+        ctx.output.printf_P(PSTR("%s has address %s\n"),
+            ctx.argv[1].c_str(), result.toString().c_str());
+        terminalOK(ctx);
+        return;
     }
+
+    ctx.output.printf_P(PSTR("%s not found\n"), ctx.argv[1].c_str());
 }
 
 PROGMEM_STRING(Netstat, "NETSTAT");
@@ -191,29 +241,6 @@ void setup() {
 } // namespace terminal
 #endif
 
-void gethostbyname(String hostname, IpFoundCallback callback) {
-    dns::start(std::move(hostname), std::move(callback));
-}
-
-IPAddress gethostbyname(String hostname) {
-    IPAddress out;
-
-    dns::start(std::move(hostname),
-        [&](const String& name, IPAddress ip) {
-            if (!ip.isSet()) {
-                return;
-            }
-
-            out = ip;
-        });
-
-    while (dns::started()) {
-        delay(10);
-    }
-
-    return out;
-}
-
 void setup() {
 #if TERMINAL_SUPPORT
     terminal::setup();
@@ -223,14 +250,6 @@ void setup() {
 } // namespace
 } // namespace network
 } // namespace espurna
-
-void networkGetHostByName(String hostname, espurna::network::IpFoundCallback callback) {
-    return espurna::network::gethostbyname(std::move(hostname), std::move(callback));
-}
-
-IPAddress networkGetHostByName(String hostname) {
-    return espurna::network::gethostbyname(std::move(hostname));
-}
 
 void networkSetup() {
     espurna::network::setup();

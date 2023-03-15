@@ -934,7 +934,7 @@ void reverse(::terminal::CommandContext&& ctx) {
         return;
     }
 
-    const auto ip = networkGetHostByName(ctx.argv[1]);
+    const auto ip = network::dns::gethostbyname(ctx.argv[1]);
     if (!ip.isSet()) {
         terminalError(ctx, F("Host not found"));
         return;
@@ -984,17 +984,22 @@ void connect_url(String url) {
     }
 
     const auto port = parsed.port;
-    networkGetHostByName(std::move(parsed.host),
-        [port](const String& host, IPAddress ip) {
-            const auto addr = Address{
-                .ip = ip,
-                .port = port,
-            };
+    network::dns::resolve(
+        std::move(parsed.host),
+        [port](network::dns::HostPtr host) {
+            if (host->err == ERR_OK) {
+                const auto addr = Address{
+                    .ip = host->addr,
+                    .port = port,
+                };
 
-            if (!connect(addr)) {
-                DEBUG_MSG_P(PSTR("[TELNET] Cannot connect to %s:%hu\n"),
-                    host.c_str(), port);
+                if (connect(addr)) {
+                    return;
+                }
             }
+
+            DEBUG_MSG_P(PSTR("[TELNET] Cannot connect to %s:%hu\n"),
+                host->name.c_str(), port);
         });
 }
 
