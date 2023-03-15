@@ -3142,6 +3142,45 @@ namespace settings {
 namespace query {
 namespace {
 
+namespace getter {
+
+struct Type {
+    using Check = bool(*)(unsigned char);
+    using Get = String(*)(const Magnitude&);
+
+    StringView suffix;
+    Check check;
+    Get get;
+};
+
+#define EXACT_VALUE(NAME)\
+String NAME (const Magnitude& magnitude) {\
+    return espurna::settings::internal::serialize(magnitude.NAME);\
+}
+
+EXACT_VALUE(correction)
+EXACT_VALUE(decimals)
+EXACT_VALUE(filter_type)
+
+String ratio(const Magnitude& magnitude) {
+    const auto ptr = reinterpret_cast<BaseEmonSensor*>(magnitude.sensor.get());
+    return String(ptr->defaultRatio(magnitude.slot));
+}
+
+EXACT_VALUE(units)
+
+#undef EXACT_VALUE
+
+static constexpr std::array<Type, 5> List PROGMEM {{
+    {suffix::Correction, magnitude::traits::correction_supported, correction},
+    {suffix::Filter, nullptr, filter_type},
+    {suffix::Precision, nullptr, decimals},
+    {suffix::Ratio, magnitude::traits::ratio_supported, ratio},
+    {suffix::Units, nullptr, units},
+}};
+
+} // namespace getter
+
 bool check(StringView key) {
     if (key.length() < 3) {
         return false;
@@ -3165,39 +3204,20 @@ String get(StringView key) {
     String out;
 
     for (auto& magnitude : magnitude::internal::magnitudes) {
-        if (magnitude::traits::ratio_supported(magnitude.type)) {
-            const auto expected = keys::get(magnitude, suffix::Ratio);
-            if (key == expected.value()) {
-                out = String(reinterpret_cast<BaseEmonSensor*>(magnitude.sensor.get())->defaultRatio(magnitude.slot));
-                break;
+        for (const auto& type : getter::List) {
+            if (type.check && !type.check(magnitude.type)) {
+                continue;
             }
-        }
 
-        if (magnitude::traits::correction_supported(magnitude.type)) {
-            const auto expected = keys::get(magnitude, suffix::Correction);
+            const auto expected = keys::get(magnitude, type.suffix);
             if (key == expected.value()) {
-                out = String(magnitude.correction);
-                break;
-            }
-        }
-
-        {
-            const auto expected = keys::get(magnitude, suffix::Filter);
-            if (key == expected.value()) {
-                out = espurna::settings::internal::serialize(magnitude.filter_type);
-                break;
-            }
-        }
-
-        {
-            const auto expected = keys::get(magnitude, suffix::Units);
-            if (key == expected.value()) {
-                out = espurna::settings::internal::serialize(magnitude.units);
-                break;
+                out = type.get(magnitude);
+                goto out;
             }
         }
     }
 
+out:
     return out;
 }
 
