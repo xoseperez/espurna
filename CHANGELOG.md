@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Do not require DNS server with static IP configuration ([#2582](https://github.com/xoseperez/espurna/issues/2582), [457e47ed](https://github.com/xoseperez/espurna/commit/457e47edd962fc71feb3da8f16c0cd1a9009edc3))
 - Sensor magnitude decimals / precision setting ([#2550](https://github.com/xoseperez/espurna/issues/2550), [8f1c44fe](https://github.com/xoseperez/espurna/commit/8f1c44fe69383e548cc94a50cccaae71f4ffe056))
 - Fix DNS requests handling with no servers configured or when they are unavailable ([175c04ac](https://github.com/xoseperez/espurna/commit/175c04acc1afeacdd17f7a7721ebaa21ce5ef347))
+- GPIO lock result stored with the request in the log; show WebUI notification when failures occur ([3a1e041f](https://github.com/xoseperez/espurna/commit/3a1e041f5166d4ae459f3ab1853996b2606ee01a))
 
 ## [1.15.0-dev] Snapshot build 2023-01-12
 
