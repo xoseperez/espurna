@@ -222,29 +222,30 @@ espurna::StringView stripNewline(espurna::StringView value) {
     return value;
 }
 
-bool isNumber(const char* begin, const char* end) {
+bool isNumber(espurna::StringView view) {
     bool dot { false };
     bool digit { false };
 
-    for (auto ptr = begin; ptr != end; ++ptr) {
+    for (auto ptr = view.begin(); ptr != view.end(); ++ptr) {
         switch (*ptr) {
-        case '\0':
-            break;
         case '-':
         case '+':
-            if (ptr != begin) {
+            if (ptr != view.begin()) {
                 return false;
             }
             break;
+
         case '.':
             if (dot) {
                 return false;
             }
             dot = true;
             break;
+
         case '0' ... '9':
             digit = true;
             break;
+
         case 'a' ... 'z':
         case 'A' ... 'Z':
             return false;
@@ -252,14 +253,6 @@ bool isNumber(const char* begin, const char* end) {
     }
 
     return digit;
-}
-
-bool isNumber(const String& value) {
-    if (value.length()) {
-        return isNumber(value.begin(), value.end());
-    }
-
-    return false;
 }
 
 // ref: lwip2 lwip_strnstr with strnlen
