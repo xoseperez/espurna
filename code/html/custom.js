@@ -137,10 +137,10 @@ function magnitudeTypedKey(magnitude, name) {
 // Utils
 // -----------------------------------------------------------------------------
 
-function notifyError(message, source, lineno, colno, error) {
+function showErrorNotification(message) {
     let container = document.getElementById("error-notification");
     if (container.childElementCount > 0) {
-        return;
+        return false;
     }
 
     container.style.display = "inherit";
@@ -149,15 +149,24 @@ function notifyError(message, source, lineno, colno, error) {
     let notification = document.createElement("div");
     notification.classList.add("pure-u-1");
     notification.classList.add("pure-u-lg-1");
-    if (error) {
-        notification.textContent += error.stack;
-    } else {
-        notification.textContent += message;
-    }
-    notification.textContent += "\n\nFor more info see the Developer Tools console.";
+    notification.textContent = message;
+
     container.appendChild(notification);
 
     return false;
+}
+
+function notifyError(message, source, lineno, colno, error) {
+    let text = "";
+    if (error) {
+        text = error.stack;
+    } else {
+        text = message;
+    }
+
+    text += "\n\nFor more info see the Debug Log and / or Developer Tools console.";
+
+    return showErrorNotification(text);
 }
 
 window.onerror = notifyError;
@@ -2553,6 +2562,18 @@ function processData(data) {
             }
 
             addEnumerables("gpio-types", types);
+            return;
+        }
+
+        if ("gpioInfo" === key) {
+            let failed = "Could not acquire locks on the following pins, check configuration\n\n";
+            for (const [pin, file, func, line] of value["failed-locks"]) {
+                failed += `GPIO${pin} @ ${file}:${func}:${line}\n`;
+            }
+
+            if (failed.length > 0) {
+                showErrorNotification(failed);
+            }
             return;
         }
 

@@ -26,6 +26,7 @@ struct Origin {
     const char* base;
     uint8_t pin;
     bool lock;
+    bool result;
     SourceLocation location;
 };
 
@@ -85,16 +86,20 @@ inline bool gpioLock(GpioBase& base, unsigned char pin, bool value,
         espurna::SourceLocation source_location = espurna::make_source_location())
 {
     if (base.valid(pin)) {
+        const auto old = base.lock(pin);
+        base.lock(pin, value);
+
+        const auto result = value != old;
+
         gpioLockOrigin(espurna::gpio::Origin{
             .base = base.id(),
             .pin = pin,
             .lock = value,
-            .location = trim_source_location(source_location)
+            .result = result,
+            .location = trim_source_location(source_location),
         });
 
-        bool old = base.lock(pin);
-        base.lock(pin, value);
-        return (value != old);
+        return result;
     }
 
     return false;

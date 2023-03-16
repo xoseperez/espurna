@@ -621,6 +621,19 @@ private:
     Mask _mask;
 };
 
+namespace origin {
+namespace internal {
+
+std::forward_list<Origin> origins;
+
+} // namespace internal
+
+void add(Origin origin) {
+    internal::origins.emplace_front(origin);
+}
+
+} // namespace origin
+
 #if WEB_SUPPORT
 namespace web {
 
@@ -651,6 +664,19 @@ void onVisible(JsonObject& root) {
             }
         }
     }
+
+    JsonObject& info = root.createNestedObject(F("gpioInfo"));
+
+    JsonArray& locks = info.createNestedArray(F("failed-locks"));
+    for (auto& origin : origin::internal::origins) {
+        if (!origin.result) {
+            JsonArray& entry = locks.createNestedArray();
+            entry.add(origin.pin);
+            entry.add(origin.location.file);
+            entry.add(origin.location.func);
+            entry.add(origin.location.line);
+        }
+    }
 }
 
 void setup() {
@@ -661,19 +687,6 @@ void setup() {
 } // namespace web
 #endif
 
-namespace origin {
-namespace internal {
-
-std::forward_list<Origin> origins;
-
-} // namespace internal
-
-void add(Origin origin) {
-    internal::origins.emplace_front(origin);
-}
-
-} // namespace origin
-
 #if TERMINAL_SUPPORT
 namespace terminal {
 
@@ -681,7 +694,8 @@ PROGMEM_STRING(GpioLocks, "GPIO.LOCKS");
 
 void gpio_list_origins(::terminal::CommandContext&& ctx) {
     for (const auto& origin : origin::internal::origins) {
-        ctx.output.printf_P(PSTR("%c %s GPIO%hhu\t%d:%s:%s\n"),
+        ctx.output.printf_P(PSTR("%c %c %s GPIO%hhu\t%d:%s:%s\n"),
+            origin.result ? ' ' : '!',
             origin.lock ? '*' : ' ',
             origin.base, origin.pin,
             origin.location.line,
