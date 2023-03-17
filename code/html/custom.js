@@ -2566,13 +2566,13 @@ function processData(data) {
         }
 
         if ("gpioInfo" === key) {
-            let failed = "Could not acquire locks on the following pins, check configuration\n\n";
+            let failed = "";
             for (const [pin, file, func, line] of value["failed-locks"]) {
                 failed += `GPIO${pin} @ ${file}:${func}:${line}\n`;
             }
 
             if (failed.length > 0) {
-                showErrorNotification(failed);
+                showErrorNotification("Could not acquire locks on the following pins, check configuration\n\n" + failed);
             }
             return;
         }
