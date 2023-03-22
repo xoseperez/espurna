@@ -185,3 +185,30 @@ def app_add_target_build_re2c(env):
                 [env.File(target)], [env.File(target.replace(".re.ipp", ".re"))], env
             )
         env.Exit(0)
+
+
+# c/p giant hack from https://github.com/platformio/platformio-core/issues/4574
+# force node path used for signature to be relative to `BUILD_DIR` instead of `PROJECT_DIR`
+# thus, forcing CacheDir to share results between multiple environments
+def app_patch_cachedir(env):
+    from SCons.Node.FS import hash_collect, File
+
+    build_dir = env["BUILD_DIR"]
+
+    def patched_get_cachedir_bsig(self):
+        try:
+            return self.cachesig
+        except AttributeError:
+            pass
+
+        children = self.children()
+        sigs = [n.get_cachedir_csig() for n in children]
+
+        sigs.append(self.get_contents_sig())
+        sigs.append(self.get_path(build_dir))
+
+        result = self.cachesig = hash_collect(sigs)
+
+        return result
+
+    File.get_cachedir_bsig = patched_get_cachedir_bsig
