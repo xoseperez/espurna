@@ -80,6 +80,6 @@ if pre_process:
 
 # hijack SCons signature generation to exclude BUILD_DIR, making our builds faster
 # when using different environments (i.e. itead-sonoff-basic, itead-sonoff-pow, etc.)
-cachefix_fix = check_env("ESPURNA_FIX_CACHEDIR_PATH", "n")
+cachedir_fix = check_env("ESPURNA_FIX_CACHEDIR_PATH", "n")
 if cachedir_fix:
     app_patch_cachedir(projenv)
