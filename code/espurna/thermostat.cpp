@@ -200,8 +200,9 @@ void thermostatMqttCallback(unsigned int type, espurna::StringView topic, espurn
 
         // Check remote sensor temperature
         if (topic == thermostat_remote_sensor_topic) {
-            if (root.containsKey(magnitudeTopic(MAGNITUDE_TEMPERATURE))) {
-                String remote_temp = root[magnitudeTopic(MAGNITUDE_TEMPERATURE)];
+            const auto key = magnitudeTypeTopic(MAGNITUDE_TEMPERATURE);
+            if (root.containsKey(key)) {
+                String remote_temp = root[key];
                 _remote_temp.temp = remote_temp.toFloat();
                 _remote_temp.last_update = millis();
                 _remote_temp.need_display_update = true;
