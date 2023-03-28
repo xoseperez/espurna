@@ -336,24 +336,24 @@ ActionsQueue& actions() {
 namespace debug {
 
 String error(wifi::ScanError error) {
-    const __FlashStringHelper* ptr { nullptr };
+    StringView out;
 
     switch (error) {
     case wifi::ScanError::AlreadyScanning:
-        ptr = F("Scan already in progress");
+        out = STRING_VIEW("Scan already in progress");
         break;
     case wifi::ScanError::System:
-        ptr = F("Could not start the scan");
+        out = STRING_VIEW("Could not start the scan");
         break;
     case wifi::ScanError::NoNetworks:
-        ptr = F("No networks");
+        out = STRING_VIEW("No networks");
         break;
     case wifi::ScanError::None:
-        ptr = F("OK");
+        out = STRING_VIEW("OK");
         break;
     }
 
-    return ptr;
+    return out.toString();
 }
 
 String mac(Mac mac) {
@@ -381,50 +381,52 @@ String ip(ip4_addr_t addr) {
 }
 
 String authmode(AUTH_MODE mode) {
-    const __FlashStringHelper* ptr { F("UNKNOWN") };
+    StringView out;
 
     switch (mode) {
     case AUTH_OPEN:
-        ptr = F("OPEN");
+        out = STRING_VIEW("OPEN");
         break;
     case AUTH_WEP:
-        ptr = F("WEP");
+        out = STRING_VIEW("WEP");
         break;
     case AUTH_WPA_PSK:
-        ptr = F("WPAPSK");
+        out = STRING_VIEW("WPAPSK");
         break;
     case AUTH_WPA2_PSK:
-        ptr = F("WPA2PSK");
+        out = STRING_VIEW("WPA2PSK");
         break;
     case AUTH_WPA_WPA2_PSK:
-        ptr = F("WPAWPA2-PSK");
+        out = STRING_VIEW("WPAWPA2-PSK");
         break;
     case AUTH_MAX:
+    default:
+        out = STRING_VIEW("UNKNOWN");
         break;
     }
 
-    return ptr;
+    return out.toString();
 }
 
 String opmode(uint8_t mode) {
-    const __FlashStringHelper* ptr { nullptr };
+    StringView out;
 
     switch (mode) {
     case OpmodeApSta:
-        ptr = F("AP+STA");
+        out = STRING_VIEW("AP+STA");
         break;
     case OpmodeSta:
-        ptr = F("STA");
+        out = STRING_VIEW("STA");
         break;
     case OpmodeAp:
-        ptr = F("AP");
+        out = STRING_VIEW("AP");
         break;
     case OpmodeNull:
-        ptr = F("NULL");
+        out = STRING_VIEW("NULL");
         break;
     }
 
-    return ptr;
+    return out.toString();
 }
 
 } // namespace debug
@@ -779,75 +781,84 @@ constexpr StaMode mode() {
     return WIFI_STA_MODE;
 }
 
-const __FlashStringHelper* ssid(size_t index) {
-    return (
-        (index == 0) ? F(WIFI1_SSID) :
-        (index == 1) ? F(WIFI2_SSID) :
-        (index == 2) ? F(WIFI3_SSID) :
-        (index == 3) ? F(WIFI4_SSID) :
-        (index == 4) ? F(WIFI5_SSID) : nullptr
+#define WIFI_SETTING_STRING_RESULT(FIRST, SECOND, THIRD, FOURTH, FIFTH)\
+    (index == 0) ? STRING_VIEW_SETTING(FIRST) :\
+    (index == 1) ? STRING_VIEW_SETTING(SECOND) :\
+    (index == 2) ? STRING_VIEW_SETTING(THIRD) :\
+    (index == 3) ? STRING_VIEW_SETTING(FOURTH) :\
+    (index == 4) ? STRING_VIEW_SETTING(FIFTH) : StringView()
+
+StringView ssid(size_t index) {
+    return WIFI_SETTING_STRING_RESULT(
+        WIFI1_SSID,
+        WIFI2_SSID,
+        WIFI3_SSID,
+        WIFI4_SSID,
+        WIFI5_SSID
     );
 }
 
-const __FlashStringHelper* passphrase(size_t index) {
-    return (
-        (index == 0) ? F(WIFI1_PASS) :
-        (index == 1) ? F(WIFI2_PASS) :
-        (index == 2) ? F(WIFI3_PASS) :
-        (index == 3) ? F(WIFI4_PASS) :
-        (index == 4) ? F(WIFI5_PASS) : nullptr
+StringView passphrase(size_t index) {
+    return WIFI_SETTING_STRING_RESULT(
+        WIFI1_PASS,
+        WIFI2_PASS,
+        WIFI3_PASS,
+        WIFI4_PASS,
+        WIFI5_PASS
     );
 }
 
-const __FlashStringHelper* ip(size_t index) {
-    return (
-        (index == 0) ? F(WIFI1_IP) :
-        (index == 1) ? F(WIFI2_IP) :
-        (index == 2) ? F(WIFI3_IP) :
-        (index == 3) ? F(WIFI4_IP) :
-        (index == 4) ? F(WIFI5_IP) : nullptr
+StringView ip(size_t index) {
+    return WIFI_SETTING_STRING_RESULT(
+        WIFI1_IP,
+        WIFI2_IP,
+        WIFI3_IP,
+        WIFI4_IP,
+        WIFI5_IP
     );
 }
 
-const __FlashStringHelper* gateway(size_t index) {
-    return (
-        (index == 0) ? F(WIFI1_GW) :
-        (index == 1) ? F(WIFI2_GW) :
-        (index == 2) ? F(WIFI3_GW) :
-        (index == 3) ? F(WIFI4_GW) :
-        (index == 4) ? F(WIFI5_GW) : nullptr
+StringView gateway(size_t index) {
+    return WIFI_SETTING_STRING_RESULT(
+        WIFI1_GW,
+        WIFI2_GW,
+        WIFI3_GW,
+        WIFI4_GW,
+        WIFI5_GW
     );
 }
 
-const __FlashStringHelper* netmask(size_t index) {
-    return (
-        (index == 0) ? F(WIFI1_MASK) :
-        (index == 1) ? F(WIFI2_MASK) :
-        (index == 2) ? F(WIFI3_MASK) :
-        (index == 3) ? F(WIFI4_MASK) :
-        (index == 4) ? F(WIFI5_MASK) : nullptr
+StringView netmask(size_t index) {
+    return WIFI_SETTING_STRING_RESULT(
+        WIFI1_MASK,
+        WIFI2_MASK,
+        WIFI3_MASK,
+        WIFI4_MASK,
+        WIFI5_MASK
     );
 }
 
-const __FlashStringHelper* dns(size_t index) {
-    return (
-        (index == 0) ? F(WIFI1_DNS) :
-        (index == 1) ? F(WIFI2_DNS) :
-        (index == 2) ? F(WIFI3_DNS) :
-        (index == 3) ? F(WIFI4_DNS) :
-        (index == 4) ? F(WIFI5_DNS) : nullptr
+StringView dns(size_t index) {
+    return WIFI_SETTING_STRING_RESULT(
+        WIFI1_DNS,
+        WIFI2_DNS,
+        WIFI3_DNS,
+        WIFI4_DNS,
+        WIFI5_DNS
     );
 }
 
-const __FlashStringHelper* bssid(size_t index) {
-    return (
-        (index == 0) ? F(WIFI1_BSSID) :
-        (index == 1) ? F(WIFI2_BSSID) :
-        (index == 2) ? F(WIFI3_BSSID) :
-        (index == 3) ? F(WIFI4_BSSID) :
-        (index == 4) ? F(WIFI5_BSSID) : nullptr
+StringView bssid(size_t index) {
+    return WIFI_SETTING_STRING_RESULT(
+        WIFI1_BSSID,
+        WIFI2_BSSID,
+        WIFI3_BSSID,
+        WIFI4_BSSID,
+        WIFI5_BSSID
     );
 }
+
+#undef WIFI_SETTING_STRING_RESULT
 
 constexpr uint8_t channel(size_t index) {
     return (
@@ -879,36 +890,41 @@ PROGMEM_STRING(Channel, "chan");
 
 } // namespace keys
 
+String from_string(espurna::settings::Key key, StringView defaultValue) {
+    return getSetting(key, defaultValue);
+}
+
+IPAddress from_ipaddress(espurna::settings::Key key, StringView defaultValue) {
+    return espurna::settings::internal::convert<IPAddress>(
+        getSetting(key, defaultValue));
+}
+
 wifi::StaMode mode() {
     return getSetting(keys::Mode, build::mode());
 }
 
 String ssid(size_t index) {
-    return getSetting({keys::Ssid, index}, build::ssid(index));
+    return from_string({keys::Ssid, index}, build::ssid(index));
 }
 
 String passphrase(size_t index) {
-    return getSetting({keys::Passphrase, index}, build::passphrase(index));
+    return from_string({keys::Passphrase, index}, build::passphrase(index));
 }
 
 IPAddress ip(size_t index) {
-    return espurna::settings::internal::convert<IPAddress>(
-        getSetting({keys::Ip, index}, build::ip(index)));
+    return from_ipaddress({keys::Ip, index}, build::ip(index));
 }
 
 IPAddress gateway(size_t index) {
-    return espurna::settings::internal::convert<IPAddress>(
-        getSetting({keys::Gateway, index}, build::gateway(index)));
+    return from_ipaddress({keys::Gateway, index}, build::gateway(index));
 }
 
 IPAddress netmask(size_t index) {
-    return espurna::settings::internal::convert<IPAddress>(
-        getSetting({keys::Netmask, index}, build::netmask(index)));
+    return from_ipaddress({keys::Netmask, index}, build::netmask(index));
 }
 
 IPAddress dns(size_t index) {
-    return espurna::settings::internal::convert<IPAddress>(
-        getSetting({keys::Dns, index}, build::dns(index)));
+    return from_ipaddress({keys::Dns, index}, build::dns(index));
 }
 
 wifi::Mac bssid(size_t index) {
@@ -1846,20 +1862,24 @@ static constexpr size_t PassphraseMax { sizeof(softap_config::password) };
 static constexpr int Hidden { 0 };
 static constexpr uint8_t ConnectionsMax { 4u };
 
-constexpr bool hasSsid() {
-    return __builtin_strlen(WIFI_AP_SSID);
+PROGMEM_STRING(ApSsid, WIFI_AP_SSID);
+
+constexpr StringView ssid() {
+    return ApSsid;
 }
 
-const __FlashStringHelper* ssid() {
-    return F(WIFI_AP_SSID);
+constexpr bool hasSsid() {
+    return ssid().length() > 0;
+}
+
+PROGMEM_STRING(ApPass, WIFI_AP_PASS);
+
+constexpr StringView passphrase() {
+    return ApPass;
 }
 
 constexpr bool hasPassphrase() {
-    return __builtin_strlen(WIFI_AP_PASS);
-}
-
-const __FlashStringHelper* passphrase() {
-    return F(WIFI_AP_PASS);
+    return passphrase().length() > 0;
 }
 
 constexpr bool captive() {

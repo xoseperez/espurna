@@ -400,4 +400,7 @@ inline String operator+=(String& lhs, StringView rhs) {
         constexpr auto NAME = ::espurna::StringView(__pstr__ ## NAME ## __)
 #endif
 
+#define STRING_VIEW_SETTING(X)\
+    ((__builtin_strlen(X) > 0) ? STRING_VIEW(X) : StringView())
+
 } // namespace espurna
