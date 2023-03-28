@@ -1328,7 +1328,8 @@ void push(Callback callback, Mode mode, duration::Seconds interval) {
     schedule();
 }
 
-void pushOnce(Callback callback) {
+[[gnu::unused]]
+void push_once(Callback callback) {
     push(callback, Mode::Once, espurna::duration::Seconds::min());
 }
 
@@ -1363,7 +1364,7 @@ void loop() {
 
 void init() {
 #if DEBUG_SUPPORT
-    pushOnce([](Mask) {
+    push_once([](Mask) {
         const auto mode = settings::mode();
         if (mode != Mode::None) {
             DEBUG_MSG_P(PSTR("[MAIN] Heartbeat \"%s\", every %u (seconds)\n"),
@@ -1375,7 +1376,7 @@ void init() {
         return true;
     });
 #if SYSTEM_CHECK_ENABLED
-    pushOnce([](Mask) {
+    push_once([](Mask) {
         if (!espurna::boot::stability::check()) {
             DEBUG_MSG_P(PSTR("[MAIN] System UNSTABLE\n"));
         } else if (espurna::boot::internal::timer) {

@@ -140,22 +140,6 @@ String name(size_t index) {
     return getSetting({keys::Name, index});
 }
 
-#if MQTT_SUPPORT
-size_t countMqttNames() {
-    size_t index { 0 };
-    for (;;) {
-        auto name = espurna::settings::Key(keys::Name, index);
-        if (!espurna::settings::has(name.value())) {
-            break;
-        }
-
-        ++index;
-    }
-
-    return index;
-}
-#endif
-
 } // namespace settings
 
 namespace internal {
@@ -385,6 +369,27 @@ void setup() {
 #if WEB_SUPPORT
 namespace web {
 
+#if MQTT_SUPPORT
+static constexpr std::array<espurna::settings::query::IndexedSetting, 2> Settings PROGMEM {
+    {{settings::keys::Name, settings::name},
+     {settings::keys::Topic, settings::topic}}
+};
+
+size_t countMqttNames() {
+    size_t index { 0 };
+    for (;;) {
+        auto name = espurna::settings::Key(settings::keys::Name, index);
+        if (!espurna::settings::has(name.value())) {
+            break;
+        }
+
+        ++index;
+    }
+
+    return index;
+}
+#endif
+
 bool onKeyCheck(espurna::StringView key, const JsonVariant& value) {
     return espurna::settings::query::samePrefix(key, STRING_VIEW("rpn"));
 }
@@ -411,13 +416,8 @@ void onConnected(JsonObject& root) {
     }
 
 #if MQTT_SUPPORT
-    static constexpr std::array<espurna::settings::query::IndexedSetting, 2> Settings {
-        {{settings::keys::Name, settings::name},
-         {settings::keys::Topic, settings::topic}}
-    };
-
     espurna::web::ws::EnumerableConfig config{ root, STRING_VIEW("rpnTopics") };
-    config(STRING_VIEW("topics"), settings::countMqttNames(), Settings);
+    config(STRING_VIEW("topics"), countMqttNames(), Settings);
 #endif
 }
 

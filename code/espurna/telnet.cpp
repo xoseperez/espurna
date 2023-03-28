@@ -327,6 +327,7 @@ Address address(tcp_pcb* pcb) {
     return out;
 }
 
+[[gnu::unused]]
 String address_string(Address address) {
     return IPAddress(address.ip).toString() + ':' + String(address.port, 10);
 }
@@ -676,10 +677,6 @@ next:
     ClientWriter _writer;
 };
 
-String address_string(const Client* ptr) {
-    return address_string(ptr->remote());
-}
-
 using ClientPtr = std::unique_ptr<Client>;
 
 template <size_t Size>
@@ -813,14 +810,14 @@ bool add(ClientPtr client) {
     auto result = internal::clients.add(std::move(client));
     if (result) {
         DEBUG_MSG_P(PSTR("[TELNET] Connected %s\n"),
-            address_string(result).c_str());
+            address_string(result->remote()).c_str());
         result->maybe_ask_auth();
         return true;
     }
 
     client->abort();
     DEBUG_MSG_P(PSTR("[TELNET] Rejecting %s\n"),
-        address_string(client.get()).c_str());
+        address_string(client.get()->remote()).c_str());
 
     return false;
 }

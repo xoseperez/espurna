@@ -270,31 +270,43 @@ PROGMEM_STRING(PayloadOn, RELAY_MQTT_ON);
 PROGMEM_STRING(PayloadOff, RELAY_MQTT_OFF);
 PROGMEM_STRING(PayloadToggle, RELAY_MQTT_TOGGLE);
 
-const StringView mqttTopicSub(size_t index) {
-    return (
-        (index == 0) ? StringView(PSTR(RELAY1_MQTT_TOPIC_SUB)) :
-        (index == 1) ? StringView(PSTR(RELAY2_MQTT_TOPIC_SUB)) :
-        (index == 2) ? StringView(PSTR(RELAY3_MQTT_TOPIC_SUB)) :
-        (index == 3) ? StringView(PSTR(RELAY4_MQTT_TOPIC_SUB)) :
-        (index == 4) ? StringView(PSTR(RELAY5_MQTT_TOPIC_SUB)) :
-        (index == 5) ? StringView(PSTR(RELAY6_MQTT_TOPIC_SUB)) :
-        (index == 6) ? StringView(PSTR(RELAY7_MQTT_TOPIC_SUB)) :
-        (index == 7) ? StringView(PSTR(RELAY8_MQTT_TOPIC_SUB)) : ""
+#define RELAY_SETTING_STRING_RESULT(FIRST, SECOND, THIRD, FOURTH, FIFTH, SIXTH, SEVENTH, EIGHTH)\
+    (index == 0) ? STRING_VIEW_SETTING(FIRST) :\
+    (index == 1) ? STRING_VIEW_SETTING(SECOND) :\
+    (index == 2) ? STRING_VIEW_SETTING(THIRD) :\
+    (index == 3) ? STRING_VIEW_SETTING(FOURTH) :\
+    (index == 4) ? STRING_VIEW_SETTING(FIFTH) :\
+    (index == 5) ? STRING_VIEW_SETTING(SIXTH) :\
+    (index == 6) ? STRING_VIEW_SETTING(SEVENTH) :\
+    (index == 7) ? STRING_VIEW_SETTING(EIGHTH) : StringView()
+
+StringView mqttTopicSub(size_t index) {
+    return RELAY_SETTING_STRING_RESULT(
+        RELAY1_MQTT_TOPIC_SUB,
+        RELAY2_MQTT_TOPIC_SUB,
+        RELAY3_MQTT_TOPIC_SUB,
+        RELAY4_MQTT_TOPIC_SUB,
+        RELAY5_MQTT_TOPIC_SUB,
+        RELAY6_MQTT_TOPIC_SUB,
+        RELAY7_MQTT_TOPIC_SUB,
+        RELAY8_MQTT_TOPIC_SUB
     );
 }
 
-const StringView mqttTopicPub(size_t index) {
-    return (
-        (index == 0) ? StringView(PSTR(RELAY1_MQTT_TOPIC_PUB)) :
-        (index == 1) ? StringView(PSTR(RELAY2_MQTT_TOPIC_PUB)) :
-        (index == 2) ? StringView(PSTR(RELAY3_MQTT_TOPIC_PUB)) :
-        (index == 3) ? StringView(PSTR(RELAY4_MQTT_TOPIC_PUB)) :
-        (index == 4) ? StringView(PSTR(RELAY5_MQTT_TOPIC_PUB)) :
-        (index == 5) ? StringView(PSTR(RELAY6_MQTT_TOPIC_PUB)) :
-        (index == 6) ? StringView(PSTR(RELAY7_MQTT_TOPIC_PUB)) :
-        (index == 7) ? StringView(PSTR(RELAY8_MQTT_TOPIC_PUB)) : ""
+StringView mqttTopicPub(size_t index) {
+    return RELAY_SETTING_STRING_RESULT(
+        RELAY1_MQTT_TOPIC_PUB,
+        RELAY2_MQTT_TOPIC_PUB,
+        RELAY3_MQTT_TOPIC_PUB,
+        RELAY4_MQTT_TOPIC_PUB,
+        RELAY5_MQTT_TOPIC_PUB,
+        RELAY6_MQTT_TOPIC_PUB,
+        RELAY7_MQTT_TOPIC_PUB,
+        RELAY8_MQTT_TOPIC_PUB
     );
 }
+
+#undef RELAY_SETTING_STRING_RESULT
 
 constexpr PayloadStatus mqttDisconnectionStatus(size_t index) {
     return (
@@ -565,6 +577,7 @@ void expire() {
     });
 }
 
+[[gnu::unused]]
 Seconds findDuration(size_t id) {
     Seconds out{};
 
@@ -1623,6 +1636,7 @@ void _relayHandleStatus(size_t id, PayloadStatus status) {
     }
 }
 
+[[gnu::unused]]
 bool _relayHandlePayload(size_t id, espurna::StringView payload) {
     const auto status = relayParsePayload(payload);
     if (status != PayloadStatus::Unknown) {
@@ -1714,6 +1728,7 @@ String _relayTristateToPayload(T value) {
     return espurna::settings::internal::RelayTristateHelper<T>::serialize(value);
 }
 
+[[gnu::unused]]
 bool _relayHandleLockPayload(size_t id, espurna::StringView payload) {
     if (id < _relays.size()) {
         const auto status = relayStatusTarget(id);

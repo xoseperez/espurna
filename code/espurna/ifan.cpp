@@ -133,7 +133,7 @@ struct StatePins {
         return _state;
     }
 
-    String mask();
+    String toString() const;
 
 private:
     // XXX: while these are hard-coded, we don't really benefit from having these in the hardware cfg
@@ -163,15 +163,6 @@ StatePins::State StatePins::state(FanSpeed speed) {
     }
 
     return _state;
-}
-
-String StatePins::mask() {
-    String out("0b000");
-    for (size_t index = 2; index != out.length(); ++index) {
-        out[index] = (_state[index - 2] == HIGH) ? '1' : '0';
-    }
-
-    return out;
 }
 
 void StatePins::reset() {
@@ -217,6 +208,17 @@ StatePins::State StatePins::update(FanSpeed speed) {
 
     return out;
 }
+
+#if DEBUG_SUPPORT
+String StatePins::toString() const {
+    String out("0b000");
+    for (size_t index = 2; index != out.length(); ++index) {
+        out[index] = (_state[index - 2] == HIGH) ? '1' : '0';
+    }
+
+    return out;
+}
+#endif
 
 struct ControlPin {
     ~ControlPin() {
@@ -308,7 +310,8 @@ void save(FanSpeed speed) {
             [speed]() {
                 const auto value = speedToPayload(speed);
                 setSetting(settings::keys::Speed, value);
-                DEBUG_MSG_P(PSTR("[IFAN] Saved speed \"%s\"\n"), value.c_str());
+                DEBUG_MSG_P(PSTR("[IFAN] Saved speed \"%s\" (%s)\n"),
+                    value.c_str(), internal::state_pins.toString().c_str());
             });
     }
 }
