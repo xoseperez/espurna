@@ -24,11 +24,13 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <fauxmoESP.h>
 #include <ArduinoJson.h>
 
+namespace espurna {
+namespace alexa {
 namespace {
 
-struct AlexaEvent {
-    AlexaEvent() = delete;
-    AlexaEvent(unsigned char id, bool state, unsigned char value) :
+struct Event {
+    Event() = delete;
+    Event(unsigned char id, bool state, unsigned char value) :
         _id(id),
         _state(state),
         _value(value)
@@ -52,22 +54,23 @@ private:
     unsigned char _value;
 };
 
-std::queue<AlexaEvent> _alexa_events;
-fauxmoESP _alexa;
+std::queue<Event> events;
+fauxmoESP fauxmo;
 
-namespace alexa {
 namespace build {
 
 constexpr bool createServer() {
-    return !WEB_SUPPORT;
+    return WEB_SUPPORT == 0;
 }
 
 constexpr uint16_t port() {
     return 80;
 }
 
-const __FlashStringHelper* hostname() {
-    return F(ALEXA_HOSTNAME);
+PROGMEM_STRING(Hostname, ALEXA_HOSTNAME);
+
+constexpr espurna::StringView hostname() {
+    return Hostname;
 }
 
 constexpr bool enabled() {
@@ -75,15 +78,22 @@ constexpr bool enabled() {
 }
 
 } // namespace build
+
 namespace settings {
+namespace keys {
+
+PROGMEM_STRING(Enabled, "alexaEnabled");
+PROGMEM_STRING(Name, "alexaName");
+
+} // namespace keys
 
 bool enabled() {
-    return getSetting("alexaEnabled", build::enabled());
+    return getSetting(keys::Enabled, build::enabled());
 }
 
 // Use custom alexa hostname if defined, device hostname otherwise
 String hostname() {
-    auto out = getSetting("alexaName", build::hostname());
+    auto out = getSetting(keys::Name, build::hostname());
     if (!out.length()) {
         out = systemHostname();
     }
@@ -91,38 +101,33 @@ String hostname() {
     return out;
 }
 
-} // namespace settings
-} // namespace alexa
-
-void _alexaSettingsMigrate(int version) {
+void migrate(int version) {
     if (version < 3) {
-        moveSetting("fauxmoEnabled", "alexaEnabled");
+        moveSetting(PSTR("fauxmoEnabled"), keys::Enabled);
     }
 }
 
-// -----------------------------------------------------------------------------
-// ALEXA
-// -----------------------------------------------------------------------------
-
-void _alexaWebSocketOnVisible(JsonObject& root) {
-    wsPayloadModule(root, PSTR("alexa"));
-}
-
-bool _alexaWebSocketOnKeyCheck(espurna::StringView key, const JsonVariant&) {
-    return espurna::settings::query::samePrefix(key, STRING_VIEW("alexa"));
-}
-
-void _alexaWebSocketOnConnected(JsonObject& root) {
-    root["alexaEnabled"] = alexa::settings::enabled();
-    root["alexaName"] = alexa::settings::hostname();
-}
-
-void _alexaConfigure() {
-    _alexa.enable(wifiConnected() && alexa::settings::enabled());
-}
+} // namespace settings
 
 #if WEB_SUPPORT
-bool _alexaBodyCallback(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+namespace web {
+
+PROGMEM_STRING(Prefix, "alexa");
+
+void onVisible(JsonObject& root) {
+    wsPayloadModule(root, Prefix);
+}
+
+bool onKeyCheck(StringView key, const JsonVariant&) {
+    return key.startsWith(Prefix);
+}
+
+void onConnected(JsonObject& root) {
+    root[FPSTR(settings::keys::Enabled)] = alexa::settings::enabled();
+    root[FPSTR(settings::keys::Name)] = alexa::settings::hostname();
+}
+
+bool body_callback(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
     if (len != total) {
         DEBUG_MSG_P(PSTR("[ALEXA] Ignoring incomplete %s %s from %s (%zu / %zu)\n"),
                 request->methodToString(),
@@ -135,40 +140,55 @@ bool _alexaBodyCallback(AsyncWebServerRequest *request, uint8_t *data, size_t le
     String payload;
     payload.concat(reinterpret_cast<char*>(data), len);
 
-    return _alexa.process(request->client(), request->method() == HTTP_GET, request->url(), payload);
+    return fauxmo.process(request->client(), request->method() == HTTP_GET, request->url(), payload);
 }
 
-bool _alexaRequestCallback(AsyncWebServerRequest *request) {
+bool request_callback(AsyncWebServerRequest *request) {
     String body = (request->hasParam("body", true)) ? request->getParam("body", true)->value() : String();
-    return _alexa.process(request->client(), request->method() == HTTP_GET, request->url(), body);
+    return fauxmo.process(request->client(), request->method() == HTTP_GET, request->url(), body);
 }
+
+void setup() {
+    webBodyRegister(body_callback);
+    webRequestRegister(request_callback);
+    wsRegister()
+        .onVisible(onVisible)
+        .onConnected(onConnected)
+        .onKeyCheck(onKeyCheck);
+}
+
+} // namespace web
 #endif
+
+void configure() {
+    fauxmo.enable(wifiConnected() && alexa::settings::enabled());
+}
 
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
 
-void _alexaUpdateLights() {
-    _alexa.setState(static_cast<unsigned char>(0u), lightState(), lightState() ? 255u : 0u);
+void update() {
+    fauxmo.setState(uint8_t{ 0 }, lightState(), lightState() ? 255u : 0u);
 
     auto channels = lightChannels();
     for (decltype(channels) channel = 0; channel < channels; ++channel) {
         auto value = lightChannel(channel);
-        _alexa.setState(channel + 1, value > 0, value);
+        fauxmo.setState(channel + 1, value > 0, value);
     }
 }
 
 #elif RELAY_SUPPORT
 
-void _alexaUpdateRelay(size_t id, bool status) {
-    _alexa.setState(id, status, status ? 255 : 0);
+void update(size_t id, bool status) {
+    fauxmo.setState(id, status, status ? 255 : 0);
 }
 
 #endif
 
-void _alexaLoop() {
-    _alexa.handle();
+void loop() {
+    fauxmo.handle();
 
-    while (!_alexa_events.empty()) {
-        auto& event = _alexa_events.front();
+    while (!events.empty()) {
+        auto& event = events.front();
         DEBUG_MSG_P(PSTR("[ALEXA] Device #%hhu state=#%c value=%hhu\n"),
             event.id(), event.state() ? 't' : 'f', event.value());
 
@@ -184,25 +204,17 @@ void _alexaLoop() {
         relayStatus(event.id(), event.state());
 #endif
 
-        _alexa_events.pop();
+        events.pop();
     }
 }
 
-} // namespace
-
-// -----------------------------------------------------------------------------
-
-bool alexaEnabled() {
-    return alexa::settings::enabled();
-}
-
-void alexaSetup() {
+void setup() {
     // Backwards compatibility
-    migrateVersion(_alexaSettingsMigrate);
+    migrateVersion(settings::migrate);
 
     // Basic fauxmoESP configuration
-    _alexa.createServer(alexa::build::createServer());
-    _alexa.setPort(alexa::build::port());
+    fauxmo.createServer(alexa::build::createServer());
+    fauxmo.setPort(alexa::build::port());
 
     auto hostname = alexa::settings::hostname();
     auto deviceName = [&](size_t index) {
@@ -214,9 +226,9 @@ void alexaSetup() {
 
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
     // 1st is the global state, the rest are mapped to channel values
-    _alexa.addDevice(hostname.c_str());
+    fauxmo.addDevice(hostname.c_str());
     for (size_t channel = 1; channel <= lightChannels(); ++channel) {
-        _alexa.addDevice(deviceName(channel).c_str());
+        fauxmo.addDevice(deviceName(channel).c_str());
     }
 
     // Relays are mapped 1-to-1
@@ -224,49 +236,54 @@ void alexaSetup() {
     auto relays = relayCount();
     if (relays > 1) {
         for (decltype(relays) id = 1; id <= relays; ++id) {
-            _alexa.addDevice(deviceName(id).c_str());
+            fauxmo.addDevice(deviceName(id).c_str());
         }
     } else {
-        _alexa.addDevice(hostname.c_str());
+        fauxmo.addDevice(hostname.c_str());
     }
-
 #endif
 
-    // Websockets
-    #if WEB_SUPPORT
-        webBodyRegister(_alexaBodyCallback);
-        webRequestRegister(_alexaRequestCallback);
-        wsRegister()
-            .onVisible(_alexaWebSocketOnVisible)
-            .onConnected(_alexaWebSocketOnConnected)
-            .onKeyCheck(_alexaWebSocketOnKeyCheck);
-    #endif
+#if WEB_SUPPORT
+    web::setup();
+#endif
 
     // Register wifi callback
     wifiRegister([](espurna::wifi::Event event) {
         switch (event) {
         case espurna::wifi::Event::StationConnected:
         case espurna::wifi::Event::StationDisconnected:
-            _alexaConfigure();
+            configure();
         default:
             break;
         }
     });
 
     // Callback
-    _alexa.onSetState([&](unsigned char device_id, const char*, bool state, unsigned char value) {
-        _alexa_events.emplace(device_id, state, value);
+    fauxmo.onSetState([](unsigned char device_id, const char*, bool state, unsigned char value) {
+        events.emplace(device_id, state, value);
     });
 
     // Register main callbacks
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-    lightOnReport(_alexaUpdateLights);
+    lightOnReport(update);
 #elif RELAY_SUPPORT
-    relayOnStatusChange(_alexaUpdateRelay);
+    relayOnStatusChange(update);
 #endif
 
-    espurnaRegisterReload(_alexaConfigure);
-    espurnaRegisterLoop(_alexaLoop);
+    espurnaRegisterReload(configure);
+    espurnaRegisterLoop(loop);
+}
+
+} // namespace
+} // namespace alexa
+} // namespace espurna
+
+bool alexaEnabled() {
+    return espurna::alexa::settings::enabled();
+}
+
+void alexaSetup() {
+    espurna::alexa::setup();
 }
 
 #endif
