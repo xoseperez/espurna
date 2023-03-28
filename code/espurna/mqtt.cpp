@@ -838,59 +838,75 @@ void _mqttBackwards() {
     }
 }
 
-const char* _mqttBuildInfo() {
 #define __MQTT_INFO_STR(X) #X
 #define _MQTT_INFO_STR(X) __MQTT_INFO_STR(X)
-    alignas(4) static constexpr char out[] PROGMEM_STRING_ATTR {
+alignas(4) static constexpr char MqttBuild[] PROGMEM_STRING_ATTR {
 #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
-        "AsyncMqttClient"
+    "AsyncMqttClient"
 #elif MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT
-        "Arduino-MQTT"
+    "Arduino-MQTT"
 #elif MQTT_LIBRARY == MQTT_LIBRARY_PUBSUBCLIENT
-        "PubSubClient"
+    "PubSubClient"
 #endif
 #if SECURE_CLIENT != SEURE_CLIENT_NONE
-        " (w/ SECURE CLIENT)"
+    " (w/ SECURE CLIENT)"
 #endif
-        " Buffer size " _MQTT_INFO_STR(MQTT_BUFFER_MAX_SIZE) " (bytes)"
-    };
+    " Buffer size " _MQTT_INFO_STR(MQTT_BUFFER_MAX_SIZE) " (bytes)"
+};
 
 #undef _MQTT_INFO_STR
 #undef __MQTT_INFO_STR
+
+constexpr espurna::StringView _mqttBuildInfo() {
+    return MqttBuild;
+}
+
+String _mqttClientState(AsyncClientState state) {
+    espurna::StringView out;
+
+    switch (state) {
+    case AsyncClientState::Connecting:
+        out = STRING_VIEW("CONNECTING");
+        break;
+    case AsyncClientState::Connected:
+        out = STRING_VIEW("CONNECTED");
+        break;
+    case AsyncClientState::Disconnected:
+        out = STRING_VIEW("DISCONNECTED");
+        break;
+    case AsyncClientState::Disconnecting:
+        out = STRING_VIEW("DISCONNECTING");
+        break;
+    default:
+        out = STRING_VIEW("WAITING");
+        break;
+    }
+
+    return out.toString();
+}
+
+String _mqttClientInfo(bool enabled, AsyncClientState state) {
+    String out;
+
+    if (_mqtt_enabled) {
+        out += _mqttClientState(state);
+    } else {
+        out += STRING_VIEW("DISABLED");
+    }
+
     return out;
 }
 
-const char* _mqttClientEnabled() {
-    return _mqtt_enabled ? PSTR("ENABLED") : PSTR("DISABLED");
-}
-
-String _mqttClientState() {
-    const __FlashStringHelper* state = nullptr;
-    switch (_mqtt_state) {
-        case AsyncClientState::Connecting:
-            state = F("CONNECTING");
-            break;
-        case AsyncClientState::Connected:
-            state = F("CONNECTED");
-            break;
-        case AsyncClientState::Disconnected:
-            state = F("DISCONNECTED");
-            break;
-        case AsyncClientState::Disconnecting:
-            state = F("DISCONNECTING");
-            break;
-        default:
-            state = F("WAITING");
-            break;
-    }
-
-    return state;
+String _mqttClientInfo() {
+    return _mqttClientInfo(_mqtt_enabled, _mqtt_state);
 }
 
 void _mqttInfo() {
-    DEBUG_MSG_P(PSTR("[MQTT] %s\n"), _mqttBuildInfo());
-    DEBUG_MSG_P(PSTR("[MQTT] Client %s (%s)\n"),
-            _mqttClientEnabled(), _mqttClientState().c_str());
+    constexpr auto build = _mqttBuildInfo();
+    DEBUG_MSG_P(PSTR("[MQTT] %.*s\n"), build.length(), build.data());
+
+    const auto client = _mqttClientInfo();
+    DEBUG_MSG_P(PSTR("[MQTT] Client %.*s\n"), client.length(), client.c_str());
 
     if (_mqtt_enabled && (_mqtt_state != AsyncClientState::Connected)) {
         DEBUG_MSG_P(PSTR("[MQTT] Retrying, Last %u with Delay %u (Step %u)\n"),
@@ -960,8 +976,12 @@ namespace {
 PROGMEM_STRING(MqttCommand, "MQTT");
 
 static void _mqttCommand(::terminal::CommandContext&& ctx) {
-    ctx.output.printf_P(PSTR("%s\n"), _mqttBuildInfo());
-    ctx.output.printf_P(PSTR("client %s\n"), _mqttClientState().c_str());
+    constexpr auto build = _mqttBuildInfo();
+    ctx.output.printf_P(PSTR("%.*s\n"), build.length(), build.c_str());
+
+    const auto client = _mqttClientInfo();
+    ctx.output.printf_P(PSTR("client %.*s\n"), client.length(), client.c_str());
+
     settingsDump(ctx, mqtt::settings::query::Settings);
     terminalOK(ctx);
 }

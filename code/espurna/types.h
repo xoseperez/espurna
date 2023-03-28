@@ -312,6 +312,10 @@ struct StringView {
         return _ptr;
     }
 
+    constexpr const char* data() const {
+        return _ptr;
+    }
+
     constexpr const char& operator[](size_t offset) const {
         return *(_ptr + offset);
     }
