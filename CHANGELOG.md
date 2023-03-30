@@ -5,20 +5,27 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Pending changes
 
+???
+
+## [1.15.0-dev] Snapshot build 2023-03-30
+
+### Fixed
 - Relay locks can be disabled through API ([d3c113b7](https://github.com/xoseperez/espurna/commit/d3c113b73da27a7ab02df1092345b58d777f9ef4), [78c9e6a2](https://github.com/xoseperez/espurna/commit/78c9e6a218af98351279877d3010ed42c1282765))
 - Preserve existing relay locks when using sync modes ([30f3123c](https://github.com/xoseperez/espurna/commit/30f3123cae68588410899f059d13fc19172ebc9c), [d3c113b7](https://github.com/xoseperez/espurna/commit/d3c113b73da27a7ab02df1092345b58d777f9ef4))
 - Fix Zero-Or-One and Just-One sync modes causing relays to stay locked forever ([#2574](https://github.com/xoseperez/espurna/issues/2574)) ([11c89789](https://github.com/xoseperez/espurna/commit/11c897898d00c98b274769a60ff3948f4f68d946))
 - Disable UART for `MAXCIO_WDE004` ([#2573](https://github.com/xoseperez/espurna/issues/2573))
-- Fix MHZ19 out-of-range and timeout error handling ([7bf88654](https://github.com/xoseperez/espurna/commit/7bf886541bd18ec9ed07ec63b26469f829909641))
+- MHZ19 out-of-range and timeout error handling ([7bf88654](https://github.com/xoseperez/espurna/commit/7bf886541bd18ec9ed07ec63b26469f829909641))
 - MHZ19 calibration and detection range options ([7bf88654](https://github.com/xoseperez/espurna/commit/7bf886541bd18ec9ed07ec63b26469f829909641))
+- Do not require DNS server with static IP configuration ([#2582](https://github.com/xoseperez/espurna/issues/2582), [457e47ed](https://github.com/xoseperez/espurna/commit/457e47edd962fc71feb3da8f16c0cd1a9009edc3))
+- Fix DNS requests handling with no servers configured or when they are unavailable ([175c04ac](https://github.com/xoseperez/espurna/commit/175c04acc1afeacdd17f7a7721ebaa21ce5ef347))
+- Fix thermostat remote sensor payload parser using incorrect keys ([#2585](https://github.com/xoseperez/espurna/issues/2585))
+
+### Added
 - WiFi forced sleep mode fixes, allow to properly wakeup from and go into MODEM sleep when disabling both STA and AP modes ([28f3b7da](https://github.com/xoseperez/espurna/commit/28f3b7da84f229c66808ad88635585e132d35d5a), [2f6d7ce3](https://github.com/xoseperez/espurna/commit/2f6d7ce3d37a5cfec3e2fb4b7fa5b4f3fdfe89fa))
 - BMx280 suspend sensor measurements when device goes to sleep ([83c9df98](https://github.com/xoseperez/espurna/commit/83c9df9805512a1930351aedfd7da72335ea7a61))
 - Accept duration specifiers (h, m, s) in most inputs ([0e861158](https://github.com/xoseperez/espurna/commit/0e8611588b34eea15015c3bcc3473c464920376a), [fd7f97eb](https://github.com/xoseperez/espurna/commit/fd7f97eb2493de3c9756abd09f6abe159f32379d))
-- Do not require DNS server with static IP configuration ([#2582](https://github.com/xoseperez/espurna/issues/2582), [457e47ed](https://github.com/xoseperez/espurna/commit/457e47edd962fc71feb3da8f16c0cd1a9009edc3))
 - Sensor magnitude decimals / precision setting ([#2550](https://github.com/xoseperez/espurna/issues/2550), [8f1c44fe](https://github.com/xoseperez/espurna/commit/8f1c44fe69383e548cc94a50cccaae71f4ffe056))
-- Fix DNS requests handling with no servers configured or when they are unavailable ([175c04ac](https://github.com/xoseperez/espurna/commit/175c04acc1afeacdd17f7a7721ebaa21ce5ef347))
 - GPIO lock result stored with the request in the log; show WebUI notification when failures occur ([3a1e041f](https://github.com/xoseperez/espurna/commit/3a1e041f5166d4ae459f3ab1853996b2606ee01a))
-- Fix thermostat remote sensor payload parser using incorrect keys ([#2585](https://github.com/xoseperez/espurna/issues/2585))
 
 ## [1.15.0-dev] Snapshot build 2023-01-12
 
