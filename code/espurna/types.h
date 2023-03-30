@@ -264,7 +264,8 @@ struct StringView {
         _len(len)
     {}
 
-    constexpr StringView(const char* ptr) noexcept :
+    template <typename T, typename = typename std::enable_if<std::is_pointer<T>::value>::type>
+    constexpr StringView(T ptr) noexcept :
         StringView(ptr, __builtin_strlen(ptr))
     {}
 
