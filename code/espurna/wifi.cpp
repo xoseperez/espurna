@@ -251,8 +251,9 @@ static constexpr uint8_t OpmodeApSta { OpmodeSta | OpmodeAp };
 enum class ScanError {
     None,
     AlreadyScanning,
-    System,
+    Busy,
     NoNetworks,
+    System,
 };
 
 enum class Action {
@@ -409,11 +410,14 @@ String error(ScanError error) {
     case ScanError::AlreadyScanning:
         out = STRING_VIEW("Scan already in progress");
         break;
-    case ScanError::System:
-        out = STRING_VIEW("Could not start the scan");
+    case ScanError::Busy:
+        out = STRING_VIEW("State machine is busy");
         break;
     case ScanError::NoNetworks:
         out = STRING_VIEW("No networks");
+        break;
+    case ScanError::System:
+        out = STRING_VIEW("System unable to start the scan");
         break;
     }
 
@@ -1250,9 +1254,11 @@ using TaskPtr = std::unique_ptr<Task>;
 
 namespace internal {
 
+bool flag { false };
 TaskPtr task;
 
 void stop() {
+    flag = false;
     task = nullptr;
 }
 
@@ -1282,6 +1288,11 @@ void complete(void* result, STATUS status) {
 } // namespace internal
 
 bool start(Success&& success, Error&& error) {
+    if (internal::flag) {
+        error(ScanError::Busy);
+        return false;
+    }
+
     if (internal::task) {
         error(ScanError::AlreadyScanning);
         return false;
@@ -1302,6 +1313,7 @@ bool start(Success&& success, Error&& error) {
 
     if (wifi_station_scan(nullptr, &internal::complete)) {
         internal::task = std::make_unique<Task>(std::move(success), std::move(error));
+        internal::flag = true;
         return true;
     }
 
@@ -1578,6 +1590,7 @@ bool persist() {
 }
 
 void stop() {
+    scan::internal::flag = false;
     internal::task.reset();
     internal::timer.stop();
 }
@@ -1618,10 +1631,13 @@ bool next() {
 }
 
 bool connect() {
+    scan::internal::flag = true;
     if (internal::task->connect()) {
         internal::wait = true;
         return true;
     }
+
+    scan::internal::flag = false;
 
     return false;
 }
@@ -1630,11 +1646,7 @@ bool connect() {
 // Wait for the WiFi stack event instead (handled on setup with a static object) and continue after it is either connected or disconnected
 
 bool wait() {
-    if (internal::wait) {
-        return true;
-    }
-
-    return false;
+    return internal::wait;
 }
 
 // TODO(Core 2.7.4): `WiFi.isConnected()` is a simple `wifi_station_get_connect_status() == STATION_GOT_IP`,
@@ -2518,10 +2530,6 @@ bool onKeyCheck(StringView key, const JsonVariant&) {
 }
 
 void onScan(uint32_t client_id) {
-    if (sta::scanning()) {
-        return;
-    }
-
     sta::scan::start([client_id](bss_info* found) {
         SsidInfo result(*found);
         wsPost(client_id, [result](JsonObject& root) {
