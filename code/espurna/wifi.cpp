@@ -53,13 +53,26 @@ using Mac = std::array<uint8_t, 6>;
 namespace {
 
 namespace build {
+namespace compat {
+
+[[gnu::unused, gnu::deprecated("WIFI_MODEM_SLEEP_{NONE, MODEM, LIGHT} should be used instead, see config/general.h")]]
+constexpr sleep_type_t arduino_sleep(WiFiSleepType type) {
+    return static_cast<sleep_type_t>(type);
+}
+
+[[gnu::unused]]
+constexpr sleep_type_t arduino_sleep(sleep_type_t type) {
+    return type;
+}
+
+} // namespace compat
 
 constexpr float txPower() {
     return WIFI_OUTPUT_POWER_DBM;
 }
 
-constexpr WiFiSleepType_t sleep() {
-    return WIFI_SLEEP_MODE;
+constexpr sleep_type_t sleep() {
+    return compat::arduino_sleep(WIFI_SLEEP_MODE);
 }
 
 } // namespace build
@@ -89,10 +102,10 @@ PROGMEM_STRING(None, "none");
 PROGMEM_STRING(Modem, "modem");
 PROGMEM_STRING(Light, "light");
 
-static constexpr espurna::settings::options::Enumeration<WiFiSleepType_t> WiFiSleepTypeOptions[] PROGMEM {
-    {WIFI_NONE_SLEEP, None},
-    {WIFI_MODEM_SLEEP, Modem},
-    {WIFI_LIGHT_SLEEP, Light},
+static constexpr espurna::settings::options::Enumeration<sleep_type_t> SleepTypeOptions[] PROGMEM {
+    {NONE_SLEEP_T, None},
+    {MODEM_SLEEP_T, Modem},
+    {LIGHT_SLEEP_T, Light},
 };
 
 } // namespace options
@@ -125,12 +138,12 @@ String serialize(wifi::ApMode mode) {
 }
 
 template <>
-WiFiSleepType_t convert(const String& value) {
-    return convert(wifi::settings::options::WiFiSleepTypeOptions, value, wifi::build::sleep());
+sleep_type_t convert(const String& value) {
+    return convert(wifi::settings::options::SleepTypeOptions, value, wifi::build::sleep());
 }
 
-String serialize(WiFiSleepType_t sleep) {
-    return serialize(wifi::settings::options::WiFiSleepTypeOptions, sleep);
+String serialize(sleep_type_t sleep) {
+    return serialize(wifi::settings::options::SleepTypeOptions, sleep);
 }
 
 template <>
@@ -260,6 +273,28 @@ bool enabled { false };
 ActionsQueue actions;
 
 } // namespace internal
+
+void tx_power(float dbm) {
+    if (std::isinf(dbm) || std::isnan(dbm)) {
+        return;
+    }
+
+    // system_phy_set_max_tpw() unit is .25dBm
+    constexpr auto Min = float{ 0.0f };
+    constexpr auto Max = float{ 20.5f };
+    dbm = std::clamp(dbm, Min, Max);
+    dbm *= 4.0f;
+
+    system_phy_set_max_tpw(dbm);
+}
+
+sleep_type_t sleep_type() {
+    return wifi_get_sleep_type();
+}
+
+bool sleep_type(sleep_type_t type) {
+    return wifi_set_sleep_type(type);
+}
 
 uint8_t opmode() {
     return wifi_get_opmode();
@@ -428,6 +463,10 @@ String opmode(uint8_t mode) {
     return out.toString();
 }
 
+String sleep_type(sleep_type_t type) {
+    return espurna::settings::internal::serialize(type);
+}
+
 } // namespace debug
 
 namespace settings {
@@ -439,11 +478,11 @@ PROGMEM_STRING(Sleep, "wifiSleep");
 } // namespace keys
 
 float txPower() {
-    return getSetting(keys::TxPower, wifi::build::txPower());
+    return getSetting(keys::TxPower, build::txPower());
 }
 
-WiFiSleepType_t sleep() {
-    return getSetting(keys::Sleep, wifi::build::sleep());
+sleep_type_t sleep() {
+    return getSetting(keys::Sleep, build::sleep());
 }
 
 namespace query {
@@ -2207,8 +2246,8 @@ void configure() {
     wifi::ap::configure();
     wifi::sta::configure();
 
-    WiFi.setSleepMode(wifi::settings::sleep());
-    WiFi.setOutputPower(wifi::settings::txPower());
+    sleep_type(settings::sleep());
+    tx_power(settings::txPower());
 }
 
 } // namespace settings
@@ -2295,7 +2334,15 @@ void wifi(::terminal::CommandContext&& ctx) {
     }
 
     const auto mode = wifi::opmode();
-    ctx.output.printf_P(PSTR("OPMODE: %s\n"), wifi::debug::opmode(mode).c_str());
+    ctx.output.printf_P(PSTR("OPMODE: %s\n"),
+            debug::opmode(mode).c_str());
+
+    const auto sleep = wifi::sleep_type();
+    if (sleep != NONE_SLEEP_T) {
+        ctx.output.printf_P(PSTR("SLEEP: %s\n"),
+            debug::sleep_type(sleep).c_str());
+    }
+
 
     if (mode & OpmodeAp) {
         auto current = wifi::ap::current();

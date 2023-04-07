@@ -426,3 +426,11 @@
 #define SECURE_CLIENT_CHECK_NONE          0 // !!! INSECURE CONNECTION !!!
 #define SECURE_CLIENT_CHECK_FINGERPRINT   1 // legacy fingerprint validation
 #define SECURE_CLIENT_CHECK_CA            2 // set trust anchor from PROGMEM CA certificate
+
+//------------------------------------------------------------------------------
+// WiFi
+//------------------------------------------------------------------------------
+
+#define WIFI_SLEEP_MODE_NONE        NONE_SLEEP_T
+#define WIFI_SLEEP_MODE_MODEM       MODEM_SLEEP_T
+#define WIFI_SLEEP_MODE_LIGHT       LIGHT_SLEEP_T

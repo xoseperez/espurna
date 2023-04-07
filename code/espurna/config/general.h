@@ -582,7 +582,13 @@
 #endif
 
 #ifndef WIFI_SLEEP_MODE
-#define WIFI_SLEEP_MODE             WIFI_NONE_SLEEP        // WIFI_NONE_SLEEP, WIFI_LIGHT_SLEEP or WIFI_MODEM_SLEEP
+#define WIFI_SLEEP_MODE             WIFI_SLEEP_MODE_NONE   // WIFI_SLEEP_MODE_NONE  - disable all WiFi passive power saving modes (default)
+                                                           // WIFI_SLEEP_MODE_MODEM - allow WiFi modem to periodially sleep, based on DTIM
+                                                           //                         beacon interval time (usually between .1s and 1s)
+                                                           // WIFI_SLEEP_MODE_LIGHT - in addition to the MODEM sleep also allow CPU to sleep
+                                                           //                         between .5s and 3s (varies, depends on active timers)
+                                                           //
+                                                           // (ref. https://www.espressif.com/sites/default/files/9b-esp8266-low_power_solutions_en_0.pdf)
 #endif
 
 #ifndef WIFI_SCAN_NETWORKS
