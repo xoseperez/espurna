@@ -56,15 +56,20 @@ enum class Event {
 
 using EventCallback = void(*)(Event event);
 
+enum class BootMode {
+    Disabled,
+    Enabled,
+};
+
 enum class StaMode {
     Disabled,
-    Enabled
+    Enabled,
 };
 
 enum class ApMode {
     Disabled,
     Enabled,
-    Fallback
+    Fallback,
 };
 
 } // namespace wifi

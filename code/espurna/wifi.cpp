@@ -75,19 +75,30 @@ constexpr sleep_type_t sleep() {
     return compat::arduino_sleep(WIFI_SLEEP_MODE);
 }
 
+constexpr BootMode bootMode() {
+    return WIFI_BOOT_MODE;
+}
+
 } // namespace build
 
-namespace ap {
 namespace settings {
 namespace options {
 
 PROGMEM_STRING(Disabled, "off");
 PROGMEM_STRING(Enabled, "on");
+
+} // namespace options
+} // namespace settings
+
+namespace ap {
+namespace settings {
+namespace options {
+
 PROGMEM_STRING(Fallback, "fallback");
 
 static constexpr espurna::settings::options::Enumeration<ApMode> ApModeOptions[] PROGMEM {
-    {ApMode::Disabled, Disabled},
-    {ApMode::Enabled, Enabled},
+    {ApMode::Disabled, wifi::settings::options::Disabled},
+    {ApMode::Enabled, wifi::settings::options::Enabled},
     {ApMode::Fallback, Fallback},
 };
 
@@ -116,6 +127,17 @@ static constexpr espurna::settings::options::Enumeration<sleep_type_t> SleepType
 
 namespace settings {
 namespace internal {
+
+template<>
+wifi::BootMode convert(const String& value) {
+    return convert<bool>(value)
+        ? wifi::BootMode::Enabled
+        : wifi::BootMode::Disabled;
+}
+
+String serialize(wifi::BootMode mode) {
+    return serialize(mode == wifi::BootMode::Enabled);
+}
 
 template<>
 wifi::StaMode convert(const String& value) {
@@ -234,14 +256,15 @@ enum class ScanError {
 };
 
 enum class Action {
-    StationConnect,
-    StationContinueConnect,
-    StationTryConnectBetter,
-    StationDisconnect,
     AccessPointFallback,
     AccessPointFallbackCheck,
     AccessPointStart,
     AccessPointStop,
+    Boot,
+    StationConnect,
+    StationContinueConnect,
+    StationDisconnect,
+    StationTryConnectBetter,
     TurnOff,
     TurnOn,
 };
@@ -357,6 +380,7 @@ void action(Action value) {
         break;
     case Action::TurnOff:
     case Action::TurnOn:
+    case Action::Boot:
         break;
     }
 
@@ -371,10 +395,6 @@ State handle_action(State state, T&& handler) {
     }
 
     return state;
-}
-
-ActionsQueue& actions() {
-    return internal::actions;
 }
 
 namespace debug {
@@ -484,6 +504,7 @@ namespace keys {
 
 PROGMEM_STRING(TxPower, "wifiTxPwr");
 PROGMEM_STRING(Sleep, "wifiSleep");
+PROGMEM_STRING(Boot, "wifiBoot");
 
 } // namespace keys
 
@@ -493,6 +514,10 @@ float txPower() {
 
 sleep_type_t sleep() {
     return getSetting(keys::Sleep, build::sleep());
+}
+
+BootMode bootMode() {
+    return getSetting(keys::Boot, build::bootMode());
 }
 
 namespace query {
@@ -510,6 +535,7 @@ String NAME (size_t id) {\
 
 EXACT_VALUE(sleep, settings::sleep)
 EXACT_VALUE(txPower, settings::txPower)
+EXACT_VALUE(bootMode, settings::bootMode)
 
 } // namespace internal
 } // namespace query
@@ -2195,7 +2221,7 @@ void configure() {
 namespace settings {
 namespace query {
 
-static constexpr std::array<espurna::settings::query::Setting, 10> Settings PROGMEM {
+static constexpr std::array<espurna::settings::query::Setting, 11> Settings PROGMEM {
     {{ap::settings::keys::Ssid, ap::settings::ssid},
      {ap::settings::keys::Passphrase, ap::settings::passphrase},
      {ap::settings::keys::Captive, ap::settings::query::internal::captive},
@@ -2205,7 +2231,9 @@ static constexpr std::array<espurna::settings::query::Setting, 10> Settings PROG
      {sta::scan::settings::keys::Enabled, sta::scan::settings::query::enabled},
      {sta::scan::periodic::settings::keys::Threshold, sta::scan::periodic::settings::query::threshold},
      {settings::keys::TxPower, query::internal::txPower},
-     {settings::keys::Sleep, query::internal::sleep}}
+     {settings::keys::Sleep, query::internal::sleep},
+     {settings::keys::Boot, query::internal::bootMode},
+    }
 };
 
 // indexed settings for 'sta' connections
@@ -2760,9 +2788,16 @@ State handle_action(State state, Action action) {
         }
         break;
 
+    case Action::Boot:
     case Action::TurnOn:
         if (!wifi::enabled()) {
             wifi::enable();
+#if SYSTEM_CHECK_ENABLED
+            if ((action == Action::Boot) && !systemCheck()) {
+                wifi::action(Action::AccessPointStart);
+                break;
+            }
+#endif
             settings::configure();
         }
         break;
@@ -2979,15 +3014,9 @@ void setup() {
     migrateVersion(settings::migrate);
     settings::query::setup();
 
-    action(Action::TurnOn);
-
-#if SYSTEM_CHECK_ENABLED
-    if (!systemCheck()) {
-        actions() = wifi::ActionsQueue{};
-        action(Action::TurnOn);
-        action(Action::AccessPointStart);
+    if (BootMode::Enabled == settings::bootMode()) {
+        action(Action::Boot);
     }
-#endif
 
 #if DEBUG_SUPPORT
     wifiRegister([](Event event) {

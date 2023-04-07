@@ -636,6 +636,9 @@
 #define WIFI_OUTPUT_POWER_DBM                    20.0f
 #endif
 
+#ifndef WIFI_BOOT_MODE
+#define WIFI_BOOT_MODE                           WIFI_ENABLED
+#endif
 
 // -----------------------------------------------------------------------------
 // WEB

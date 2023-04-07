@@ -261,6 +261,7 @@
 //------------------------------------------------------------------------------
 // PWM
 //------------------------------------------------------------------------------
+
 #define PWM_PROVIDER_NONE           0
 #define PWM_PROVIDER_GENERIC        1
 #define PWM_PROVIDER_ARDUINO        2
@@ -434,3 +435,6 @@
 #define WIFI_SLEEP_MODE_NONE        NONE_SLEEP_T
 #define WIFI_SLEEP_MODE_MODEM       MODEM_SLEEP_T
 #define WIFI_SLEEP_MODE_LIGHT       LIGHT_SLEEP_T
+
+#define WIFI_DISABLED               BootMode::Disabled
+#define WIFI_ENABLED                BootMode::Enabled
