@@ -85,10 +85,10 @@ PROGMEM_STRING(Disabled, "off");
 PROGMEM_STRING(Enabled, "on");
 PROGMEM_STRING(Fallback, "fallback");
 
-static constexpr espurna::settings::options::Enumeration<wifi::ApMode> ApModeOptions[] PROGMEM {
-    {wifi::ApMode::Disabled, Disabled},
-    {wifi::ApMode::Enabled, Enabled},
-    {wifi::ApMode::Fallback, Fallback},
+static constexpr espurna::settings::options::Enumeration<ApMode> ApModeOptions[] PROGMEM {
+    {ApMode::Disabled, Disabled},
+    {ApMode::Enabled, Enabled},
+    {ApMode::Fallback, Fallback},
 };
 
 } // namespace options
@@ -230,7 +230,7 @@ enum class ScanError {
     None,
     AlreadyScanning,
     System,
-    NoNetworks
+    NoNetworks,
 };
 
 enum class Action {
@@ -313,9 +313,9 @@ void ensure_opmode(uint8_t mode) {
         const auto current = wifi_get_opmode();
         wifi_set_opmode_current(mode);
 
-        const auto result = espurna::time::blockingDelay(
-            espurna::duration::Seconds(1),
-            espurna::duration::Milliseconds(10),
+        const auto result = time::blockingDelay(
+            duration::Seconds(1),
+            duration::Milliseconds(10),
             [&]() {
                 return !is_set();
             });
@@ -363,27 +363,37 @@ void action(Action value) {
     internal::actions.push(value);
 }
 
+template <typename T>
+State handle_action(State state, T&& handler) {
+    if (!internal::actions.empty()) {
+        state = handler(state, internal::actions.front());
+        internal::actions.pop();
+    }
+
+    return state;
+}
+
 ActionsQueue& actions() {
     return internal::actions;
 }
 
 namespace debug {
 
-String error(wifi::ScanError error) {
+String error(ScanError error) {
     StringView out;
 
     switch (error) {
-    case wifi::ScanError::AlreadyScanning:
+    case ScanError::None:
+        out = STRING_VIEW("OK");
+        break;
+    case ScanError::AlreadyScanning:
         out = STRING_VIEW("Scan already in progress");
         break;
-    case wifi::ScanError::System:
+    case ScanError::System:
         out = STRING_VIEW("Could not start the scan");
         break;
-    case wifi::ScanError::NoNetworks:
+    case ScanError::NoNetworks:
         out = STRING_VIEW("No networks");
-        break;
-    case wifi::ScanError::None:
-        out = STRING_VIEW("OK");
         break;
     }
 
@@ -547,9 +557,9 @@ String convertPassphrase(const T& config) {
 }
 
 template <typename T, size_t MacSize = sizeof(T::bssid)>
-wifi::Mac convertBssid(const T& info) {
+Mac convertBssid(const T& info) {
     static_assert(MacSize == 6, "");
-    wifi::Mac mac;
+    Mac mac;
     std::copy(info.bssid, info.bssid + MacSize, mac.begin());
     return mac;
 }
@@ -559,7 +569,7 @@ struct Info {
     Info(const Info&) = default;
     Info(Info&&) = default;
 
-    Info(wifi::Mac&& bssid, AUTH_MODE authmode, int8_t rssi, uint8_t channel) :
+    Info(Mac&& bssid, AUTH_MODE authmode, int8_t rssi, uint8_t channel) :
         _bssid(std::move(bssid)),
         _authmode(authmode),
         _rssi(rssi),
@@ -596,7 +606,7 @@ struct Info {
         return _rssi > rhs._rssi;
     }
 
-    const wifi::Mac& bssid() const {
+    const Mac& bssid() const {
         return _bssid;
     }
 
@@ -627,7 +637,7 @@ struct SsidInfo {
         _info(info)
     {}
 
-    SsidInfo(String&& ssid, wifi::Info&& info) :
+    SsidInfo(String&& ssid, Info&& info) :
         _ssid(std::move(ssid)),
         _info(std::move(info))
     {}
@@ -636,7 +646,7 @@ struct SsidInfo {
         return _ssid;
     }
 
-    const wifi::Info& info() const {
+    const Info& info() const {
         return _info;
     }
 
@@ -651,7 +661,7 @@ struct SsidInfo {
 
 private:
     String _ssid;
-    wifi::Info _info;
+    Info _info;
 };
 
 using SsidInfos = std::forward_list<SsidInfo>;
@@ -754,7 +764,7 @@ struct Network {
     // TODO(?): in case SDK API is used directly, this also could use an authmode field
     // Arduino wrapper sets WPAPSK minimum by default, so one use-case is to set it to WPA2PSK
 
-    Network(Network other, wifi::Mac bssid, uint8_t channel) :
+    Network(Network other, Mac bssid, uint8_t channel) :
         _ssid(std::move(other._ssid)),
         _passphrase(std::move(other._passphrase)),
         _ipSettings(std::move(other._ipSettings)),
@@ -778,7 +788,7 @@ struct Network {
         return _ipSettings;
     }
 
-    const wifi::Mac& bssid() const {
+    const Mac& bssid() const {
         return _bssid;
     }
 
@@ -807,10 +817,10 @@ namespace build {
 static constexpr size_t NetworksMax { WIFI_MAX_NETWORKS };
 
 // aka short interval
-static constexpr auto ConnectionInterval = espurna::duration::Milliseconds { WIFI_CONNECT_INTERVAL };
+static constexpr auto ConnectionInterval = duration::Milliseconds{ WIFI_CONNECT_INTERVAL };
 
 // aka long interval
-static constexpr auto ReconnectionInterval = espurna::duration::Milliseconds { WIFI_RECONNECT_INTERVAL };
+static constexpr auto ReconnectionInterval = duration::Milliseconds{ WIFI_RECONNECT_INTERVAL };
 
 static constexpr int ConnectionRetries { WIFI_CONNECT_RETRIES };
 static constexpr auto RecoveryInterval = ConnectionInterval * ConnectionRetries;
@@ -937,7 +947,7 @@ IPAddress from_ipaddress(espurna::settings::Key key, StringView defaultValue) {
         getSetting(key, defaultValue));
 }
 
-wifi::StaMode mode() {
+StaMode mode() {
     return getSetting(keys::Mode, build::mode());
 }
 
@@ -965,8 +975,8 @@ IPAddress dns(size_t index) {
     return from_ipaddress({keys::Dns, index}, build::dns(index));
 }
 
-wifi::Mac bssid(size_t index) {
-    return espurna::settings::internal::convert<wifi::Mac>(
+Mac bssid(size_t index) {
+    return espurna::settings::internal::convert<Mac>(
         getSetting({keys::Bssid, index}, build::bssid(index)));
 }
 
@@ -1017,8 +1027,8 @@ int8_t rssi() {
     return wifi_station_get_rssi();
 }
 
-wifi::Networks networks() {
-    wifi::Networks out;
+Networks networks() {
+    Networks out;
 
     for (size_t id = 0; id < build::NetworksMax; ++id) {
         auto ssid = settings::ssid(id);
@@ -1030,12 +1040,12 @@ wifi::Networks networks() {
 
         auto ip = settings::ip(id);
         auto ipSettings = ip.isSet()
-            ? wifi::IpSettings{
+            ? IpSettings{
                 std::move(ip),
                 settings::netmask(id),
                 settings::gateway(id),
                 settings::dns(id)}
-            : wifi::IpSettings{};
+            : IpSettings{};
 
         Network network(std::move(ssid), settings::passphrase(id), std::move(ipSettings));
         auto channel = settings::channel(id);
@@ -1066,21 +1076,21 @@ size_t countNetworks() {
 
 // Note that authmode field is a our threshold, not the one selected by an AP
 
-wifi::Info info(const station_config& config) {
-    return wifi::Info{
+Info info(const station_config& config) {
+    return Info{
         convertBssid(config),
         config.threshold.authmode,
         rssi(),
         channel()};
 }
 
-wifi::Info info() {
+Info info() {
     station_config config{};
     wifi_station_get_config(&config);
     return info(config);
 }
 
-wifi::StaNetwork current(const station_config& config) {
+StaNetwork current(const station_config& config) {
     return {
         convertBssid(config),
         convertSsid(config),
@@ -1089,7 +1099,7 @@ wifi::StaNetwork current(const station_config& config) {
         channel()};
 }
 
-wifi::StaNetwork current() {
+StaNetwork current() {
     station_config config{};
     wifi_station_get_config(&config);
     return current(config);
@@ -1099,8 +1109,8 @@ wifi::StaNetwork current() {
 namespace garp {
 namespace build {
 
-static constexpr auto IntervalMin = espurna::duration::Milliseconds { WIFI_GRATUITOUS_ARP_INTERVAL_MIN };
-static constexpr auto IntervalMax = espurna::duration::Milliseconds { WIFI_GRATUITOUS_ARP_INTERVAL_MAX };
+static constexpr auto IntervalMin = duration::Milliseconds{ WIFI_GRATUITOUS_ARP_INTERVAL_MIN };
+static constexpr auto IntervalMax = duration::Milliseconds{ WIFI_GRATUITOUS_ARP_INTERVAL_MAX };
 
 } // namespace build
 
@@ -1112,13 +1122,13 @@ T randomInterval(T minimum, T maximum) {
     return T(::randomNumber(minimum.count(), maximum.count()));
 }
 
-espurna::duration::Milliseconds randomInterval() {
+duration::Milliseconds randomInterval() {
     return randomInterval(build::IntervalMin, build::IntervalMax);
 }
 
 } // namespace internal
 
-espurna::duration::Milliseconds interval() {
+duration::Milliseconds interval() {
     static const auto defaultInterval = internal::randomInterval();
     return getSetting("wifiGarpIntvl", defaultInterval);
 }
@@ -1168,7 +1178,7 @@ void reset() {
     internal::wait = false;
 }
 
-void start(espurna::duration::Milliseconds next) {
+void start(duration::Milliseconds next) {
     internal::timer.repeat(next, reset);
 }
 
@@ -1184,10 +1194,10 @@ PROGMEM_STRING(Enabled, "wifiScan");
 } // namespace keys
 } // namespace settings
 
-using SsidInfosPtr = std::shared_ptr<wifi::SsidInfos>;
+using SsidInfosPtr = std::shared_ptr<SsidInfos>;
 
 using Success = std::function<void(bss_info*)>;
-using Error = std::function<void(wifi::ScanError)>;
+using Error = std::function<void(ScanError)>;
 
 struct Task {
     Task() = delete;
@@ -1201,7 +1211,7 @@ struct Task {
         _success(info);
     }
 
-    void error(wifi::ScanError error) {
+    void error(ScanError error) {
         _error(error);
     }
 
@@ -1225,7 +1235,7 @@ void stop() {
 
 void complete(void* result, STATUS status) {
     if (status) { // aka anything but OK / 0
-        task->error(wifi::ScanError::System);
+        task->error(ScanError::System);
         stop();
         return;
     }
@@ -1237,7 +1247,7 @@ void complete(void* result, STATUS status) {
     }
 
     if (!networks) {
-        task->error(wifi::ScanError::NoNetworks);
+        task->error(ScanError::NoNetworks);
     }
 
     stop();
@@ -1247,7 +1257,7 @@ void complete(void* result, STATUS status) {
 
 bool start(Success&& success, Error&& error) {
     if (internal::task) {
-        error(wifi::ScanError::AlreadyScanning);
+        error(ScanError::AlreadyScanning);
         return false;
     }
 
@@ -1269,7 +1279,7 @@ bool start(Success&& success, Error&& error) {
         return true;
     }
 
-    error(wifi::ScanError::System);
+    error(ScanError::System);
     return false;
 }
 
@@ -1286,13 +1296,13 @@ bool wait(Success&& success, Error&& error) {
 // Another alternative to the stock WiFi method, return a shared Info list
 // Caller is expected to wait for the scan to complete before using the contents
 SsidInfosPtr ssidinfos() {
-    auto infos = std::make_shared<wifi::SsidInfos>();
+    auto infos = std::make_shared<SsidInfos>();
 
     start(
         [infos](bss_info* found) {
             infos->emplace_front(*found);
         },
-        [infos](wifi::ScanError) {
+        [infos](ScanError) {
             infos->clear();
         });
 
@@ -1351,13 +1361,13 @@ struct Task {
 
     static constexpr int8_t RssiThreshold { -127 };
 
-    using Iterator = wifi::Networks::iterator;
+    using Iterator = Networks::iterator;
 
     Task() = delete;
     Task(const Task&) = delete;
     Task(Task&&) = delete;
 
-    explicit Task(String&& hostname, Networks&& networks, int retries) :
+    Task(String hostname, Networks networks, int retries) :
         _hostname(std::move(hostname)),
         _networks(std::move(networks)),
         _begin(_networks.begin()),
@@ -1392,10 +1402,10 @@ struct Task {
     }
 
     bool connect() const {
-        if (!done() && wifi::sta::enabled()) {
+        if (!done() && sta::enabled()) {
             // Need to call this to cancel SDK tasks (previous scan, connection, etc.)
             // Otherwise, it will fail the initial attempt and force a retry.
-            wifi::sta::disconnect();
+            sta::disconnect();
 
             // SDK sends EVENT_STAMODE_DISCONNECTED right after the disconnect() call, which is likely to happen
             // after being connected and disconnecting for the first time. Not doing this will cause the connection loop
@@ -1512,15 +1522,15 @@ private:
 using ActionPtr = void(*)();
 
 void action_next() {
-    wifi::action(wifi::Action::StationContinueConnect);
+    action(Action::StationContinueConnect);
 }
 
 void action_new() {
-    wifi::action(wifi::Action::StationConnect);
+    action(Action::StationConnect);
 }
 
-wifi::sta::scan::SsidInfosPtr scanResults;
-wifi::Networks preparedNetworks;
+sta::scan::SsidInfosPtr scanResults;
+Networks preparedNetworks;
 
 bool connected { false };
 bool wait { false };
@@ -1560,7 +1570,7 @@ bool start(String&& hostname) {
     return false;
 }
 
-void schedule(espurna::duration::Milliseconds next, internal::ActionPtr ptr) {
+void schedule(duration::Milliseconds next, internal::ActionPtr ptr) {
     internal::timer.once(next, ptr);
     DEBUG_MSG_P(PSTR("[WIFI] Next connection attempt in %u (ms)\n"), next.count());
 }
@@ -1569,7 +1579,7 @@ void schedule_next() {
     schedule(build::ConnectionInterval, internal::action_next);
 }
 
-void schedule_new(espurna::duration::Milliseconds next) {
+void schedule_new(duration::Milliseconds next) {
     schedule(next, internal::action_new);
 }
 
@@ -1686,9 +1696,9 @@ void init() {
 void toggle() {
     auto current = enabled();
     connection::persist(!current);
-    wifi::action(current
-        ? wifi::Action::StationDisconnect
-        : wifi::Action::StationConnect);
+    action(current
+        ? Action::StationDisconnect
+        : Action::StationConnect);
 }
 
 namespace scan {
@@ -1716,8 +1726,8 @@ EXACT_VALUE(enabled, settings::enabled)
 namespace periodic {
 namespace build {
 
-static constexpr auto Interval = espurna::duration::Milliseconds { WIFI_SCAN_RSSI_CHECK_INTERVAL };
-static constexpr int8_t Checks { WIFI_SCAN_RSSI_CHECKS };
+static constexpr auto Interval = duration::Milliseconds{ WIFI_SCAN_RSSI_CHECK_INTERVAL };
+static constexpr auto Checks = int8_t{ WIFI_SCAN_RSSI_CHECKS };
 
 constexpr int8_t threshold() {
     return WIFI_SCAN_RSSI_THRESHOLD;
@@ -1750,12 +1760,12 @@ int8_t counter { build::Checks };
 timer::SystemTimer timer;
 
 void task() {
-    if (!wifi::sta::connected()) {
+    if (!sta::connected()) {
         counter = build::Checks;
         return;
     }
 
-    auto rssi = wifi::sta::rssi();
+    auto rssi = sta::rssi();
     if (rssi > threshold) {
         counter = build::Checks;
     } else if (rssi < threshold) {
@@ -1764,7 +1774,7 @@ void task() {
         }
 
         if (!--counter) {
-            wifi::action(wifi::Action::StationTryConnectBetter);
+            action(Action::StationTryConnectBetter);
         }
     }
 }
@@ -1812,7 +1822,7 @@ namespace connection {
 // For the attempt to find a better network, filter out every network with worse than the current network's rssi
 
 void scanNetworks() {
-    internal::scanResults = wifi::sta::scan::ssidinfos();
+    internal::scanResults = sta::scan::ssidinfos();
 }
 
 bool suitableNetwork(const Network& network, const SsidInfo& ssidInfo) {
@@ -1828,7 +1838,7 @@ bool scanProcessResults(int8_t threshold) {
         results->sort();
 
         if (threshold < 0) {
-            results->remove_if([threshold](const wifi::SsidInfo& result) {
+            results->remove_if([threshold](const SsidInfo& result) {
                 return result.info().rssi() < threshold;
             });
 
@@ -1853,7 +1863,7 @@ bool scanProcessResults(int8_t threshold) {
     return internal::preparedNetworks.size();
 }
 
-bool scanProcessResults(const wifi::Info& info) {
+bool scanProcessResults(const Info& info) {
     return scanProcessResults(info.rssi());
 }
 
@@ -1864,11 +1874,11 @@ bool scanProcessResults() {
 } // namespace connection
 
 void configure() {
-    auto enabled = (wifi::StaMode::Enabled == wifi::sta::settings::mode());
+    auto enabled = (StaMode::Enabled == sta::settings::mode());
     connection::persist(enabled);
-    wifi::action(enabled
-        ? wifi::Action::StationConnect
-        : wifi::Action::StationDisconnect);
+    action(enabled
+        ? Action::StationConnect
+        : Action::StationDisconnect);
 
     scan::periodic::threshold(
         scan::periodic::settings::threshold());
@@ -1948,7 +1958,7 @@ PROGMEM_STRING(Channel, "wifiApChan");
 
 } // namespace keys
 
-wifi::ApMode mode() {
+ApMode mode() {
     return getSetting(FPSTR(keys::Mode), build::mode());
 }
 
@@ -1980,9 +1990,9 @@ bool captive() {
 namespace query {
 namespace internal {
 
-EXACT_VALUE(captive, wifi::ap::settings::captive)
-EXACT_VALUE(channel, wifi::ap::settings::channel)
-EXACT_VALUE(mode, wifi::ap::settings::mode)
+EXACT_VALUE(captive, ap::settings::captive)
+EXACT_VALUE(channel, ap::settings::channel)
+EXACT_VALUE(mode, ap::settings::mode)
 
 #undef ID_VALUE
 #undef EXACT_VALUE
@@ -2053,13 +2063,13 @@ void disable() {
 }
 
 bool enabled() {
-    return wifi::opmode() & OpmodeAp;
+    return opmode() & OpmodeAp;
 }
 
 void toggle() {
-    wifi::action(wifi::ap::enabled()
-        ? wifi::Action::AccessPointStop
-        : wifi::Action::AccessPointStart);
+    action(ap::enabled()
+        ? Action::AccessPointStop
+        : Action::AccessPointStart);
 }
 
 void stop() {
@@ -2083,11 +2093,11 @@ void start(String&& defaultSsid, String&& ssid, String&& passphrase, uint8_t cha
 #endif
 }
 
-wifi::SoftApNetwork current() {
+SoftApNetwork current() {
     softap_config config{};
     wifi_softap_get_config(&config);
 
-    wifi::Mac mac;
+    Mac mac;
     WiFi.softAPmacAddress(mac.data());
 
     return {
@@ -2109,7 +2119,7 @@ size_t stations() {
 namespace fallback {
 namespace build {
 
-constexpr auto Timeout = espurna::duration::Milliseconds { WIFI_FALLBACK_TIMEOUT };
+constexpr auto Timeout = duration::Milliseconds{ WIFI_FALLBACK_TIMEOUT };
 
 } // namespace build
 
@@ -2143,16 +2153,16 @@ void schedule() {
     internal::timer.repeat(
         internal::timeout,
         []() {
-            wifi::action(wifi::Action::AccessPointFallbackCheck);
+            action(Action::AccessPointFallbackCheck);
         });
 }
 
 void check() {
-    if (wifi::ap::enabled()
-        && wifi::sta::connected()
-        && !wifi::ap::stations())
+    if (ap::enabled()
+        && sta::connected()
+        && !ap::stations())
     {
-        wifi::action(wifi::Action::AccessPointStop);
+        action(Action::AccessPointStop);
         return;
     }
 }
@@ -2161,14 +2171,14 @@ void check() {
 
 void configure() {
     auto current = settings::mode();
-    if (wifi::ApMode::Fallback == current) {
+    if (ApMode::Fallback == current) {
         fallback::enable();
     } else {
         fallback::disable();
         fallback::remove();
-        wifi::action((wifi::ApMode::Enabled == current)
-                ? wifi::Action::AccessPointStart
-                : wifi::Action::AccessPointStop);
+        action((ApMode::Enabled == current)
+                ? Action::AccessPointStart
+                : Action::AccessPointStop);
     }
 
 #if WIFI_AP_CAPTIVE_SUPPORT
@@ -2186,22 +2196,22 @@ namespace settings {
 namespace query {
 
 static constexpr std::array<espurna::settings::query::Setting, 10> Settings PROGMEM {
-    {{wifi::ap::settings::keys::Ssid, wifi::ap::settings::ssid},
-     {wifi::ap::settings::keys::Passphrase, wifi::ap::settings::passphrase},
-     {wifi::ap::settings::keys::Captive, wifi::ap::settings::query::internal::captive},
-     {wifi::ap::settings::keys::Channel, wifi::ap::settings::query::internal::channel},
-     {wifi::ap::settings::keys::Mode, wifi::ap::settings::query::internal::mode},
-     {wifi::sta::settings::keys::Mode, wifi::sta::settings::query::internal::mode},
-     {wifi::sta::scan::settings::keys::Enabled, wifi::sta::scan::settings::query::enabled},
-     {wifi::sta::scan::periodic::settings::keys::Threshold, wifi::sta::scan::periodic::settings::query::threshold},
-     {wifi::settings::keys::TxPower, espurna::wifi::settings::query::internal::txPower},
-     {wifi::settings::keys::Sleep, espurna::wifi::settings::query::internal::sleep}}
+    {{ap::settings::keys::Ssid, ap::settings::ssid},
+     {ap::settings::keys::Passphrase, ap::settings::passphrase},
+     {ap::settings::keys::Captive, ap::settings::query::internal::captive},
+     {ap::settings::keys::Channel, ap::settings::query::internal::channel},
+     {ap::settings::keys::Mode, ap::settings::query::internal::mode},
+     {sta::settings::keys::Mode, sta::settings::query::internal::mode},
+     {sta::scan::settings::keys::Enabled, sta::scan::settings::query::enabled},
+     {sta::scan::periodic::settings::keys::Threshold, sta::scan::periodic::settings::query::threshold},
+     {settings::keys::TxPower, query::internal::txPower},
+     {settings::keys::Sleep, query::internal::sleep}}
 };
 
 // indexed settings for 'sta' connections
 bool checkIndexedPrefix(StringView key) {
     return espurna::settings::query::IndexedSetting::findSamePrefix(
-        wifi::sta::settings::query::Settings, key);
+        sta::settings::query::Settings, key);
 }
 
 // generic 'ap' and 'modem' configuration
@@ -2217,8 +2227,8 @@ bool checkExactPrefix(StringView key) {
 String findIndexedValueFrom(StringView key) {
     using espurna::settings::query::IndexedSetting;
     return IndexedSetting::findValueFrom(
-        wifi::sta::countNetworks(),
-        wifi::sta::settings::query::Settings, key);
+        sta::countNetworks(),
+        sta::settings::query::Settings, key);
 }
 
 String findValueFrom(StringView key) {
@@ -2243,8 +2253,8 @@ void setup() {
 } // namespace query
 
 void configure() {
-    wifi::ap::configure();
-    wifi::sta::configure();
+    ap::configure();
+    sta::configure();
 
     sleep_type(settings::sleep());
     tx_power(settings::txPower());
@@ -2266,8 +2276,8 @@ void stations(::terminal::CommandContext&& ctx) {
     size_t stations { 0ul };
     for (auto* it = wifi_softap_get_station_info(); it; it = STAILQ_NEXT(it, next), ++stations) {
         ctx.output.printf_P(PSTR("%s %s\n"),
-            wifi::debug::mac(convertBssid(*it)).c_str(),
-            wifi::debug::ip(it->ip).c_str());
+            debug::mac(convertBssid(*it)).c_str(),
+            debug::ip(it->ip).c_str());
     }
 
     wifi_softap_free_station_info();
@@ -2294,9 +2304,9 @@ void network(::terminal::CommandContext&& ctx) {
         if (addr.isV4()) {
 #endif
             ctx.output.printf_P(PSTR("ip %s gateway %s mask %s\n"),
-                wifi::debug::ip(addr.ipv4()).c_str(),
-                wifi::debug::ip(addr.gw()).c_str(),
-                wifi::debug::ip(addr.netmask()).c_str());
+                debug::ip(addr.ipv4()).c_str(),
+                debug::ip(addr.gw()).c_str(),
+                debug::ip(addr.netmask()).c_str());
 #if LWIP_IPV6
         } else {
             // TODO: ip6_addr[...] array is included in the list
@@ -2304,7 +2314,7 @@ void network(::terminal::CommandContext&& ctx) {
             // TODO: routing info is not attached to the netif :/
             // ref. nd6.h (and figure out what it does)
             ctx.output.printf_P(PSTR("ip %s\n"),
-                wifi::debug::ip(netif->ip6_addr[i]).c_str());
+                debug::ip(netif->ip6_addr[i]).c_str());
         }
 #endif
 
@@ -2315,7 +2325,7 @@ void network(::terminal::CommandContext&& ctx) {
         if (!ip.isSet()) {
             break;
         }
-        ctx.output.printf_P(PSTR("dns %s\n"), wifi::debug::ip(ip).c_str());
+        ctx.output.printf_P(PSTR("dns %s\n"), debug::ip(ip).c_str());
     }
 }
 
@@ -2324,8 +2334,8 @@ PROGMEM_STRING(Wifi, "WIFI");
 void wifi(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() == 2) {
         auto id = espurna::settings::internal::convert<size_t>(ctx.argv[1]);
-        if (id < wifi::sta::build::NetworksMax) {
-            settingsDump(ctx, wifi::sta::settings::query::Settings, id);
+        if (id < sta::build::NetworksMax) {
+            settingsDump(ctx, sta::settings::query::Settings, id);
             return;
         }
 
@@ -2345,91 +2355,91 @@ void wifi(::terminal::CommandContext&& ctx) {
 
 
     if (mode & OpmodeAp) {
-        auto current = wifi::ap::current();
+        auto current = ap::current();
 
         ctx.output.printf_P(PSTR("SoftAP: bssid %s channel %hhu auth %s\n"),
-            wifi::debug::mac(current.bssid).c_str(),
+            debug::mac(current.bssid).c_str(),
             current.channel,
-            wifi::debug::authmode(current.authmode).c_str(),
+            debug::authmode(current.authmode).c_str(),
             current.ssid.c_str(),
             current.passphrase.c_str());
 
-        if (wifi::ap::fallback::enabled() && wifi::ap::fallback::internal::timer) {
+        if (ap::fallback::enabled() && ap::fallback::internal::timer) {
             ctx.output.printf_P(PSTR("fallback check every %u ms\n"),
-                wifi::ap::fallback::build::Timeout.count());
+                ap::fallback::build::Timeout.count());
         }
     }
 
     if (mode & OpmodeSta) {
-        if (wifi::sta::connected()) {
+        if (sta::connected()) {
             station_config config{};
             wifi_station_get_config(&config);
 
-            auto network = wifi::sta::current(config);
+            auto network = sta::current(config);
             ctx.output.printf_P(PSTR("STA: bssid %s rssi %hhd channel %hhu ssid \"%s\"\n"),
-                wifi::debug::mac(network.bssid).c_str(),
+                debug::mac(network.bssid).c_str(),
                 network.rssi, network.channel, network.ssid.c_str());
         } else {
             ctx.output.printf_P(PSTR("STA: %s\n"),
-                    wifi::sta::connecting() ? "connecting" : "disconnected");
+                    sta::connecting() ? "connecting" : "disconnected");
         }
     }
 
-    settingsDump(ctx, wifi::settings::query::Settings);
+    settingsDump(ctx, settings::query::Settings);
     terminalOK(ctx);
 }
 
 PROGMEM_STRING(Reset, "WIFI.RESET");
 
 void reset(::terminal::CommandContext&& ctx) {
-    wifi::sta::disconnect();
-    wifi::settings::configure();
+    sta::disconnect();
+    settings::configure();
     terminalOK(ctx);
 }
 
 PROGMEM_STRING(Station, "WIFI.STA");
 
 void station(::terminal::CommandContext&& ctx) {
-    wifi::sta::toggle();
+    sta::toggle();
     terminalOK(ctx);
 }
 
 PROGMEM_STRING(AccessPoint, "WIFI.AP");
 
 void access_point(::terminal::CommandContext&& ctx) {
-    wifi::ap::toggle();
+    ap::toggle();
     terminalOK(ctx);
 }
 
 PROGMEM_STRING(Off, "WIFI.OFF");
 
 void off(::terminal::CommandContext&& ctx) {
-    wifi::action(Action::TurnOff);
+    action(Action::TurnOff);
     terminalOK(ctx);
 }
 
 PROGMEM_STRING(On, "WIFI.ON");
 
 void on(::terminal::CommandContext&& ctx) {
-    wifi::action(Action::TurnOn);
+    action(Action::TurnOn);
     terminalOK(ctx);
 }
 
 PROGMEM_STRING(Scan, "WIFI.SCAN");
 
 void scan(::terminal::CommandContext&& ctx) {
-    wifi::sta::scan::wait(
+    sta::scan::wait(
         [&](bss_info* info) {
             ctx.output.printf_P(PSTR("BSSID: %s AUTH: %11s RSSI: %3hhd CH: %2hhu SSID: %s\n"),
-                wifi::debug::mac(convertBssid(*info)).c_str(),
-                wifi::debug::authmode(info->authmode).c_str(),
+                debug::mac(convertBssid(*info)).c_str(),
+                debug::authmode(info->authmode).c_str(),
                 info->rssi,
                 info->channel,
                 convertSsid(*info).c_str()
             );
         },
-        [&](wifi::ScanError error) {
-            terminalError(ctx, wifi::debug::error(error));
+        [&](ScanError error) {
+            terminalError(ctx, debug::error(error));
         }
     );
 }
@@ -2463,44 +2473,44 @@ void init() {
 namespace web {
 
 void onConnected(JsonObject& root) {
-    for (const auto& setting : wifi::settings::query::Settings) {
+    for (const auto& setting : settings::query::Settings) {
         root[FPSTR(setting.key().c_str())] = setting.value();
     }
 
     espurna::web::ws::EnumerableConfig config{root, STRING_VIEW("wifiConfig")};
-    config(STRING_VIEW("networks"), wifi::sta::countNetworks(), wifi::sta::settings::query::Settings);
+    config(STRING_VIEW("networks"), sta::countNetworks(), sta::settings::query::Settings);
 
     auto& container = config.root();
-    container[F("max")] = wifi::sta::build::NetworksMax;
+    container[F("max")] = sta::build::NetworksMax;
 }
 
 bool onKeyCheck(StringView key, const JsonVariant&) {
-    return wifi::settings::query::checkExactPrefix(key)
-        || wifi::settings::query::checkIndexedPrefix(key);
+    return settings::query::checkExactPrefix(key)
+        || settings::query::checkIndexedPrefix(key);
 }
 
 void onScan(uint32_t client_id) {
-    if (wifi::sta::scanning()) {
+    if (sta::scanning()) {
         return;
     }
 
-    wifi::sta::scan::start([client_id](bss_info* found) {
-        wifi::SsidInfo result(*found);
+    sta::scan::start([client_id](bss_info* found) {
+        SsidInfo result(*found);
         wsPost(client_id, [result](JsonObject& root) {
             JsonArray& scan = root.createNestedArray("scanResult");
 
             auto& info = result.info();
-            scan.add(wifi::debug::mac(info.bssid()));
-            scan.add(wifi::debug::authmode(info.authmode()));
+            scan.add(debug::mac(info.bssid()));
+            scan.add(debug::authmode(info.authmode()));
             scan.add(info.rssi());
             scan.add(info.channel());
 
             scan.add(result.ssid());
         });
     },
-    [client_id](wifi::ScanError error) {
+    [client_id](ScanError error) {
         wsPost(client_id, [error](JsonObject& root) {
-            root["scanError"] = wifi::debug::error(error);
+            root["scanError"] = debug::error(error);
         });
     });
 }
@@ -2531,46 +2541,46 @@ void migrate(int version) {
 namespace debug {
 
 [[gnu::unused]]
-String event(wifi::Event value) {
+String event(Event value) {
     String out;
 
     switch (value) {
-    case wifi::Event::Initial:
+    case Event::Initial:
         out = F("Initial");
         break;
-    case wifi::Event::Mode: {
+    case Event::Mode: {
         const auto mode = wifi::opmode();
         out = F("Mode changed to ");
-        out += wifi::debug::opmode(mode);
+        out += debug::opmode(mode);
         break;
     }
-    case wifi::Event::StationInit:
+    case Event::StationInit:
         out = F("Station init");
         break;
-    case wifi::Event::StationScan:
+    case Event::StationScan:
         out = F("Scanning");
         break;
-    case wifi::Event::StationConnecting:
+    case Event::StationConnecting:
         out = F("Connecting");
         break;
-    case wifi::Event::StationConnected: {
-        auto current = wifi::sta::current();
+    case Event::StationConnected: {
+        auto current = sta::current();
         out += F("Connected to BSSID ");
-        out += wifi::debug::mac(current.bssid);
+        out += debug::mac(current.bssid);
         out += F(" SSID ");
         out += current.ssid;
         break;
     }
-    case wifi::Event::StationTimeout:
+    case Event::StationTimeout:
         out = F("Connection timeout");
         break;
-    case wifi::Event::StationDisconnected: {
-        auto current = wifi::sta::current();
+    case Event::StationDisconnected: {
+        auto current = sta::current();
         out += F("Disconnected from ");
         out += current.ssid;
         break;
     }
-    case wifi::Event::StationReconnect:
+    case Event::StationReconnect:
         out = F("Reconnecting");
         break;
     }
@@ -2579,41 +2589,41 @@ String event(wifi::Event value) {
 }
 
 [[gnu::unused]]
-const char* state(wifi::State value) {
+const char* state(State value) {
     const char* out = "?";
 
     switch (value) {
-    case wifi::State::Boot:
+    case State::Boot:
         out = PSTR("Boot");
         break;
-    case wifi::State::Connect:
+    case State::Connect:
         out = PSTR("Connect");
         break;
-    case wifi::State::TryConnectBetter:
+    case State::TryConnectBetter:
         out = PSTR("TryConnectBetter");
         break;
-    case wifi::State::Fallback:
+    case State::Fallback:
         out = PSTR("Fallback");
         break;
-    case wifi::State::Connected:
+    case State::Connected:
         out = PSTR("Connected");
         break;
-    case wifi::State::Idle:
+    case State::Idle:
         out = PSTR("Idle");
         break;
-    case wifi::State::Init:
+    case State::Init:
         out = PSTR("Init");
         break;
-    case wifi::State::Timeout:
+    case State::Timeout:
         out = PSTR("Timeout");
         break;
-    case wifi::State::WaitScan:
+    case State::WaitScan:
         out = PSTR("WaitScan");
         break;
-    case wifi::State::WaitScanWithoutCurrent:
+    case State::WaitScanWithoutCurrent:
         out = PSTR("WaitScanWithoutCurrent");
         break;
-    case wifi::State::WaitConnected:
+    case State::WaitConnected:
         out = PSTR("WaitConnected");
         break;
     }
@@ -2642,30 +2652,30 @@ namespace internal {
 
 // TODO: provide a clearer 'unroll' of the current state?
 
-using EventCallbacks = std::forward_list<wifi::EventCallback>;
+using EventCallbacks = std::forward_list<EventCallback>;
 EventCallbacks callbacks;
 
-void publish(wifi::Event event) {
+void publish(Event event) {
     for (auto& callback : callbacks) {
         callback(event);
     }
 }
 
-void subscribe(wifi::EventCallback callback) {
+void subscribe(EventCallback callback) {
     callbacks.push_front(callback);
 }
 
-State handleAction(State& state, Action action) {
+State handle_action(State state, Action action) {
     switch (action) {
     case Action::StationConnect:
-        if (!wifi::sta::enabled()) {
-            wifi::sta::enable();
-            publish(wifi::Event::Mode);
+        if (!sta::enabled()) {
+            sta::enable();
+            publish(Event::Mode);
         }
 
-        if (!wifi::sta::connected()) {
-            if (wifi::sta::connecting()) {
-                wifi::sta::connection::schedule_next();
+        if (!sta::connected()) {
+            if (sta::connecting()) {
+                sta::connection::schedule_next();
             } else {
                 state = State::Init;
             }
@@ -2673,79 +2683,79 @@ State handleAction(State& state, Action action) {
         break;
 
     case Action::StationContinueConnect:
-        if (wifi::sta::connecting()) {
+        if (sta::connecting()) {
             state = State::Connect;
         }
         break;
 
     case Action::StationDisconnect:
-        if (wifi::sta::connected()) {
-            wifi::ap::fallback::remove();
-            wifi::sta::disconnect();
+        if (sta::connected()) {
+            ap::fallback::remove();
+            sta::disconnect();
         }
 
-        wifi::sta::connection::stop();
+        sta::connection::stop();
 
-        if (wifi::sta::enabled()) {
-            wifi::sta::disable();
-            publish(wifi::Event::Mode);
+        if (sta::enabled()) {
+            sta::disable();
+            publish(Event::Mode);
         }
         break;
 
     case Action::StationTryConnectBetter:
-        if (!wifi::sta::connected() || wifi::sta::connecting()) {
-            wifi::sta::scan::periodic::stop();
+        if (!sta::connected() || sta::connecting()) {
+            sta::scan::periodic::stop();
             break;
         }
 
-        if (wifi::sta::scan::periodic::check()) {
+        if (sta::scan::periodic::check()) {
             state = State::TryConnectBetter;
         }
         break;
 
     case Action::AccessPointFallback:
     case Action::AccessPointStart:
-        if (!wifi::ap::enabled()) {
-            wifi::ap::enable();
-            wifi::ap::start(
-                wifi::ap::settings::defaultSsid(),
-                wifi::ap::settings::ssid(),
-                wifi::ap::settings::passphrase(),
-                wifi::ap::settings::channel());
-            publish(wifi::Event::Mode);
+        if (!ap::enabled()) {
+            ap::enable();
+            ap::start(
+                ap::settings::defaultSsid(),
+                ap::settings::ssid(),
+                ap::settings::passphrase(),
+                ap::settings::channel());
+            publish(Event::Mode);
             if ((Action::AccessPointFallback == action)
-                    && wifi::ap::fallback::enabled()) {
-                wifi::ap::fallback::schedule();
+                    && ap::fallback::enabled()) {
+                ap::fallback::schedule();
             }
         }
         break;
 
     case Action::AccessPointFallbackCheck:
-        if (wifi::ap::fallback::enabled()) {
-            wifi::ap::fallback::check();
+        if (ap::fallback::enabled()) {
+            ap::fallback::check();
         }
         break;
 
     case Action::AccessPointStop:
-        if (wifi::ap::enabled()) {
-            wifi::ap::fallback::remove();
-            wifi::ap::stop();
-            wifi::ap::disable();
-            publish(wifi::Event::Mode);
+        if (ap::enabled()) {
+            ap::fallback::remove();
+            ap::stop();
+            ap::disable();
+            publish(Event::Mode);
         }
         break;
 
     case Action::TurnOff:
         if (wifi::enabled()) {
-            wifi::ap::fallback::remove();
-            wifi::ap::stop();
-            wifi::ap::disable();
-            wifi::sta::scan::periodic::stop();
-            wifi::sta::connection::stop();
-            wifi::sta::disconnect();
-            wifi::sta::disable();
+            ap::fallback::remove();
+            ap::stop();
+            ap::disable();
+            sta::scan::periodic::stop();
+            sta::connection::stop();
+            sta::disconnect();
+            sta::disable();
             wifi::disable();
-            publish(wifi::Event::Mode);
+            publish(Event::Mode);
             break;
         }
         break;
@@ -2753,7 +2763,7 @@ State handleAction(State& state, Action action) {
     case Action::TurnOn:
         if (!wifi::enabled()) {
             wifi::enable();
-            wifi::settings::configure();
+            settings::configure();
         }
         break;
 
@@ -2763,9 +2773,9 @@ State handleAction(State& state, Action action) {
 }
 
 bool prepareConnection() {
-    if (wifi::sta::enabled()) {
-        wifi::sta::connection::prepare(wifi::sta::networks());
-        return wifi::sta::connection::prepared();
+    if (sta::enabled()) {
+        sta::connection::prepare(sta::networks());
+        return sta::connection::prepared();
     }
 
     return false;
@@ -2786,7 +2796,7 @@ void loop() {
 
     case State::Boot:
         state = State::Idle;
-        publish(wifi::Event::Initial);
+        publish(Event::Initial);
         break;
 
     case State::Init: {
@@ -2795,12 +2805,12 @@ void loop() {
             break;
         }
 
-        wifi::sta::scan::periodic::stop();
-        if (wifi::sta::scan::settings::enabled()) {
-            if (wifi::sta::scanning()) {
+        sta::scan::periodic::stop();
+        if (sta::scan::settings::enabled()) {
+            if (sta::scanning()) {
                 break;
             }
-            wifi::sta::connection::scanNetworks();
+            sta::connection::scanNetworks();
             state = State::WaitScan;
             break;
         }
@@ -2810,8 +2820,8 @@ void loop() {
     }
 
     case State::TryConnectBetter:
-        if (wifi::sta::scan::settings::enabled()) {
-            if (wifi::sta::scanning()) {
+        if (sta::scan::settings::enabled()) {
+            if (sta::scanning()) {
                 break;
             }
 
@@ -2820,8 +2830,8 @@ void loop() {
                 break;
             }
 
-            wifi::sta::scan::periodic::stop();
-            wifi::sta::connection::scanNetworks();
+            sta::scan::periodic::stop();
+            sta::connection::scanNetworks();
             state = State::WaitScanWithoutCurrent;
             break;
         }
@@ -2830,29 +2840,29 @@ void loop() {
 
     case State::Fallback:
         state = State::Idle;
-        wifi::sta::connection::schedule_new();
-        if (wifi::ApMode::Fallback == wifi::ap::settings::mode()) {
-            wifi::action(wifi::Action::AccessPointFallback);
+        sta::connection::schedule_new();
+        if (ApMode::Fallback == ap::settings::mode()) {
+            action(Action::AccessPointFallback);
         }
-        publish(wifi::Event::StationReconnect);
+        publish(Event::StationReconnect);
         break;
 
     case State::WaitScan:
-        if (wifi::sta::scanning()) {
+        if (sta::scanning()) {
             break;
         }
 
-        wifi::sta::connection::scanProcessResults();
+        sta::connection::scanProcessResults();
         state = State::Connect;
         break;
 
     case State::WaitScanWithoutCurrent:
-        if (wifi::sta::scanning()) {
+        if (sta::scanning()) {
             break;
         }
 
-        if (wifi::sta::connection::scanProcessResults(wifi::sta::info())) {
-            wifi::sta::disconnect();
+        if (sta::connection::scanProcessResults(sta::info())) {
+            sta::disconnect();
             state = State::Connect;
             break;
         }
@@ -2861,16 +2871,16 @@ void loop() {
         break;
 
     case State::Connect: {
-        if (!wifi::sta::connecting()) {
-            if (!wifi::sta::connection::start(systemHostname())) {
+        if (!sta::connecting()) {
+            if (!sta::connection::start(systemHostname())) {
                 state = State::Timeout;
                 break;
             }
         }
 
-        if (wifi::sta::connection::connect()) {
+        if (sta::connection::connect()) {
             state = State::WaitConnected;
-            publish(wifi::Event::StationConnecting);
+            publish(Event::StationConnecting);
         } else {
             state = State::Timeout;
         }
@@ -2878,11 +2888,11 @@ void loop() {
     }
 
     case State::WaitConnected:
-        if (wifi::sta::connection::wait()) {
+        if (sta::connection::wait()) {
             break;
         }
 
-        if (wifi::sta::connected()) {
+        if (sta::connected()) {
             state = State::Connected;
             break;
         }
@@ -2893,31 +2903,28 @@ void loop() {
     // Current logic closely follows the SDK connection routine with reconnect enabled,
     // and will retry the same network multiple times before giving up.
     case State::Timeout:
-        if (wifi::sta::connecting() && wifi::sta::connection::next()) {
+        if (sta::connecting() && sta::connection::next()) {
             state = State::Idle;
-            wifi::sta::connection::schedule_next();
-            publish(wifi::Event::StationTimeout);
+            sta::connection::schedule_next();
+            publish(Event::StationTimeout);
         } else {
-            wifi::sta::connection::stop();
+            sta::connection::stop();
             state = State::Fallback;
         }
         break;
 
     case State::Connected:
-        wifi::sta::connection::stop();
-        if (wifi::sta::scan::settings::enabled()) {
-            wifi::sta::scan::periodic::start();
+        sta::connection::stop();
+        if (sta::scan::settings::enabled()) {
+            sta::scan::periodic::start();
         }
         state = State::Idle;
-        publish(wifi::Event::StationConnected);
+        publish(Event::StationConnected);
         break;
 
     case State::Idle: {
-        auto& actions = wifi::actions();
-        if (!actions.empty()) {
-            state = handleAction(state, actions.front());
-            actions.pop();
-        }
+        state = wifi::handle_action(
+            state, internal::handle_action);
         break;
     }
 
@@ -2927,25 +2934,25 @@ void loop() {
     // when trying to connect and being unable to find the AP, being forced out by the AP with bad credentials
     // or being disconnected when the wireless signal is lost.
     // Thus, provide a specific connected -> disconnected event specific to the IP network availability.
-    if (wifi::sta::connection::lost()) {
-        wifi::sta::scan::periodic::stop();
-        if (wifi::sta::connection::persist()) {
-            wifi::sta::connection::schedule_new(wifi::sta::build::RecoveryInterval);
+    if (sta::connection::lost()) {
+        sta::scan::periodic::stop();
+        if (sta::connection::persist()) {
+            sta::connection::schedule_new(sta::build::RecoveryInterval);
         }
-        publish(wifi::Event::StationDisconnected);
+        publish(Event::StationDisconnected);
     }
 
 #if WIFI_AP_CAPTIVE_SUPPORT
     // Captive portal only queues packets and those need to be processed asap
-    if (wifi::ap::enabled() && wifi::ap::captive()) {
-        wifi::ap::dnsLoop();
+    if (ap::enabled() && ap::captive()) {
+        ap::dnsLoop();
     }
 #endif
 #if WIFI_GRATUITOUS_ARP_SUPPORT
     // ref: https://github.com/xoseperez/espurna/pull/1877#issuecomment-525612546
     // Periodically send out ARP, even if no one asked
-    if (wifi::sta::connected() && !wifi::sta::garp::wait()) {
-        wifi::sta::garp::send();
+    if (sta::connected() && !sta::garp::wait()) {
+        sta::garp::send();
     }
 #endif
 }
@@ -2960,8 +2967,8 @@ void loop() {
 
 void init() {
     WiFi.persistent(false);
-    wifi::ap::init();
-    wifi::sta::init();
+    ap::init();
+    sta::init();
 }
 
 } // namespace internal
@@ -2972,13 +2979,13 @@ void setup() {
     migrateVersion(settings::migrate);
     settings::query::setup();
 
-    action(wifi::Action::TurnOn);
+    action(Action::TurnOn);
 
 #if SYSTEM_CHECK_ENABLED
     if (!systemCheck()) {
         actions() = wifi::ActionsQueue{};
-        action(wifi::Action::TurnOn);
-        action(wifi::Action::AccessPointStart);
+        action(Action::TurnOn);
+        action(Action::AccessPointStart);
     }
 #endif
 
