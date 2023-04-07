@@ -188,24 +188,31 @@ inline void delay(CoreClock::duration value) {
 bool tryDelay(CoreClock::time_point start, CoreClock::duration timeout, CoreClock::duration interval);
 
 template <typename T>
-void blockingDelay(CoreClock::duration timeout, CoreClock::duration interval, T&& blocked) {
-    const auto start = CoreClock::now();
-    for (;;) {
-        if (tryDelay(start, timeout, interval)) {
-            break;
-        }
+bool blockingDelay(CoreClock::duration timeout, CoreClock::duration interval, T&& blocked) {
+    auto result = blocked();
 
-        if (!blocked()) {
-            break;
+    if (result) {
+        const auto start = CoreClock::now();
+        for (;;) {
+            if (tryDelay(start, timeout, interval)) {
+                break;
+            }
+
+            result = blocked();
+            if (!result) {
+                break;
+            }
         }
     }
+
+    return result;
 }
 
 // Local implementation of 'delay' that will make sure that we wait for the specified
 // time, even after being woken up. Allows to service Core tasks that are scheduled
 // in-between context switches, where the interval controls the minimum sleep time.
-void blockingDelay(CoreClock::duration timeout, CoreClock::duration interval);
-void blockingDelay(CoreClock::duration timeout);
+bool blockingDelay(CoreClock::duration timeout, CoreClock::duration interval);
+bool blockingDelay(CoreClock::duration timeout);
 
 } // namespace time
 

@@ -278,14 +278,13 @@ void ensure_opmode(uint8_t mode) {
         const auto current = wifi_get_opmode();
         wifi_set_opmode_current(mode);
 
-        espurna::time::blockingDelay(
+        const auto result = espurna::time::blockingDelay(
             espurna::duration::Seconds(1),
             espurna::duration::Milliseconds(10),
             [&]() {
                 return !is_set();
             });
-
-        if (!is_set()) {
+        if (result) {
             abort();
         }
 

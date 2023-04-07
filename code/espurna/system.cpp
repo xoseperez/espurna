@@ -173,9 +173,8 @@ extern "C" bool fpm_rf_is_closed(void);
 // We have to wait for certain {F,}PM changes that happen in SDK system idle task
 template <typename T>
 bool wait_for_fpm(duration::Milliseconds timeout, T&& condition) {
-    time::blockingDelay(
-        timeout, duration::Milliseconds{ 1 }, condition);
-    return condition();
+    return time::blockingDelay(
+        timeout, duration::Milliseconds{ 1 }, std::forward<T>(condition));
 }
 
 template <typename Condition, typename Action>
@@ -632,14 +631,17 @@ bool tryDelay(CoreClock::time_point start, CoreClock::duration timeout, CoreCloc
     return true;
 }
 
-void blockingDelay(CoreClock::duration timeout, CoreClock::duration interval) {
-    blockingDelay(timeout, interval, []() {
-        return true;
-    });
+bool blockingDelay(CoreClock::duration timeout, CoreClock::duration interval) {
+    return blockingDelay(
+        timeout,
+        interval,
+        []() {
+            return true;
+        });
 }
 
-void blockingDelay(CoreClock::duration timeout) {
-    blockingDelay(timeout, timeout);
+bool blockingDelay(CoreClock::duration timeout) {
+    return blockingDelay(timeout, timeout);
 }
 
 } // namespace time
