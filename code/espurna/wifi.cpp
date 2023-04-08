@@ -1594,8 +1594,10 @@ bool persist() {
 
 void stop() {
     scan::internal::flag = false;
-    internal::task.reset();
+    internal::scanResults = nullptr;
+    internal::preparedNetworks.clear();
     internal::timer.stop();
+    internal::task.reset();
 }
 
 bool start(String&& hostname) {
@@ -1689,11 +1691,11 @@ bool lost() {
 }
 
 void prepare(Networks&& networks) {
-    internal::preparedNetworks = std::move(networks);
+    std::swap(internal::preparedNetworks, networks);
 }
 
 bool prepared() {
-    return internal::preparedNetworks.size();
+    return internal::preparedNetworks.size() > 0;
 }
 
 } // namespace connection
@@ -1875,18 +1877,21 @@ bool suitableNetwork(const Network& network, const SsidInfo& ssidInfo) {
 
 bool scanProcessResults(int8_t threshold) {
     if (internal::scanResults) {
-        auto results = std::move(internal::scanResults);
+        decltype(internal::scanResults) results;
+        std::swap(results, internal::scanResults);
         results->sort();
 
         if (threshold < 0) {
-            results->remove_if([threshold](const SsidInfo& result) {
-                return result.info().rssi() < threshold;
-            });
-
+            results->remove_if(
+                [threshold](const SsidInfo& result) {
+                    return result.info().rssi() < threshold;
+                });
         }
 
-        Networks networks(std::move(internal::preparedNetworks));
-        Networks sortedNetworks;
+        decltype(internal::preparedNetworks) networks;
+        std::swap(networks, internal::preparedNetworks);
+
+        decltype(internal::preparedNetworks) sortedNetworks;
 
         for (auto& result : *results) {
             for (auto& network : networks) {
@@ -1897,11 +1902,11 @@ bool scanProcessResults(int8_t threshold) {
             }
         }
 
-        internal::preparedNetworks = std::move(sortedNetworks);
+        std::swap(sortedNetworks, internal::preparedNetworks);
         internal::scanResults.reset();
     }
 
-    return internal::preparedNetworks.size();
+    return internal::preparedNetworks.size() > 0;
 }
 
 bool scanProcessResults(const Info& info) {
