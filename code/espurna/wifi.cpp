@@ -296,6 +296,9 @@ namespace internal {
 bool enabled { false };
 ActionsQueue actions;
 
+State state { State::Boot };
+State last_state { state };
+
 } // namespace internal
 
 void tx_power(float dbm) {
@@ -2825,9 +2828,6 @@ bool prepareConnection() {
 }
 
 void loop() {
-    static State state { State::Boot };
-    static State last_state { state };
-
     if (last_state != state) {
         DEBUG_MSG_P(PSTR("[WIFI] State %s -> %s\n"),
             debug::state(last_state),
