@@ -25,7 +25,7 @@ Copyright (C) 2020-2022 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 
 #include "libs/PrintString.h"
 
-#include "web_asyncwebprint.ipp"
+#include "web_print.ipp"
 
 #include <algorithm>
 #include <utility>
@@ -694,12 +694,16 @@ void setup() {
 #if TERMINAL_WEB_API_SUPPORT
 namespace api {
 
+STRING_VIEW_INLINE(Path, TERMINAL_WEB_API_PATH);
+STRING_VIEW_INLINE(Key, "termWebApiPath");
+
 // XXX: new `apiRegister()` depends that `webServer()` is available, meaning we can't call this setup func
 // before the `webSetup()` is called. ATM, just make sure it is in order.
 
 void setup() {
 #if API_SUPPORT
-    apiRegister(getSetting("termWebApiPath", TERMINAL_WEB_API_PATH),
+    apiRegister(
+        getSetting(Key, Path),
         [](ApiRequest& api) {
             api.handle([](AsyncWebServerRequest* request) {
                 auto* response = request->beginResponseStream(F("text/plain"));
@@ -726,8 +730,9 @@ void setup() {
                 (*cmd) += '\n';
             }
 
-            api.handle([&](AsyncWebServerRequest* request) {
-                AsyncWebPrint::scheduleFromRequest(request,
+            api.handle([cmd](AsyncWebServerRequest* request) {
+                espurna::web::print::scheduleFromRequest(
+                    request,
                     [cmd](Print& out) {
                         api_find_and_call(*cmd, out);
                     });
@@ -738,8 +743,12 @@ void setup() {
     );
 #else
     webRequestRegister([](AsyncWebServerRequest* request) {
-        String path(F(API_BASE_PATH));
-        path += getSetting("termWebApiPath", TERMINAL_WEB_API_PATH);
+        STRING_VIEW_INLINE(BasePath, API_BASE_PATH);
+
+        String path;
+        path += BasePath;
+        path += getSetting(Key, Path);
+
         if (path != request->url()) {
             return false;
         }
@@ -767,7 +776,8 @@ void setup() {
 
         auto cmd = std::make_shared<String>(std::move(line));
 
-        AsyncWebPrint::scheduleFromRequest(request,
+        espurna::web::print::scheduleFromRequest(
+            request,
             [cmd](Print& out) {
                 api_find_and_call(*cmd, out);
             });

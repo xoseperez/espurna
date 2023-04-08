@@ -64,13 +64,11 @@ namespace {
 #include "static/server.key.h"
 #endif // WEB_SSL_ENABLED
 
-AsyncWebPrint::AsyncWebPrint(AsyncWebPrintConfig config, AsyncWebServerRequest* request) :
-    _config(config),
-    _request(request),
-    _state(State::None)
-{}
+namespace espurna {
+namespace web {
+namespace print {
 
-bool AsyncWebPrint::_addBuffer() {
+bool RequestPrint::_addBuffer() {
     if ((_buffers.size() + 1) > _config.backlog.count) {
         if (!_exhaustBuffers()) {
             _state = State::Error;
@@ -93,61 +91,57 @@ bool AsyncWebPrint::_addBuffer() {
 //   HTTP client (curl, python requests etc., as discovered in testing) will then drop the connection
 // - Returning 0 will immediatly close the connection from our side
 // - Calling _prepareRequest() **before** _buffers are filled will result in returning 0
-// - Calling yield() / delay() while request AsyncWebPrint is active **may** trigger this callback out of sequence
+// - Calling yield() / delay() while request handler is active **may** trigger this callback out of sequence
 //   (e.g. Stream.write(...), Stream.read(...), DEBUG_MSG(...), or any other API trying to switch contexts)
 // - Receiving data (tcp ack from the previous packet) **will** trigger the callback when switching contexts.
 
-void AsyncWebPrint::_prepareRequest() {
+size_t RequestPrint::_handleRequest(uint8_t* data, size_t maxLen) {
+    switch (_state) {
+    case State::None:
+        return RESPONSE_TRY_AGAIN;
+    case State::Error:
+    case State::Done:
+        return 0;
+    case State::Sending:
+        break;
+    }
+
+    size_t written = 0;
+    while ((written < maxLen) && !_buffers.empty()) {
+        auto& chunk =_buffers.front();
+        auto have = maxLen - written;
+        if (chunk.size() > have) {
+            std::copy(chunk.data(), chunk.data() + have, data + written);
+            chunk.erase(chunk.begin(), chunk.begin() + have);
+            written += have;
+        } else {
+            std::copy(chunk.data(), chunk.data() + chunk.size(), data + written);
+            _buffers.pop_front();
+            written += chunk.size();
+        }
+    }
+
+    return written;
+}
+
+void RequestPrint::_prepareRequest() {
     _state = State::Sending;
 
-    auto *response = _request->beginChunkedResponse(_config.mimeType, [this](uint8_t *buffer, size_t maxLen, size_t) -> size_t {
-        switch (_state) {
-        case State::None:
-            return RESPONSE_TRY_AGAIN;
-        case State::Error:
-        case State::Done:
-            return 0;
-        case State::Sending:
-            break;
-        }
-
-        size_t written = 0;
-        while ((written < maxLen) && !_buffers.empty()) {
-            auto& chunk =_buffers.front();
-            auto have = maxLen - written;
-            if (chunk.size() > have) {
-                std::copy(chunk.data(), chunk.data() + have, buffer + written);
-                chunk.erase(chunk.begin(), chunk.begin() + have);
-                written += have;
-            } else {
-                std::copy(chunk.data(), chunk.data() + chunk.size(), buffer + written);
-                _buffers.pop_front();
-                written += chunk.size();
-            }
-        }
-
-
-        return written;
-    });
+    auto *response = _request->beginChunkedResponse(
+        _config.mimeType,
+        [this](uint8_t*data, size_t maxLen, size_t) -> size_t {
+            return this->_handleRequest(data, maxLen);
+        });
 
     response->addHeader(F("Connection"), F("close"));
     _request->send(response);
 }
 
-void AsyncWebPrint::setState(State state) {
-    _state = state;
+size_t RequestPrint::write(uint8_t b) {
+    return write(&b, 1);
 }
 
-AsyncWebPrint::State AsyncWebPrint::getState() {
-    return _state;
-}
-
-size_t AsyncWebPrint::write(uint8_t b) {
-    const uint8_t tmp[1] {b};
-    return write(tmp, 1);
-}
-
-bool AsyncWebPrint::_exhaustBuffers() {
+bool RequestPrint::_exhaustBuffers() {
     // XXX: espasyncwebserver will trigger write callback if we setup response too early
     //      exploring code, callback handler responds to a special return value RESPONSE_TRY_AGAIN
     //      but, it seemingly breaks chunked response logic
@@ -156,13 +150,11 @@ bool AsyncWebPrint::_exhaustBuffers() {
         _prepareRequest();
     }
 
-    constexpr espurna::duration::Seconds Timeout { 5 };
-
     using TimeSource = espurna::time::CoreClock;
     const auto start = TimeSource::now();
 
     do {
-        if (TimeSource::now() - start > Timeout) {
+        if (TimeSource::now() - start > _config.backlog.timeout) {
             _buffers.clear();
             break;
         }
@@ -172,12 +164,12 @@ bool AsyncWebPrint::_exhaustBuffers() {
     return _buffers.empty();
 }
 
-void AsyncWebPrint::flush() {
+void RequestPrint::flush() {
     _exhaustBuffers();
     _state = State::Done;
 }
 
-size_t AsyncWebPrint::write(const uint8_t* data, size_t size) {
+size_t RequestPrint::write(const uint8_t* data, size_t size) {
     if (_state == State::Error) {
         return 0;
     }
@@ -208,6 +200,10 @@ size_t AsyncWebPrint::write(const uint8_t* data, size_t size) {
 
     return full_size;
 }
+
+} // namespace print
+} // namespace web
+} // namespace espurna
 
 // -----------------------------------------------------------------------------
 
