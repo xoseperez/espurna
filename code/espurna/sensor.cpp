@@ -3618,7 +3618,7 @@ void setup() {
     magnitude::forEachCounted([](unsigned char type) {
         auto pattern = magnitude::topic(type);
         if (sensor::build::useIndex() || (magnitude::count(type) > 1)) {
-            pattern += F("/+");
+            pattern += STRING_VIEW("/+");
         }
 
         ApiBasicHandler get = [type](ApiRequest& request) {
@@ -3640,7 +3640,7 @@ void setup() {
             };
         }
 
-        apiRegister(pattern, std::move(get), std::move(put));
+        apiRegister(std::move(pattern), std::move(get), std::move(put));
     });
 }
 

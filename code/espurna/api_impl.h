@@ -18,15 +18,21 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #include "api_path.h"
 
-// this is a purely temporary object, which we can only create while doing the API dispatch
+namespace espurna {
+namespace api {
 
-struct ApiRequest {
-    ApiRequest() = delete;
+// temporary object, which we can only create while doing the API dispatch
 
-    ApiRequest(const ApiRequest&) = default;
-    ApiRequest(ApiRequest&&) noexcept = default;
+struct Request {
+    Request() = delete;
 
-    explicit ApiRequest(AsyncWebServerRequest& request, const PathParts& pattern, const PathParts& parts) :
+    Request(const Request&) = default;
+    Request& operator=(const Request&) = delete;
+
+    Request(Request&&) noexcept = default;
+    Request& operator=(Request&&) = delete;
+
+    Request(AsyncWebServerRequest& request, const PathParts& pattern, const PathParts& parts) :
         _request(request),
         _pattern(pattern),
         _parts(parts)
@@ -57,28 +63,6 @@ struct ApiRequest {
         });
     }
 
-    espurna::StringView param(const String& name) {
-        const auto* result = _request.getParam(name, HTTP_PUT == _request.method());
-
-        espurna::StringView out;
-        if (result) {
-            out = result->value();
-        }
-
-        return out;
-    }
-
-    void send(const String& payload) {
-        if (_done) return;
-        _done = true;
-
-        if (payload.length()) {
-            _request.send(200, "text/plain", payload);
-        } else {
-            _request.send(204);
-        }
-    }
-
     bool done() const {
         return _done;
     }
@@ -96,6 +80,14 @@ struct ApiRequest {
     String wildcard(int index) const;
     size_t wildcards() const;
 
+    // Extract form data parameter value from request by name
+    StringView param(const String&);
+
+    // Send out the payload and finish the request
+    // By default, payload is sent with status 200
+    // For zero-length payloads, status is set to 204
+    void send(const String& payload);
+
 private:
     bool _done { false };
 
@@ -104,20 +96,25 @@ private:
     const PathParts& _parts;
 };
 
-struct ApiRequestHelper {
-    ApiRequestHelper(const ApiRequestHelper&) = delete;
-    ApiRequestHelper(ApiRequestHelper&&) noexcept = default;
+struct RequestHelper {
+    RequestHelper() = delete;
+
+    RequestHelper(const RequestHelper&) = delete;
+    RequestHelper& operator=(const RequestHelper&) = delete;
+
+    RequestHelper(RequestHelper&&) noexcept = default;
+    RequestHelper& operator=(RequestHelper&&) = delete;
 
     // &path is expected to be request->url(), which is valid throughout the request's lifetime
-    explicit ApiRequestHelper(AsyncWebServerRequest& request, const PathParts& pattern) :
+    RequestHelper(AsyncWebServerRequest& request, const PathParts& pattern) :
         _request(request),
         _pattern(pattern),
         _path(request.url()),
         _match(_pattern.match(_path))
     {}
 
-    ApiRequest request() const {
-        return ApiRequest(_request, _pattern, _path);
+    Request request() const {
+        return Request(_request, _pattern, _path);
     }
 
     const PathParts& parts() const {
@@ -134,3 +131,6 @@ private:
     PathParts _path;
     bool _match;
 };
+
+} // namespace api
+} // namespace espurna
