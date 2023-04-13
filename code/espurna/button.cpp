@@ -20,7 +20,10 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include "mqtt.h"
 #include "relay.h"
 #include "system.h"
+
+#if WEB_SUPPORT
 #include "ws.h"
+#endif
 
 #include "mcp23s08_pin.h"
 
@@ -997,7 +1000,6 @@ void _buttonRelayAction(size_t id, ButtonAction action) {
 // -----------------------------------------------------------------------------
 
 #if WEB_SUPPORT
-
 namespace {
 
 void _buttonWebSocketOnVisible(JsonObject& root) {
@@ -1015,7 +1017,6 @@ bool _buttonWebSocketOnKeyCheck(espurna::StringView key, const JsonVariant&) {
 }
 
 } // namespace
-
 #endif // WEB_SUPPORT
 
 //------------------------------------------------------------------------------

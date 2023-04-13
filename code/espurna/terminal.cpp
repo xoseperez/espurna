@@ -11,7 +11,14 @@ Copyright (C) 2020-2022 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 
 #if TERMINAL_SUPPORT
 
+#if API_SUPPORT
 #include "api.h"
+#endif
+
+#if WEB_SUPPORT
+#include "ws.h"
+#endif
+
 #include "crash.h"
 #include "mqtt.h"
 #include "settings.h"
@@ -21,7 +28,6 @@ Copyright (C) 2020-2022 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include "terminal.h"
 #include "utils.h"
 #include "wifi.h"
-#include "ws.h"
 
 #include "libs/PrintString.h"
 

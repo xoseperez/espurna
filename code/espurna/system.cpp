@@ -8,8 +8,11 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "espurna.h"
 
-#include "rtcmem.h"
+#if WEB_SUPPORT
 #include "ws.h"
+#endif
+
+#include "rtcmem.h"
 #include "ntp.h"
 
 #include <cstdint>

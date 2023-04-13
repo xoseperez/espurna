@@ -11,7 +11,14 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 
 #if RELAY_SUPPORT
 
+#if API_SUPPORT
 #include "api.h"
+#endif
+
+#if WEB_SUPPORT
+#include "ws.h"
+#endif
+
 #include "mqtt.h"
 #include "relay.h"
 #include "tuya.h"
@@ -22,7 +29,6 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include "storage_eeprom.h"
 #include "terminal.h"
 #include "utils.h"
-#include "ws.h"
 
 #include <ArduinoJson.h>
 

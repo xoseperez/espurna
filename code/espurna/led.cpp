@@ -17,18 +17,21 @@ $ pio run -e ... -t espurna/led_pattern.re.ipp
 
 #if LED_SUPPORT
 
-#include "led.h"
-#include "mqtt.h"
-#include "relay.h"
-#include "rpc.h"
-#include "ws.h"
-
 #include <algorithm>
 #include <cstring>
 #include <ctime>
 #include <chrono>
 #include <forward_list>
 #include <vector>
+
+#include "led.h"
+#include "mqtt.h"
+#include "relay.h"
+#include "rpc.h"
+
+#if WEB_SUPPORT
+#include "ws.h"
+#endif
 
 namespace espurna {
 namespace led {

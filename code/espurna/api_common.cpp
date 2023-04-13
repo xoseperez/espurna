@@ -9,52 +9,87 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #include "espurna.h"
 
+#if WEB_SUPPORT
 #include "api.h"
-
-#include "ws.h"
 #include "web.h"
+#include "ws.h"
+#endif
 
 // -----------------------------------------------------------------------------
 
-#if WEB_SUPPORT
+namespace espurna {
+namespace api {
 
 namespace {
+namespace build {
 
-bool _apiWebSocketOnKeyCheck(espurna::StringView key, const JsonVariant&) {
+constexpr bool enabled() {
+    return 1 == API_ENABLED;
+}
+
+constexpr bool restful() {
+    return 1 == API_RESTFUL;
+}
+
+STRING_VIEW_INLINE(Key, API_KEY);
+
+constexpr StringView key() {
+    return Key;
+}
+
+} // namespace build
+
+namespace settings {
+namespace keys {
+
+STRING_VIEW_INLINE(Enabled, "apiEnabled");
+STRING_VIEW_INLINE(Restful, "apiRestFul");
+STRING_VIEW_INLINE(Key, "apiKey");
+
+} // namespace keys
+
+bool enabled() {
+    return getSetting(keys::Enabled, build::enabled());
+}
+
+bool restful() {
+    return getSetting(keys::Restful, build::restful());
+}
+
+String key() {
+    return getSetting(keys::Key, build::key());
+}
+
+} // namespace settings
+
+namespace web {
+#if WEB_SUPPORT
+
+bool onKeyCheck(espurna::StringView key, const JsonVariant&) {
     return espurna::settings::query::samePrefix(key, STRING_VIEW("api"));
 }
 
-void _apiWebSocketOnVisible(JsonObject& root) {
+void onVisible(JsonObject& root) {
     wsPayloadModule(root, PSTR("api"));
 }
 
-void _apiWebSocketOnConnected(JsonObject& root) {
+void onConnected(JsonObject& root) {
     root["apiEnabled"] = apiEnabled();
     root["apiKey"] = apiKey();
     root["apiRestFul"] = apiRestFul();
 }
 
+void setup() {
+    wsRegister()
+        .onVisible(onVisible)
+        .onConnected(onConnected)
+        .onKeyCheck(onKeyCheck);
 }
 
-// -----------------------------------------------------------------------------
-// Public API
-// -----------------------------------------------------------------------------
-
-bool apiEnabled() {
-    return getSetting("apiEnabled", 1 == API_ENABLED);
-}
-
-bool apiRestFul() {
-    return getSetting("apiRestFul", 1 == API_RESTFUL);
-}
-
-String apiKey() {
-    return getSetting("apiKey", API_KEY);
-}
-
-bool apiAuthenticateHeader(AsyncWebServerRequest* request, const String& key) {
-    if (apiEnabled() && key.length()) {
-        auto* header = request->getHeader(F("Api-Key"));
+bool authenticate_header(AsyncWebServerRequest* request, const String& key) {
+    STRING_VIEW_INLINE(Header, "Api-Key");
+    if (settings::enabled() && key.length()) {
+        auto* header = request->getHeader(Header.toString());
         if (header && (key == header->value())) {
             return true;
         }
@@ -63,8 +98,10 @@ bool apiAuthenticateHeader(AsyncWebServerRequest* request, const String& key) {
     return false;
 }
 
-bool apiAuthenticateParam(AsyncWebServerRequest* request, const String& key) {
-    auto* param = request->getParam("apikey", (request->method() == HTTP_PUT));
+bool authenticate_param(AsyncWebServerRequest* request, const String& key) {
+    STRING_VIEW_INLINE(Param, "apikey");
+
+    auto* param = request->getParam(Param.toString(), (request->method() == HTTP_PUT));
     if (param && (key == param->value())) {
         return true;
     }
@@ -72,28 +109,57 @@ bool apiAuthenticateParam(AsyncWebServerRequest* request, const String& key) {
     return false;
 }
 
-bool apiAuthenticate(AsyncWebServerRequest* request) {
+bool authenticate(AsyncWebServerRequest* request) {
     const auto key = apiKey();
     if (!key.length()) {
         return false;
     }
 
-    if (apiAuthenticateHeader(request, key)) {
+    if (authenticate_header(request, key)) {
         return true;
     }
 
-    if (apiAuthenticateParam(request, key)) {
+    if (authenticate_param(request, key)) {
         return true;
     }
 
     return false;
 }
 
-void apiCommonSetup() {
-    wsRegister()
-        .onVisible(_apiWebSocketOnVisible)
-        .onConnected(_apiWebSocketOnConnected)
-        .onKeyCheck(_apiWebSocketOnKeyCheck);
+#endif
+} // namespace web
+} // namespace
+} // namespace api
+} // namespace espurna
+
+#if WEB_SUPPORT
+bool apiAuthenticateHeader(AsyncWebServerRequest* request, const String& key) {
+    return espurna::api::web::authenticate_header(request, key);
 }
 
-#endif // WEB_SUPPORT == 1
+bool apiAuthenticateParam(AsyncWebServerRequest* request, const String& key) {
+    return espurna::api::web::authenticate_param(request, key);
+}
+
+bool apiAuthenticate(AsyncWebServerRequest* request) {
+    return espurna::api::web::authenticate(request);
+}
+#endif
+
+String apiKey() {
+    return espurna::api::settings::key();
+}
+
+bool apiEnabled() {
+    return espurna::api::settings::enabled();
+}
+
+bool apiRestFul() {
+    return espurna::api::settings::restful();
+}
+
+void apiCommonSetup() {
+#if WEB_SUPPORT
+    espurna::api::web::setup();
+#endif
+}

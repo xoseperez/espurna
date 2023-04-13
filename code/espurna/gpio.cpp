@@ -17,7 +17,10 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "rtcmem.h"
 #include "terminal.h"
+
+#if WEB_SUPPORT
 #include "ws.h"
+#endif
 
 namespace espurna {
 namespace peripherals {

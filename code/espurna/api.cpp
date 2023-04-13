@@ -7,17 +7,19 @@ Copyright (C) 2020-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 
 */
 
-#include "api.h"
-
 // -----------------------------------------------------------------------------
 
-#include "system.h"
-#include "rpc.h"
+#include "espurna.h"
+
+#if API_SUPPORT
+#include "api.h"
+#endif
 
 #if WEB_SUPPORT
-#include "web.h"
 #include <ESPAsyncTCP.h>
 #include <ArduinoJson.h>
+
+#include "web.h"
 #endif
 
 #include <algorithm>
@@ -25,6 +27,11 @@ Copyright (C) 2020-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include <cstring>
 #include <forward_list>
 #include <vector>
+
+#include "system.h"
+#include "rpc.h"
+
+#include "api_path.h"
 
 // -----------------------------------------------------------------------------
 
@@ -256,7 +263,6 @@ size_t PathParts::wildcards(const PathParts& pattern) {
 }
 
 #if WEB_SUPPORT
-
 String ApiRequest::wildcard(int index) const {
     return PathParts::wildcard(_pattern, _parts, index).toString();
 }
@@ -264,13 +270,11 @@ String ApiRequest::wildcard(int index) const {
 size_t ApiRequest::wildcards() const {
     return PathParts::wildcards(_pattern);
 }
-
 #endif
 
 // -----------------------------------------------------------------------------
 
 #if API_SUPPORT
-
 namespace espurna {
 namespace api {
 namespace content_type {

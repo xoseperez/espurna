@@ -28,11 +28,14 @@ Updated to use WiFiServer and support reverse connections by Niek van der Maas <
 
 #include <ESP8266WiFi.h>
 
+#if WEB_SUPPORT
+#include "ws.h"
+#endif
+
 #include "mqtt.h"
 #include "telnet.h"
 #include "terminal.h"
 #include "wifi.h"
-#include "ws.h"
 
 #include "libs/URL.h"
 

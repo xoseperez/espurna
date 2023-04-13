@@ -9,11 +9,9 @@ Copyright (C) 2020-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 
 #pragma once
 
-#include "espurna.h"
-
 #include <functional>
 
-#include "web.h"
+#include <ArduinoJson.h>
 
 #include "api_path.h"
 #include "api_impl.h"
@@ -42,13 +40,9 @@ void apiRegister(String path,
 bool apiError(espurna::api::Request&);
 bool apiOk(espurna::api::Request&);
 
-bool apiAuthenticateHeader(AsyncWebServerRequest*, const String& key);
-bool apiAuthenticateParam(AsyncWebServerRequest*, const String& key);
-bool apiAuthenticate(AsyncWebServerRequest*);
-
-void apiCommonSetup();
+String apiKey();
 bool apiEnabled();
 bool apiRestFul();
-String apiKey();
+void apiCommonSetup();
 
 void apiSetup();

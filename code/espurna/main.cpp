@@ -20,11 +20,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
-#include "espurna.h"
-#include "main.h"
-
 #include <algorithm>
 #include <utility>
+
+#include "main.h"
+#include "ota.h"
+#include "rtcmem.h"
 
 // -----------------------------------------------------------------------------
 // GENERAL CALLBACKS

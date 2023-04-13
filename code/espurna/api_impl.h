@@ -10,12 +10,11 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #include <Arduino.h>
 
-#include <ESPAsyncWebServer.h>
-
 #include <algorithm>
 #include <memory>
 #include <vector>
 
+#include "api_async_server.h"
 #include "api_path.h"
 
 namespace espurna {

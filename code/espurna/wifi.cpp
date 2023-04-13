@@ -10,23 +10,26 @@ Copyright (C) 2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 */
 
-#include "wifi.h"
+#include "espurna.h"
 
-#include "telnet.h"
-#include "ws.h"
+#include "wifi.h"
 
 #include <IPAddress.h>
 #include <AddrList.h>
-
-#if WIFI_AP_CAPTIVE_SUPPORT
-#include <DNSServer.h>
-#endif
 
 #include <algorithm>
 #include <array>
 #include <list>
 #include <queue>
 #include <vector>
+
+#if WEB_SUPPORT
+#include "ws.h"
+#endif
+
+#if WIFI_AP_CAPTIVE_SUPPORT
+#include <DNSServer.h>
+#endif
 
 // ref.
 // https://github.com/d-a-v/esp82xx-nonos-linklayer/blob/master/README.md#how-it-works

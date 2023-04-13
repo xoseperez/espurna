@@ -9,7 +9,10 @@ OTA MODULE COMMON FUNCTIONS
 #include "system.h"
 #include "terminal.h"
 #include "utils.h"
+
+#if WEB_SUPPORT
 #include "ws.h"
+#endif
 
 #include "libs/PrintString.h"
 
