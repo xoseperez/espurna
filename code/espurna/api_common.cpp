@@ -74,9 +74,9 @@ void onVisible(JsonObject& root) {
 }
 
 void onConnected(JsonObject& root) {
-    root["apiEnabled"] = apiEnabled();
-    root["apiKey"] = apiKey();
-    root["apiRestFul"] = apiRestFul();
+    root[settings::keys::Enabled] = apiEnabled();
+    root[settings::keys::Key] = apiKey();
+    root[settings::keys::Restful] = apiRestFul();
 }
 
 void setup() {
