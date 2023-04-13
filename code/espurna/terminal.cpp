@@ -25,8 +25,6 @@ Copyright (C) 2020-2022 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 
 #include "libs/PrintString.h"
 
-#include "web_print.ipp"
-
 #include <algorithm>
 #include <utility>
 
@@ -37,6 +35,10 @@ Copyright (C) 2020-2022 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 // (althought, in recent Core versions, these may be set at runtime)
 extern "C" uint32_t _FS_start;
 extern "C" uint32_t _FS_end;
+
+#if WEB_SUPPORT
+#include "web_print.ipp"
+#endif
 
 namespace espurna {
 namespace terminal {

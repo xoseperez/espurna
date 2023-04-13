@@ -10,8 +10,6 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "espurna.h"
 
-#if WEB_SUPPORT
-
 #include <ESPAsyncWebServer.h>
 
 #include <functional>
@@ -36,5 +34,3 @@ void webRequestRegister(web_request_callback_f);
 
 uint16_t webPort();
 void webSetup();
-
-#endif // WEB_SUPPORT == 1
