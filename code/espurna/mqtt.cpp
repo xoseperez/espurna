@@ -1229,7 +1229,7 @@ void _mqttOnMessageAsync(char* topic, char* payload, AsyncMqttClientMessagePrope
     }
 
     alignas(4) static char buffer[((BufferSize + 3) & ~3) + 4] = {0};
-    std::copy(payload, payload + len, buffer);
+    std::copy(payload, payload + len, &buffer[index]);
 
     // Not done yet
     if (total != (len + index)) {
