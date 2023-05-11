@@ -238,6 +238,14 @@ private:
     bool& _handle;
 };
 
+// common comparison would use >=0x40000000
+// instead, slightly reduce the footprint by
+// checking *only* for numbers below it
+inline bool pointerInFlash(const void* ptr) {
+    static constexpr uintptr_t Mask { 1 << 30 };
+    return (reinterpret_cast<uintptr_t>(ptr) & Mask) > 0;
+}
+
 struct StringView {
     constexpr StringView() noexcept :
         _ptr(nullptr),
@@ -347,11 +355,7 @@ private:
     }
 #else
     static bool inFlash(const char* ptr) {
-        // common comparison would use >=0x40000000
-        // instead, slightly reduce the footprint by
-        // checking *only* for numbers below it
-        static constexpr uintptr_t Mask { 1 << 30 };
-        return (reinterpret_cast<uintptr_t>(ptr) & Mask) > 0;
+        return pointerInFlash(ptr);
     }
 #endif
 
@@ -408,5 +412,285 @@ inline String operator+(StringView lhs, const String& rhs) {
 
 #define STRING_VIEW_SETTING(X)\
     ((__builtin_strlen(X) > 0) ? STRING_VIEW(X) : StringView())
+
+// ref. https://en.cppreference.com/w/cpp/types/type_identity
+
+template <typename T>
+struct TypeIdentity {
+    using type = T;
+};
+
+// ref.
+// - https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0122r7.html
+// - https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2020/p1976r2.html
+// - https://github.com/microsoft/STL/issues/4
+// - https://github.com/microsoft/GSL/blob/main/include/gsl/span
+
+template <typename T>
+struct SpanIterator {
+#if __cplusplus > 201103L
+#define SPAN_ITERATOR_CONSTEXPR constexpr
+#else
+#define SPAN_ITERATOR_CONSTEXPR
+#endif
+    using iterator_category = std::random_access_iterator_tag;
+
+    using difference_type = std::ptrdiff_t;
+    using pointer = T*;
+    using reference = T&;
+    using value_type = typename std::remove_cv<T>::type;
+
+    SpanIterator() = delete;
+    constexpr SpanIterator(pointer begin, pointer end, pointer current) :
+        _begin(begin),
+        _end(end),
+        _current(current)
+    {}
+
+    constexpr reference operator*() const noexcept {
+        return *_current;
+    }
+
+    constexpr pointer operator->() const noexcept {
+        return _current;
+    }
+
+    constexpr SpanIterator& operator++() noexcept {
+       ++_current;
+       return *this;
+    }
+
+    constexpr SpanIterator operator++(int) noexcept {
+        auto& self = *this;
+        SpanIterator tmp{self};
+        ++self;
+        return self;
+    }
+
+    constexpr SpanIterator& operator--() noexcept {
+        --_current;
+        return *this;
+    }
+
+    constexpr SpanIterator operator--(int) noexcept {
+        auto& self = *this;
+        SpanIterator tmp{self};
+        --self;
+        return self;
+    }
+
+    constexpr SpanIterator& operator+=(const difference_type offset) noexcept {
+        _current += offset;
+        return *this;
+    }
+
+    constexpr SpanIterator operator+(const difference_type offset) noexcept {
+        SpanIterator out{*this};
+        out += offset;
+        return out;
+    }
+
+    constexpr SpanIterator& operator-=(const difference_type offset) noexcept {
+        _current -= offset;
+        return *this;
+    }
+
+    constexpr SpanIterator operator-(const difference_type offset) noexcept {
+        SpanIterator out{*this};
+        out -= offset;
+        return out;
+    }
+
+    constexpr difference_type operator-(const SpanIterator& other) const noexcept {
+        return _current - other._current;
+    }
+
+    constexpr reference operator[](const difference_type offset) const noexcept {
+        return *(*this + offset);
+    }
+
+    constexpr bool operator==(const SpanIterator& other) const noexcept {
+        return _current == other._current;
+    }
+
+    constexpr bool operator!=(const SpanIterator& other) const noexcept {
+        return _current != other._current;
+    }
+
+    constexpr bool operator<(const SpanIterator& other) const noexcept {
+        return _current < other._current;
+    }
+
+    constexpr bool operator>(const SpanIterator& other) const noexcept {
+        return _current > other._current;
+    }
+
+    constexpr bool operator<=(const SpanIterator& other) const noexcept {
+        return _current <= other._current;
+    }
+
+    constexpr bool operator>=(const SpanIterator& other) const noexcept {
+        return _current <= other._current;
+    }
+
+private:
+    pointer _begin;
+    pointer _end;
+    pointer _current;
+
+#undef SPAN_ITERATOR_CONSTEXPR
+};
+
+// storage helper. either store size in type info, or as a member
+// using the same magic trick as most implementations
+// - limits<size_t>::max() holds member inside of the struct
+// - everything else is encoded in type
+
+auto constexpr SpanDynamicExtent = std::numeric_limits<size_t>::max();
+
+template <size_t Size>
+struct __SpanBase {
+    constexpr __SpanBase() noexcept = default;
+    constexpr explicit __SpanBase(size_t) noexcept {
+    }
+
+    constexpr size_t size() const noexcept {
+        return Size;
+    }
+};
+
+template <>
+struct __SpanBase<SpanDynamicExtent> {
+    constexpr __SpanBase() noexcept = default;
+    constexpr explicit __SpanBase(size_t size) noexcept  :
+        _size(size)
+    {}
+
+    constexpr size_t size() const noexcept {
+        return _size;
+    }
+private:
+    size_t _size{};
+};
+
+template <>
+struct __SpanBase<0> {
+    constexpr __SpanBase() = delete;
+    constexpr explicit __SpanBase(size_t) noexcept  = delete;
+};
+
+template <typename T, size_t Extent = SpanDynamicExtent>
+struct Span : public __SpanBase<Extent> {
+    using element_type = T;
+    using value_type = typename std::remove_cv<T>::type;
+    using size_type = size_t;
+    using difference_type = std::ptrdiff_t;
+    using pointer = T*;
+    using const_pointer = const T*;
+    using reference = T&;
+    using const_reference = const T&;
+    using iterator = SpanIterator<T>;
+
+    static constexpr size_t extent = Extent;
+
+    constexpr Span() = default;
+    constexpr Span(const Span&) = default;
+    constexpr Span& operator=(const Span&) = default;
+
+    constexpr Span(Span&&) = default;
+    constexpr Span& operator=(Span&&) = default;
+
+    constexpr explicit Span(pointer data) noexcept :
+        __SpanBase<Extent>{},
+        _data(data)
+    {}
+
+    constexpr Span(pointer data, size_t size) noexcept :
+        __SpanBase<Extent>{size},
+        _data(data)
+    {}
+
+    constexpr Span(pointer first, pointer last) noexcept :
+        __SpanBase<Extent>{last - first},
+        _data(first)
+    {}
+
+    template <size_t Size>
+    constexpr Span(typename TypeIdentity<T>::type (&data)[Size]) noexcept :
+        Span(&data[0], Size)
+    {}
+
+    template <size_t Size>
+    constexpr Span(typename std::array<value_type, Size>& data) noexcept :
+        __SpanBase<Size>{},
+        _data(data.data())
+    {}
+
+    template <size_t Size>
+    constexpr Span(const typename std::array<value_type, Size>& data) noexcept :
+        __SpanBase<Size>{},
+        _data(data.data())
+    {}
+
+    constexpr reference operator[](size_t index) const {
+        return _data[index];
+    }
+
+    constexpr pointer data() const noexcept {
+        return _data;
+    }
+
+    constexpr iterator begin() const noexcept {
+        return {_data, _data + size(), &_data[0]};
+    }
+
+    constexpr iterator end() const noexcept {
+        return {_data, _data + size(), &_data[size()]};
+    }
+
+    constexpr size_type size() const {
+        return __SpanBase<Extent>::size();
+    }
+
+    constexpr Span<T, SpanDynamicExtent> subspan(size_type offset) const {
+        return {data() + offset, size() - offset};
+    }
+
+    constexpr reference front() const noexcept {
+        return _data[0];
+    }
+
+    constexpr reference back() const noexcept {
+        return _data[size() - 1];
+    }
+
+private:
+    T* _data;
+};
+
+template <typename T, size_t Size>
+inline constexpr Span<T, Size> make_span(typename TypeIdentity<T>::type (&data)[Size]) {
+    return Span<T, Size>(data);
+}
+
+template <typename T, size_t Size>
+inline constexpr Span<T, Size> make_span(typename std::array<T, Size>& data) {
+    return Span<T, Size>(data);
+}
+
+template <typename T, size_t Size>
+inline constexpr Span<T, Size> make_span(const typename std::array<T, Size>& data) {
+    return Span<T, Size>(data);
+}
+
+template <typename T>
+inline constexpr Span<T> make_span(std::vector<T>& data) {
+    return Span<T>(data.data(), data.size());
+}
+
+template <typename T>
+inline constexpr Span<T> make_span(const std::vector<T>& data) {
+    return Span<T>(data.data(), data.size());
+}
 
 } // namespace espurna
