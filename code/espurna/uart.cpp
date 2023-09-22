@@ -333,7 +333,7 @@ BasePortPtr software_serial_port(
     const int8_t tx_pin = (tx == GPIO_NONE) ? -1 : tx;
     const int8_t rx_pin = (rx == GPIO_NONE) ? -1 : rx;
 
-    auto* ptr = new SoftwareSerial(tx_pin, rx_pin, invert);
+    auto* ptr = new SoftwareSerial(rx_pin, tx_pin, invert);
     ptr->begin(baudrate, from_config<::SoftwareSerialConfig>(config));
 
     return std::make_unique<BasePort>(
