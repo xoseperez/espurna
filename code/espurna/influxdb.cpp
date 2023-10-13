@@ -159,7 +159,7 @@ void _idbConfigure() {
 }
 
 void _idbSendSensor(const espurna::sensor::Value& value) {
-    idbSend(magnitudeTopic(value.type).c_str(), value.index, value.repr.c_str());
+    idbSend(magnitudeTypeTopic(value.type).c_str(), value.index, value.repr.c_str());
 }
 
 void _idbSendStatus(size_t id, bool status) {
