@@ -48,6 +48,7 @@ enum class ButtonAction {
     FanLow,
     FanMedium,
     FanHigh,
+    TerminalCommand,
 };
 
 using ButtonEventHandler = void(*)(size_t id, ButtonEvent event);

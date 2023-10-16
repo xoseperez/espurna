@@ -29,6 +29,9 @@ $ pio run -e ... \
 #include "relay.h"
 #include "terminal.h"
 
+#include "libs/EphemeralPrint.h"
+#include "libs/PrintString.h"
+
 #include <IRremoteESP8266.h>
 #include <IRrecv.h>
 #include <IRsend.h>
@@ -1518,24 +1521,15 @@ Preset preset() {
 
 namespace internal {
 
-struct EphemeralPrint : public Print {
-    size_t write(uint8_t) override {
-        return 0;
-    }
-
-    size_t write(const uint8_t*, size_t) override {
-        return 0;
-    }
-};
-
 void inject(String command) {
     if (!command.endsWith("\r\n") && !command.endsWith("\n")) {
         command.concat('\n');
     }
 
     static EphemeralPrint output;
-    if (!espurna::terminal::api_find_and_call(command, output)) {
-        DEBUG_MSG_P(PSTR("[IR] Failed to execute command: \"%s\"\n"), command.c_str());
+    PrintString error(64);
+    if (!espurna::terminal::api_find_and_call(command, output, error)) {
+        DEBUG_MSG_P(PSTR("[IR] \"%s\"\n"), error.c_str());
     }
 }
 

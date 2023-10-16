@@ -17,23 +17,24 @@
 // BUTTONS
 //------------------------------------------------------------------------------
 
-#define BUTTON_ACTION_NONE            ButtonAction::None
-#define BUTTON_ACTION_TOGGLE          ButtonAction::Toggle
-#define BUTTON_ACTION_ON              ButtonAction::On
-#define BUTTON_ACTION_OFF             ButtonAction::Off
-#define BUTTON_ACTION_AP              ButtonAction::AccessPoint
-#define BUTTON_ACTION_RESET           ButtonAction::Reset
-#define BUTTON_ACTION_PULSE           ButtonAction::Pulse
-#define BUTTON_ACTION_FACTORY         ButtonAction::FactoryReset
-#define BUTTON_ACTION_WPS             ButtonAction::Wps
-#define BUTTON_ACTION_SMART_CONFIG    ButtonAction::SmartConfig
-#define BUTTON_ACTION_DIM_UP          ButtonAction::BrightnessIncrease
-#define BUTTON_ACTION_DIM_DOWN        ButtonAction::BrightnessDecrease
-#define BUTTON_ACTION_DISPLAY_ON      ButtonAction::DisplayOn
-#define BUTTON_ACTION_CUSTOM          ButtonAction::Custom
-#define BUTTON_ACTION_FAN_LOW         ButtonAction::FanLow
-#define BUTTON_ACTION_FAN_MEDIUM      ButtonAction::FanMedium
-#define BUTTON_ACTION_FAN_HIGH        ButtonAction::FanHigh
+#define BUTTON_ACTION_NONE                ButtonAction::None
+#define BUTTON_ACTION_TOGGLE              ButtonAction::Toggle
+#define BUTTON_ACTION_ON                  ButtonAction::On
+#define BUTTON_ACTION_OFF                 ButtonAction::Off
+#define BUTTON_ACTION_AP                  ButtonAction::AccessPoint
+#define BUTTON_ACTION_RESET               ButtonAction::Reset
+#define BUTTON_ACTION_PULSE               ButtonAction::Pulse
+#define BUTTON_ACTION_FACTORY             ButtonAction::FactoryReset
+#define BUTTON_ACTION_WPS                 ButtonAction::Wps
+#define BUTTON_ACTION_SMART_CONFIG        ButtonAction::SmartConfig
+#define BUTTON_ACTION_DIM_UP              ButtonAction::BrightnessIncrease
+#define BUTTON_ACTION_DIM_DOWN            ButtonAction::BrightnessDecrease
+#define BUTTON_ACTION_DISPLAY_ON          ButtonAction::DisplayOn
+#define BUTTON_ACTION_CUSTOM              ButtonAction::Custom
+#define BUTTON_ACTION_FAN_LOW             ButtonAction::FanLow
+#define BUTTON_ACTION_FAN_MEDIUM          ButtonAction::FanMedium
+#define BUTTON_ACTION_FAN_HIGH            ButtonAction::FanHigh
+#define BUTTON_ACTION_TERMINAL_COMMAND    ButtonAction::TerminalCommand
 
 // Deprecated: legacy mapping, changed to action from above
 #define BUTTON_MODE_NONE              BUTTON_ACTION_NONE

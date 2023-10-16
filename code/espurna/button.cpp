@@ -25,6 +25,9 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include "ws.h"
 #endif
 
+#include "libs/EphemeralPrint.h"
+#include "libs/PrintString.h"
+
 #include "mcp23s08_pin.h"
 
 #include <bitset>
@@ -112,6 +115,8 @@ PROGMEM_STRING(MqttRetain, "btnMqttRetain");
 
 [[gnu::unused]] PROGMEM_STRING(AnalogLevel, "btnLevel");
 
+[[gnu::unused]] PROGMEM_STRING(TerminalCommand, "btnTermCmd");
+
 } // namespace
 } // namespace keys
 
@@ -181,6 +186,8 @@ PROGMEM_STRING(Custom, "custom");
 [[gnu::unused]] PROGMEM_STRING(FanMedium, "fan-medium");
 [[gnu::unused]] PROGMEM_STRING(FanHigh, "fan-high");
 
+PROGMEM_STRING(TerminalCommand, "term-cmd");
+
 static constexpr Enumeration<ButtonAction> ButtonActionOptions[] PROGMEM {
     {ButtonAction::None, None},
 #if RELAY_SUPPORT
@@ -203,6 +210,9 @@ static constexpr Enumeration<ButtonAction> ButtonActionOptions[] PROGMEM {
     {ButtonAction::FanLow, FanLow},
     {ButtonAction::FanMedium, FanMedium},
     {ButtonAction::FanHigh, FanHigh},
+#endif
+#if TERMINAL_SUPPORT
+    {ButtonAction::TerminalCommand, TerminalCommand},
 #endif
 };
 
@@ -733,6 +743,12 @@ int analogLevel(size_t index) {
 }
 #endif
 
+#if TERMINAL_SUPPORT
+String terminalCommand(size_t index) {
+    return getSetting({keys::TerminalCommand, index});
+}
+#endif
+
 } // namespace
 
 namespace query {
@@ -801,6 +817,9 @@ static constexpr espurna::settings::query::IndexedSetting IndexedSettings[] PROG
     {keys::MqttSendAll, internal::mqttSendAllEvents},
     {keys::MqttRetain, internal::mqttRetain},
 #endif
+#if TERMINAL_SUPPORT
+    {keys::TerminalCommand, settings::terminalCommand},
+#endif
 };
 
 bool checkSamePrefix(StringView key) {
@@ -824,6 +843,31 @@ void setup() {
 } // namespace settings
 
 namespace terminal {
+namespace internal {
+
+void inject(String command) {
+    if (!command.endsWith("\r\n") && !command.endsWith("\n")) {
+        command.concat('\n');
+    }
+
+    static EphemeralPrint output;
+    PrintString error(64);
+
+    if (!espurna::terminal::api_find_and_call(command, output, error)) {
+        DEBUG_MSG_P(PSTR("[BUTTON] \"%s\"\n"), error.c_str());
+    }
+}
+
+} // namespace internal
+
+void process(size_t id) {
+    auto cmd = settings::terminalCommand(id);
+    if (!cmd.length()) {
+        return;
+    }
+
+    internal::inject(std::move(cmd));
+}
 
 void button(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() == 2) {
@@ -853,6 +897,10 @@ PROGMEM_STRING(Button, "BUTTON");
 static constexpr ::terminal::Command Commands[] PROGMEM {
     {Button, button},
 };
+
+void setup() {
+    espurna::terminal::add(Commands);
+}
 
 } // namespace terminal
 } // namespace button
@@ -1181,6 +1229,11 @@ void buttonEvent(size_t id, ButtonEvent event) {
 #endif
         break;
 
+    case ButtonAction::TerminalCommand:
+#if TERMINAL_SUPPORT
+        espurna::button::terminal::process(id);
+#endif
+
     case ButtonAction::None:
         break;
 
@@ -1495,7 +1548,7 @@ void buttonSetup() {
     DEBUG_MSG_P(PSTR("[BUTTON] Number of buttons: %u\n"), count);
 
 #if TERMINAL_SUPPORT
-    espurna::terminal::add(espurna::button::terminal::Commands);
+    espurna::button::terminal::setup();
 #endif
 
     if (count) {
