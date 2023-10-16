@@ -73,6 +73,29 @@ namespace driver {
 namespace uart {
 namespace {
 
+namespace types {
+
+using HardwareConfig = ::SerialConfig;
+using HardwareMode = ::SerialMode;
+
+#if UART_SOFTWARE_SUPPORT
+#if defined(ARDUINO_ESP8266_RELEASE_2_7_2) \
+    || defined(ARDUINO_ESP8266_RELEASE_2_7_3) \
+    || defined(ARDUINO_ESP8266_RELEASE_2_7_4)
+    || defined(ARDUINO_ESP8266_RELEASE_3_0_0) \
+    || defined(ARDUINO_ESP8266_RELEASE_3_0_1) \
+    || defined(ARDUINO_ESP8266_RELEASE_3_1_0) \
+    || defined(ARDUINO_ESP8266_RELEASE_3_1_1)
+using SoftwareConfig = ::SoftwareSerialConfig;
+#elif defined(ARDUINO_ESP8266_RELEASE_3_1_2)
+using SoftwareConfig = ::EspSoftwareSerial::Config;
+#else
+using SoftwareConfig = ::EspSoftwareSerial::Config;
+#endif
+#endif
+
+} // namespace types
+
 namespace build {
 
 // i.e. uart0, uart1 and a single sw port
@@ -173,8 +196,8 @@ template <typename T>
 constexpr T from_config(Config);
 
 template <>
-constexpr ::SerialConfig from_config(Config config) {
-    return static_cast<::SerialConfig>(
+constexpr types::HardwareConfig from_config(Config config) {
+    return static_cast<types::HardwareConfig>(
         data_bits_from_config(config.data_bits)
         | parity_from_config(config.parity)
         | stop_bits_from_config(config.stop_bits));
@@ -276,8 +299,8 @@ BasePortPtr hardware_port(
 
     auto* ptr = new HardwareSerial(number);
     ptr->begin(baudrate,
-        from_config<::SerialConfig>(config),
-        static_cast<SerialMode>(mode),
+        from_config<types::HardwareConfig>(config),
+        static_cast<types::HardwareMode>(mode),
         tx, invert);
     if ((number == 0) && (build::uart0_swapped(tx, rx))) {
         ptr->flush();
@@ -319,8 +342,8 @@ constexpr int software_serial_stop_bits_from_config(uint8_t bits) {
 }
 
 template <>
-constexpr ::SoftwareSerialConfig from_config(Config config) {
-    return static_cast<::SoftwareSerialConfig>(
+constexpr types::SoftwareConfig from_config(Config config) {
+    return static_cast<types::SoftwareConfig>(
         software_serial_data_bits_from_config(config.data_bits)
         | software_serial_parity_from_config(config.parity)
         | software_serial_stop_bits_from_config(config.stop_bits));
@@ -334,7 +357,7 @@ BasePortPtr software_serial_port(
     const int8_t rx_pin = (rx == GPIO_NONE) ? -1 : rx;
 
     auto* ptr = new SoftwareSerial(rx_pin, tx_pin, invert);
-    ptr->begin(baudrate, from_config<::SoftwareSerialConfig>(config));
+    ptr->begin(baudrate, from_config<types::SoftwareConfig>(config));
 
     return std::make_unique<BasePort>(
         BasePort{
