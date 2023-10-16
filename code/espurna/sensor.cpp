@@ -4144,9 +4144,9 @@ void configure() {
         }
 
         // Per-magnitude min & max delta settings for reporting the value
-        // - ${prefix}DeltaMin${index} controls whether we report when report counter overflows
+        // - ${prefix}MinDelta${index} controls whether we report when report counter overflows
         //   (default is set to 0.0 aka value has changed from the last recorded one)
-        // - ${prefix}DeltaMax${index} will trigger report as soon as read value is greater than the specified delta
+        // - ${prefix}MaxDelta${index} will trigger report as soon as read value is greater than the specified delta
         //   (default is 0.0 as well, but this needs to be >0 to actually do something)
         magnitude.min_delta = getSetting(
             settings::keys::get(magnitude, settings::suffix::MinDelta),
