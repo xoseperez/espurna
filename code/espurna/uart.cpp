@@ -81,7 +81,7 @@ using HardwareMode = ::SerialMode;
 #if UART_SOFTWARE_SUPPORT
 #if defined(ARDUINO_ESP8266_RELEASE_2_7_2) \
     || defined(ARDUINO_ESP8266_RELEASE_2_7_3) \
-    || defined(ARDUINO_ESP8266_RELEASE_2_7_4)
+    || defined(ARDUINO_ESP8266_RELEASE_2_7_4) \
     || defined(ARDUINO_ESP8266_RELEASE_3_0_0) \
     || defined(ARDUINO_ESP8266_RELEASE_3_0_1) \
     || defined(ARDUINO_ESP8266_RELEASE_3_1_0) \
