@@ -116,8 +116,12 @@ bool find_and_call(CommandLine cmd, Print& output, Print& error_output) {
         return true;
     }
 
-    error(output, F("Command not found"));
+    error(error_output, F("Command not found"));
     return false;
+}
+
+bool find_and_call(CommandLine cmd, Print& output) {
+    return find_and_call(cmd, output, output);
 }
 
 bool find_and_call(StringView cmd, Print& output, Print& error_output) {

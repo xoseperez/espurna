@@ -63,14 +63,19 @@ const Command* find(StringView name);
 // try to parse and call command line string
 bool find_and_call(StringView, Print& output);
 
+// try to parse and call command line string
+bool find_and_call(StringView, Print& output, Print& error);
+
 // try and call an already parsed command line
 bool find_and_call(CommandLine, Print& output);
+
+// try and call an already parsed command line
+bool find_and_call(CommandLine, Print& output, Print& error);
 
 // search the given string for valid commands and call them in sequence
 bool api_find_and_call(StringView, Print& output);
 
 // search the given string for valid commands and call them in sequence
-// separate outputs for command and errors
 bool api_find_and_call(StringView, Print& output, Print& error);
 
 // helper functions for most common success output

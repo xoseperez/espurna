@@ -412,6 +412,37 @@ void test_line_buffer_multiple() {
     TEST_ASSERT(Second == second.line);
 }
 
+void test_error_output() {
+    PrintString out(64);
+    PrintString err(64);
+
+    add("test.error1", [](CommandContext&& ctx) {
+        ctx.error.print("foo");
+    });
+
+    TEST_ASSERT(find_and_call("test.error1\n", out, err));
+    TEST_ASSERT_EQUAL(0, out.length());
+    TEST_ASSERT_EQUAL_STRING("foo", err.c_str());
+
+    out.clear();
+    err.clear();
+
+    add("test.error2", [](CommandContext&& ctx) {
+        ctx.output.print("bar");
+    });
+
+    TEST_ASSERT(find_and_call("test.error2\n", out, err));
+    TEST_ASSERT_EQUAL(0, err.length());
+    TEST_ASSERT_EQUAL_STRING("bar", out.c_str());
+
+    out.clear();
+    err.clear();
+
+    TEST_ASSERT(!find_and_call("test.error3\n", out, err));
+    TEST_ASSERT_EQUAL(0, out.length());
+    TEST_ASSERT(err.length() > 0);
+}
+
 } // namespace
 } // namespace test
 } // namespace terminal
@@ -437,6 +468,7 @@ int main(int, char**) {
     RUN_TEST(test_line_buffer);
     RUN_TEST(test_line_buffer_overflow);
     RUN_TEST(test_line_buffer_multiple);
+    RUN_TEST(test_error_output);
 
     return UNITY_END();
 }
