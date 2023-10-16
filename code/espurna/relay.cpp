@@ -21,6 +21,7 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 
 #include "mqtt.h"
 #include "relay.h"
+#include "fan.h"
 #include "tuya.h"
 #include "rpc.h"
 #include "rtcmem.h"
