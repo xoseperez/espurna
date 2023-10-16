@@ -100,29 +100,33 @@ void error(Print& print, const String& message) {
 }
 
 void error(const espurna::terminal::CommandContext& ctx, const String& message) {
-    error(ctx.output, message);
+    error(ctx.error, message);
 }
 
-bool find_and_call(CommandLine cmd, Print& out) {
+bool find_and_call(CommandLine cmd, Print& output, Print& error_output) {
     const auto* command = find(cmd.argv[0]);
     if (command) {
-        (*command).func(CommandContext{
-            .argv = std::move(cmd.argv),
-            .output = out });
+        (*command).func(
+            CommandContext{
+                .argv = std::move(cmd.argv),
+                .output = output,
+                .error = error_output,
+            });
+
         return true;
     }
 
-    error(out, F("Command not found"));
+    error(output, F("Command not found"));
     return false;
 }
 
-bool find_and_call(StringView cmd, Print& out) {
+bool find_and_call(StringView cmd, Print& output, Print& error_output) {
     auto result = parse_line(cmd);
     if (result.error != parser::Error::Ok) {
         String message;
         message += STRING_VIEW("TERMINAL: ");
         message += parser::error(result.error);
-        error(out, message);
+        error(error_output, message);
         return false;
     }
 
@@ -130,10 +134,14 @@ bool find_and_call(StringView cmd, Print& out) {
         return false;
     }
 
-    return find_and_call(std::move(result), out);
+    return find_and_call(std::move(result), output, error_output);
 }
 
-bool api_find_and_call(StringView cmd, Print& out) {
+bool find_and_call(StringView cmd, Print& output) {
+    return find_and_call(cmd, output, output);
+}
+
+bool api_find_and_call(StringView cmd, Print& output, Print& error_output) {
     bool result { true };
 
     LineView lines(cmd);
@@ -144,13 +152,17 @@ bool api_find_and_call(StringView cmd, Print& out) {
         }
 
         // prefer to break early when commands are missing
-        if (!find_and_call(line, out)) {
+        if (!find_and_call(line, output, error_output)) {
             result = false;
             break;
         }
     }
 
     return result;
+}
+
+bool api_find_and_call(StringView cmd, Print& output) {
+    return api_find_and_call(cmd, output, output);
 }
 
 } // namespace terminal

@@ -24,6 +24,7 @@ namespace terminal {
 struct CommandContext {
     Argv argv;
     Print& output;
+    Print& error;
 };
 
 using CommandFunc = void(*)(CommandContext&&);
@@ -66,9 +67,11 @@ bool find_and_call(StringView, Print& output);
 bool find_and_call(CommandLine, Print& output);
 
 // search the given string for valid commands and call them in sequence
-// stops on first 'not found' command, does not take into an account
-// error output of any commands (TODO ?)
 bool api_find_and_call(StringView, Print& output);
+
+// search the given string for valid commands and call them in sequence
+// separate outputs for command and errors
+bool api_find_and_call(StringView, Print& output, Print& error);
 
 // helper functions for most common success output
 void ok(Print&);
