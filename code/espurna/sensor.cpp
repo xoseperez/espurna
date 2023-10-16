@@ -1833,27 +1833,6 @@ void report(const Value& report) {
     for (auto& handler : internal::report_handlers) {
         handler(report);
     }
-
-#if MQTT_SUPPORT
-    {
-        mqttSend(report.topic.c_str(), report.repr.c_str());
-
-#if SENSOR_PUBLISH_ADDRESSES
-        {
-            static constexpr auto AddressTopic = STRING_VIEW(SENSOR_ADDRESS_TOPIC);
-
-            String address_topic;
-            address_topic.reserve(report.topic.length() + AddressTopic.length());
-            address_topic.concat(AddressTopic.c_str(), AddressTopic.length());
-            address_topic += '/';
-            address_topic += report.topic;
-
-            mqttSend(address_topic.c_str(), magnitude.sensor->address(magnitude.slot).c_str());
-        }
-#endif // SENSOR_PUBLISH_ADDRESSES
-
-    }
-#endif // MQTT_SUPPORT
 }
 
 Info info(const Magnitude& magnitude) {
@@ -3652,6 +3631,22 @@ void setup() {
 namespace mqtt {
 namespace {
 
+void report(const Value& report, const Magnitude& magnitude) {
+    mqttSend(report.topic.c_str(), report.repr.c_str());
+
+#if SENSOR_PUBLISH_ADDRESSES
+    STRING_VIEW_INLINE(AddressTopic, SENSOR_ADDRESS_TOPIC);
+
+    String address_topic;
+    address_topic.reserve(1 + report.topic.length() + AddressTopic.length());
+    address_topic.concat(AddressTopic.data(), AddressTopic.length());
+    address_topic += '/';
+    address_topic += report.topic;
+
+    mqttSend(address_topic.c_str(), magnitude.sensor->address(magnitude.slot).c_str());
+#endif
+}
+
 void callback(unsigned int type, StringView topic, StringView payload) {
     if (!magnitude::count(MAGNITUDE_ENERGY)) {
         return;
@@ -4031,10 +4026,12 @@ void loop() {
                     const auto report = magnitude::value(magnitude, value.filtered);
                     magnitude::report(report);
 
+#if MQTT_SUPPORT
+                    mqtt::report(report, magnitude);
+#endif
 #if THINGSPEAK_SUPPORT
                     tspkEnqueueMagnitude(index, report.repr);
 #endif
-
 #if DOMOTICZ_SUPPORT
                     domoticzSendMagnitude(index, report);
 #endif

@@ -57,9 +57,13 @@
                                                             // Warning: this might wear out flash fast!
 #endif
 
+#ifndef SENSOR_PUBLISH_ADDRESSES
 #define SENSOR_PUBLISH_ADDRESSES            0               // Publish sensor addresses
-#define SENSOR_ADDRESS_TOPIC                "address"       // Topic to publish sensor addresses
+#endif
 
+#ifndef SENSOR_ADDRESS_TOPIC
+#define SENSOR_ADDRESS_TOPIC                "address"       // Topic to publish sensor addresses
+#endif
 
 // -----------------------------------------------------------------------------
 // Magnitude offset correction
