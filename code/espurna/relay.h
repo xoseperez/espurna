@@ -8,49 +8,20 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #pragma once
 
-#include "espurna.h"
+#include <Arduino.h>
+
+#include <cstdint>
+#include <memory>
+
+#include "system.h"
 #include "rpc.h"
 
 constexpr size_t RelaysMax { 32ul };
-
-enum class RelayPulse : uint8_t {
-    None,
-    Off,
-    On
-};
-
-enum class RelayLock : uint8_t {
-    None,
-    Off,
-    On
-};
-
-enum class RelayType : int {
-    Normal,
-    Inverse,
-    Latched,
-    LatchedInverse
-};
-
-enum class RelayMqttTopicMode : int {
-    Normal,
-    Inverse
-};
-
-enum class RelayProvider: int {
-    None,
-    Dummy,
-    Gpio,
-    Dual,
-    Stm
-};
 
 class RelayProviderBase {
 public:
     RelayProviderBase() = default;
     virtual ~RelayProviderBase();
-
-    virtual void dump();
 
     // whether the provider is ready
     virtual bool setup();
@@ -65,10 +36,10 @@ public:
     virtual void change(bool status) = 0;
 
     // unique id of the provider
-    virtual const char* id() const = 0;
+    virtual espurna::StringView id() const = 0;
 };
 
-PayloadStatus relayParsePayload(const char * payload);
+PayloadStatus relayParsePayload(espurna::StringView);
 
 bool relayStatus(size_t id, bool status, bool report, bool group_report);
 bool relayStatus(size_t id, bool status);
@@ -84,22 +55,31 @@ void relayToggle(size_t id);
 
 size_t relayCount();
 
-const String& relayPayloadOn();
-const String& relayPayloadOff();
-const String& relayPayloadToggle();
+espurna::StringView relayPayloadOn();
+espurna::StringView relayPayloadOff();
+espurna::StringView relayPayloadToggle();
 
-const char* relayPayload(PayloadStatus status);
+espurna::StringView relayPayload(PayloadStatus status);
 
+void relayPulse(size_t id, espurna::duration::Milliseconds, bool);
+void relayPulse(size_t id, espurna::duration::Milliseconds);
 void relayPulse(size_t id);
-void relaySync(size_t id);
 void relaySave(bool persist);
 
 using RelayStatusCallback = void(*)(size_t id, bool status);
 using RelayProviderBasePtr = std::unique_ptr<RelayProviderBase>;
 
-bool relayAdd(RelayProviderBasePtr&& provider);
-void relaySetStatusNotify(RelayStatusCallback);
-void relaySetStatusChange(RelayStatusCallback);
+struct RelayAddResult {
+    size_t id { RelaysMax };
+
+    explicit operator bool() const {
+        return id != RelaysMax;
+    }
+};
+
+RelayAddResult relayAdd(RelayProviderBasePtr&& provider);
+void relayOnStatusNotify(RelayStatusCallback);
+void relayOnStatusChange(RelayStatusCallback);
 
 void relaySetupDummy(size_t size, bool reconfigure = false);
 void relaySetup();

@@ -2,7 +2,6 @@
 // SDS011 dust sensor
 // Based on: https://github.com/ricki-z/SDS011
 //
-// Uses SoftwareSerial library
 // Copyright (C) 2018 by Lucas Pleß <hello at lucas-pless dot com>
 // -----------------------------------------------------------------------------
 
@@ -10,108 +9,61 @@
 
 #pragma once
 
-#include <SoftwareSerial.h>
-
 #include "BaseSensor.h"
 
-
 class SDS011Sensor : public BaseSensor {
-
     public:
-
-        // ---------------------------------------------------------------------
-        // Public
-        // ---------------------------------------------------------------------
-
-        SDS011Sensor() {
-            _count = 2;
-            _sensor_id = SENSOR_SDS011_ID;
-        }
-
-        ~SDS011Sensor() {
-            if (_serial) delete _serial;
-        }
-
-        // ---------------------------------------------------------------------
-
-        void setRX(unsigned char pin_rx) {
-            if (_pin_rx == pin_rx) return;
-            _pin_rx = pin_rx;
+        void setPort(Stream* port) {
+            _serial = port;
             _dirty = true;
-        }
-
-        void setTX(unsigned char pin_tx) {
-            if (_pin_tx == pin_tx) return;
-            _pin_tx = pin_tx;
-            _dirty = true;
-        }
-
-        // ---------------------------------------------------------------------
-
-        unsigned char getRX() {
-            return _pin_rx;
-        }
-
-        unsigned char getTX() {
-            return _pin_tx;
         }
 
         // ---------------------------------------------------------------------
         // Sensor API
         // ---------------------------------------------------------------------
 
+        unsigned char id() const override {
+            return SENSOR_SDS011_ID;
+        }
+
+        unsigned char count() const override {
+            return 2;
+        }
+
         // Initialization method, must be idempotent
-        void begin() {
-
+        void begin() override {
             if (!_dirty) return;
-
-            if (_serial) delete _serial;
-
-            _serial = new SoftwareSerial(_pin_rx, _pin_tx);
-            _serial->begin(9600);
-
             _ready = true;
             _dirty = false;
         }
 
         // Descriptive name of the sensor
-        String description() {
-            char buffer[28];
-            snprintf(buffer, sizeof(buffer), "SDS011 @ SwSerial(%u,%u)", _pin_rx, _pin_tx);
-            return String(buffer);
+        String description() const override {
+            return F("SDS011");
         }
 
-        // Descriptive name of the slot # index
-        String description(unsigned char index) {
-            return description();
-        };
-
         // Address of the sensor (it could be the GPIO or I2C address)
-        String address(unsigned char index) {
-            char buffer[6];
-            snprintf(buffer, sizeof(buffer), "%u:%u", _pin_rx, _pin_tx);
-            return String(buffer);
+        String address(unsigned char) const override {
+            return String(SDS011_PORT, 10);
         }
 
         // Type for slot # index
-        unsigned char type(unsigned char index) {
-            if (index == 0) return MAGNITUDE_PM2dot5;
+        unsigned char type(unsigned char index) const override {
+            if (index == 0) return MAGNITUDE_PM2DOT5;
             if (index == 1) return MAGNITUDE_PM10;
             return MAGNITUDE_NONE;
         }
 
-        void pre() {
+        void pre() override {
             _read();
         }
 
         // Current value for slot # index
-        double value(unsigned char index) {
+        double value(unsigned char index) override {
             if (index == 0) return _p2dot5;
             if (index == 1) return _p10;
             return 0;
         }
-
-
 
     protected:
 
@@ -164,10 +116,7 @@ class SDS011Sensor : public BaseSensor {
 
         double _p2dot5 = 0;
         double _p10 = 0;
-        unsigned int _pin_rx;
-        unsigned int _pin_tx;
-        SoftwareSerial * _serial = NULL;
-
+        Stream* _serial;
 };
 
 #endif // SENSOR_SUPPORT && SDS011_SUPPORT

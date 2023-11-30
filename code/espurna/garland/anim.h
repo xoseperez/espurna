@@ -68,9 +68,10 @@ protected:
     //glow animation - must be called at the end of each animaton run
     void glowRun();
 
+    //random number helpers for animations
+    static unsigned int rng();
+    static byte         rngb();
+
 private:
     const char* _name;
 };
-
-unsigned int rng();
-byte         rngb();

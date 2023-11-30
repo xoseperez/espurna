@@ -7,10 +7,7 @@ Inspired by https://github.com/Vasil-Pahomov/ArWs2812 (currently https://github.
 
 #pragma once
 
-#include "espurna.h"
-
-#if GARLAND_SUPPORT
-
+void garlandEnabled(bool);
+bool garlandEnabled();
+void garlandDisable();
 void garlandSetup();
-
-#endif

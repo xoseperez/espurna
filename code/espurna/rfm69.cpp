@@ -6,7 +6,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#include "rfm69.h"
+#include "espurna.h"
 
 #if RFM69_SUPPORT
 
@@ -16,6 +16,7 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include <RFM69_ATC.h>
 #include <SPI.h>
 
+#include "rfm69.h"
 #include "mqtt.h"
 #include "ws.h"
 
@@ -215,7 +216,7 @@ void _rfm69Clear() {
 #if WEB_SUPPORT
 
 void _rfm69WebSocketOnVisible(JsonObject& root) {
-    root["rfm69Visible"] = 1;
+    wsPayloadModule(root, PSTR("rfm69"));
 }
 
 void _rfm69WebSocketOnConnected(JsonObject& root) {
@@ -240,8 +241,8 @@ void _rfm69WebSocketOnConnected(JsonObject& root) {
     }
 }
 
-bool _rfm69WebSocketOnKeyCheck(const char * key, JsonVariant& value) {
-    return (strncmp(key, "rfm69", 5) == 0);
+bool _rfm69WebSocketOnKeyCheck(espurna::StringView key, const JsonVariant& value) {
+    return espurna::settings::query::samePrefix(key, STRING_VIEW("rfm69"));
 }
 
 void _rfm69WebSocketOnAction(uint32_t client_id, const char* action, JsonObject& data) {
@@ -256,14 +257,14 @@ void _rfm69CleanNodes(size_t max) {
     size_t id { 0 };
     rfm69::settings::foreachMapping([&](rfm69::Mapping&&) {
         if (id < max) {
-            return false;
+            ++id;
+            return true;
         }
 
-        ++id;
-        return true;
+        return false;
     });
 
-    while (id < rfm69::build::maxTopics()) {
+    while (id < max) {
         delSetting({"rfm69Node", id});
         delSetting({"rfm69Key", id});
         delSetting({"rfm69Topic", id});
@@ -424,8 +425,8 @@ void _rfm69Loop() {
     }
 }
 
-void _rfm69Migrate(int version) {
-    if (version && (version < 8)) {
+void _rfm69SettingsMigrate(int version) {
+    if (version < 8) {
         moveSettings("node", "rfm69Node");
         moveSettings("key", "rfm69Key");
         moveSettings("topic", "rfm69Topic");
@@ -441,7 +442,7 @@ void _rfm69Migrate(int version) {
 void rfm69Setup() {
     delay(10);
 
-    _rfm69Migrate(migrateVersion());
+    migrateVersion(_rfm69SettingsMigrate);
     _rfm69Configure();
 
     _rfm69_radio = std::make_unique<RFM69Wrap>(rfm69::build::cs(), rfm69::build::irq(), rfm69::build::hardware());

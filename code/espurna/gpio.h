@@ -19,31 +19,50 @@ enum class GpioType : int {
     Mcp23s08
 };
 
-class GpioBase {
-public:
-virtual const char* id() const = 0;
-virtual size_t pins() const = 0;
-virtual bool lock(unsigned char index) const = 0;
-virtual void lock(unsigned char index, bool value) = 0;
-virtual bool valid(unsigned char index) const = 0;
-virtual BasePinPtr pin(unsigned char index) = 0;
+namespace espurna {
+namespace gpio {
+
+struct Origin {
+    const char* base;
+    uint8_t pin;
+    bool lock;
+    bool result;
+    SourceLocation location;
 };
+
+struct Mode {
+    int8_t value;
+};
+
+Mode pin_mode(uint8_t);
+
+} // namespace gpio
 
 namespace settings {
 namespace internal {
 
-template <>
-GpioType convert(const String& value);
+String serialize(GpioType);
 
 } // namespace internal
 } // namespace settings
+} // namespace espurna
 
+class GpioBase {
+public:
+    virtual const char* id() const = 0;
+    virtual size_t pins() const = 0;
+    virtual bool lock(unsigned char index) const = 0;
+    virtual void lock(unsigned char index, bool value) = 0;
+    virtual bool valid(unsigned char index) const = 0;
+    virtual BasePinPtr pin(unsigned char index) = 0;
+};
 
-GpioBase& hardwareGpio();
 GpioBase* gpioBase(GpioType);
 
-BasePinPtr gpioRegister(GpioBase& base, unsigned char gpio);
-BasePinPtr gpioRegister(unsigned char gpio);
+GpioBase& hardwareGpio();
+void hardwareGpioIgnore(unsigned char gpio);
+
+void gpioLockOrigin(espurna::gpio::Origin);
 
 void gpioSetup();
 
@@ -63,30 +82,51 @@ inline bool gpioValid(unsigned char gpio) {
     return gpioValid(hardwareGpio(), gpio);
 }
 
-inline bool gpioLock(GpioBase& base, unsigned char gpio, bool value) {
-    if (base.valid(gpio)) {
-        bool old = base.lock(gpio);
-        base.lock(gpio, value);
-        return (value != old);
+inline bool gpioLock(GpioBase& base, unsigned char pin, bool value,
+        espurna::SourceLocation source_location = espurna::make_source_location())
+{
+    if (base.valid(pin)) {
+        const auto old = base.lock(pin);
+        base.lock(pin, value);
+
+        const auto result = value != old;
+
+        gpioLockOrigin(espurna::gpio::Origin{
+            .base = base.id(),
+            .pin = pin,
+            .lock = value,
+            .result = result,
+            .location = trim_source_location(source_location),
+        });
+
+        return result;
     }
 
     return false;
 }
 
-inline bool gpioLock(GpioBase& base, unsigned char gpio) {
-    return gpioLock(base, gpio, true);
+inline bool gpioLock(GpioBase& base, unsigned char gpio,
+        espurna::SourceLocation source_location = espurna::make_source_location())
+{
+    return gpioLock(base, gpio, true, source_location);
 }
 
-inline bool gpioLock(unsigned char gpio) {
-    return gpioLock(hardwareGpio(), gpio);
+inline bool gpioLock(unsigned char gpio,
+        espurna::SourceLocation source_location = espurna::make_source_location())
+{
+    return gpioLock(hardwareGpio(), gpio, source_location);
 }
 
-inline bool gpioUnlock(GpioBase& base, unsigned char gpio) {
-    return gpioLock(base, gpio, false);
+inline bool gpioUnlock(GpioBase& base, unsigned char gpio,
+        espurna::SourceLocation source_location = espurna::make_source_location())
+{
+    return gpioLock(base, gpio, false, source_location);
 }
 
-inline bool gpioUnlock(unsigned char gpio) {
-    return gpioUnlock(hardwareGpio(), gpio);
+inline bool gpioUnlock(unsigned char gpio,
+        espurna::SourceLocation source_location = espurna::make_source_location())
+{
+    return gpioUnlock(hardwareGpio(), gpio, source_location);
 }
 
 inline bool gpioLocked(const GpioBase& base, unsigned char gpio) {
@@ -99,3 +139,8 @@ inline bool gpioLocked(const GpioBase& base, unsigned char gpio) {
 inline bool gpioLocked(unsigned char gpio) {
     return gpioLocked(hardwareGpio(), gpio);
 }
+
+BasePinPtr gpioRegister(GpioBase& base, unsigned char gpio,
+        espurna::SourceLocation source_location = espurna::make_source_location());
+BasePinPtr gpioRegister(unsigned char gpio,
+        espurna::SourceLocation source_location = espurna::make_source_location());

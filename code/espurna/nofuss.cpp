@@ -6,13 +6,14 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#include "nofuss.h"
+#include "espurna.h"
 
 #if NOFUSS_SUPPORT
 
-#include "wifi.h"
 #include "mdns.h"
+#include "nofuss.h"
 #include "terminal.h"
+#include "wifi.h"
 #include "ws.h"
 
 #include <NoFUSSClient.h>
@@ -27,12 +28,12 @@ bool _nofussEnabled = false;
 
 #if WEB_SUPPORT
 
-bool _nofussWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
-    return (strncmp(key, "nofuss", 6) == 0);
+bool _nofussWebSocketOnKeyCheck(espurna::StringView key, const JsonVariant& value) {
+    return espurna::settings::query::samePrefix(key, STRING_VIEW("nofuss"));
 }
 
 void _nofussWebSocketOnVisible(JsonObject& root) {
-    root["nofussVisible"] = 1;
+    wsPayloadModule(root, PSTR("nofuss"));
 }
 
 void _nofussWebSocketOnConnected(JsonObject& root) {
@@ -53,24 +54,30 @@ void _nofussConfigure() {
     _nofussInterval = getSetting("nofussInterval", NOFUSS_INTERVAL);
     _nofussLastCheck = 0;
 
-    if (_nofussEnabled) {
-        char device[256];
-        sprintf_P(device, PSTR("%s_%s"), getAppName(), getDevice());
-
-        auto timestamp = String(__UNIX_TIMESTAMP__);
-        NoFUSSClient.setServer(nofussServer);
-        NoFUSSClient.setDevice(device);
-        NoFUSSClient.setVersion(getVersion());
-        NoFUSSClient.setBuild(timestamp);
-
-        DEBUG_MSG_P(PSTR("[NOFUSS] Server: %s\n"), nofussServer.c_str());
-        DEBUG_MSG_P(PSTR("[NOFUSS] Device: %s\n"), device);
-        DEBUG_MSG_P(PSTR("[NOFUSS] Version: %s\n"), getVersion());
-        DEBUG_MSG_P(PSTR("[NOFUSS] Build: %s\n"), timestamp.c_str());
+    if (!_nofussEnabled) {
+        DEBUG_MSG_P(PSTR("[NOFUSS] Disabled\n"));
         return;
     }
 
-    DEBUG_MSG_P(PSTR("[NOFUSS] Disabled\n"));
+    NoFUSSClient.setServer(nofussServer);
+
+    const auto info = buildInfo();
+    String device;
+    device += String(info.app.name);
+    device += '_';
+    device += String(info.hardware.device);
+    NoFUSSClient.setDevice(device);
+
+    const auto version = String(info.app.version);
+    NoFUSSClient.setVersion(version);
+
+    const auto time = String(buildTime());
+    NoFUSSClient.setBuild(time);
+
+    DEBUG_MSG_P(PSTR("[NOFUSS] Server: %s\n"), nofussServer.c_str());
+    DEBUG_MSG_P(PSTR("[NOFUSS] Device: %s\n"), device.c_str());
+    DEBUG_MSG_P(PSTR("[NOFUSS] Version: %s\n"), version.c_str());
+    DEBUG_MSG_P(PSTR("[NOFUSS] Build: %s\n"), time.c_str());
 }
 
 // -----------------------------------------------------------------------------
@@ -91,16 +98,20 @@ void _nofussLoop() {
 }
 
 #if TERMINAL_SUPPORT
+PROGMEM_STRING(NofussCommand, "NOFUSS");
 
-void _nofussInitCommands() {
-
-    terminalRegisterCommand(F("NOFUSS"), [](const terminal::CommandContext&) {
-        terminalOK();
-        nofussRun();
-    });
-
+static void _nofussCommand(::terminal::CommandContext&& ctx) {
+    terminalOK(ctx);
+    nofussRun();
 }
 
+static constexpr ::terminal::Command NofussCommands[] PROGMEM {
+    {NofussCommand, _nofussCommand},
+};
+
+void _nofussCommandsSetup() {
+    espurna::terminal::add(NofussCommands);
+}
 #endif // TERMINAL_SUPPORT
 
 void nofussSetup() {
@@ -110,29 +121,27 @@ void nofussSetup() {
     NoFUSSClient.onMessage([](nofuss_t code) {
 
         if (code == NOFUSS_START) {
-        	DEBUG_MSG_P(PSTR("[NoFUSS] Start\n"));
+            DEBUG_MSG_P(PSTR("[NoFUSS] Start\n"));
         }
 
         if (code == NOFUSS_UPTODATE) {
-        	DEBUG_MSG_P(PSTR("[NoFUSS] Already in the last version\n"));
+            DEBUG_MSG_P(PSTR("[NoFUSS] Already in the last version\n"));
         }
 
         if (code == NOFUSS_NO_RESPONSE_ERROR) {
-        	DEBUG_MSG_P(PSTR("[NoFUSS] Wrong server response: %d %s\n"), NoFUSSClient.getErrorNumber(), (char *) NoFUSSClient.getErrorString().c_str());
+            DEBUG_MSG_P(PSTR("[NoFUSS] Wrong server response: %d %s\n"),
+                NoFUSSClient.getErrorNumber(), NoFUSSClient.getErrorString().c_str());
         }
 
         if (code == NOFUSS_PARSE_ERROR) {
-        	DEBUG_MSG_P(PSTR("[NoFUSS] Error parsing server response\n"));
+        DEBUG_MSG_P(PSTR("[NoFUSS] Error parsing server response\n"));
         }
 
         if (code == NOFUSS_UPDATING) {
-        	DEBUG_MSG_P(PSTR("[NoFUSS] Updating\n"));
-    	    DEBUG_MSG_P(PSTR("         New version: %s\n"), (char *) NoFUSSClient.getNewVersion().c_str());
-        	DEBUG_MSG_P(PSTR("         Firmware: %s\n"), (char *) NoFUSSClient.getNewFirmware().c_str());
-        	DEBUG_MSG_P(PSTR("         File System: %s\n"), (char *) NoFUSSClient.getNewFileSystem().c_str());
-#if WEB_SUPPORT
-            wsSend_P(PSTR("{\"message\": \"Automatic OTA started.\"}"));
-#endif
+            DEBUG_MSG_P(PSTR("[NoFUSS] Updating\n"));
+            DEBUG_MSG_P(PSTR("         New version: %s\n"), NoFUSSClient.getNewVersion().c_str());
+            DEBUG_MSG_P(PSTR("         Firmware: %s\n"), NoFUSSClient.getNewFirmware().c_str());
+            DEBUG_MSG_P(PSTR("         File System: %s\n"), NoFUSSClient.getNewFileSystem().c_str());
 
             // Disabling EEPROM rotation to prevent writing to EEPROM after the upgrade
             eepromRotate(false);
@@ -141,31 +150,25 @@ void nofussSetup() {
             eepromBackup(0);
         }
 
-        if (code == NOFUSS_FILESYSTEM_UPDATE_ERROR) {
-        	DEBUG_MSG_P(PSTR("[NoFUSS] File System Update Error: %s\n"), (char *) NoFUSSClient.getErrorString().c_str());
-        }
-
         if (code == NOFUSS_FILESYSTEM_UPDATED) {
-        	DEBUG_MSG_P(PSTR("[NoFUSS] File System Updated\n"));
+            DEBUG_MSG_P(PSTR("[NoFUSS] File System Updated\n"));
         }
 
-        if (code == NOFUSS_FIRMWARE_UPDATE_ERROR) {
-            DEBUG_MSG_P(PSTR("[NoFUSS] Firmware Update Error: %s\n"), (char *) NoFUSSClient.getErrorString().c_str());
+        if ((code == NOFUSS_FIRMWARE_UPDATE_ERROR) || (code == NOFUSS_FILESYSTEM_UPDATE_ERROR)) {
+            DEBUG_MSG_P(PSTR("[NoFUSS] Update Error: %s\n"), NoFUSSClient.getErrorString().c_str());
         }
 
         if (code == NOFUSS_FIRMWARE_UPDATED) {
-        	DEBUG_MSG_P(PSTR("[NoFUSS] Firmware Updated\n"));
+            DEBUG_MSG_P(PSTR("[NoFUSS] Firmware Updated\n"));
         }
 
         if (code == NOFUSS_RESET) {
-        	DEBUG_MSG_P(PSTR("[NoFUSS] Resetting board\n"));
-            #if WEB_SUPPORT
-                wsSend_P(PSTR("{\"action\": \"reload\"}"));
-            #endif
-            // TODO: NoFUSS will reset the board after this callback returns.
-            //       Maybe this should be optional
+            // NoFUSS default behaviour is to reset the board after this callback returns.
+            // Page reload will happen automatically, when WebUI will fail to receive the PING response.
+            DEBUG_MSG_P(PSTR("[NoFUSS] Restarting...\n"));
             customResetReason(CustomResetReason::Ota);
-            nice_delay(100);
+            espurna::time::blockingDelay(
+                espurna::duration::Milliseconds(100));
         }
 
         if (code == NOFUSS_END) {
@@ -183,7 +186,7 @@ void nofussSetup() {
     #endif
 
     #if TERMINAL_SUPPORT
-        _nofussInitCommands();
+        _nofussCommandsSetup();
     #endif
 
     // Main callbacks

@@ -30,12 +30,4 @@ int weekday(time_t ts);
 int month(time_t ts);
 int year(time_t ts);
 
-int hour();
-int minute();
-int second();
-int day();
-int weekday();
-int month();
-int year();
-
 time_t now();

@@ -8,23 +8,21 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #pragma once
 
-#include "espurna.h"
+#include <Arduino.h>
+#include <cstdint>
 
-#if RFB_SUPPORT
+#include "types.h"
 
-using RfbCodeHandler = void(*)(unsigned char protocol, const char* code);
-void rfbSetCodeHandler(RfbCodeHandler);
+using RfbCodeHandler = void(*)(unsigned char protocol, espurna::StringView code);
+void rfbOnCode(RfbCodeHandler);
 
-void rfbSend(const char* code);
-void rfbSend(const String& code);
+void rfbSend(espurna::StringView code);
 
 void rfbStatus(size_t id, bool status);
 void rfbLearn(size_t id, bool status);
 
 String rfbRetrieve(size_t id, bool status);
-void rfbStore(size_t id, bool status, const char* code);
+void rfbStore(size_t id, bool status, String code);
 
 void rfbForget(size_t id, bool status);
 void rfbSetup();
-
-#endif // RFB_SUPPORT == 1

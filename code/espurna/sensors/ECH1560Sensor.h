@@ -18,14 +18,16 @@ class ECH1560Sensor : public BaseEmonSensor {
         // Public
         // ---------------------------------------------------------------------
 
-        ECH1560Sensor(): _data() {
-            _count = 3;
-            _sensor_id = SENSOR_ECH1560_ID;
-        }
+        static constexpr Magnitude Magnitudes[] {
+            MAGNITUDE_CURRENT,
+            MAGNITUDE_VOLTAGE,
+            MAGNITUDE_POWER_APPARENT,
+            MAGNITUDE_ENERGY
+        };
 
-        ~ECH1560Sensor() {
-            _enableInterrupts(false);
-        }
+        ECH1560Sensor() :
+            BaseEmonSensor(Magnitudes)
+        {}
 
         // ---------------------------------------------------------------------
 
@@ -47,15 +49,15 @@ class ECH1560Sensor : public BaseEmonSensor {
 
         // ---------------------------------------------------------------------
 
-        unsigned char getCLK() {
-            return _clk;
+        unsigned char getCLK() const {
+            return _clk.pin();
         }
 
-        unsigned char getMISO() {
+        unsigned char getMISO() const {
             return _miso;
         }
 
-        bool getInverted() {
+        bool getInverted() const {
             return _inverted;
         }
 
@@ -63,70 +65,83 @@ class ECH1560Sensor : public BaseEmonSensor {
         // Sensor API
         // ---------------------------------------------------------------------
 
+        unsigned char id() const override {
+            return SENSOR_ECH1560_ID;
+        }
+
+        unsigned char count() const override {
+            return std::size(Magnitudes);
+        }
+
         // Initialization method, must be idempotent
-        void begin() {
+        void begin() override {
 
             if (!_dirty) return;
 
-            pinMode(_clk, INPUT);
+            pinMode(_clk.pin(), INPUT);
             pinMode(_miso, INPUT);
-            _enableInterrupts(true);
+            _clk.attach(this, handleInterrupt, RISING);
 
+            _energy_ready = false;
             _dirty = false;
             _ready = true;
 
         }
 
         // Loop-like method, call it in your main loop
-        void tick() {
-            if (_dosync) _sync();
+        void tick() override {
+            if (_dosync) {
+                _sync();
+            }
         }
 
         // Descriptive name of the sensor
-        String description() {
+        String description() const override {
             char buffer[35];
-            snprintf(buffer, sizeof(buffer), "ECH1560 (CLK,SDO) @ GPIO(%hhu,%hhu)", _clk, _miso);
+            snprintf_P(buffer, sizeof(buffer),
+                PSTR("ECH1560 (CLK,SDO) @ GPIO(%hhu,%hhu)"), _clk.pin(), _miso);
             return String(buffer);
         }
 
-        // Descriptive name of the slot # index
-        String description(unsigned char index) {
-            return description();
-        };
-
         // Address of the sensor (it could be the GPIO or I2C address)
-        String address(unsigned char index) {
-            char buffer[6];
-            snprintf(buffer, sizeof(buffer), "%hhu:%hhu", _clk, _miso);
+        String address(unsigned char) const override {
+            char buffer[8];
+            snprintf_P(buffer, sizeof(buffer),
+                PSTR("%hhu:%hhu"), _clk.pin(), _miso);
             return String(buffer);
         }
 
         // Type for slot # index
-        unsigned char type(unsigned char index) {
-            if (index == 0) return MAGNITUDE_CURRENT;
-            if (index == 1) return MAGNITUDE_VOLTAGE;
-            if (index == 2) return MAGNITUDE_POWER_APPARENT;
-            if (index == 3) return MAGNITUDE_ENERGY;
+        unsigned char type(unsigned char index) const override {
+            if (index < std::size(Magnitudes)) {
+                return Magnitudes[index].type;
+            }
+
             return MAGNITUDE_NONE;
         }
 
         // Current value for slot # index
-        double value(unsigned char index) {
+        double value(unsigned char index) override {
             if (index == 0) return _current;
             if (index == 1) return _voltage;
             if (index == 2) return _apparent;
-            if (index == 3) return getEnergy();
+            if (index == 3) return _energy[0].asDouble();
             return 0;
         }
 
-        void IRAM_ATTR handleInterrupt(unsigned char) {
+        static void IRAM_ATTR handleInterrupt(ECH1560Sensor* instance) {
+            instance->interrupt();
+        }
+
+    private:
+        void IRAM_ATTR interrupt() {
             // if we are trying to find the sync-time (CLK goes high for 1-2ms)
-            if (_dosync == false) {
+            if (!_dosync) {
 
                 _clk_count = 0;
 
                 // register how long the ClkHigh is high to evaluate if we are at the part where clk goes high for 1-2 ms
-                while (digitalRead(_clk) == HIGH) {
+                while (digitalRead(_clk.pin()) == HIGH) {
                     _clk_count += 1;
                     delayMicroseconds(30);  //can only use delayMicroseconds in an interrupt.
                 }
@@ -144,39 +159,9 @@ class ECH1560Sensor : public BaseEmonSensor {
                 _nextbit = true;
 
             }
-
         }
 
     protected:
-
-        // ---------------------------------------------------------------------
-        // Interrupt management
-        // ---------------------------------------------------------------------
-
-        void _attach(ECH1560Sensor * instance, unsigned char gpio, unsigned char mode);
-        void _detach(unsigned char gpio);
-
-        void _enableInterrupts(bool value) {
-
-            static unsigned char _interrupt_clk = GPIO_NONE;
-
-            if (value) {
-                if (_interrupt_clk != _clk) {
-                    if (_interrupt_clk != GPIO_NONE) _detach(_interrupt_clk);
-                    _attach(this, _clk, RISING);
-                    _interrupt_clk = _clk;
-                }
-            } else if (_interrupt_clk != GPIO_NONE) {
-                _detach(_interrupt_clk);
-                _interrupt_clk = GPIO_NONE;
-            }
-
-        }
-
-        // ---------------------------------------------------------------------
-        // Protected
-        // ---------------------------------------------------------------------
-
         void _sync() {
 
             unsigned int byte1 = 0;
@@ -259,14 +244,15 @@ class ECH1560Sensor : public BaseEmonSensor {
                 _apparent = ( (float) byte1 * 255 + (float) byte2 + (float) byte3 / 255.0) / 2;
                 _current = _apparent / _voltage;
 
-                static unsigned long last = 0;
-                if (last > 0) {
-                    _energy[0] += sensor::Ws {
-                        static_cast<uint32_t>(_apparent * (millis() - last) / 1000)
-                    };
+                const auto now = TimeSource::now();
+                if (_energy_ready) {
+                    using namespace espurna::sensor;
+                    const auto elapsed = std::chrono::duration_cast<espurna::duration::Seconds>(now - _energy_last);
+                    _energy[0] += WattSeconds(Watts{_apparent}, elapsed);
                 }
-                last = millis();
 
+                _energy_ready = true;
+                _energy_last = now;
                 _dosync = false;
 
             }
@@ -282,8 +268,8 @@ class ECH1560Sensor : public BaseEmonSensor {
 
         // ---------------------------------------------------------------------
 
-        unsigned char _clk = 0;
-        unsigned char _miso = 0;
+        InterruptablePin _clk{};
+        unsigned char _miso = GPIO_NONE;
         bool _inverted = false;
 
         volatile long _bits_count = 0;
@@ -295,62 +281,15 @@ class ECH1560Sensor : public BaseEmonSensor {
         double _voltage = 0;
         double _current = 0;
 
-        unsigned char _data[24];
+        using TimeSource = espurna::time::CoreClock;
+        TimeSource::time_point _energy_last;
+        bool _energy_ready { false };
 
+        unsigned char _data[24] {0};
 };
 
-// -----------------------------------------------------------------------------
-// Interrupt helpers
-// -----------------------------------------------------------------------------
-
-ECH1560Sensor * _ech1560_sensor_instance[10] = {NULL};
-
-void IRAM_ATTR _ech1560_sensor_isr(unsigned char gpio) {
-    unsigned char index = gpio > 5 ? gpio-6 : gpio;
-    if (_ech1560_sensor_instance[index]) {
-        _ech1560_sensor_instance[index]->handleInterrupt(gpio);
-    }
-}
-
-void IRAM_ATTR _ech1560_sensor_isr_0() { _ech1560_sensor_isr(0); }
-void IRAM_ATTR _ech1560_sensor_isr_1() { _ech1560_sensor_isr(1); }
-void IRAM_ATTR _ech1560_sensor_isr_2() { _ech1560_sensor_isr(2); }
-void IRAM_ATTR _ech1560_sensor_isr_3() { _ech1560_sensor_isr(3); }
-void IRAM_ATTR _ech1560_sensor_isr_4() { _ech1560_sensor_isr(4); }
-void IRAM_ATTR _ech1560_sensor_isr_5() { _ech1560_sensor_isr(5); }
-void IRAM_ATTR _ech1560_sensor_isr_12() { _ech1560_sensor_isr(12); }
-void IRAM_ATTR _ech1560_sensor_isr_13() { _ech1560_sensor_isr(13); }
-void IRAM_ATTR _ech1560_sensor_isr_14() { _ech1560_sensor_isr(14); }
-void IRAM_ATTR _ech1560_sensor_isr_15() { _ech1560_sensor_isr(15); }
-
-static void (*_ech1560_sensor_isr_list[10])() = {
-    _ech1560_sensor_isr_0, _ech1560_sensor_isr_1, _ech1560_sensor_isr_2,
-    _ech1560_sensor_isr_3, _ech1560_sensor_isr_4, _ech1560_sensor_isr_5,
-    _ech1560_sensor_isr_12, _ech1560_sensor_isr_13, _ech1560_sensor_isr_14,
-    _ech1560_sensor_isr_15
-};
-
-void ECH1560Sensor::_attach(ECH1560Sensor * instance, unsigned char gpio, unsigned char mode) {
-    if (!gpioValid(gpio)) return;
-    _detach(gpio);
-    unsigned char index = gpio > 5 ? gpio-6 : gpio;
-    _ech1560_sensor_instance[index] = instance;
-    attachInterrupt(gpio, _ech1560_sensor_isr_list[index], mode);
-    #if SENSOR_DEBUG
-        DEBUG_MSG_P(PSTR("[SENSOR] GPIO%d interrupt attached to %s\n"), gpio, instance->description().c_str());
-    #endif
-}
-
-void ECH1560Sensor::_detach(unsigned char gpio) {
-    if (!gpioValid(gpio)) return;
-    unsigned char index = gpio > 5 ? gpio-6 : gpio;
-    if (_ech1560_sensor_instance[index]) {
-        detachInterrupt(gpio);
-        #if SENSOR_DEBUG
-            DEBUG_MSG_P(PSTR("[SENSOR] GPIO%d interrupt detached from %s\n"), gpio, _ech1560_sensor_instance[index]->description().c_str());
-        #endif
-        _ech1560_sensor_instance[index] = NULL;
-    }
-}
+#if __cplusplus < 201703L
+constexpr BaseEmonSensor::Magnitude ECH1560Sensor::Magnitudes[];
+#endif
 
 #endif // SENSOR_SUPPORT && ECH1560_SUPPORT

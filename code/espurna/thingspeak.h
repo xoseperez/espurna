@@ -8,12 +8,11 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #pragma once
 
-#include "espurna.h"
+#include <Arduino.h>
+#include <cstdint>
 
-constexpr size_t tspkDataBufferSize { 256ul };
-
-bool tspkEnqueueRelay(size_t index, bool status);
-bool tspkEnqueueMeasurement(unsigned char index, const char * payload);
+bool tspkEnqueueRelay(unsigned char index, bool status);
+bool tspkEnqueueMagnitude(unsigned char index, const String& value);
 void tspkFlush();
 
 bool tspkEnabled();

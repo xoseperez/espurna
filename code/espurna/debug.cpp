@@ -10,16 +10,15 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if DEBUG_SUPPORT
 
-#include <limits>
-#include <type_traits>
-#include <vector>
-
 #include "settings.h"
 #include "telnet.h"
 #include "web.h"
 #include "ntp.h"
-#include "utils.h"
 #include "ws.h"
+
+#include <limits>
+#include <type_traits>
+#include <vector>
 
 #if DEBUG_WEB_SUPPORT
 #include <ArduinoJson.h>
@@ -27,61 +26,328 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if DEBUG_UDP_SUPPORT
 #include <WiFiUdp.h>
-WiFiUDP _udp_debug;
-
-constexpr bool _udp_syslog_enabled = (514 == DEBUG_UDP_PORT);
-char _udp_syslog_header[64];
 #endif
 
-bool _debug_enabled = false;
+namespace espurna {
+namespace debug {
+namespace settings {
+namespace options {
+namespace {
 
-// -----------------------------------------------------------------------------
-// printf-like debug methods
-// -----------------------------------------------------------------------------
+using espurna::settings::options::Enumeration;
 
-constexpr int DEBUG_SEND_STRING_BUFFER_SIZE = 128;
+PROGMEM_STRING(Disabled, "off");
+PROGMEM_STRING(Enabled, "on");
+PROGMEM_STRING(SkipBoot, "skip-boot");
 
-void _debugSendInternal(const char * message, bool add_timestamp = DEBUG_ADD_TIMESTAMP);
+static constexpr Enumeration<DebugLogMode> DebugLogModeOptions[] PROGMEM {
+    {DebugLogMode::Disabled, Disabled},
+    {DebugLogMode::Enabled, Enabled},
+    {DebugLogMode::SkipBoot, SkipBoot},
+};
 
-// TODO: switch to newlib vsnprintf for latest Cores to support PROGMEM args
-void _debugSend(const char * format, va_list args) {
+} // namespace
+} // namespace options
 
-    char temp[DEBUG_SEND_STRING_BUFFER_SIZE];
-    int len = vsnprintf(temp, sizeof(temp), format, args);
+namespace keys {
+namespace {
 
-    // strlen(...) + '\0' already in temp buffer, avoid using malloc when possible
-    if (len < DEBUG_SEND_STRING_BUFFER_SIZE) {
-        _debugSendInternal(temp);
+PROGMEM_STRING(SdkDebug, "dbgSDK");
+PROGMEM_STRING(Mode, "dbgLogMode");
+PROGMEM_STRING(Buffer, "dbgLogBuf");
+PROGMEM_STRING(BufferSize, "dbgLogBufSize");
+
+PROGMEM_STRING(HeartbeatMode, "dbgHbMode");
+PROGMEM_STRING(HeartbeatInterval, "dbgHbIntvl");
+
+} // namespace
+} // namespace keys
+} // namespace settings
+} // namespace debug
+
+namespace settings {
+namespace internal {
+namespace {
+
+using espurna::debug::settings::options::DebugLogModeOptions;
+
+} // namespace
+
+String serialize(::DebugLogMode value) {
+    return serialize(DebugLogModeOptions, value);
+}
+
+template<>
+DebugLogMode convert(const String& value) {
+    return convert(DebugLogModeOptions, value, DebugLogMode::Enabled);
+}
+
+} // namespace internal
+} // namespace settings
+
+namespace debug {
+namespace {
+
+struct Timestamp {
+    Timestamp() = default;
+
+    constexpr Timestamp(bool value) :
+        _value(value)
+    {}
+
+    constexpr explicit operator bool() const {
+        return _value;
+    }
+
+private:
+    bool _value { false };
+};
+
+} // namespace
+
+namespace build {
+namespace {
+
+constexpr Timestamp AddTimestamp { 1 == DEBUG_ADD_TIMESTAMP };
+
+constexpr bool coreDebug() {
+#if defined(DEBUG_ESP_PORT) && !defined(NDEBUG)
+    return true;
+#else
+    return false;
+#endif
+}
+
+constexpr bool sdkDebug() {
+    return false;
+}
+
+constexpr DebugLogMode mode() {
+    return DEBUG_LOG_MODE;
+}
+
+constexpr bool buffer() {
+    return 1 == DEBUG_LOG_BUFFER_ENABLED;
+}
+
+constexpr size_t bufferSize() {
+    return DEBUG_LOG_BUFFER_SIZE;
+}
+
+} // namespace
+} // namespace build
+
+namespace settings {
+namespace {
+
+[[gnu::unused]]
+bool sdkDebug() {
+    return getSetting(keys::SdkDebug, build::sdkDebug());
+}
+
+DebugLogMode mode() {
+    return getSetting(keys::Mode, build::mode());
+}
+
+bool buffer() {
+    return getSetting(keys::Buffer, build::buffer());
+}
+
+size_t bufferSize() {
+    return getSetting(keys::BufferSize, build::bufferSize());
+}
+
+espurna::heartbeat::Mode heartbeatMode() {
+    return getSetting(keys::HeartbeatMode, espurna::heartbeat::currentMode());
+}
+
+espurna::duration::Seconds heartbeatInterval() {
+    return getSetting(keys::HeartbeatInterval, espurna::heartbeat::currentInterval());
+}
+
+} // namespace
+} // namespace settings
+
+namespace internal {
+namespace {
+
+bool enabled { false };
+
+} // namespace
+} // namespace internal
+
+namespace {
+
+bool enabled() {
+    return internal::enabled;
+}
+
+void disable() {
+    internal::enabled = false;
+}
+
+void enable() {
+    internal::enabled = true;
+}
+
+void delayedEnable() {
+    disable();
+    ::espurnaRegisterOnce(enable);
+}
+
+void send(const char* message, size_t len, Timestamp);
+void send(const char* message, size_t len) {
+    send(message, len, build::AddTimestamp);
+}
+
+void formatAndSend(const char* format, va_list args) {
+    constexpr size_t SmallStringBufferSize { 128 };
+    char temp[SmallStringBufferSize];
+
+    int len = vsnprintf_P(temp, sizeof(temp), format, args);
+    if (len <= 0) {
         return;
     }
 
-    len += 1;
-    auto* buffer = static_cast<char*>(malloc(len));
+    // strlen(...) + '\0' already in temp buffer, avoid (explicit) dynamic memory when possible
+    // (TODO: printf might still do it anyway internally?)
+    if (static_cast<size_t>(len) < sizeof(temp)) {
+        send(temp, len);
+        return;
+    }
+
+    const size_t BufferSize { static_cast<size_t>(len) + 1 };
+    auto* buffer = new (std::nothrow) char[BufferSize];
     if (!buffer) {
         return;
     }
-    vsnprintf(buffer, len, format, args);
 
-    _debugSendInternal(buffer);
-    free(buffer);
-
+    vsnprintf_P(buffer, BufferSize, format, args);
+    send(buffer, len);
+    delete[] buffer;
 }
 
-void debugSendRaw(const char* line, bool timestamp) {
-    if (_debug_enabled) {
-        _debugSendInternal(line, timestamp);
+namespace buffer {
+namespace internal {
+
+bool enabled { false };
+std::vector<char> storage;
+
+} // namespace internal
+
+size_t size() {
+    return internal::storage.size();
+}
+
+size_t capacity() {
+    return internal::storage.capacity();
+}
+
+void reserve(size_t size) {
+    internal::storage.reserve(size);
+}
+
+bool enabled() {
+    return internal::enabled;
+}
+
+void disable() {
+    internal::enabled = false;
+}
+
+void enable() {
+    internal::enabled = true;
+}
+
+void enable(size_t reserved) {
+    enable();
+    reserve(reserved);
+}
+
+template <typename T>
+struct Handle {
+    Handle() = delete;
+    explicit Handle(T& lock) :
+        _lock(lock)
+    {
+        _lock.lock();
     }
-}
 
-// Buffer data until we encounter line break, then flush via Raw debug method
+    ~Handle() {
+        _lock.unlock();
+    }
+
+    explicit operator bool() const {
+        return _lock;
+    }
+
+private:
+    T& _lock;
+};
+
+struct Lock {
+    Lock() = default;
+
+    explicit operator bool() const {
+        return _value;
+    }
+
+    Handle<Lock> handle() {
+        return Handle<Lock>(*this);
+    }
+
+    bool lock() {
+        if (!_value) {
+            _value = true;
+            return true;
+        }
+
+        return false;
+    }
+
+    bool unlock() {
+        if (_value) {
+            _value = false;
+            return true;
+        }
+
+        return false;
+    }
+
+private:
+    bool _value { false };
+};
+
+struct DebugLock {
+    DebugLock() {
+        if (debug::enabled()) {
+            _changed = true;
+            debug::disable();
+        }
+    }
+
+    ~DebugLock() {
+        if (_changed) {
+            debug::enable();
+        }
+    }
+
+private:
+    bool _changed { false };
+};
+
+// Buffer data until we encounter line break, then flush via debug method
 // (which is supposed to 1-to-1 copy the data, without adding the timestamp)
+// TODO: abstract as `PrintLine`, so this becomes generic line buffering output for terminal as well?
 
-namespace {
-std::vector<char> _dbg_raw_output;
-}
+namespace internal {
 
-void debugSendBytes(const uint8_t* bytes, size_t size) {
-    static bool lock { false };
+std::vector<char> line;
+
+} // namespace internal
+
+void sendBytes(const uint8_t* bytes, size_t size) {
+    static Lock lock;
     if (lock) {
         return;
     }
@@ -90,387 +356,406 @@ void debugSendBytes(const uint8_t* bytes, size_t size) {
         return;
     }
 
-    lock = true;
-
-    if (_dbg_raw_output.capacity() < (size + 2)) {
-        _dbg_raw_output.reserve(_dbg_raw_output.size() + size + 2);
+    auto handle = lock.handle();
+    if (internal::line.capacity() < (size + 2)) {
+        internal::line.reserve(internal::line.size() + size + 2);
     }
-    _dbg_raw_output.insert(_dbg_raw_output.end(),
+
+    internal::line.insert(internal::line.end(),
         reinterpret_cast<const char*>(bytes),
         reinterpret_cast<const char*>(bytes) + size);
 
-    if (_dbg_raw_output.end() != std::find(_dbg_raw_output.begin(), _dbg_raw_output.end(), '\n')) {
-        _dbg_raw_output.push_back('\0');
-        debugSendRaw(_dbg_raw_output.data());
-        _dbg_raw_output.clear();
-    }
+    if (internal::line.end() != std::find(internal::line.begin(), internal::line.end(), '\n')) {
+        // TODO: ws and telnet still assume this is a c-string and will try to strlen this pointer
+        auto len = internal::line.size();
+        internal::line.push_back('\0');
 
-    lock = false;
+        DebugLock debugLock;
+        debug::send(internal::line.data(), len, Timestamp(false));
+
+        internal::line.clear();
+    }
 }
 
-void debugSend(const char* format, ...) {
-    if (!_debug_enabled) {
+// Longer recording of all log data. Stops when storage is filled, requires manual flushing.
+
+void add(const char (&prefix)[10], const char* data, size_t len) {
+    if (len > std::numeric_limits<uint16_t>::max()) {
         return;
     }
 
-    va_list args;
-    va_start(args, format);
+    size_t total { len };
+    bool withPrefix { prefix[0] != '\0' };
+    if (withPrefix) {
+        total += sizeof(prefix) - 1;
+    }
 
-    _debugSend(format, args);
-
-    va_end(args);
-}
-
-void debugSend_P(const char* format_P, ...) {
-    if (!_debug_enabled) {
+    if ((internal::storage.capacity() - internal::storage.size()) <= (total + 3)) {
+        internal::enabled = false;
         return;
     }
 
-    char format[strlen_P(format_P) + 1];
-    memcpy_P(format, format_P, sizeof(format));
+    internal::storage.push_back(total >> 8);
+    internal::storage.push_back(total & 0xff);
 
-    va_list args;
-    va_start(args, format_P);
-
-    _debugSend(format, args);
-
-    va_end(args);
+    if (withPrefix) {
+        internal::storage.insert(internal::storage.end(), prefix, prefix + sizeof(prefix));
+    }
+    internal::storage.insert(internal::storage.end(), data, data + len);
 }
 
-// -----------------------------------------------------------------------------
-// specific debug targets
-// -----------------------------------------------------------------------------
-
-#if DEBUG_SERIAL_SUPPORT
-    void _debugSendSerial(const char* prefix, const char* data) {
-        if (prefix && (prefix[0] != '\0')) {
-            DEBUG_PORT.print(prefix);
-        }
-        DEBUG_PORT.print(data);
-    }
-#endif // DEBUG_SERIAL_SUPPORT
-
-#if DEBUG_LOG_BUFFER_SUPPORT
-
-std::vector<char> _debug_log_buffer;
-bool _debug_log_buffer_enabled = false;
-
-void _debugLogBuffer(const char* prefix, const char* data) {
-    if (!_debug_log_buffer_enabled) return;
-
-    const auto prefix_len = strlen(prefix);
-    const auto data_len = strlen(data);
-    const auto total_len = prefix_len + data_len;
-    if (total_len >= std::numeric_limits<uint16_t>::max()) {
-        return;
-    }
-    if ((_debug_log_buffer.capacity() - _debug_log_buffer.size()) <= (total_len + 3)) {
-        _debug_log_buffer_enabled = false;
-        return;
-    }
-
-    _debug_log_buffer.push_back(total_len >> 8);
-    _debug_log_buffer.push_back(total_len & 0xff);
-    if (prefix && (prefix[0] != '\0')) {
-        _debug_log_buffer.insert(_debug_log_buffer.end(), prefix, prefix + prefix_len);
-    }
-    _debug_log_buffer.insert(_debug_log_buffer.end(), data, data + data_len);
-}
-
-void _debugLogBufferDump(Print& out) {
+void dump(Print& out) {
     size_t index = 0;
     do {
-        if (index >= _debug_log_buffer.size()) {
+        if (index >= internal::storage.size()) {
             break;
         }
 
-        size_t len = _debug_log_buffer[index] << 8;
-        len = len | _debug_log_buffer[index + 1];
+        size_t len = internal::storage[index] << 8;
+        len = len | internal::storage[index + 1];
         index += 2;
 
-        auto value = _debug_log_buffer[index + len];
-        _debug_log_buffer[index + len] = '\0';
-        out.print(_debug_log_buffer.data() + index);
-        _debug_log_buffer[index + len] = value;
+        auto value = internal::storage[index + len];
+        internal::storage[index + len] = '\0';
+        out.print(internal::storage.data() + index);
+        internal::storage[index + len] = value;
 
         index += len;
     } while (true);
 
-    _debug_log_buffer.clear();
-    _debug_log_buffer.shrink_to_fit();
+    internal::storage.clear();
+    internal::storage.shrink_to_fit();
 }
 
-bool debugLogBuffer() {
-    return _debug_log_buffer_enabled;
+} // namespace buffer
+
+#if DEBUG_SERIAL_SUPPORT
+namespace serial {
+
+using Output = void(*)(const char (&)[10], const char*, size_t);
+
+void null_output(const char (&)[10], const char*, size_t) {
 }
 
-#endif // DEBUG_LOG_BUFFER_SUPPORT
+namespace internal {
 
-// -----------------------------------------------------------------------------
+Print* port { nullptr };
+Output output { null_output };
 
-void _debugSendInternal(const char * message, bool add_timestamp) {
+} // namespace
 
-    const size_t msg_len = strlen(message);
+void output(const char (&prefix)[10], const char* message, size_t len) {
+    internal::output(prefix, message, len);
+}
 
-    bool pause = false;
-    char timestamp[10] = {0};
-
-    #if DEBUG_ADD_TIMESTAMP
-        static bool continue_timestamp = true;
-        if (add_timestamp && continue_timestamp) {
-            snprintf(timestamp, sizeof(timestamp), "[%06lu] ", millis() % 1000000);
-        }
-        continue_timestamp = add_timestamp || (message[msg_len - 1] == 10) || (message[msg_len - 1] == 13);
-    #endif
-
-    #if DEBUG_SERIAL_SUPPORT
-        _debugSendSerial(timestamp, message);
-    #endif
-
-    #if DEBUG_UDP_SUPPORT
-        #if SYSTEM_CHECK_ENABLED
-        if (systemCheck()) {
-        #endif
-            _udp_debug.beginPacket(DEBUG_UDP_IP, DEBUG_UDP_PORT);
-            if (_udp_syslog_enabled) {
-                _udp_debug.write(_udp_syslog_header);
-            }
-            _udp_debug.write(message);
-            pause = _udp_debug.endPacket() > 0;
-        #if SYSTEM_CHECK_ENABLED
-        }
-        #endif
-    #endif
-
-    #if DEBUG_TELNET_SUPPORT
-        pause = telnetDebugSend(timestamp, message) || pause;
-    #endif
-
-    #if DEBUG_WEB_SUPPORT
-        pause = wsDebugSend(timestamp, message) || pause;
-    #endif
-
-    #if DEBUG_LOG_BUFFER_SUPPORT
-        _debugLogBuffer(timestamp, message);
-    #endif
-
-    if (pause) {
-        optimistic_yield(1000);
+void port_output(const char (&prefix)[10], const char* message, size_t len) {
+    if (prefix[0] != '\0') {
+        internal::port->write(&prefix[0], sizeof(prefix) - 1);
     }
-
+    internal::port->write(message, len);
 }
 
-// -----------------------------------------------------------------------------
-
-#if DEBUG_WEB_SUPPORT
-
-#if TERMINAL_SUPPORT
-void _debugWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
-    if (strcmp(action, "dbgcmd") != 0) {
+void setup() {
+    // HardwareSerial::begin() will automatically enable this when
+    // `#if defined(DEBUG_ESP_PORT) && !defined(NDEBUG)`
+    // Do not interfere when that is the case
+    const auto port = uartPort(DEBUG_SERIAL_PORT - 1);
+    if (!port || !port->tx) {
         return;
     }
 
-    if (!data.containsKey("command") || !data["command"].is<const char*>()) {
-        return;
+    // TODO: notice that SDK accepts anything as putc / printf,
+    // but we don't really have a good reason to wrire both
+    // this debug output and the one from SDK
+    // (and most of the time this is need to grab boot info from a
+    // physically connected device)
+    if (!build::coreDebug() && settings::sdkDebug()) {
+        switch (port->type) {
+        case driver::uart::Type::Uart0:
+            uart_set_debug(0);
+            break;
+        case driver::uart::Type::Uart1:
+            uart_set_debug(1);
+            break;
+        default:
+            break;
+        }
     }
 
-    const char* command = data["command"];
-    auto len = command ? strlen(command) : 0ul;
-
-    terminalInject(command, len);
-    terminalInject('\n');
-}
-#endif
-
-void debugWebSetup() {
-
-    wsRegister()
-#if TERMINAL_SUPPORT
-        .onAction(_debugWebSocketOnAction)
-#endif
-        .onVisible([](JsonObject& root) { root["dbgVisible"] = 1; });
-
+    internal::port = port->stream;
+    internal::output = port_output;
 }
 
-#endif // DEBUG_WEB_SUPPOR
+} // namespace serial
+#endif
 
 #if DEBUG_UDP_SUPPORT
+namespace syslog {
+namespace build {
+
+IPAddress ip() {
+    return DEBUG_UDP_IP;
+}
+
+constexpr uint16_t port() {
+    return DEBUG_UDP_PORT;
+};
+
+constexpr bool enabled() {
+    return port() == 514;
+}
+
+} // namespace build
+
+namespace internal {
+
+size_t len { 0 };
+char header[128] = {0};
+WiFiUDP udp;
+
+} // namespace
 
 // We use the syslog header as defined in RFC5424 (The Syslog Protocol), ref:
 // - https://tools.ietf.org/html/rfc5424
 // - https://github.com/xoseperez/espurna/issues/2312/
 
-void debugUdpSyslogConfigure() {
+void configure() {
     snprintf_P(
-        _udp_syslog_header, sizeof(_udp_syslog_header),
-        PSTR("<%u>1 - %s ESPurna - - - "), DEBUG_UDP_FAC_PRI,
-        getSetting("hostname", getIdentifier()).c_str());
+        internal::header, sizeof(internal::header),
+        PSTR("<%u>1 - %.31s ESPurna - - - "), DEBUG_UDP_FAC_PRI,
+        systemHostname().c_str());
 }
 
-#endif // DEBUG_UDP_SUPPORT
+bool output(const char* message, size_t len) {
+    if (build::enabled() && wifiConnected()) {
+        internal::udp.beginPacket(build::ip(), build::port());
+        internal::udp.write(internal::header, internal::len);
+        internal::udp.write(message, len);
 
-// -----------------------------------------------------------------------------
+        return internal::udp.endPacket() > 0;
+    }
 
-void debugSetup() {
+    return false;
+}
+
+} // namespace syslog
+#endif
+
+void send(const char* message, size_t len, Timestamp timestamp) {
+    if (!message || !len) {
+        return;
+    }
+
+    char prefix[10] = {0};
+    static bool continue_timestamp = true;
+    if (timestamp && continue_timestamp) {
+        snprintf(prefix, sizeof(prefix), "[%06lu] ", millis() % 1000000);
+    }
+
+    continue_timestamp = static_cast<bool>(timestamp)
+        || (message[len - 1] == '\r')
+        || (message[len - 1] == '\n');
+
+    bool pause { false };
 
 #if DEBUG_SERIAL_SUPPORT
-    DEBUG_PORT.begin(SERIAL_BAUDRATE);
+    serial::output(prefix, message, len);
 #endif
 
 #if DEBUG_UDP_SUPPORT
-    if (_udp_syslog_enabled) {
-        debugUdpSyslogConfigure();
-        espurnaRegisterReload(debugUdpSyslogConfigure);
-    }
+    pause = syslog::output(message, len);
 #endif
 
-#if TERMINAL_SUPPORT && DEBUG_LOG_BUFFER_SUPPORT
-    terminalRegisterCommand(F("DEBUG.BUFFER"), [](const terminal::CommandContext& ctx) {
-        _debug_log_buffer_enabled = false;
-        if (!_debug_log_buffer.size()) {
-            terminalError(ctx, F("buffer is empty\n"));
-            return;
-        }
+#if DEBUG_TELNET_SUPPORT
+    pause = telnetDebugSend(prefix, message) || pause;
+#endif
 
-        ctx.output.printf_P(PSTR("Buffer size: %u / %u bytes\n"),
-            _debug_log_buffer.size(),
-            _debug_log_buffer.capacity());
-        _debugLogBufferDump(ctx.output);
-        terminalOK(ctx);
-    });
-#endif // TERMINAL_SUPPORT
+#if DEBUG_WEB_SUPPORT
+    pause = wsDebugSend(prefix, message) || pause;
+#endif
 
-}
+#if DEBUG_LOG_BUFFER_SUPPORT
+    buffer::add(prefix, message, len);
+#endif
 
-namespace settings {
-namespace internal {
-
-String serialize(DebugLogMode value) {
-    String result;
-    switch (value) {
-        case DebugLogMode::Disabled:
-            result = "0";
-            break;
-        case DebugLogMode::SkipBoot:
-            result = "2";
-            break;
-        default:
-        case DebugLogMode::Enabled:
-            result = "1";
-            break;
-    }
-    return result;
-}
-
-template<>
-DebugLogMode convert(const String& value) {
-    switch (value.toInt()) {
-        case 0:
-            return DebugLogMode::Disabled;
-        case 2:
-            return DebugLogMode::SkipBoot;
-        case 1:
-        default:
-            return DebugLogMode::Enabled;
+    if (pause) {
+        optimistic_yield(1000);
     }
 }
 
-} // namespace internal
-} // namespace settings
+// -----------------------------------------------------------------------------
 
-void debugConfigureBoot() {
-    static_assert(
-        std::is_same<int, std::underlying_type<DebugLogMode>::type>::value,
-        "should be able to match DebugLogMode with int"
-    );
+#if DEBUG_WEB_SUPPORT
+namespace web {
 
-    const auto mode = getSetting("dbgLogMode", DEBUG_LOG_MODE);
-    switch (mode) {
-        case DebugLogMode::SkipBoot:
-            schedule_function([]() {
-                _debug_enabled = true;
-            });
-            // fall through
-        case DebugLogMode::Disabled:
-            _debug_enabled = false;
-            break;
-        case DebugLogMode::Enabled:
-            _debug_enabled = true;
-            break;
-    }
-
-    debugConfigure();
+void onVisible(JsonObject& root) {
+    wsPayloadModule(root, PSTR("dbg"));
 }
 
-bool _debugHeartbeat(heartbeat::Mask mask) {
-    if (mask & heartbeat::Report::Uptime) {
-        DEBUG_MSG_P(PSTR("[MAIN] Uptime: %s\n"), getUptime().c_str());
+} // namespace web
+#endif
+
+// -----------------------------------------------------------------------------
+
+bool status(espurna::heartbeat::Mask mask) {
+    if (mask & espurna::heartbeat::Report::Uptime) {
+        debugSend(PSTR("[MAIN] Uptime: %s\n"), prettyDuration(systemUptime()).c_str());
     }
 
-    if (mask & heartbeat::Report::Freeheap) {
-        auto stats = systemHeapStats();
-        DEBUG_MSG_P(PSTR("[MAIN] %5u / %5u bytes available (%5u contiguous)\n"),
-            stats.available, systemInitialFreeHeap(), stats.usable);
+    if (mask & espurna::heartbeat::Report::Freeheap) {
+        const auto stats = systemHeapStats();
+        debugSend(PSTR("[MAIN] Heap: initial %5lu available %5lu contiguous %5lu\n"),
+            systemInitialFreeHeap(), stats.available, stats.usable);
     }
 
-    if ((mask & heartbeat::Report::Vcc) && (ADC_MODE_VALUE == ADC_VCC)) {
-        DEBUG_MSG_P(PSTR("[MAIN] VCC: %lu mV\n"), ESP.getVcc());
+    if ((mask & espurna::heartbeat::Report::Vcc) && (ADC_MODE_VALUE == ADC_VCC)) {
+        debugSend(PSTR("[MAIN] VCC: %lu mV\n"), ESP.getVcc());
     }
 
 #if NTP_SUPPORT
-    if ((mask & heartbeat::Report::Datetime) && (ntpSynced())) {
-        DEBUG_MSG_P(PSTR("[MAIN] Time: %s\n"), ntpDateTime().c_str());
+    if ((mask & espurna::heartbeat::Report::Datetime) && ntpSynced()) {
+        debugSend(PSTR("[MAIN] Datetime: %s\n"), ntpDateTime().c_str());
     }
 #endif
 
     return true;
 }
 
-void debugConfigure() {
-
-    // HardwareSerial::begin() will automatically enable this when
-    // `#if defined(DEBUG_ESP_PORT) && !defined(NDEBUG)`
-    // Core debugging also depends on various DEBUG_ESP_... being defined
-    {
-#if defined(DEBUG_ESP_PORT)
-#if not defined(NDEBUG)
-        constexpr bool debug_sdk = true;
-#endif // !defined(NDEBUG)
-#else
-        constexpr bool debug_sdk = false;
-#endif // defined(DEBUG_ESP_PORT)
-        DEBUG_PORT.setDebugOutput(getSetting("dbgSDK", debug_sdk));
+void configure() {
+#if DEBUG_LOG_BUFFER_SUPPORT
+    if (settings::buffer()) {
+        debug::buffer::enable(settings::bufferSize());
     }
-
-    // Make sure other modules are aware of used GPIOs
-#if DEBUG_SERIAL_SUPPORT
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored  "-Wpragmas"
-#pragma GCC diagnostic ignored  "-Wtautological-compare"
-    if (&(DEBUG_PORT) == &Serial) {
-        gpioLock(1);
-        gpioLock(3);
-    } else if (&(DEBUG_PORT) == &Serial1) {
-        gpioLock(2);
-    }
-#pragma GCC diagnostic pop
 #endif
 
-    #if DEBUG_LOG_BUFFER_SUPPORT
-    {
-        const auto enabled = getSetting("dbgLogBuf", 1 == DEBUG_LOG_BUFFER_ENABLED);
-        const auto size = getSetting("dbgLogBufSize", DEBUG_LOG_BUFFER_SIZE);
-        if (enabled) {
-            _debug_log_buffer_enabled = true;
-            _debug_log_buffer.reserve(size);
-        }
+    ::systemHeartbeat(status,
+        settings::heartbeatMode(),
+        settings::heartbeatInterval());
+}
+
+void onBoot() {
+    static_assert(
+        std::is_same<int, std::underlying_type<DebugLogMode>::type>::value,
+        "should be able to match DebugLogMode with int"
+    );
+
+    switch (settings::mode()) {
+    case DebugLogMode::SkipBoot:
+        debug::delayedEnable();
+        break;
+    case DebugLogMode::Disabled:
+        debug::disable();
+        break;
+    case DebugLogMode::Enabled:
+        debug::enable();
+        break;
     }
-    #endif // DEBUG_LOG_BUFFER
 
-    systemHeartbeat(_debugHeartbeat,
-        getSetting("dbgHbMode", heartbeat::currentMode()),
-        getSetting("dbgHbIntvl", heartbeat::currentInterval()));
+#if DEBUG_SERIAL_SUPPORT
+    espurna::debug::serial::setup();
+#endif
 
+    configure();
+}
+
+#if TERMINAL_SUPPORT
+namespace terminal {
+
+PROGMEM_STRING(DebugBuffer, "DEBUG.BUFFER");
+
+void debug_buffer(::terminal::CommandContext&& ctx) {
+    debug::buffer::disable();
+    if (!debug::buffer::size()) {
+        terminalError(ctx, F("buffer is empty\n"));
+        return;
+    }
+
+    ctx.output.printf_P(PSTR("buffer size: %u / %u bytes\n"),
+        debug::buffer::size(), debug::buffer::capacity());
+    debug::buffer::dump(ctx.output);
+    terminalOK(ctx);
+}
+
+static constexpr ::terminal::Command commands[] PROGMEM {
+    {DebugBuffer, debug_buffer},
+};
+
+void setup() {
+    espurna::terminal::add(commands);
+}
+
+} // namespace terminal
+#endif
+
+} // namespace
+} // namespace debug
+} // namespace espurna
+
+void debugSendBytes(const uint8_t* bytes, size_t size) {
+    espurna::debug::buffer::sendBytes(bytes, size);
+}
+
+#if DEBUG_LOG_BUFFER_SUPPORT
+bool debugLogBuffer() {
+    return espurna::debug::buffer::enabled();
+}
+#endif
+
+void debugSend(const char* format, ...) {
+    if (espurna::debug::enabled()) {
+        va_list args;
+        va_start(args, format);
+        espurna::debug::formatAndSend(format, args);
+        va_end(args);
+    }
+}
+
+void debugConfigureBoot() {
+    espurna::debug::onBoot();
+}
+
+#if WEB_SUPPORT
+void debugWebSetup() {
+    wsRegister()
+        .onVisible(espurna::debug::web::onVisible);
+}
+#endif
+
+void debugShowBanner() {
+#if DEBUG_SERIAL_SUPPORT
+    if (espurna::debug::buffer::enabled()) {
+        return;
+    }
+
+    const auto app = buildApp();
+    DEBUG_MSG_P(PSTR("[MAIN] %s %s built %s\n"),
+            app.name.c_str(), app.version.c_str(),
+            app.build_time.c_str());
+
+    DEBUG_MSG_P(PSTR("[MAIN] %s\n"), app.author.c_str());
+    DEBUG_MSG_P(PSTR("[MAIN] %s\n"), app.website.c_str());
+
+    DEBUG_MSG_P(PSTR("[MAIN] CPU chip ID: %s frequency: %hhuMHz\n"),
+            systemChipId().c_str(), system_get_cpu_freq());
+
+    const auto device = systemDevice();
+    DEBUG_MSG_P(PSTR("[MAIN] Device: %s\n"),
+            device.c_str());
+#endif
+}
+
+void debugSetup() {
+#if DEBUG_UDP_SUPPORT
+    if (espurna::debug::syslog::build::enabled()) {
+        espurna::debug::syslog::configure();
+        espurnaRegisterReload(espurna::debug::syslog::configure);
+    }
+#endif
+#if DEBUG_LOG_BUFFER_SUPPORT
+#if TERMINAL_SUPPORT
+    espurna::debug::terminal::setup();
+#endif
+#endif
 }
 
 #endif // DEBUG_SUPPORT

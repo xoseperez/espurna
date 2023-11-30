@@ -1,0 +1,146 @@
+# TODO: declare as action so this becomes `uses: blah/espurna-release`?
+# ref. https://github.com/mcspr/espurna-nightly-builder/blob/builder/.github/workflows/nightly.yml
+# instead of revision + current date, use tag value as full version of the binary
+
+name: Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  variables:
+    runs-on: ubuntu-latest
+    outputs:
+      date: ${{ steps.result.outputs.date }}
+      dev: ${{ steps.result.outputs.dev }}
+      master: ${{ steps.result.outputs.master }}
+    steps:
+      - name: Prepare version variables
+        id: result
+        shell: bash
+        run: |
+          revision() {
+            git ls-remote --exit-code --heads https://github.com/xoseperez/espurna.git refs/heads/$1 | cut -d$'\t' -f1
+          }
+
+          date=$(date +'%y%m%d')
+          echo "date=${date}" >> "$GITHUB_OUTPUT"
+
+          dev=$(revision dev)
+          echo "dev=${dev}" >> "$GITHUB_OUTPUT"
+
+          master=$(revision master)
+          echo "master=${master}" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: variables
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        thread: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          path: espurna
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Cache Node
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('espurna/code/package-lock.json', 'espurna/code/package.json') }}
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v3
+        with:
+          path: ~/.platformio
+          key: ${{ runner.os }}-platformio-${{ hashFiles('espurna/code/platformio.ini') }}
+
+      - name: Install PlatformIO
+        run: |
+          pip install -U platformio
+          pio upgrade --dev
+
+      - name: Build
+        run: |
+          git config --global advice.detachedHead false
+          pushd espurna/code
+          npm ci
+          node node_modules/gulp/bin/gulp.js
+          # each "thread" only builds every Nth environment
+          # numbers are hard-coded above (...until there's a better idea for doing this)
+          ./scripts/generate_release_sh.py \
+              --ignore secure-client \
+              --destination ${GITHUB_WORKSPACE}/build \
+              --builder-thread ${{ matrix.thread }} \
+              --builder-total-threads 4 \
+              --suffix github${{ needs.variables.outputs.date }} \
+              > release.sh
+          bash release.sh
+          popd
+
+      - name: Archive
+        run: |
+          pushd build
+          time zip \
+            --quiet \
+            --recurse-paths \
+            ../Build_${{ matrix.thread }}.zip ./
+          popd
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: Build
+          path: Build_${{ matrix.thread }}.zip
+
+  upload:
+    needs: [variables, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - uses: actions/download-artifact@v3
+        with:
+          path: artifacts/
+
+      - name: Unpack
+        run: unzip -d build "artifacts/Build/*.zip"
+
+      - name: Prepare debug info
+        run: |
+          time zip \
+            -9 \
+            --quiet \
+            --junk-paths \
+            --recurse-patterns \
+            Debug.zip \
+            'build/debug/*.map' \
+            'build/debug/*.elf.debug'
+
+      - name: Fetch release template
+        run: |
+           curl \
+             -H "Authentication: ${{ secrets.GITUB_TOKEN }}" \
+             -H "Accept: application/vnd.github.VERSION.raw" \
+             -o release_template.md \
+             https://api.github.com/repos/xoseperez/espurna/contents/.github/release_template.md
+
+      - uses: ncipollo/release-action@v1
+        with:
+          tag: github${{ needs.variables.outputs.date }}
+          commit: ${{ needs.variables.outputs.dev }}
+          name: Snapshot build (github${{ needs.variables.outputs.date }})
+          bodyFile: "release_template.md"
+          artifacts: "Debug.zip,build/*.bin"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          prerelease: true
+          draft: true

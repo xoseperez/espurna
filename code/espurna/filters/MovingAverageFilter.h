@@ -3,49 +3,37 @@
 // Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
-#if SENSOR_SUPPORT
-
 #pragma once
 
-#include <vector>
 #include "BaseFilter.h"
 
+#include <vector>
+
 class MovingAverageFilter : public BaseFilter {
+public:
+    void update(double value) override {
+        _sum = _sum + value - _values[_sample];
+        _values[_sample] = value;
+        _sample = (_sample + 1) % _values.capacity();
+    }
 
-    public:
+    size_t capacity() const override {
+        return _values.capacity();
+    }
 
-        void add(double value) {
-            _sum = _sum + value - _data[_pointer];
-            _data[_pointer] = value;
-            _pointer = (_pointer + 1) % _size;
-        }
+    double value() const override {
+        return _sum;
+    }
 
-        unsigned char count() {
-            return _pointer;
-        }
+    void resize(size_t size) override {
+        _sum = 0.0;
+        _sample = 0;
+        _values.clear();
+        _values.resize(size, 0.0);
+    }
 
-        void reset() {}
-
-        double result() {
-            return _sum;
-        }
-
-        void resize(unsigned char size) {
-            if (_size == size) return;
-            _size = size;
-            if (_data) delete _data;
-            _data = new double[_size];
-            for (unsigned char i=0; i<_size; i++) _data[i] = 0;
-            _pointer = 0;
-            _sum = 0;
-        }
-
-    protected:
-
-        unsigned char _pointer = 0;
-        double _sum = 0;
-        double * _data = NULL;
-
+private:
+    std::vector<double> _values {{0.0}};
+    size_t _sample = 0;
+    double _sum = 0;
 };
-
-#endif // SENSOR_SUPPORT

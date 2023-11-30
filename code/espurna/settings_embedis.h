@@ -20,6 +20,7 @@ Reimplementation of the Embedis storage format:
 #include "settings_helpers.h"
 #include "libs/TypeChecks.h"
 
+namespace espurna {
 namespace settings {
 namespace embedis {
 
@@ -39,13 +40,13 @@ inline size_t estimate(const String& key, const String& value) {
 
 template <typename RawStorageBase>
 class KeyValueStore {
+private:
 
     // -----------------------------------------------------------------------------------
-    // Notice: we can only use sfinae checks with the current compiler version
-
-    // TODO: provide actual benchmark comparison with 'lambda'-list-as-vtable (old Embedis style)
-    //       and vtable approach (write(), read() and commit() as pure virtual)
-    // TODO: consider overrides for bulk operations like move (see ::del method)
+    // TODO: storage access is one byte at a time. consider also having:
+    // - read(begin, end)
+    // - write(begin, end, input_begin, input_end)
+    // -----------------------------------------------------------------------------------
 
     template <typename T>
     using storage_can_write_t = decltype(std::declval<T>().write(
@@ -72,15 +73,14 @@ class KeyValueStore {
 
     // -----------------------------------------------------------------------------------
 
-    protected:
-
     // Tracking state of the parser inside of _raw_read()
     enum class State {
         Begin,
         End,
         LenByte1,
         LenByte2,
-        Value
+        Value,
+        Output
     };
 
     // Pointer to the region of data that we are using
@@ -94,169 +94,196 @@ class KeyValueStore {
     //       This **will** cause problems with 'reverse_iterator' or anything like it, as it expects reference to
     //       outlive the iterator object (specifically, result of `return *--tmp`, where `tmp` is created inside of a function block)
     struct Cursor {
-
-        Cursor(RawStorageBase& storage, uint16_t position_, uint16_t begin_, uint16_t end_) :
-            position(position_),
-            begin(begin_),
-            end(end_),
-            _storage(storage)
+        Cursor(RawStorageBase& storage, uint16_t begin, uint16_t end, uint16_t position) :
+            _storage(storage),
+            _begin(begin),
+            _end(end),
+            _position(position)
         {}
 
-        Cursor(RawStorageBase& storage, uint16_t begin_, uint16_t end_) :
-            Cursor(storage, 0, begin_, end_)
+        Cursor(RawStorageBase& storage, uint16_t begin, uint16_t end) :
+            Cursor(storage, begin, end, begin)
         {}
-
-        explicit Cursor(RawStorageBase& storage) :
-            Cursor(storage, 0, 0, 0)
-        {}
-
-        static Cursor merge(RawStorageBase& storage, const Cursor& key, const Cursor& value) {
-            return Cursor(storage, key.begin, value.end);
-        }
 
         static Cursor fromEnd(RawStorageBase& storage, uint16_t begin, uint16_t end) {
-            return Cursor(storage, end - begin, begin, end);
+            return Cursor(storage, begin, end, end);
         }
 
         Cursor() = delete;
 
-        void reset(uint16_t begin_, uint16_t end_) {
-            position = 0;
-            begin = begin_;
-            end = end_;
+        Cursor(const Cursor&) = default;
+        Cursor(Cursor&&) = default;
+
+        void reset(uint16_t begin, uint16_t end) {
+            _begin = begin;
+            _end = end;
+            _position = _begin;
         }
 
-        uint8_t read() {
-            return _storage.read(begin + position);
+        uint8_t read() const {
+            return _storage.read(_position);
         }
 
         void write(uint8_t value) {
-            _storage.write(begin + position, value);
+            _storage.write(_position, value);
         }
 
-        void resetBeginning() {
-            position = 0;
+        Cursor& operator=(uint8_t value) {
+            write(value);
+            return *this;
         }
 
-        void resetEnd() {
-            position = end - begin;
+        uint16_t size() const {
+            return (_end - _begin);
         }
 
-        size_t size() {
-            return (end - begin);
+        explicit operator bool() const {
+            return (_position >= _begin) && (_position < _end);
         }
 
-        bool inRange(uint16_t position_) {
-            return (position_ < (end - begin));
+        uint8_t operator[](size_t offset) const {
+            return _storage.read(_begin + offset);
         }
 
-        operator bool() {
-            return inRange(position);
+        bool operator==(const Cursor& other) const {
+            return (_begin == other._begin) && (_end == other._end);
         }
 
-        uint8_t operator[](size_t position_) const {
-            return _storage.read(begin + position_);
-        }
-
-        bool operator ==(const Cursor& other) {
-            return (begin == other.begin) && (end == other.end);
-        }
-
-        bool operator !=(const Cursor& other) {
+        bool operator!=(const Cursor& other) const {
             return !(*this == other);
         }
 
-        Cursor& operator++() {
-            ++position;
+        Cursor& operator-=(uint16_t value) {
+            _position -= value;
             return *this;
-        }
-
-        Cursor operator++(int) {
-            Cursor other(*this);
-            ++*this;
-            return other;
         }
 
         Cursor& operator--() {
-            --position;
-            return *this;
+            return (*this -= 1);
         }
 
         Cursor operator--(int) {
             Cursor other(*this);
-            --*this;
+            *this -= 1;
             return other;
         }
 
-        uint16_t position;
-        uint16_t begin;
-        uint16_t end;
+        Cursor& operator+=(uint16_t value) {
+            _position += value;
+            return *this;
+        }
 
-        private:
+        Cursor& operator++() {
+            return (*this += 1);
+        }
 
+        Cursor operator++(int) {
+            Cursor other(*this);
+            *this += 1;
+            return other;
+        }
+
+        uint16_t offset() const {
+            return _position - _begin;
+        }
+
+        uint16_t position() const {
+            return _position;
+        }
+
+        void position(uint16_t position) {
+            _position = position;
+        }
+
+        uint16_t begin() const {
+            return _begin;
+        }
+
+        uint16_t end() const {
+            return _end;
+        }
+
+    private:
         RawStorageBase& _storage;
-
+        uint16_t _begin;
+        uint16_t _end;
+        uint16_t _position;
     };
 
-    public:
+public:
 
     // Store value location in a more reasonable forward-iterator-style manner
     // Allows us to skip string creation when just searching for specific values
     // XXX: be cautious that cursor positions **will** break when underlying storage changes
     struct ReadResult {
-
         friend class KeyValueStore<RawStorageBase>;
 
-        ReadResult(const Cursor& cursor_) :
-            length(0),
-            cursor(cursor_),
-            result(false)
+        ReadResult() = delete;
+        ReadResult(const ReadResult&) = default;
+        ReadResult(ReadResult&&) = default;
+
+        ReadResult(RawStorageBase& storage, uint16_t begin, uint16_t end) :
+            _cursor(storage, begin, end),
+            _result(true)
         {}
 
-        ReadResult(RawStorageBase& storage) :
-            length(0),
-            cursor(storage),
-            result(false)
+        explicit ReadResult(RawStorageBase& storage) :
+            _cursor(storage, 0, 0)
         {}
 
-        operator bool() {
-            return result;
+        ReadResult& operator=(const ReadResult&) = default;
+        ReadResult& operator=(ReadResult&&) = default;
+
+        explicit operator bool() const {
+            return _cursor.size() && _result;
         }
 
-        String read() {
+        uint16_t begin() const {
+            return _cursor.begin();
+        }
+
+        uint16_t end() const {
+            return _cursor.end();
+        }
+
+        uint16_t length() const {
+            const auto total = _cursor.size();
+            return (total >= 2) ? (total - 2) : 0;
+        }
+
+        void reset(uint16_t begin, uint16_t end) {
+            _cursor.reset(begin, end);
+            _result = true;
+        }
+
+        String read() const {
             String out;
-            out.reserve(length);
-            if (!length) {
+
+            auto len = length();
+            if (!len) {
                 return out;
             }
 
-            decltype(length) index = 0;
-            cursor.resetBeginning();
-            while (index < length) {
+            out.reserve(len);
+            for (auto cursor = _cursor; cursor.offset() < len; ++cursor) {
                 out += static_cast<char>(cursor.read());
-                ++cursor;
-                ++index;
             }
 
             return out;
         }
 
-        uint16_t length;
-
-        private:
-
-        Cursor cursor;
-        bool result;
-
+    private:
+        Cursor _cursor;
+        bool _result { false };
     };
 
     // Internal storage consists of sequences of <byte-range><length>
     struct KeyValueResult {
-        explicit operator bool() {
-            return (key) && (value) && (key.length > 0);
+        explicit operator bool() const {
+            return (key) && (value) && (key.length() > 0);
         }
 
-        bool operator !() {
+        bool operator!() const {
             return !(static_cast<bool>(*this));
         }
 
@@ -266,9 +293,9 @@ class KeyValueStore {
             value(std::forward<T>(value_))
         {}
 
-        KeyValueResult(RawStorageBase& storage) :
-            key(storage),
-            value(storage)
+        explicit KeyValueResult(RawStorageBase& storage) :
+            key(storage, 0, 0),
+            value(storage, 0, 0)
         {}
 
         ReadResult key;
@@ -309,18 +336,6 @@ class KeyValueStore {
         } while (_state != State::End);
     }
 
-    // read every key into a vector
-    std::vector<String> keys() {
-        std::vector<String> out;
-        out.reserve(count());
-
-        foreach([&](KeyValueResult&& kv) {
-            out.push_back(kv.key.read());
-        });
-
-        return out;
-    }
-
     // set or update key with value contents. ensure 'key' isn't empty, 'value' can be empty
     bool set(const String& key, const String& value) {
 
@@ -333,7 +348,7 @@ class KeyValueStore {
         auto key_len = key.length();
         auto value_len = value.length();
 
-        Cursor to_erase(_storage);
+        Cursor to_erase(_storage, 0, 0);
         bool need_erase = false;
 
         // we need the position at the 'end' of the free space
@@ -345,27 +360,30 @@ class KeyValueStore {
                 break;
             }
 
-            start_pos = kv.value.cursor.begin;
+            start_pos = kv.value.begin();
 
             // in the very special case we can match the existing key, we either
-            if ((kv.key.length == key_len) && (kv.key.read() == key)) {
-                if (kv.value.length == value.length()) {
+            if ((kv.key.length() == key_len) && (kv.key.read() == key)) {
+                if (kv.value.length() == value.length()) {
                     // - do nothing, as the value is already set
                     if (kv.value.read() == value) {
                         return true;
                     }
                     // - overwrite the space again, with the new kv of the same length
-                    start_pos = kv.key.cursor.end;
+                    start_pos = kv.key.end();
                     break;
                 }
                 // - or, erase the existing kv and place new kv at the end
-                to_erase.reset(kv.value.cursor.begin, kv.key.cursor.end);
+                to_erase.reset(kv.value.begin(), kv.key.end());
                 need_erase = true;
             }
 
         } while (_state != State::End);
 
         if (need_erase) {
+            if ((start_pos + to_erase.size()) < need) {
+                return false;
+            }
             _raw_erase(start_pos, to_erase);
             start_pos += to_erase.size();
         }
@@ -390,13 +408,13 @@ class KeyValueStore {
 
             // we also need to add an empty key *after* the value
             // but, only when we still have some space left
-            if (writer.begin >= 2) {
-                _cursor_set_position(writer.begin - _cursor.begin);
+            if (writer.begin() >= 2) {
+                _cursor_set_position(writer.begin());
                 auto next_kv = _read_kv();
                 if (!next_kv) {
-                    auto empty = Cursor::fromEnd(_storage, writer.begin - 2, writer.begin);
-                    (--empty).write(0);
-                    (--empty).write(0);
+                    auto empty = Cursor::fromEnd(_storage, writer.begin() - 2, writer.begin());
+                    (--empty).write(0xff);
+                    (--empty).write(0xff);
                 }
             }
 
@@ -419,12 +437,12 @@ class KeyValueStore {
         // when matching, record { value ... key } range + 4 bytes for length
         // continue searching for available keys and set start_pos and the 'end' of the free space
         size_t start_pos = _cursor_reset_end();
-        auto to_erase = Cursor::fromEnd(_storage, _cursor.begin, _cursor.end);
+        auto to_erase = Cursor::fromEnd(_storage, _cursor.begin(), _cursor.end());
 
         foreach([&](KeyValueResult&& kv) {
-            start_pos = kv.value.cursor.begin;
-            if (!to_erase && (kv.key.length == key_len) && (kv.key.read() == key)) {
-                to_erase.reset(kv.value.cursor.begin, kv.key.cursor.end);
+            start_pos = kv.value.begin();
+            if (!to_erase && (kv.key.length() == key_len) && (kv.key.read() == key)) {
+                to_erase.reset(kv.value.begin(), kv.key.end());
             }
         });
 
@@ -451,8 +469,8 @@ class KeyValueStore {
     size_t available() {
         size_t result = _cursor.size();
         foreach([&result](KeyValueResult&& kv) {
-            result -= kv.key.cursor.size();
-            result -= kv.value.cursor.size();
+            result -= kv.key._cursor.size();
+            result -= kv.value._cursor.size();
         });
 
         return result;
@@ -483,59 +501,60 @@ class KeyValueStore {
 
             // no point in comparing keys when length does not match
             // (and we also don't want to allocate the string)
-            if (kv.key.length != len) {
+            if (kv.key.length() != len) {
                 continue;
             }
 
             auto key_result = kv.key.read();
             if (key_result == key) {
-                out = read_value
-                    ? std::move(kv.value.read())
-                    : String();
+                if (read_value) {
+                    out = kv.value.read();
+                } else {
+                    out = String();
+                }
                 break;
             }
         } while (_state != State::End);
+
 
         return out;
     }
 
     // Place cursor at the `end` and resets the parser to expect length byte
     uint16_t _cursor_reset_end() {
-        _cursor.resetEnd();
+        _cursor.position(_cursor.end());
         _state = State::Begin;
-        return _cursor.end;
+        return _cursor.position();
     }
 
     uint16_t _cursor_set_position(uint16_t position) {
         _state = State::Begin;
-        _cursor.position = position;
-        return _cursor.position;
+        _cursor.position(position);
+        return position;
     }
 
     // implementation quirk is that `Cursor::operator=` won't work because of the `RawStorageBase&` member
     // right now, just construct in place and assume that compiler will inline things
     KeyValueResult _read_kv() {
         auto key = _raw_read();
-        if (!key || !key.length) {
-            return {_storage};
+        if (key && key.length()) {
+            return KeyValueResult { std::move(key), _raw_read() };
         }
 
-        auto value = _raw_read();
-
-        return {key, value};
+        return KeyValueResult { _storage };
     };
 
     void _raw_erase(size_t start_pos, Cursor& to_erase) {
         // we either end up to the left or to the right of the boundary
 
-        size_t new_pos = (start_pos < to_erase.begin)
+        size_t new_pos = (start_pos < to_erase.begin())
             ? (start_pos + to_erase.size())
-            : (to_erase.end);
+            : (to_erase.end());
 
-        if (start_pos < to_erase.begin) {
+        if (start_pos < to_erase.begin()) {
             // shift storage to the right, overwriting over the now empty space
-            auto from = Cursor::fromEnd(_storage, start_pos, to_erase.begin);
-            auto to = Cursor::fromEnd(_storage, start_pos + to_erase.size(), to_erase.end);
+            auto from = Cursor::fromEnd(_storage, start_pos, to_erase.begin());
+            auto to = Cursor::fromEnd(_storage, start_pos + to_erase.size(), to_erase.end());
 
             while (--from && --to) {
                 to.write(from.read());
@@ -543,7 +562,7 @@ class KeyValueStore {
             }
         } else {
             // overwrite the now empty space with 0xff
-            to_erase.resetEnd();
+            to_erase.position(to_erase.end());
             while (--to_erase) {
                 to_erase.write(0xff);
             }
@@ -551,8 +570,8 @@ class KeyValueStore {
 
         // same as set(), add empty key as padding
         auto empty = Cursor::fromEnd(_storage, new_pos - 2, new_pos);
-        (--empty).write(0);
-        (--empty).write(0);
+        (--empty).write(0xff);
+        (--empty).write(0xff);
 
         _storage.commit();
     }
@@ -571,19 +590,21 @@ class KeyValueStore {
     // Position will be 0, end will be 3. Total length is 3, data length is 1
     ReadResult _raw_read() {
         uint16_t len = 0;
-        ReadResult out(_storage);
+        ReadResult out { _storage };
 
+        // storage is written right-to-left, cursor is always decreasing
         do {
-            // storage is written right-to-left, cursor is always decreasing
             switch (_state) {
+
             case State::Begin:
-                if (_cursor.position >= 2) {
+                if (_cursor.offset() >= 2) {
                     --_cursor;
                     _state = State::LenByte1;
                 } else {
                     _state = State::End;
                 }
                 break;
+
             // len is 16 bit uint (bigendian)
             // special case is 0, which is valid and should be returned when encountered
             // another special case is 0xffff, meaning we just hit an empty space
@@ -591,8 +612,8 @@ class KeyValueStore {
                 len = _cursor.read();
                 _state = State::LenByte2;
                 break;
-            case State::LenByte2:
-            {
+
+            case State::LenByte2: {
                 uint8_t len2 = (--_cursor).read();
                 if ((0xff == len) && (0xff == len2)) {
                     _state = State::End;
@@ -602,34 +623,34 @@ class KeyValueStore {
                 }
                 break;
             }
+
             case State::Value: {
                 // ensure we don't go out-of-bounds
-                if (len && _cursor.position < len) {
+                if (len && _cursor.offset() < len) {
                     _state = State::End;
                     break;
                 }
 
                 // and point at the beginning of the value
-                _cursor.position -= len;
-                auto value_start = (_cursor.begin + _cursor.position);
+                _cursor -= len;
+                auto value_start = _cursor.position();
 
-                out.cursor.reset(value_start, value_start + len + 2);
-                out.length = len;
-                out.result = true;
-
-                _state = State::Begin;
-
-                goto return_result;
-            }
-            case State::End:
-            default:
+                out.reset(value_start, value_start + len + 2);
+                _state = State::Output;
                 break;
+            }
+
+            case State::End:
+                break;
+
+            case State::Output:
+                _state = State::Begin;
+                goto return_result;
         }
 
         } while (_state != State::End);
 
-    return_result:
-
+return_result:
         return out;
     }
 
@@ -640,3 +661,4 @@ class KeyValueStore {
 
 } // namespace embedis
 } // namespace settings
+} // namespace espurna

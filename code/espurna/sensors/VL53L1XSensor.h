@@ -15,99 +15,95 @@ class VL53L1XSensor : public I2CSensor<> {
 
     public:
 
-        // ---------------------------------------------------------------------
-        // Public
-        // ---------------------------------------------------------------------
-
-        VL53L1XSensor() {
-            _count = 1;
-            _sensor_id = SENSOR_VL53L1X_ID;
-            _vl53l1x = new VL53L1X();
-        }
-
-        ~VL53L1XSensor() {
-          delete _vl53l1x;
-        }
+        using MeasurementTimingBudget = espurna::duration::critical::Microseconds;
+        using InterMeasurementPeriod = espurna::duration::Milliseconds;
 
         // ---------------------------------------------------------------------
 
         void setDistanceMode(VL53L1X::DistanceMode mode) {
-          _vl53l1x->setDistanceMode(mode);
+            _vl53l1x.setDistanceMode(mode);
         }
 
-        void setMeasurementTimingBudget(uint32_t budget_us) {
-          _vl53l1x->setMeasurementTimingBudget(budget_us);
+        void setMeasurementTimingBudget(MeasurementTimingBudget value) {
+            _vl53l1x.setMeasurementTimingBudget(value.count());
         }
 
-        void setInterMeasurementPeriod(unsigned int period) {
-          if (_inter_measurement_period == period) return;
-          _inter_measurement_period = period;
-          _dirty = true;
+        void setInterMeasurementPeriod(InterMeasurementPeriod value) {
+            if (_measurement_period != value) {
+                _measurement_period = value;
+                _dirty = true;
+            }
         }
 
         // ---------------------------------------------------------------------
         // Sensor API
         // ---------------------------------------------------------------------
 
-        void begin() {
-          if (!_dirty) {
-            return;
-          }
+        unsigned char id() const override {
+            return SENSOR_VL53L1X_ID;
+        }
 
-          // I2C auto-discover
-          unsigned char addresses[] = {0x29};
-          _address = _begin_i2c(_address, sizeof(addresses), addresses);
-          if (_address == 0) return;
+        unsigned char count() const override {
+            return 1;
+        }
 
-          _vl53l1x->setAddress(_address);
+        void begin() override {
+            if (!_dirty) {
+                return;
+            }
 
-          if (!_vl53l1x->init()) {
-            return;
-          };
+            // I2C auto-discover
+            static constexpr uint8_t addresses[] {0x29};
+            const auto address = findAndLock(addresses);
+            if (address == 0) {
+                return;
+            }
 
-          _vl53l1x->startContinuous(_inter_measurement_period);
+            _vl53l1x.setAddress(address);
+            if (!_vl53l1x.init()) {
+                return;
+            }
 
-          _ready = true;
-          _dirty = false;
+            _vl53l1x.startContinuous(_measurement_period.count());
+
+            _ready = true;
+            _dirty = false;
         }
 
         // Descriptive name of the sensor
-        String description() {
+        String description() const override {
             char buffer[21];
-            snprintf(buffer, sizeof(buffer), "VL53L1X @ I2C (0x%02X)", _address);
+            snprintf_P(buffer, sizeof(buffer),
+                PSTR("VL53L1X @ I2C (0x%02X)"), lockedAddress());
             return String(buffer);
         }
 
-        // Descriptive name of the slot # index
-        String description(unsigned char index) {
-            return description();
-        };
-
         // Type for slot # index
-        unsigned char type(unsigned char index) {
+        unsigned char type(unsigned char index) const override {
             if (index == 0) return MAGNITUDE_DISTANCE;
             return MAGNITUDE_NONE;
         }
 
         // Pre-read hook (usually to populate registers with up-to-date data)
-        void pre() {
-            if (!_vl53l1x->dataReady()) {
-              return;
+        void pre() override {
+            if (!_vl53l1x.dataReady()) {
+                return;
             }
 
-            _distance = (double) _vl53l1x->read(false) / 1000.00;
+            _distance = (double) _vl53l1x.read(false) / 1000.00;
         }
 
         // Current value for slot # index
-        double value(unsigned char index) {
-            if (index != 0) return 0;
-            return _distance;
+        double value(unsigned char index) override {
+            if (index == 0) {
+                return _distance;
+            }
+            return 0;
         }
 
-    protected:
-
-        VL53L1X * _vl53l1x = NULL;
-        unsigned int _inter_measurement_period;
+    private:
+        InterMeasurementPeriod _measurement_period;
+        VL53L1X _vl53l1x;
         double _distance = 0;
 
 };

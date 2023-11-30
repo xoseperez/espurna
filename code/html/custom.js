@@ -31,10 +31,7 @@ var Websock = {
 class SettingsBase {
     constructor() {
         this.counters = {};
-        this.counters.changed = 0;
-        this.counters.reboot = 0;
-        this.counters.reconnect = 0;
-        this.counters.reload = 0;
+        this.resetCounters();
         this.saved = false;
     }
 
@@ -54,6 +51,57 @@ var FreeSize = 0;
 var Now = 0;
 var Ago = 0;
 
+class CmdOutputBase {
+    constructor(elem) {
+        this.elem = elem;
+        this.lastScrollHeight = elem.scrollHeight;
+        this.lastScrollTop = elem.scrollTop;
+        this.followScroll = true;
+
+        elem.addEventListener("scroll", () => {
+            // in case we adjust the scroll manually
+            const current = this.elem.scrollHeight - this.elem.scrollTop;
+            const last = this.lastScrollHeight - this.lastScrollTop;
+            if ((current - last) > 16) {
+                this.followScroll = false;
+            }
+
+            // ...and, in case we return to the bottom row
+            const offset = current - this.elem.offsetHeight;
+            if (offset < 16) {
+                this.followScroll = true;
+            }
+
+            this.lastScrollHeight = this.elem.scrollHeight;
+            this.lastScrollTop = this.elem.scrollTop;
+        });
+    }
+
+    follow() {
+        if (this.followScroll) {
+            this.elem.scrollTop = this.elem.scrollHeight;
+            this.lastScrollHeight = this.elem.scrollHeight;
+            this.lastScrollTop = this.elem.scrollTop;
+        }
+    }
+
+    clear() {
+        this.elem.textContent = "";
+        this.followScroll = true;
+    }
+
+    push(line) {
+        this.elem.appendChild(new Text(line));
+    }
+
+    pushAndFollow(line) {
+        this.elem.appendChild(new Text(`${line}\n`));
+        this.followScroll = true
+    }
+}
+
+var CmdOutput = null;
+
 //removeIf(!light)
 var ColorPicker;
 //endRemoveIf(!light)
@@ -65,21 +113,34 @@ var Rfm69 = {
 //endRemoveIf(!rfm69)
 
 //removeIf(!sensor)
-var Magnitudes = [];
-var MagnitudeErrors = {};
-var MagnitudeNames = {};
-var MagnitudeTypePrefixes = {};
-var MagnitudePrefixTypes = {};
+var Magnitudes = {
+    properties: {},
+    errors: {},
+    types: {},
+    units: {
+        names: {},
+        supported: {}
+    },
+    typePrefix: {},
+    prefixType: {}
+};
+
+function magnitudeTypedKey(magnitude, name) {
+    const prefix = Magnitudes.typePrefix[magnitude.type];
+    const index = magnitude.index_global;
+    return `${prefix}${name}${index}`;
+}
+
 //endRemoveIf(!sensor)
 
 // -----------------------------------------------------------------------------
 // Utils
 // -----------------------------------------------------------------------------
 
-function notifyError(message, source, lineno, colno, error) {
+function showErrorNotification(message) {
     let container = document.getElementById("error-notification");
     if (container.childElementCount > 0) {
-        return;
+        return false;
     }
 
     container.style.display = "inherit";
@@ -88,15 +149,24 @@ function notifyError(message, source, lineno, colno, error) {
     let notification = document.createElement("div");
     notification.classList.add("pure-u-1");
     notification.classList.add("pure-u-lg-1");
-    if (error) {
-        notification.textContent += error.stack;
-    } else {
-        notification.textContent += message;
-    }
-    notification.textContent += "\n\nFor more info see the Developer Tools console.";
+    notification.textContent = message;
+
     container.appendChild(notification);
 
     return false;
+}
+
+function notifyError(message, source, lineno, colno, error) {
+    let text = "";
+    if (error) {
+        text = error.stack;
+    } else {
+        text = message;
+    }
+
+    text += "\n\nFor more info see the Debug Log and / or Developer Tools console.";
+
+    return showErrorNotification(text);
 }
 
 window.onerror = notifyError;
@@ -115,17 +185,8 @@ function initExternalLinks() {
     }
 }
 
-function followScroll(elem, threshold) {
-    if (threshold === undefined) {
-        threshold = 90;
-    }
-
-    const offset = (elem.scrollTop + elem.offsetHeight) / elem.scrollHeight * 100;
-    if (!threshold || (offset >= threshold)) {
-        elem.scrollTop = elem.scrollHeight;
-    }
-}
-
+// TODO: note that we also include kv schema as 'data-settings-schema' on the container.
+// produce a 'set' and compare instead of just matching length?
 function fromSchema(source, schema) {
     if (schema.length !== source.length) {
         throw `Schema mismatch! Expected length ${schema.length} vs. ${source.length}`;
@@ -188,7 +249,7 @@ function validatePassword(password) {
     // https://en.wikipedia.org/wiki/Wi-Fi_Protected_Access#Target_users_(authentication_key_distribution)
     // https://github.com/xoseperez/espurna/issues/1151
 
-    const Pattern = /^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*()<>,.?;:{}[\]\\|]{8,63}t/;
+    const Pattern = /^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*()<>,.?;:{}[\]\\|]{8,63}/;
     return (
         (password !== undefined)
         && (typeof password === "string")
@@ -197,9 +258,8 @@ function validatePassword(password) {
 }
 
 // Try to validate 'adminPass{0,1}', searching the first form containing both.
-// In case we on normal settings page, avoid checking things when both fields were not changed
-// Allow to enforce validation for the setup page
-function validateFormPasswords(forms, required) {
+// In case it's default webMode, avoid checking things when both fields are empty (`required === false`)
+function validateFormsPasswords(forms, required) {
     let [passwords] = Array.from(forms).filter(
         form => form.elements.adminPass0 && form.elements.adminPass1);
 
@@ -230,7 +290,7 @@ function validateFormPasswords(forms, required) {
 
 // Same as above, but only applies to the general settings page.
 // Find the first available form that contains 'hostname' input
-function validateFormHostname(forms) {
+function validateFormsHostname(forms) {
     // per. [RFC1035](https://datatracker.ietf.org/doc/html/rfc1035)
     // Hostname may contain:
     // - the ASCII letters 'a' through 'z' (case-insensitive),
@@ -257,7 +317,7 @@ function validateFormHostname(forms) {
 }
 
 function validateForms(forms) {
-    return validateFormPasswords(forms) && validateFormHostname(forms);
+    return validateFormsPasswords(forms) && validateFormsHostname(forms);
 }
 
 // Right now, group additions happen from:
@@ -268,19 +328,80 @@ function validateForms(forms) {
 // TODO: distinguish 'current' state to avoid sending keys when adding and immediatly removing the latest node?
 // TODO: previous implementation relied on defaultValue and / or jquery $(...).val(), but this does not really work where 'line' only has <select>
 
-function groupSettingsHandleUpdate(event) {
-    if (!event.target.children.length) {
-        return;
-    }
+function groupElementInfo(target) {
+    const out = [];
 
-    let last = event.target.children[event.target.children.length - 1];
-    for (let target of settingsTargets(event.target)) {
-        let elem = last.querySelector(`[name='${target}']`);
-        if (elem) {
-            setChangedElement(elem);
+    const inputs = target.querySelectorAll("input,select");
+    inputs.forEach((elem) => {
+        const name = elem.dataset.settingsRealName || elem.name;
+        if (name === undefined) {
+            return;
         }
-    }
+
+        out.push({
+            element: elem,
+            key: name,
+            value: elem.dataset["original"] || getDataForElement(elem)
+        });
+    });
+
+    return out;
 }
+
+const groupSettingsHandler = {
+    // to 'instantiate' a new element, we must explicitly set 'target' keys in kvs
+    // notice that the 'row' creation *should* be handled by the group-specific
+    // event listener, we already expect the dom element to exist at this point
+    add: function(event) {
+        const group = event.target;
+        const index = group.children.length - 1;
+        const last = group.children[index];
+        addGroupPending(group, index);
+
+        for (const target of settingsTargets(group)) {
+            const elem = last.querySelector(`[name='${target}']`);
+            if (elem) {
+                setChangedElement(elem);
+            }
+        }
+    },
+    // removing the element means we need to notify the kvs about the updated keys
+    // in case it's the last row, just remove those keys from the store
+    // in case we are in the middle, make sure to handle difference update
+    // in case change was 'ephemeral' (i.e. from the previous add that was not saved), do nothing
+    del: function(event) {
+        const group = event.currentTarget;
+
+        const elems = Array.from(group.children);
+        const shiftFrom = elems.indexOf(group);
+
+        const info = elems.map(groupElementInfo);
+        for (let index = -1; index < info.length; ++index) {
+            const prev = (index > 0)
+                ? info[index - 1]
+                : null;
+            const current = info[index];
+
+            if ((index > shiftFrom) && prev && (prev.length === current.length)) {
+                for (let inner = 0; inner < prev.length; ++inner) {
+                    const [lhs, rhs] = [prev[inner], current[inner]];
+                    if (lhs.value !== rhs.value) {
+                        setChangedElement(rhs.element);
+                    }
+                }
+            }
+        }
+
+        updateCheckboxes(group);
+        if (elems.length) {
+            popGroupPending(group, elems.length - 1);
+        }
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        event.target.remove();
+    }
+};
 
 // -----------------------------------------------------------------------------
 // Settings groups & templates
@@ -291,21 +412,25 @@ function groupSettingsHandleUpdate(event) {
 // elements must be re-enumerated and assigned new id's to remain unique
 // (and avoid having one line's checkbox affecting some other one)
 
+function createCheckbox(checkbox) {
+    checkbox.id = checkbox.name;
+    checkbox.parentElement.classList.add("toggleWrapper");
+
+    const label = document.createElement("label");
+    label.classList.add("toggle");
+    label.htmlFor = checkbox.id;
+
+    const span = document.createElement("span");
+    span.classList.add("toggle__handler");
+    label.appendChild(span);
+
+    checkbox.parentElement.appendChild(label);
+}
+
 function createCheckboxes(node) {
-    let checkboxes = node.querySelectorAll("input[type='checkbox']");
-    for (let checkbox of checkboxes) {
-        checkbox.id = checkbox.name;
-        checkbox.parentElement.classList.add("toggleWrapper");
-
-        let label = document.createElement("label");
-        label.classList.add("toggle");
-        label.htmlFor = checkbox.id;
-
-        let span = document.createElement("span");
-        span.classList.add("toggle__handler");
-        label.appendChild(span);
-
-        checkbox.parentElement.appendChild(label);
+    const checkboxes = node.querySelectorAll("input[type='checkbox']");
+    for (const checkbox of checkboxes) {
+        createCheckbox(checkbox);
     }
 }
 
@@ -358,25 +483,25 @@ function mergeTemplate(target, template) {
 }
 
 function addFromTemplate(container, template, cfg) {
-    let line = loadConfigTemplate(template);
+    const line = loadConfigTemplate(template);
     fillTemplateLineFromCfg(line, container.childElementCount, cfg);
-
     mergeTemplate(container, line);
 }
 
-// Group settings are special elements on the page that represent kv that are indexed in settings
-// Special 'add' element will trigger update on the specified '.settings-group' element id, which
+// 'settings-group' contain elements that represent kv list that is suffixed with an index in raw kvs
+// 'button-add-settings-group' will trigger update on the specified 'data-settings-group' element id, which
 // needs to have 'settings-group-add' event handler attached to it.
 
 function groupSettingsOnAdd(elementId, listener) {
     document.getElementById(elementId).addEventListener("settings-group-add", listener);
 }
 
+// handle addition to the group via the button
+// (notice that since we still use the dataset for the elements, hyphens are just capitalized)
 function groupSettingsAdd(event) {
     const prefix = "settingsGroupDetail";
     const elem = event.target;
 
-    // TODO: note that still has the dataset format, thus every hyphen capitalizes the next word
     let eventInit = {detail: null};
     for (let key of Object.keys(elem.dataset)) {
         if (!key.startsWith(prefix)) {
@@ -394,18 +519,6 @@ function groupSettingsAdd(event) {
     const group = document.getElementById(elem.dataset["settingsGroup"]);
     group.dispatchEvent(new CustomEvent("settings-group-add", eventInit));
 }
-
-var GroupSettingsObserver = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-        if (isChangedElement(mutation.target) || mutation.removedNodes.length) {
-            setChangedForNode(mutation.target);
-        }
-
-        if (mutation.removedNodes.length) {
-            updateCheckboxes(mutation.target);
-        }
-    });
-});
 
 // When receiving / returning data, <select multiple=true> <option> values are treated as bitset (u32) indexes (i.e. individual bits that are set)
 // For example 0b101 is translated to ["0", "2"], or 0b1111 is translated to ["0", "1", "2", "3"]
@@ -447,7 +560,7 @@ function stringifySelectedValues(select) {
         return select.options[select.selectedIndex].value;
     }
 
-    return "";
+    return select.dataset["original"];
 }
 
 function elementSelectorListener(selector, event, listener) {
@@ -468,22 +581,48 @@ function setChangedElement(elem) {
     elem.dataset["changed"] = "true";
 }
 
-function setChangedForNode(node) {
-    setChangedElement(node);
-    for (let elem of node.querySelectorAll("input,select")) {
-        setChangedElement(elem);
-    }
-}
-
 function resetChangedElement(elem) {
     elem.dataset["changed"] = "false";
 }
 
-function resetChangedGroups() {
+function resetGroupPending(elem) {
+    elem.dataset["settingsGroupPending"] = "";
+}
+
+function resetSettingsGroup() {
     const elems = document.getElementsByClassName("settings-group");
     for (let elem of elems) {
         resetChangedElement(elem);
+        resetGroupPending(elem);
     }
+}
+
+function getGroupPending(elem) {
+    const raw = elem.dataset["settingsGroupPending"] || "";
+    if (!raw.length) {
+        return [];
+    }
+
+    return raw.split(",");
+}
+
+function addGroupPending(elem, index) {
+    const pending = getGroupPending(elem);
+    pending.push(`set:${index}`);
+    elem.dataset["settingsGroupPending"] = pending.join(",");
+}
+
+function popGroupPending(elem, index) {
+    const pending = getGroupPending(elem);
+
+    const added = pending.indexOf(`set:${index}`);
+    if (added >= 0) {
+        pending.splice(added, 1);
+    } else {
+        pending.push(`del:${index}`);
+    }
+
+    elem.dataset["settingsGroupPending"] = pending.join(",");
 }
 
 function isGroupElement(elem) {
@@ -554,7 +693,7 @@ function setSpanValue(span, value) {
 }
 
 function setSelectValue(select, value) {
-    let values = select.multiple
+    const values = select.multiple
         ? bitsetToSelectedValues(value)
         : [value.toString()];
 
@@ -563,6 +702,8 @@ function setSelectValue(select, value) {
         .forEach((option) => {
             option.selected = true;
         });
+
+    select.dataset["original"] = values.join(",");
 }
 
 // TODO: <input type="radio"> is a special beast, since the actual value is one of 'checked' elements with the same name=... attribute.
@@ -603,17 +744,23 @@ function getDataForElement(element) {
     return null;
 }
 
-function getData(forms, changed, cleanup) {
+function getData(forms, options) {
     // Populate two sets of data, ones that had been changed and ones that stayed the same
-    var data = {};
-    var changed_data = [];
-    if (cleanup === undefined) {
-        cleanup = true;
+    if (options === undefined) {
+        options = {};
     }
 
-    if (changed === undefined) {
-        changed = true;
+    const data = {};
+    const changed_data = [];
+    if (options.cleanup === undefined) {
+        options.cleanup = true;
     }
+
+    if (options.changed === undefined) {
+        options.changed = true;
+    }
+
+    const group_counter = {};
 
     // TODO: <input type="radio"> can be found as both individual elements and as a `RadioNodeList` view.
     // matching will extract the specific radio element, but will ignore the list b/c it has no tagName
@@ -633,45 +780,52 @@ function getData(forms, changed, cleanup) {
                 continue;
             }
 
+            const group_element = isGroupElement(elem);
+            const group_index = group_counter[name] || 0;
+            const group_name = `${name}${group_index}`;
+            if (group_element) {
+                group_counter[name] = group_index + 1;
+            }
+
             const value = getDataForElement(elem);
             if (null !== value) {
-                var indexed = changed_data.indexOf(name) >= 0;
-                if ((isChangedElement(elem) || !changed) && !indexed) {
-                    changed_data.push(name);
+                const elem_indexed = changed_data.indexOf(name) >= 0;
+                if ((isChangedElement(elem) || !options.changed) && !elem_indexed) {
+                    changed_data.push(group_element ? group_name : name);
                 }
 
-                // make sure to group keys from templates (or, manually flagged as such)
-                if (isGroupElement(elem)) {
-                    if (name in data) {
-                        data[name].push(value);
-                    } else {
-                        data[name] = [value];
-                    }
-                } else {
-                    data[name] = value;
-                }
+                data[group_element ? group_name : name] = value;
             }
         }
     }
 
-    // Finally, filter out only fields that had changed.
-    // Note: We need to preserve dynamic lists like schedules, wifi etc.
-    // so we don't accidentally break when user deletes entry in the middle
-    const resulting_data = {};
-    for (let value in data) {
-        if (changed_data.indexOf(value) >= 0) {
-            resulting_data[value] = data[value];
+    // Finally, filter out only fields that *must* be assigned.
+    const resulting_data = {
+        set: {
+        },
+        del: [
+        ]
+    };
+
+    for (const name in data) {
+        if (!options.changed || (changed_data.indexOf(name) >= 0)) {
+            resulting_data.set[name] = data[name];
         }
     }
 
-    // Hack: clean-up leftover arrays.
-    // When empty, the receiving side will prune all keys greater than the current one.
-    if (cleanup) {
-        for (let group of document.getElementsByClassName("settings-group")) {
-            if (isChangedElement(group) && !group.children.length) {
-                settingsTargets(group).forEach((target) => {
-                    resulting_data[target] = [];
-                });
+    // Make sure to remove dynamic group entries from the kvs
+    // Only group keys can be removed atm, so only process .settings-group
+    if (options.cleanup) {
+        for (let elem of document.getElementsByClassName("settings-group")) {
+            for (let pair of getGroupPending(elem)) {
+                const [action, index] = pair.split(":");
+                if (action === "del") {
+                    const keysRaw = elem.dataset["settingsSchema"] || elem.dataset["settingsTarget"];
+                    const keys = !keysRaw ? [] : keysRaw.split(" ");
+                    keys.forEach((key) => {
+                        resulting_data.del.push(`${key}${index}`);
+                    });
+                }
             }
         }
     }
@@ -730,10 +884,8 @@ function toggleVisiblePassword(event) {
     }
 }
 
-function generatePasswordsForForm(name) {
-    let value = generatePassword();
-
-    let form = document.forms[name];
+function generatePasswordsForForm(form) {
+    const value = generatePassword();
     for (let elem of [form.elements.adminPass0, form.elements.adminPass1]) {
         setChangedElement(elem);
         elem.type = "text";
@@ -741,21 +893,47 @@ function generatePasswordsForForm(name) {
     }
 }
 
-function moduleVisible(module) {
-    const elems = document.getElementsByClassName(`module-${module}`);
-    for (let elem of elems) {
-        if (module === "sch") {
-            switch (elem.tagName) {
-            case "LI":
-                elem.style.display = "inherit";
-                break;
-            case "DIV":
-                elem.style.display = "flex";
-                break;
-            }
-        } else {
-            elem.style.display = "inherit";
+function initSetupPassword(form) {
+    elementSelectorOnClick(".button-setup-password", (event) => {
+        event.preventDefault();
+        const forms = [form];
+        if (validateFormsPasswords(forms, true)) {
+            applySettings(getData(forms, true, false));
         }
+    });
+    elementSelectorOnClick(".button-generate-password", (event) => {
+        event.preventDefault();
+        generatePasswordsForForm(form);
+    });
+}
+
+function styleInject(rules) {
+    if (!rules.length) {
+        return;
+    }
+
+    const style = document.createElement("style");
+    style.setAttribute("type", "text/css");
+    document.head.appendChild(style);
+
+    let pos = style.sheet.rules.length;
+    for (let rule of rules) {
+        style.sheet.insertRule(rule, pos++);
+    }
+}
+
+function styleVisible(selector, value) {
+    return `${selector} { content-visibility: ${value ? "visible": "hidden"}; }`
+}
+
+function moduleVisible(module) {
+    if (module === "sch") {
+        styleInject([
+            `li.module-${module} { display: inherit; }`,
+            `div.module-${module} { display: flex; }`
+        ]);
+    } else {
+        styleInject([`.module-${module} { display: inherit; }`]);
     }
 }
 
@@ -796,8 +974,8 @@ function setOriginalsFromValues(elems) {
 function initSelect(select, values) {
     for (let value of values) {
         let option = document.createElement("option");
-        option.setAttribute("value", value["id"]);
-        option.textContent = value["name"];
+        option.setAttribute("value", value.id);
+        option.textContent = value.name;
         select.appendChild(option);
     }
 }
@@ -856,13 +1034,12 @@ function addSimpleEnumerables(name, prettyName, count) {
 // Notice that <span> uses a custom data attribute data-key=..., instead of name=...
 
 function initGenericKeyValueElement(key, value) {
-    let span = document.querySelector(`span[data-key='${key}']`);
-    if (span) {
+    for (const span of document.querySelectorAll(`span[data-key='${key}']`)) {
         setSpanValue(span, value);
     }
 
-    let inputs = [];
-    for (let elem of document.querySelectorAll(`[name='${key}'`)) {
+    const inputs = [];
+    for (const elem of document.querySelectorAll(`[name='${key}'`)) {
         switch (elem.tagName) {
         case "INPUT":
             setInputValue(elem, value);
@@ -917,7 +1094,8 @@ function fillTemplateLineFromCfg(line, id, cfg) {
 
 
 function delParent(event) {
-    event.target.parentElement.remove();
+    event.target.parentElement.dispatchEvent(
+        new CustomEvent("settings-group-del", {bubbles: true}));
 }
 
 function moreElem(container) {
@@ -943,7 +1121,7 @@ function idForTemplateContainer(container) {
     if (id < max) {
         return id;
     }
-    
+
     alert(`Max number of ${container.id} has been reached (${id} out of ${max})`);
     return -1;
 }
@@ -1004,15 +1182,21 @@ function askAndCallReboot() {
     });
 }
 
+function askAndCallAction(event) {
+    askAndCall([(ask) => ask(`Confirm the action: "${event.target.textContent}"`)], () => {
+        sendAction(event.target.name);
+    });
+}
+
 // Settings kv as either {key: value} or {key: [value0, value1, ...etc...]}
 
-function sendConfig(config) {
-    send(JSON.stringify({config}));
+function applySettings(settings) {
+    send(JSON.stringify({settings}));
 }
 
 function resetOriginals() {
     setOriginalsFromValues();
-    resetChangedGroups();
+    resetSettingsGroup();
     Settings.resetCounters();
     Settings.saved = false;
 }
@@ -1118,14 +1302,6 @@ function handleFirmwareUpgrade(event) {
     });
 }
 
-// Initial page, when webMode only allows to change the password
-function sendPasswordConfig(name) {
-    let forms = [document.forms[name]];
-    if (validateFormPasswords(forms, true)) {
-        sendConfig(getData(forms, true, false));
-    }
-}
-
 function afterSaved() {
     var response;
 
@@ -1157,32 +1333,11 @@ function waitForSaved(){
     }
 }
 
-function sendConfigFromAllForms() {
+function applySettingsFromAllForms() {
     // Since we have 2-page config, make sure we select the active one
     let forms = document.getElementsByClassName("form-settings");
     if (validateForms(forms)) {
-        sendConfig(getData(forms));
-
-//removeIf(!sensor)
-        // Energy reset is handled via these keys
-        // TODO: replace these with actions, not settings
-        for (let elem of document.getElementsByClassName("pwrExpected")) {
-            elem.value = 0;
-        }
-
-        for (let form of document.forms) {
-            if (form.elements.snsResetCalibration) {
-                form.elements.snsResetCalibration.checked = false;
-            }
-            if (form.elements.pwrResetCalibration) {
-                form.elements.pwrResetCalibration.checked = false;
-            }
-            if (form.elements.pwrResetE) {
-                form.elements.pwrResetE.checked = false;
-            }
-        }
-//endRemoveIf(!sensor)
-
+        applySettings(getData(forms));
         Settings.counters.changed = 0;
         waitForSaved();
     }
@@ -1230,48 +1385,61 @@ function resetToFactoryDefaults(event) {
 // Visualization
 // -----------------------------------------------------------------------------
 
+// ref. vendor/side-menu.css
+
 function toggleMenu(event) {
-    if (event !== undefined && event.cancelable) {
-        event.preventDefault();
+    event.preventDefault();
+    event.target.parentElement.classList.toggle("active");
+}
+
+function showPanelByName(name) {
+    // only a single panel is shown on the 'layout'
+    const target = document.getElementById(`panel-${name}`);
+    if (!target) {
+        return;
     }
 
-    for (const id of ["layout", "menu", "menu-link"]) {
-        document.getElementById(id).classList.toggle("active");
+    for (const panel of document.querySelectorAll(".panel")) {
+        panel.style.display = "none";
+    }
+    target.style.display = "inherit";
+
+    const layout = document.getElementById("layout");
+    layout.classList.remove("active");
+
+    // TODO: sometimes, switching view causes us to scroll past
+    // the header (e.g. emon ratios panel on small screen)
+    // layout itself stays put, but the root element seems to scroll,
+    // at least can be reproduced with Chrome
+    if (document.documentElement) {
+        document.documentElement.scrollTop = 0;
     }
 }
 
 function showPanel(event) {
     event.preventDefault();
-
-    for (let panel of document.querySelectorAll(".panel")) {
-        panel.style.display = "none";
-    }
-
-    let layout = document.getElementById("layout");
-    if (layout.classList.contains("active")) {
-        toggleMenu();
-    }
-
-    let panel = event.target.dataset["panel"];
-    document.getElementById(`panel-${panel}`).style.display = "inherit";
+    showPanelByName(event.target.dataset["panel"]);
 }
 
 // -----------------------------------------------------------------------------
 // Relays & magnitudes mapping
 // -----------------------------------------------------------------------------
 
-function createRelayList(values, container, template_name) {
-    let target = document.getElementById(container);
+function createRelayList(containerId, values, keyPrefix) {
+    const target = document.getElementById(containerId);
     if (target.childElementCount > 0) {
         return;
     }
 
-    let template = loadConfigTemplate(template_name);
+    // TODO: let schema set the settings key
+    const template = loadConfigTemplate("number-input");
     values.forEach((value, index) => {
-        let line = template.cloneNode(true);
-        line.querySelector("label").textContent += " #".concat(index)
+        const line = template.cloneNode(true);
+        line.querySelector("label").textContent = (Enumerable.relay)
+            ? Enumerable.relay[index].name : `Switch #${index}`;
 
-        let input = line.querySelector("input");
+        const input = line.querySelector("input");
+        input.name = keyPrefix;
         input.value = value;
         input.dataset["original"] = value;
 
@@ -1281,21 +1449,24 @@ function createRelayList(values, container, template_name) {
 
 //removeIf(!sensor)
 
-function createMagnitudeList(data, container, template_name) {
-    let target = document.getElementById(container);
+function initModuleMagnitudes(data) {
+    const targetId = `${data.prefix}-magnitudes`;
+
+    let target = document.getElementById(targetId);
     if (target.childElementCount > 0) { return; }
 
     data.values.forEach((values) => {
-        let [type, index_global, index_module] = values;
+        const entry = fromSchema(values, data.schema);
 
-        let line = loadConfigTemplate(template_name);
+        let line = loadConfigTemplate("module-magnitude");
         line.querySelector("label").textContent =
-            MagnitudeNames[type].concat(" #").concat(parseInt(index_global, 10));
-        line.querySelector("div.hint").textContent =
-            Magnitudes[index_global].description;
+            `${Magnitudes.types[entry.type]} #${entry.index_global}`;
+        line.querySelector("span").textContent =
+            Magnitudes.properties[entry.index_global].description;
 
         let input = line.querySelector("input");
-        input.value = index_module;
+        input.name = `${data.prefix}Magnitude`;
+        input.value = entry.index_module;
         input.dataset["original"] = input.value;
 
         mergeTemplate(target, line);
@@ -1495,13 +1666,9 @@ function schAdd(cfg) {
 
     let line = loadConfigTemplate("schedule-config");
 
-    const type = (cfg.schType === 1) ? "relay" :
-        (cfg.schType === 2) ? "light" :
-        (cfg.schType === 3) ? "curtain" :
-        "none";
-    if (type !== "none") {
+    if (cfg.schType !== "none") {
         mergeTemplate(line.querySelector(".schedule-action"),
-            loadConfigTemplate("schedule-action-".concat(type)));
+            loadConfigTemplate("schedule-action-".concat(cfg.schType)));
     }
 
     fillTemplateLineFromCfg(line, id, cfg);
@@ -1523,10 +1690,13 @@ function relayToggle(event) {
 function initRelayToggle(id, cfg) {
     let line = loadConfigTemplate("relay-control");
 
+    let root = line.querySelector("div");
+    root.classList.add(`relay-control-${id}`);
+
     let name = line.querySelector("span[data-key='relayName']");
     name.textContent = cfg.relayName;
     name.dataset["id"] = id;
-    name.setAttribute("title", cfg.relayDesc);
+    name.setAttribute("title", cfg.relayProv);
 
     let realId = "relay".concat(id);
 
@@ -1569,60 +1739,268 @@ function initRelayConfig(id, cfg) {
 //removeIf(!sensor)
 
 function initMagnitudes(data) {
-    let container = document.getElementById("magnitudes");
-    if (container.childElementCount > 0) {
-        return;
-    }
-
     data.types.values.forEach((cfg) => {
         const info = fromSchema(cfg, data.types.schema);
-        MagnitudeNames[info.type] = info.name;
-        MagnitudeTypePrefixes[info.type] = info.prefix;
-        MagnitudePrefixTypes[info.prefix] = info.type;
+        Magnitudes.types[info.type] = info.name;
+        Magnitudes.typePrefix[info.type] = info.prefix;
+        Magnitudes.prefixType[info.prefix] = info.type;
     });
 
     data.errors.values.forEach((cfg) => {
         const error = fromSchema(cfg, data.errors.schema);
-        MagnitudeErrors[error.type] = error.name;
+        Magnitudes.errors[error.type] = error.name;
     });
 
-    data.magnitudes.values.forEach((cfg, index) => {
-        const magnitude = fromSchema(cfg, data.magnitudes.schema);
-
-        const prettyName = MagnitudeNames[magnitude.type]
-            .concat(" #").concat(parseInt(magnitude.index_global, 10));
-        Magnitudes.push({
-            name: prettyName,
-            units: magnitude.units,
-            description: magnitude.description
+    data.units.values.forEach((cfg, id) => {
+        const values = fromSchema(cfg, data.units.schema);
+        values.supported.forEach(([type, name]) => {
+            Magnitudes.units.names[type] = name;
         });
 
-        let info = loadTemplate("magnitude-info");
-        info.querySelector("label").textContent = prettyName;
-        info.querySelector("input").dataset["id"] = index;
-        info.querySelector("input").dataset["type"] = magnitude.type;
-        info.querySelector("div.sns-desc").textContent = magnitude.description;
-        info.querySelector("div.sns-info").style.display = "none";
-
-        mergeTemplate(container, info);
+        Magnitudes.units.supported[id] = values.supported;
     });
+}
+
+function initMagnitudesList(data, callbacks) {
+    data.values.forEach((cfg, id) => {
+        const magnitude = fromSchema(cfg, data.schema);
+        const prettyName = Magnitudes.types[magnitude.type]
+            .concat(" #").concat(parseInt(magnitude.index_global, 10));
+
+        const result = {
+            name: prettyName,
+            units: magnitude.units,
+            type: magnitude.type,
+            index_global: magnitude.index_global,
+            description: magnitude.description
+        };
+
+        Magnitudes.properties[id] = result;
+        callbacks.forEach((callback) => {
+            callback(id, result);
+        });
+    });
+}
+
+function createMagnitudeInfo(id, magnitude) {
+    const container = document.getElementById("magnitudes");
+
+    const info = loadTemplate("magnitude-info");
+    const label = info.querySelector("label");
+    label.textContent = magnitude.name;
+
+    const input = info.querySelector("input");
+    input.dataset["id"] = id;
+    input.dataset["type"] = magnitude.type;
+
+    const description = info.querySelector(".magnitude-description");
+    description.textContent = magnitude.description;
+
+    const extra = info.querySelector(".magnitude-info");
+    extra.style.display = "none";
+
+    mergeTemplate(container, info);
+}
+
+function createMagnitudeUnitSelector(id, magnitude) {
+    // but, no need for the element when there's no choice
+    const supported = Magnitudes.units.supported[id];
+    if ((supported !== undefined) && (supported.length > 1)) {
+        const line = loadTemplate("magnitude-units");
+        line.querySelector("label").textContent =
+            `${Magnitudes.types[magnitude.type]} #${magnitude.index_global}`;
+
+        const select = line.querySelector("select");
+        select.setAttribute("name", magnitudeTypedKey(magnitude, "Units"));
+
+        const options = [];
+        supported.forEach(([id, name]) => {
+            options.push({id, name});
+        });
+
+        initSelect(select, options);
+        setSelectValue(select, magnitude.units);
+        setOriginalsFromValuesForNode(line, [select]);
+
+        const container = document.getElementById("magnitude-units");
+        container.parentElement.classList.remove("maybe-hidden");
+        mergeTemplate(container, line);
+    }
+}
+
+function magnitudeSettingInfo(id, key) {
+    const out = {
+        id: id,
+        name: Magnitudes.properties[id].name,
+        prefix: `${Magnitudes.typePrefix[Magnitudes.properties[id].type]}`,
+        index_global: `${Magnitudes.properties[id].index_global}`
+    };
+
+    out.key = `${out.prefix}${key}${out.index_global}`;
+    return out;
+}
+
+function emonRatioInfo(id) {
+    return magnitudeSettingInfo(id, "Ratio");
+}
+
+function initMagnitudeTextSetting(containerId, id, keySuffix, value) {
+    const template = loadTemplate("text-input");
+    const input = template.querySelector("input");
+
+    const info = magnitudeSettingInfo(id, keySuffix);
+    input.id = info.key;
+    input.name = input.id;
+    input.value = value;
+    setOriginalsFromValuesForNode(template, [input]);
+
+    const label = template.querySelector("label");
+    label.textContent = info.name;
+    label.htmlFor = input.id;
+
+    const container = document.getElementById(containerId);
+    container.parentElement.classList.remove("maybe-hidden");
+    mergeTemplate(container, template);
+}
+
+function initMagnitudesRatio(id, value) {
+    initMagnitudeTextSetting("emon-ratios", id, "Ratio", value);
+}
+
+function initMagnitudesExpected(id) {
+    // TODO: also display currently read value?
+    const template = loadTemplate("emon-expected");
+    const [expected, result] = template.querySelectorAll("input");
+
+    const info = emonRatioInfo(id);
+
+    expected.name += `${info.key}`;
+    expected.id = expected.name;
+    expected.dataset["id"] = info.id;
+
+    result.name += `${info.key}`;
+    result.id = result.name;
+
+    const label = template.querySelector("label");
+    label.textContent = info.name;
+    label.htmlFor = expected.id;
+
+    styleInject([
+        styleVisible(`.emon-expected-${info.prefix}`, true)
+    ]);
+
+    mergeTemplate(document.getElementById("emon-expected"), template);
+}
+
+function emonCalculateRatios() {
+    const inputs = document.getElementById("emon-expected")
+        .querySelectorAll(".emon-expected-input");
+
+    inputs.forEach((input) => {
+        if (input.value.length) {
+            sendAction("emon-expected", {
+                id: parseInt(input.dataset["id"], 10),
+                expected: parseFloat(input.value) });
+        }
+    });
+}
+
+function emonApplyRatios() {
+    const results = document.getElementById("emon-expected")
+        .querySelectorAll(".emon-expected-result");
+
+    results.forEach((result) => {
+        if (result.value.length) {
+            const ratio = document.getElementById(
+                result.name.replace("result:", ""));
+            ratio.value = result.value;
+            setChangedElement(ratio);
+
+            result.value = "";
+
+            const expected = document.getElementById(
+                result.name.replace("result:", "expected:"));
+            expected.value = "";
+        }
+    });
+
+    showPanelByName("sns");
+}
+
+function initMagnitudesCorrection(id, value) {
+    initMagnitudeTextSetting("magnitude-corrections", id, "Correction", value);
+}
+
+function initMagnitudesSettings(data) {
+    data.values.forEach((cfg, id) => {
+        const settings = fromSchema(cfg, data.schema);
+
+        if (settings.Ratio !== null) {
+            initMagnitudesRatio(id, settings.Ratio);
+            initMagnitudesExpected(id);
+        }
+
+        if (settings.Correction !== null) {
+            initMagnitudesCorrection(id, settings.Correction);
+        }
+
+        let threshold = settings.ZeroThreshold;
+        if (threshold === null) {
+            threshold = NaN;
+        }
+
+        initMagnitudeTextSetting(
+            "magnitude-zero-thresholds", id,
+            "ZeroThreshold", threshold);
+
+        initMagnitudeTextSetting(
+            "magnitude-min-deltas", id,
+            "MinDelta", settings.MinDelta);
+
+        initMagnitudeTextSetting(
+            "magnitude-max-deltas", id,
+            "MaxDelta", settings.MaxDelta);
+    });
+}
+
+function magnitudeValueContainer(id) {
+    return document.querySelector(`input[name='magnitude'][data-id='${id}']`);
 }
 
 function updateMagnitudes(data) {
     data.values.forEach((cfg, id) => {
-        const magnitude = fromSchema(cfg, data.schema);
-
-        let input = document.querySelector(`input[name='magnitude'][data-id='${id}']`);
-        input.value = (0 === magnitude.error)
-            ? (magnitude.value + Magnitudes[id].units)
-            : MagnitudeErrors[magnitude.error];
-
-        if (magnitude.info.length) {
-            let info = input.parentElement.parentElement.querySelector("div.sns-info");
-            info.style.display = "inherit";
-            info.textContent = magnitude.info;
+        if (!Magnitudes.properties[id]) {
+            return;
         }
 
+        const magnitude = fromSchema(cfg, data.schema);
+        const properties = Magnitudes.properties[id];
+        properties.units = magnitude.units;
+
+        const units = Magnitudes.units.names[properties.units] || "";
+        const input = magnitudeValueContainer(id);
+        input.value = (0 !== magnitude.error)
+            ? Magnitudes.errors[magnitude.error]
+            : (("nan" === magnitude.value)
+                ? ""
+                : `${magnitude.value}${units}`);
+    });
+}
+
+function updateEnergy(data) {
+    data.values.forEach((cfg) => {
+        const energy = fromSchema(cfg, data.schema);
+        if (!Magnitudes.properties[energy.id]) {
+            return;
+        }
+
+        if (energy.saved.length) {
+            const input = magnitudeValueContainer(energy.id);
+            const info = input.parentElement.parentElement
+                .querySelector(".magnitude-info");
+            info.style.display = "inherit";
+            info.textContent = energy.saved;
+        }
     });
 }
 
@@ -1695,15 +2073,15 @@ function initCurtain() {
         return;
     }
 
-    // simple position slider
-    document.getElementById("curtainSet").addEventListener("change", curtainSetHandler);
-
     // add and init curtain template, prepare multi switches
     let line = loadConfigTemplate("curtain-control");
     line.querySelector(".button-curtain-open").addEventListener("click", curtainButtonHandler);
     line.querySelector(".button-curtain-pause").addEventListener("click", curtainButtonHandler);
     line.querySelector(".button-curtain-close").addEventListener("click", curtainButtonHandler);
     mergeTemplate(container, line);
+
+    // simple position slider
+    document.getElementById("curtainSet").addEventListener("change", curtainSetHandler);
 
     addSimpleEnumerables("curtain", "Curtain", 1);
 }
@@ -1796,138 +2174,243 @@ function colorBox() {
     return {component: iro.ui.Box, options: {}};
 }
 
-function updateColor(mode, value) {
-    if (ColorPicker) {
-        if (mode === "rgb") {
-            ColorPicker.color.hexString = value;
-        } else if (mode === "hsv") {
-            ColorPicker.color.hsv = hsvStringToColor(value);
-        }
-        return;
+function colorUpdate(mode, value) {
+    if ("rgb" === mode) {
+        ColorPicker.color.hexString = value;
+    } else if ("hsv" === mode) {
+        ColorPicker.color.hsv = hsvStringToColor(value);
     }
+}
 
-    // TODO: useRGB -> ltWheel?
-    // TODO: always show wheel + sliders like before?
-    var layout = []
-    if (mode === "rgb") {
-        layout.push(colorWheel());
-        layout.push(colorSlider("value"));
-    } else if (mode === "hsv") {
-        layout.push(colorBox());
-        layout.push(colorSlider("hue"));
+function lightStateHideRelay(id) {
+    styleInject([
+        styleVisible(`.relay-control-${id}`, false)
+    ]);
+}
+
+function initLightState() {
+    const toggle = document.getElementById("light-state-value");
+    toggle.addEventListener("change", (event) => {
+        event.preventDefault();
+        sendAction("light", {state: event.target.checked});
+    });
+}
+
+function updateLightState(value) {
+    const state = document.getElementById("light-state-value");
+    state.checked = value;
+    colorPickerState(value);
+}
+
+function colorPickerState(value) {
+    const light = document.getElementById("light");
+    if (value) {
+        light.classList.add("light-on");
+    } else {
+        light.classList.remove("light-on");
     }
+}
 
-    var options = {
-        color: (mode === "rgb") ? value : hsvStringToColor(value),
-        layout: layout
+function colorEnabled(value) {
+    if (value) {
+        lightAddClass("light-color");
+    }
+}
+
+function colorInit(value) {
+    // TODO: ref. #2451, input:change causes pretty fast updates.
+    // either make sure we don't cause any issue on the esp, or switch to
+    // color:change instead (which applies after input ends)
+    let change = () => {
     };
 
-    // TODO: ref. #2451, this causes pretty fast updates.
-    // since we immediatly start the transition, debug print's yield() may interrupt us mid initialization
-    // api could also wait and hold the value for a bit, applying only some of the values between start and end, and then apply the last one
-    ColorPicker = new iro.ColorPicker("#color", options);
-    ColorPicker.on("input:change", (color) => {
-        if (mode === "rgb") {
-            sendAction("color", {rgb: color.hexString});
-        } else if (mode === "hsv") {
-            sendAction("color", {hsv: colorToHsvString(color)});
-        }
+    const rules = [];
+    const layout = [];
+
+    // RGB
+    if (value) {
+        layout.push(colorWheel());
+        change = (color) => {
+            sendAction("light", {
+                rgb: color.hexString
+            });
+        };
+    // HSV
+    } else {
+        layout.push(colorBox());
+        layout.push(colorSlider("hue"));
+        layout.push(colorSlider("saturation"));
+        change = (color) => {
+            sendAction("light", {
+                hsv: colorToHsvString(color)
+            });
+        };
+    }
+
+    layout.push(colorSlider("value"));
+    styleInject(rules);
+
+    ColorPicker = new iro.ColorPicker("#light-picker", {layout});
+    ColorPicker.on("input:change", change);
+}
+
+function updateMireds(value) {
+    const mireds = document.getElementById("mireds-value");
+    if (mireds !== null) {
+        mireds.value = value;
+        mireds.nextElementSibling.textContent = value;
+    }
+}
+
+function lightAddClass(className) {
+    const light = document.getElementById("light");
+    light.classList.add(className);
+}
+
+// White implies we should hide one or both white channels
+function whiteEnabled(value) {
+    if (value) {
+        lightAddClass("light-white");
+    }
+}
+
+// When there are CCT controls, no need for raw white channel sliders
+function cctEnabled(value) {
+    if (value) {
+        lightAddClass("light-cct");
+    }
+}
+
+function cctInit(value) {
+    const control = loadTemplate("mireds-control");
+
+    const slider = control.getElementById("mireds-value");
+    slider.setAttribute("min", value.cold);
+    slider.setAttribute("max", value.warm);
+    slider.addEventListener("change", (event) => {
+        event.target.nextElementSibling.textContent = event.target.value;
+        sendAction("light", {mireds: event.target.value});
     });
+
+    const datalist = control.querySelector("datalist");
+    datalist.innerHTML = `
+    <option value="${value.cold}">Cold</option>
+    <option value="${value.warm}">Warm</option>
+    `;
+
+    mergeTemplate(document.getElementById("light-cct"), control);
+}
+
+function updateLight(data) {
+    for (const [key, value] of Object.entries(data)) {
+        switch (key) {
+        case "state":
+            updateLightState(value);
+            break;
+
+        case "state_relay_id":
+            lightStateHideRelay(value);
+            break;
+
+        case "channels":
+            initLightState();
+            initBrightness();
+            initChannels(value);
+            break;
+
+        case "cct":
+            cctInit(value);
+            break;
+
+        case "brightness":
+            updateBrightness(value);
+            break;
+
+        case "values":
+            updateChannels(value);
+            break;
+
+        case "rgb":
+        case "hsv":
+            colorUpdate(key, value);
+            break;
+
+        case "mireds":
+            updateMireds(value);
+            break;
+        }
+    }
 }
 
 function onChannelSliderChange(event) {
     event.target.nextElementSibling.textContent = event.target.value;
-    sendAction("channel", {id: event.target.dataset["id"], value: event.target.value});
+
+    let channel = {}
+    channel[event.target.dataset["id"]] = event.target.value;
+
+    sendAction("light", {channel});
 }
 
 function onBrightnessSliderChange(event) {
     event.target.nextElementSibling.textContent = event.target.value;
-    sendAction("brightness", {value: event.target.value});
+    sendAction("light", {brightness: event.target.value});
 }
 
-function updateMireds(value) {
-    let mireds = document.getElementById("mireds");
-    if (mireds !== null) {
-        mireds.setAttribute("min", value.cold);
-        mireds.setAttribute("max", value.warm);
-        mireds.value = value.value;
-        mireds.nextElementSibling.textContent = value.value;
-        return;
-    }
+function initBrightness() {
+    const template = loadTemplate("brightness-control");
 
-    let control = loadTemplate("mireds-control");
-    control.getElementById("mireds").addEventListener("change", (event) => {
-        event.target.nextElementSibling.textContent = event.target.value;
-        sendAction("mireds", {mireds: event.target.value});
-    });
-    mergeTemplate(document.getElementById("cct"), control);
-    updateMireds(value);
+    const slider = template.getElementById("brightness-value");
+    slider.addEventListener("change", onBrightnessSliderChange);
+
+    mergeTemplate(document.getElementById("light-brightness"), template);
 }
 
 function updateBrightness(value) {
-    let brightness = document.getElementById("brightness");
+    const brightness = document.getElementById("brightness-value");
     if (brightness !== null) {
         brightness.value = value;
         brightness.nextElementSibling.textContent = value;
-        return;
     }
-
-    let template = loadTemplate("brightness-control");
-
-    let slider = template.getElementById("brightness");
-    slider.value = value;
-    slider.nextElementSibling.textContent = value;
-    slider.addEventListener("change", onBrightnessSliderChange);
-
-    mergeTemplate(document.getElementById("light"), template);
 }
 
-function initChannels(container, channels) {
-    channels.forEach((value, channel) => {
-        let line = loadTemplate("channel-control");
-        line.querySelector("span.slider").dataset["id"] = channel;
+function initChannels(channels) {
+    const container = document.getElementById("light-channels");
+    const enumerables = [];
 
-        let slider = line.querySelector("input.slider");
-        slider.value = value;
-        slider.nextElementSibling.textContent = value;
+    channels.forEach((tag, channel) => {
+        const line = loadTemplate("channel-control");
+        line.querySelector("span.slider").dataset["id"] = channel;
+        line.querySelector("div").setAttribute("id", `light-channel-${tag.toLowerCase()}`);
+
+        const slider = line.querySelector("input.slider");
         slider.dataset["id"] = channel;
         slider.addEventListener("change", onChannelSliderChange);
 
-        line.querySelector("label").textContent = "Channel #".concat(channel);
+        const label = `Channel #${channel} (${tag.toUpperCase()})`;
+        line.querySelector("label").textContent = label;
         mergeTemplate(container, line);
+
+        enumerables.push({"id": channel, "name": label});
     });
+
+    addEnumerables("Channels", enumerables);
 }
 
-function updateChannels(channels) {
-    let container = document.getElementById("channels");
-    if (container.childElementCount > 0) {
-        channels.forEach((value, channel) => {
-            let slider = container.querySelector(`input.slider[data-id='${channel}']`);
-            if (!slider) {
-                return;
-            }
-
-            // If there are RGB controls, no need for raw channel sliders
-            if (ColorPicker && (channel < 3)) {
-                slider.parentElement.style.display = "none";
-            }
-
-            // Or, when there are CCT controls
-            if ((channel === 3) || (channel === 4)) {
-                let cct = document.getElementById("cct");
-                if (cct.childElementCount > 0) {
-                    slider.parentElement.style.display = "none";
-                }
-            }
-
-            slider.value = value;
-            slider.nextElementSibling.textContent = value;
-        });
+function updateChannels(values) {
+    const container = document.getElementById("light");
+    if (!container) {
         return;
     }
 
-    initChannels(container, channels);
-    updateChannels(channels);
+    values.forEach((value, channel) => {
+        const slider = container.querySelector(`input.slider[data-id='${channel}']`);
+        if (!slider) {
+            return;
+        }
+
+        slider.value = value;
+        slider.nextElementSibling.textContent = value;
+    });
 }
 
 //endRemoveIf(!light)
@@ -1940,17 +2423,16 @@ function updateChannels(channels) {
 
 function rfbAction(event) {
     const prefix = "button-rfb-";
-    let [action] = Array.from(event.target.classList)
+    const [buttonRfbClass] = Array.from(event.target.classList)
         .filter(x => x.startsWith(prefix));
 
-    if (action) {
-        let container = event.target.parentElement.parentElement;
-        let input = container.querySelector("input");
+    if (buttonRfbClass) {
+        const container = event.target.parentElement.parentElement;
+        const input = container.querySelector("input");
 
-        action = action.replace(prefix, "");
-        sendAction(`rfb${action}`, {
-            id: input.dataset["id"],
-            status: input.dataset["status"]
+        sendAction(`rfb${buttonRfbClass.replace(prefix, "")}`, {
+            id: parseInt(input.dataset["id"], 10),
+            status: input.name === "rfbON"
         });
     }
 }
@@ -1959,32 +2441,35 @@ function rfbAdd() {
     let container = document.getElementById("rfbNodes");
 
     const id = container.childElementCount;
-    let line = loadTemplate("rfb-node");
+    const line = loadConfigTemplate("rfb-node");
     line.querySelector("span").textContent = id;
 
     for (let input of line.querySelectorAll("input")) {
         input.dataset["id"] = id;
+        input.setAttribute("id", `${input.name}${id}`);
     }
 
-    elementSelectorOnClick(".button-rfb-learn", rfbAction);
-    elementSelectorOnClick(".button-rfb-forget", rfbAction);
-    elementSelectorOnClick(".button-rfb-send", rfbAction);
+    for (let action of ["learn", "forget"]) {
+        for (let button of line.querySelectorAll(`.button-rfb-${action}`)) {
+            button.addEventListener("click", rfbAction);
+        }
+    }
 
     mergeTemplate(container, line);
-
-    return false;
-}
-
-function rfbSelector(id, status) {
-    return `input[name='rfbcode'][data-id='${id}'][data-status='${status}']`;
 }
 
 function rfbHandleCodes(value) {
     value.codes.forEach((codes, id) => {
-        let realId = id + value.start;
-        let [off, on] = codes;
-        document.querySelector(rfbSelector(realId, 0)).value = off;
-        document.querySelector(rfbSelector(realId, 1)).value = on;
+        const realId = id + value.start;
+        const [off, on] = codes;
+
+        const rfbOn = document.getElementById(`rfbON${realId}`);
+        setInputValue(rfbOn, on);
+
+        const rfbOff = document.getElementById(`rfbOFF${realId}`);
+        setInputValue(rfbOff, off);
+
+        setOriginalsFromValues([rfbOn, rfbOff]);
     });
 }
 
@@ -2019,7 +2504,7 @@ function processData(data) {
     if ("app_name" in data) {
         let title = data.app_name;
         if ("app_version" in data) {
-            let span = document.querySelector("span[data-key='title']");
+            let span = document.querySelector("span[data-key='version']");
             span.textContent = data.app_version;
             title = title + " " + data.app_version;
         }
@@ -2048,17 +2533,15 @@ function processData(data) {
             return;
         }
 
-        if (key.endsWith("Visible")) {
+        if ("modulesVisible" === key) {
             // TODO: Move to another 'module' that saves the energy data and have a common setting?
-            if ("pzemVisible" === key) {
-                let save = document.querySelector("input[name='snsSave']");
-                save.disabled = true;
+            if (value.includes("pzem")) {
+                document.querySelector("input[name='snsSave']").disabled = true;
             }
 
-            let module = key.slice(0, -7);
-            if (module.length) {
+            value.forEach((module) => {
                 moduleVisible(module);
-            }
+            });
             return;
         }
 
@@ -2079,6 +2562,18 @@ function processData(data) {
             }
 
             addEnumerables("gpio-types", types);
+            return;
+        }
+
+        if ("gpioInfo" === key) {
+            let failed = "";
+            for (const [pin, file, func, line] of value["failed-locks"]) {
+                failed += `GPIO${pin} @ ${file}:${func}:${line}\n`;
+            }
+
+            if (failed.length > 0) {
+                showErrorNotification("Could not acquire locks on the following pins, check configuration\n\n" + failed);
+            }
             return;
         }
 
@@ -2171,31 +2666,25 @@ function processData(data) {
 
         //removeIf(!light)
 
-        if ("lightstate" === key) {
-            let color = document.getElementById("color");
-            color.style.display = value ? "inherit" : "none";
+        if ("light" === key) {
+            updateLight(value);
             return;
         }
 
-        if (("rgb" === key) || ("hsv" === key)) {
-            updateColor(key, value);
-            return;
+        if ("useWhite" === key) {
+            whiteEnabled(value);
         }
 
-        if ("brightness" === key) {
-            updateBrightness(value);
-            return;
+        if ("useCCT" === key) {
+            cctEnabled(value);
         }
 
-        if ("channels" === key) {
-            updateChannels(value);
-            addSimpleEnumerables("channel", "Channel", value.length);
-            return;
+        if ("useColor" === key) {
+            colorEnabled(value);
         }
 
-        if ("mireds" === key) {
-            updateMireds(value);
-            return;
+        if ("useRGB" === key) {
+            colorInit(value);
         }
 
         //endRemoveIf(!light)
@@ -2206,13 +2695,34 @@ function processData(data) {
 
         //removeIf(!sensor)
 
-        if ("magnitudesConfig" === key) {
+        if ("magnitudes-init" === key) {
             initMagnitudes(value);
+            return;
+        }
+
+        if ("magnitudes-module" === key) {
+            initModuleMagnitudes(value);
+            return;
+        }
+
+        if ("magnitudes-list" === key) {
+            initMagnitudesList(value, [
+                createMagnitudeUnitSelector, createMagnitudeInfo]);
+            return;
+        }
+
+        if ("magnitudes-settings" === key) {
+            initMagnitudesSettings(value);
             return;
         }
 
         if ("magnitudes" === key) {
             updateMagnitudes(value);
+            return;
+        }
+
+        if ("energy" === key) {
+            updateEnergy(value);
             return;
         }
 
@@ -2271,7 +2781,7 @@ function processData(data) {
 
                 relays.push({
                     "id": id,
-                    "name": `${cfg.relayName} (${cfg.relayDesc})`
+                    "name": `${cfg.relayName} (${cfg.relayProv})`
                 });
 
                 initRelayToggle(id, cfg);
@@ -2306,40 +2816,18 @@ function processData(data) {
         }
 
         // ---------------------------------------------------------------------
-        // Domoticz
+        // Special mapping for domoticz and thingspeak
         // ---------------------------------------------------------------------
 
-        // Domoticz - Relays
         if ("dczRelays" === key) {
-            createRelayList(value, "dczRelays", "dcz-relay");
+            createRelayList("dcz-relays", value, "dczRelayIdx");
             return;
         }
 
-        // Domoticz - Magnitudes
-        //removeIf(!sensor)
-        if ("dczMagnitudes" === key) {
-            createMagnitudeList(value, "dczMagnitudes", "dcz-magnitude");
-            return;
-        }
-        //endRemoveIf(!sensor)
-
-        // ---------------------------------------------------------------------
-        // Thingspeak
-        // ---------------------------------------------------------------------
-
-        // Thingspeak - Relays
         if ("tspkRelays" === key) {
-            createRelayList(value, "tspkRelays", "tspk-relay");
+            createRelayList("tspk-relays", value, "tspkRelay");
             return;
         }
-
-        // Thingspeak - Magnitudes
-        //removeIf(!sensor)
-        if ("tspkMagnitudes" === key) {
-            createMagnitudeList(value, "tspkMagnitudes", "tspk-magnitude");
-            return;
-        }
-        //endRemoveIf(!sensor)
 
         // ---------------------------------------------------------------------
         // General
@@ -2355,30 +2843,30 @@ function processData(data) {
             return;
         }
 
-        // TODO: squash into a single message, needs a reworked debug buffering
-        if ("weblog" === key) {
+        if ("log" === key) {
             send("{}");
 
-            let msg = value["msg"];
-            let pre = value["pre"];
-
-            let container = document.getElementById("weblog");
-            for (let i = 0; i < msg.length; ++i) {
-                if (pre[i]) {
-                    container.appendChild(new Text(pre[i]));
-                }
-                container.appendChild(new Text(msg[i]));
+            const messages = value["msg"];
+            if (messages === undefined) {
+                return;
             }
 
-            followScroll(container);
+            for (let msg of messages) {
+                CmdOutput.push(msg);
+            }
+
+            CmdOutput.follow();
             return;
         }
 
         if ("deviceip" === key) {
-            let span = document.querySelector(`span[data-key='${key}']`);
-            span.textContent = value;
-            span.parentElement.setAttribute("href", "//".concat(value));
-            span.parentElement.nextElementSibling.setAttribute("href", "telnet://".concat(value));
+            const deviceAddress = document.querySelector(`span[data-key='${key}']`);
+            deviceAddress.textContent = value;
+            deviceAddress.parentElement.setAttribute("href", "//".concat(value));
+
+            const telnetAddress = document.querySelector("span[data-key='telnetip']");
+            telnetAddress.textContent = value;
+            telnetAddress.parentElement.setAttribute("href", "telnet://".concat(value));
             return;
         }
 
@@ -2544,26 +3032,21 @@ function main() {
     initExternalLinks();
     createCheckboxes(document);
 
-    // Password handling for the initial screen and the rest of inputs that are supposed to be 'secret'
-    elementSelectorOnClick(".password-reveal", toggleVisiblePassword);
-    elementSelectorOnClick(".button-setup-password", (event) => {
-        event.preventDefault();
-        sendPasswordConfig("panel-password");
-    });
-    elementSelectorOnClick(".button-generate-password", (event) => {
-        event.preventDefault();
-        generatePasswordsForForm("panel-password");
-    });
+    // Initial page, when webMode only allows to change the password
+    initSetupPassword(document.forms["form-setup-password"]);
 
     // Sidebar menu & buttons
     elementSelectorOnClick(".menu-link", toggleMenu);
     elementSelectorOnClick(".pure-menu-link", showPanel);
     elementSelectorOnClick(".button-update", (event) => {
         event.preventDefault();
-        sendConfigFromAllForms();
+        applySettingsFromAllForms();
     });
     elementSelectorOnClick(".button-reconnect", askAndCallReconnect);
     elementSelectorOnClick(".button-reboot", askAndCallReboot);
+
+    // Generic action sender
+    elementSelectorOnClick(".button-simple-action", askAndCallAction);
 
     // WiFi config
     elementSelectorOnClick(".button-wifi-scan", startWifiScan);
@@ -2578,6 +3061,12 @@ function main() {
     });
 
     // Module specific elements
+
+    //removeIf(!sensor)
+    elementSelectorListener(".button-emon-expected", "click", showPanel);
+    elementSelectorListener(".button-emon-expected-calculate", "click", emonCalculateRatios);
+    elementSelectorListener(".button-emon-expected-apply", "click", emonApplyRatios);
+    //endRemoveIf(!sensor)
 
     //removeIf(!garland)
     elementSelectorListener(".checkbox-garland-enable", "change", (event) => {
@@ -2631,12 +3120,15 @@ function main() {
     // *NOTICE* that manual event cancellation should happen asap, any exceptions will stop the specific
     // handler function, but will not stop anything else left in the chain.
     for (let form of document.forms) {
-        if (form.id === "form-dbg") {
+        if (form.id === "form-cmd") {
             form.addEventListener("submit", (event) => {
                 event.preventDefault();
-                sendAction("dbgcmd", {command: event.target.elements.dbgcmd.value});
-                event.target.elements.dbgcmd.value = "";
-                followScroll(document.getElementById("weblog"), 0);
+
+                const line = event.target.elements.cmd.value;
+                event.target.elements.cmd.value = "";
+
+                CmdOutput.pushAndFollow(line);
+                sendAction("cmd", {"line": `${line}\n`});
             });
         } else {
             form.addEventListener("submit", (event) => {
@@ -2645,9 +3137,18 @@ function main() {
         }
     }
 
+    // we also need a special handler for the output scroll keep-up
+    // make sure we allow scrolling up to search through the log, but stick
+    // to the bottom either after stopping the scroll there or a cmd input
+    CmdOutput = new CmdOutputBase(document.getElementById("cmd-output"));
+
+    // -----------------------------------------------------------------------------
+
+    elementSelectorOnClick(".password-reveal", toggleVisiblePassword);
+
     elementSelectorOnClick(".button-dbg-clear", (event) => {
         event.preventDefault();
-        document.getElementById("weblog").textContent = "";
+        CmdOutput.clear();
     });
 
     elementSelectorOnClick(".button-settings-backup", () => {
@@ -2678,12 +3179,8 @@ function main() {
     });
 
     groupSettingsOnAdd("schedules", () => {
-        const type = (event.detail.target === "switch") ? 1 :
-            (event.detail.target === "light") ? 2 :
-            (event.detail.target === "curtain") ? 3 : 0;
-
-        if (type !== 0) {
-            schAdd({schType: type});
+        if (event.detail.target) {
+            schAdd({schType: event.detail.target});
             return;
         }
     });
@@ -2700,14 +3197,14 @@ function main() {
     // No group handler should be registered after this point, since we depend on the order
     // of registration to trigger 'after-add' handler and update group attributes *after*
     // module function finishes modifying the container
-    for (let group of document.querySelectorAll(".settings-group")) {
-        GroupSettingsObserver.observe(group, {childList: true});
-        group.addEventListener("settings-group-add", groupSettingsHandleUpdate, false);
+    for (const group of document.querySelectorAll(".settings-group")) {
+        group.addEventListener("settings-group-add", groupSettingsHandler.add, false);
+        group.addEventListener("settings-group-del", groupSettingsHandler.del, false);
     }
 
     // don't autoconnect when opening from filesystem
     if (window.location.protocol === "file:") {
-        processData({"webMode": 0});
+        processData({webMode: 0});
         return;
     }
 

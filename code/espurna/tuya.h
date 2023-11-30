@@ -4,20 +4,21 @@
 
 #pragma once
 
-#include "espurna.h"
+#include <cstddef>
+#include <memory>
+
+class RelayProviderBase;
 
 namespace tuya {
 
-#if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
 void setupChannels();
 void sendChannel(unsigned char, unsigned int);
-#endif
 
-#if RELAY_SUPPORT
 void setupSwitches();
 void sendSwitch(unsigned char, bool);
-#endif
 
 void setup();
+
+std::unique_ptr<RelayProviderBase> makeRelayProvider(size_t);
 
 } // namespace tuya

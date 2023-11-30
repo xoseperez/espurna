@@ -7,65 +7,69 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 */
 
-#include "ota.h"
+#include "espurna.h"
 
 #if WEB_SUPPORT && OTA_WEB_SUPPORT
 
+#include "ota.h"
 #include "web.h"
 #include "ws.h"
 
-void _onUpgradeResponse(AsyncWebServerRequest *request, int code, const String& payload = "") {
+namespace ota {
+namespace web {
+namespace {
 
-    auto *response = request->beginResponseStream("text/plain", 256);
-    response->addHeader("Connection", "close");
-    response->addHeader("X-XSS-Protection", "1; mode=block");
-    response->addHeader("X-Content-Type-Options", "nosniff");
-    response->addHeader("X-Frame-Options", "deny");
+void onVisible(JsonObject& root) {
+    wsPayloadModule(root, PSTR("ota"));
+}
+
+void sendResponse(AsyncWebServerRequest *request, int code, const String& payload = "") {
+    auto *response = request->beginResponseStream(F("text/plain"), 256);
+
+    response->addHeader(F("Connection"), F("close"));
+    response->addHeader(F("X-XSS-Protection"), F("1; mode=block"));
+    response->addHeader(F("X-Content-Type-Options"), F("nosniff"));
+    response->addHeader(F("X-Frame-Options"), F("deny"));
 
     response->setCode(code);
 
     if (payload.length()) {
-        response->printf("%s", payload.c_str());
+        response->print(payload);
     } else {
         if (!Update.hasError()) {
-            response->print("OK");
+            response->print(F("OK"));
         } else {
-            #if defined(ARDUINO_ESP8266_RELEASE_2_3_0)
-                Update.printError(reinterpret_cast<Stream&>(response));
-            #else
-                Update.printError(*response);
-            #endif
+#if defined(ARDUINO_ESP8266_RELEASE_2_3_0)
+            Update.printError(reinterpret_cast<Stream&>(response));
+#else
+            Update.printError(*response);
+#endif
         }
     }
 
     request->send(response);
-
 }
 
-void _onUpgradeStatusSet(AsyncWebServerRequest *request, int code, const String& payload = "") {
-    _onUpgradeResponse(request, code, payload);
+void setStatus(AsyncWebServerRequest *request, int code, const String& payload = "") {
+    sendResponse(request, code, payload);
     request->_tempObject = malloc(sizeof(bool));
 }
 
-void _onUpgrade(AsyncWebServerRequest *request) {
-
-    webLog(request);
+void onUpgrade(AsyncWebServerRequest *request) {
     if (!webAuthenticate(request)) {
-        return request->requestAuthentication(getSetting("hostname").c_str());
+        return request->requestAuthentication(systemHostname().c_str());
     }
 
     if (request->_tempObject) {
         return;
     }
 
-    _onUpgradeResponse(request, 200);
-
+    sendResponse(request, 200);
 }
 
-void _onUpgradeFile(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
-
+void onFile(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
     if (!webAuthenticate(request)) {
-        return request->requestAuthentication(getSetting("hostname").c_str());
+        return request->requestAuthentication(systemHostname().c_str());
     }
 
     // We set this after we are done with the request
@@ -78,21 +82,20 @@ void _onUpgradeFile(AsyncWebServerRequest *request, String filename, size_t inde
     }
 
     if (!index) {
-
         // TODO: stop network activity completely when handling Update through ArduinoOTA or `ota` command?
         if (Update.isRunning()) {
-            _onUpgradeStatusSet(request, 400, F("ERROR: Upgrade in progress"));
+            setStatus(request, 400, F("ERROR: Upgrade in progress"));
             return;
         }
 
         // Check that header is correct and there is more data before anything is written to the flash
         if (final || !len) {
-            _onUpgradeStatusSet(request, 400, F("ERROR: Invalid request"));
+            setStatus(request, 400, F("ERROR: Invalid request"));
             return;
         }
 
         if (!otaVerifyHeader(data, len)) {
-            _onUpgradeStatusSet(request, 400, F("ERROR: No magic byte / invalid flash config"));
+            setStatus(request, 400, F("ERROR: No magic byte / invalid flash config"));
             return;
         }
 
@@ -104,11 +107,10 @@ void _onUpgradeFile(AsyncWebServerRequest *request, String filename, size_t inde
 
         // Note: cannot use request->contentLength() for multipart/form-data
         if (!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000)) {
-            _onUpgradeStatusSet(request, 500);
+            setStatus(request, 500);
             eepromRotate(true);
             return;
         }
-
     }
 
     if (request->_tempObject) {
@@ -121,7 +123,7 @@ void _onUpgradeFile(AsyncWebServerRequest *request, String filename, size_t inde
     }
 
     if (Update.write(data, len) != len) {
-        _onUpgradeStatusSet(request, 500);
+        setStatus(request, 500);
         Update.end();
         eepromRotate(true);
         return;
@@ -132,15 +134,17 @@ void _onUpgradeFile(AsyncWebServerRequest *request, String filename, size_t inde
     } else {
         otaProgress(index + len);
     }
-
 }
 
+} // namespace
+} // namespace web
+} // namespace ota
+
 void otaWebSetup() {
-    webServer().on("/upgrade", HTTP_POST, _onUpgrade, _onUpgradeFile);
+    webServer().
+        on("/upgrade", HTTP_POST, ota::web::onUpgrade, ota::web::onFile);
     wsRegister().
-        onVisible([](JsonObject& root) {
-            root["otaVisible"] = 1;
-        });
+        onVisible(ota::web::onVisible);
 }
 
 #endif // OTA_WEB_SUPPORT

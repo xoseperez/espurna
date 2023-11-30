@@ -24,230 +24,354 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 // TODO: in case there are more FANs, move externally
 
-namespace ifan02 {
-
-const char* speedToPayload(FanSpeed value) {
-    switch (value) {
-    case FanSpeed::Off:
-        return "off";
-    case FanSpeed::Low:
-        return "low";
-    case FanSpeed::Medium:
-        return "medium";
-    case FanSpeed::High:
-        return "high";
-    }
-
-    return "";
-}
-
-FanSpeed payloadToSpeed(const char* payload) {
-    auto len = strlen(payload);
-    if (len == 1) {
-        switch (payload[0]) {
-        case '0':
-            return FanSpeed::Off;
-        case '1':
-            return FanSpeed::Low;
-        case '2':
-            return FanSpeed::Medium;
-        case '3':
-            return FanSpeed::High;
-        }
-    } else if (len > 1) {
-        String cmp(payload);
-        if (cmp == "off") {
-            return FanSpeed::Off;
-        } else if (cmp == "low") {
-            return FanSpeed::Low;
-        } else if (cmp == "medium") {
-            return FanSpeed::Medium;
-        } else if (cmp == "high") {
-            return FanSpeed::High;
-        }
-    }
-
-    return FanSpeed::Off;
-}
-
-FanSpeed payloadToSpeed(const String& string) {
-    return payloadToSpeed(string.c_str());
-}
-
-} // namespace ifan02
-
+namespace espurna {
 namespace settings {
+namespace options {
+namespace {
+
+PROGMEM_STRING(Off, "off");
+PROGMEM_STRING(Low, "low");
+PROGMEM_STRING(Medium, "medium");
+PROGMEM_STRING(High, "high");
+
+static constexpr std::array<espurna::settings::options::Enumeration<FanSpeed>, 4> FanSpeedOptions PROGMEM {
+    {{FanSpeed::Off, Off},
+     {FanSpeed::Low, Low},
+     {FanSpeed::Medium, Medium},
+     {FanSpeed::High, High}}
+};
+
+} // namespace
+} // namespace options
+
 namespace internal {
 
 template <>
 FanSpeed convert(const String& value) {
-    return ifan02::payloadToSpeed(value);
+    return convert(options::FanSpeedOptions, value, FanSpeed::Medium);
+}
+
+String serialize(FanSpeed speed) {
+    return serialize(options::FanSpeedOptions, speed);
 }
 
 } // namespace internal
 } // namespace settings
 
 namespace ifan02 {
+namespace {
 
-constexpr unsigned long DefaultSaveDelay { 1000ul };
+FanSpeed payloadToSpeed(const String& value) {
+    return espurna::settings::internal::convert<FanSpeed>(value);
+}
+
+String speedToPayload(FanSpeed speed) {
+    return espurna::settings::internal::serialize(speed);
+}
+
+namespace build {
+
+static constexpr auto ControlPin = uint8_t{ 12 };
+
+static constexpr auto SaveDelay = duration::Seconds{ 10 };
+static constexpr auto Speed = FanSpeed::Medium;
+
+} // namespace build
+
+namespace settings {
+namespace keys {
+
+PROGMEM_STRING(Save, "fanSave");
+PROGMEM_STRING(Speed, "fanSpeed");
+
+} // namespace keys
+
+duration::Seconds save() {
+    return getSetting(keys::Save, build::SaveDelay);
+}
+
+FanSpeed speed() {
+    return getSetting(keys::Speed, build::Speed);
+}
+
+} // namespace settings
 
 // We expect to write a specific 'mask' via GPIO LOW & HIGH to set the speed
 // Sync up with the relay and write it on ON / OFF status events
 
-constexpr size_t Gpios { 3ul };
-
-using State = std::array<int8_t, Gpios>;
-
-using Pin = std::pair<int, BasePinPtr>;
-using StatePins = std::array<Pin, Gpios>;
-
-// XXX: while these are hard-coded, we don't really benefit from having these in the hardware cfg
-
-StatePins statePins() {
-    return {
-        {{5, nullptr},
-        {4, nullptr},
-        {15, nullptr}}
-    };
-}
-
-constexpr int controlPin() {
-    return 12;
-}
-
-struct Config {
-    Config() = default;
-    explicit Config(unsigned long save_, FanSpeed speed_) :
-        save(save_),
-        speed(speed_)
-    {}
-
-    unsigned long save { DefaultSaveDelay };
-    FanSpeed speed { FanSpeed::Off };
-    StatePins state_pins;
+struct Pin {
+    unsigned char init;
+    BasePinPtr handle;
 };
 
-Config readSettings() {
-    return Config(
-        getSetting("fanSave", DefaultSaveDelay),
-        getSetting("fanSpeed", FanSpeed::Medium)
-    );
+struct StatePins {
+    static constexpr size_t Gpios { 3ul };
+    using State = std::array<int8_t, Gpios>;
+    using Pins = std::array<Pin, Gpios>;
+
+    StatePins(const StatePins&) = delete;
+
+    StatePins() = default;
+    ~StatePins() {
+        reset();
+    }
+
+    StatePins(StatePins&&) = default;
+
+    bool init();
+
+    bool initialized() const {
+        return _initialized;
+    }
+
+    void reset();
+
+    State state(FanSpeed);
+    State update(FanSpeed);
+
+    State state() const {
+        return _state;
+    }
+
+    String toString() const;
+
+private:
+    // XXX: while these are hard-coded, we don't really benefit from having these in the hardware cfg
+    bool _initialized { false };
+    Pins _pins{{
+        Pin{5, nullptr},
+        Pin{4, nullptr},
+        Pin{15, nullptr}}};
+
+    State _state{{LOW, LOW, LOW}};
+};
+
+StatePins::State StatePins::state(FanSpeed speed) {
+    switch (speed) {
+    case FanSpeed::Low:
+        _state = {HIGH, LOW, LOW};
+        break;
+    case FanSpeed::Medium:
+        _state = {HIGH, HIGH, LOW};
+        break;
+    case FanSpeed::High:
+        _state = {HIGH, LOW, HIGH};
+        break;
+    case FanSpeed::Off:
+        _state = {LOW, LOW, LOW};
+        break;
+    }
+
+    return _state;
 }
 
+void StatePins::reset() {
+    for (auto& pin : _pins) {
+        if (pin.handle) {
+            gpioUnlock(pin.handle->pin());
+            pin.handle.reset(nullptr);
+        }
+    }
+}
+
+bool StatePins::init() {
+    if (_initialized) {
+        return true;
+    }
+
+    for (auto& pair : _pins) {
+        pair.handle = gpioRegister(pair.init);
+        if (!pair.handle) {
+            DEBUG_MSG_P(PSTR("[IFAN] Could not set up GPIO%hhu\n"), pair.init);
+            reset();
+            return false;
+        }
+
+        pair.handle->pinMode(OUTPUT);
+    }
+
+    _initialized = true;
+    return true;
+}
+
+StatePins::State StatePins::update(FanSpeed speed) {
+    const auto out = state(speed);
+
+    for (size_t index = 0; index < _pins.size(); ++index) {
+        auto& handle = _pins[index].handle;
+        if (!handle) {
+            continue;
+        }
+
+        handle->digitalWrite(_state[index]);
+    }
+
+    return out;
+}
+
+#if DEBUG_SUPPORT
+String StatePins::toString() const {
+    String out("0b000");
+    for (size_t index = 2; index != out.length(); ++index) {
+        out[index] = (_state[index - 2] == HIGH) ? '1' : '0';
+    }
+
+    return out;
+}
+#endif
+
+struct ControlPin {
+    ~ControlPin() {
+        reset();
+    }
+
+    explicit operator bool() const {
+        return static_cast<bool>(_pin);
+    }
+
+    ControlPin& operator=(uint8_t pin) {
+        reset();
+
+        _pin = gpioRegister(pin);
+        if (_pin) {
+            _pin->pinMode(OUTPUT);
+        }
+
+        return *this;
+    }
+
+    ControlPin& operator=(BasePinPtr pin) {
+        reset();
+        _pin = std::move(pin);
+        return *this;
+    }
+
+    void reset() {
+        if (_pin) {
+            gpioUnlock(_pin->pin());
+            _pin.reset(nullptr);
+        }
+    }
+
+    BasePin* operator->() {
+        return _pin.get();
+    }
+
+    BasePin* operator->() const {
+        return _pin.get();
+    }
+
+private:
+    BasePinPtr _pin;
+};
+
+struct Config {
+    duration::Seconds save;
+    FanSpeed speed;
+};
+
+namespace internal {
+
+timer::SystemTimer config_timer;
 Config config;
 
-void configure() {
-    config = readSettings();
+size_t relay_id { RelaysMax };
+ControlPin control_pin;
+FanSpeed speed { FanSpeed::Off };
+
+StatePins state_pins;
+
+} // namespace internal
+
+bool currentStatus() {
+    return internal::speed != FanSpeed::Off;
+}
+
+void currentStatus(bool status) {
+    internal::speed = status
+        ? internal::config.speed
+        : FanSpeed::Off;
+}
+
+FanSpeed currentSpeed() {
+    return internal::speed;
+}
+
+String speedToPayload() {
+    return speedToPayload(currentSpeed());
+}
+
+void save(FanSpeed speed) {
+    internal::config.speed = speed;
+
+    if (FanSpeed::Off != speed) {
+        internal::config_timer.once(
+            internal::config.save,
+            [speed]() {
+                const auto value = speedToPayload(speed);
+                setSetting(settings::keys::Speed, value);
+                DEBUG_MSG_P(PSTR("[IFAN] Saved speed \"%s\" (%s)\n"),
+                    value.c_str(), internal::state_pins.toString().c_str());
+            });
+    }
 }
 
 void report(FanSpeed speed [[gnu::unused]]) {
 #if MQTT_SUPPORT
-    mqttSend(MQTT_TOPIC_SPEED, speedToPayload(speed));
+    mqttSend(MQTT_TOPIC_SPEED, speedToPayload(speed).c_str());
 #endif
 }
 
-void save(FanSpeed speed) {
-    static Ticker ticker;
-    config.speed = speed;
-    ticker.once_ms(config.save, []() {
-        const char* value = speedToPayload(config.speed);
-        setSetting("fanSpeed", value);
-        DEBUG_MSG_P(PSTR("[IFAN] Saved speed setting \"%s\"\n"), value);
-    });
+void pin_update(FanSpeed speed) {
+    const bool status = FanSpeed::Off != speed;
+
+    relayStatus(internal::relay_id, status);
+    internal::control_pin->digitalWrite(status ? HIGH : LOW);
+
+    internal::state_pins.update(speed);
 }
 
-void cleanupPins(StatePins& pins) {
-    for (auto& pin : pins) {
-        if (!pin.second) continue;
-        gpioUnlock(pin.second->pin());
-        pin.second.reset(nullptr);
-    }
+void pin_update() {
+    pin_update(internal::speed);
 }
 
-StatePins setupStatePins() {
-    StatePins pins = statePins();
-
-    for (auto& pair : pins) {
-        auto ptr = gpioRegister(pair.first);
-        if (!ptr) {
-            DEBUG_MSG_P(PSTR("[IFAN] Could not set up GPIO%d\n"), pair.first);
-            cleanupPins(pins);
-            return pins;
-        }
-        ptr->pinMode(OUTPUT);
-        pair.second = std::move(ptr);
+FanSpeed update(FanSpeed value) {
+    const auto last = internal::speed;
+    if (value != last) {
+        save(value);
+        report(value);
     }
 
-    return pins;
+    internal::speed = value;
+    pin_update(value);
+
+    return value;
 }
 
-State stateFromSpeed(FanSpeed speed) {
-    switch (speed) {
-    case FanSpeed::Low:
-        return {HIGH, LOW, LOW};
-    case FanSpeed::Medium:
-        return {HIGH, HIGH, LOW};
-    case FanSpeed::High:
-        return {HIGH, LOW, HIGH};
-    case FanSpeed::Off:
-        break;
-    }
-
-    return {LOW, LOW, LOW};
+FanSpeed update(bool status) {
+    currentStatus(status);
+    return update(internal::speed);
 }
 
-const char* maskFromSpeed(FanSpeed speed) {
-    switch (speed) {
-    case FanSpeed::Low:
-        return "0b100";
-    case FanSpeed::Medium:
-        return "0b110";
-    case FanSpeed::High:
-        return "0b101";
-    case FanSpeed::Off:
-        return "0b000";
-    }
+void configure() {
+    const auto updated = Config{
+        .save = settings::save(),
+        .speed = settings::speed()};
 
-    return "";
+    internal::config = updated;
+    pin_update(); 
 }
 
 // Note that we use API speed endpoint strictly for the setting
 // (which also allows to pre-set the speed without turning the relay ON)
 
-using FanSpeedUpdate = std::function<void(FanSpeed)>;
-
-FanSpeedUpdate onFanSpeedUpdate = [](FanSpeed) {
-};
-
-void updateSpeed(Config& config, FanSpeed speed) {
-    switch (speed) {
-    case FanSpeed::Low:
-    case FanSpeed::Medium:
-    case FanSpeed::High:
-        save(speed);
-        report(speed);
-        onFanSpeedUpdate(speed);
-        break;
-    case FanSpeed::Off:
-        break;
-    }
-}
-
-void updateSpeed(FanSpeed speed) {
-    updateSpeed(config, speed);
-}
-
-void updateSpeedFromPayload(const char* payload) {
-    updateSpeed(payloadToSpeed(payload));
-}
-
-void updateSpeedFromPayload(const String& payload) {
-    updateSpeedFromPayload(payload.c_str());
+FanSpeed updateSpeedFromPayload(StringView payload) {
+    return update(payloadToSpeed(payload.toString()));
 }
 
 #if MQTT_SUPPORT
 
-void onMqttEvent(unsigned int type, const char* topic, const char* payload) {
+void onMqttEvent(unsigned int type, StringView topic, StringView payload) {
     switch (type) {
 
     case MQTT_CONNECT_EVENT:
@@ -267,66 +391,63 @@ void onMqttEvent(unsigned int type, const char* topic, const char* payload) {
 
 #endif // MQTT_SUPPORT
 
-class FanProvider : public RelayProviderBase {
+class FanRelayProvider : public RelayProviderBase {
 public:
-    explicit FanProvider(BasePinPtr&& pin, const Config& config, FanSpeedUpdate& callback) :
-        _pin(std::move(pin)),
-        _config(config)
-    {
-        callback = [this](FanSpeed speed) {
-            change(speed);
-        };
-        _pin->pinMode(OUTPUT);
-    }
-
-    const char* id() const override {
-        return "fan";
-    }
-
-    void change(FanSpeed speed) {
-        _pin->digitalWrite((FanSpeed::Off != speed) ? HIGH : LOW);
-
-        auto state = stateFromSpeed(speed);
-        DEBUG_MSG_P(PSTR("[IFAN] State mask: %s\n"), maskFromSpeed(speed));
-
-        for (size_t index = 0; index < _config.state_pins.size(); ++index) {
-            auto& pin = _config.state_pins[index].second;
-            if (!pin) {
-                continue;
-            }
-
-            pin->digitalWrite(state[index]);
-        }
+    espurna::StringView id() const override {
+        return STRING_VIEW("fan");
     }
 
     void change(bool status) override {
-        change(status ? _config.speed : FanSpeed::Off);
+        ifan02::update(status);
     }
 
 private:
     BasePinPtr _pin;
-    const Config& _config;
+};
+
+#if TERMINAL_SUPPORT
+namespace terminal {
+
+PROGMEM_STRING(Speed, "SPEED");
+
+void speed(::terminal::CommandContext&& ctx) {
+    auto value = ifan02::currentSpeed();
+    if (ctx.argv.size() == 2) {
+        value = updateSpeedFromPayload(ctx.argv[1]);
+    }
+
+    ctx.output.printf_P(PSTR("%s %s\n"),
+        (value != FanSpeed::Off)
+            ? PSTR("speed")
+            : PSTR("fan is"),
+        speedToPayload(value).c_str());
+    terminalOK(ctx);
+}
+
+static constexpr ::terminal::Command Commands[] PROGMEM {
+    {Speed, speed},
 };
 
 void setup() {
+    espurna::terminal::add(Commands);
+}
 
-    config.state_pins = setupStatePins();
-    if (!config.state_pins.size()) {
-        return;
+} // namespace terminal
+#endif
+
+bool setup() {
+    if (internal::control_pin && internal::state_pins.initialized()) {
+        return true;
+    }
+
+    internal::control_pin = build::ControlPin;
+    if (!internal::state_pins.init()) {
+        internal::control_pin.reset();
+        return false;
     }
 
     configure();
-
     espurnaRegisterReload(configure);
-
-    auto relay_pin = gpioRegister(controlPin());
-    if (relay_pin) {
-        auto provider = std::make_unique<FanProvider>(std::move(relay_pin), config, onFanSpeedUpdate);
-        if (!relayAdd(std::move(provider))) {
-            DEBUG_MSG_P(PSTR("[IFAN] Could not add relay provider for GPIO%d\n"), controlPin());
-            gpioUnlock(controlPin());
-        }
-    }
 
 #if MQTT_SUPPORT
     mqttRegister(onMqttEvent);
@@ -335,7 +456,7 @@ void setup() {
 #if API_SUPPORT
     apiRegister(F(MQTT_TOPIC_SPEED),
         [](ApiRequest& request) {
-            request.send(speedToPayload(config.speed));
+            request.send(speedToPayload());
             return true;
         },
         [](ApiRequest& request) {
@@ -346,32 +467,50 @@ void setup() {
 #endif
 
 #if TERMINAL_SUPPORT
-    terminalRegisterCommand(F("SPEED"), [](const terminal::CommandContext& ctx) {
-        if (ctx.argc == 2) {
-            updateSpeedFromPayload(ctx.argv[1]);
-        }
-
-        ctx.output.printf_P(PSTR("%s %s\n"),
-            (config.speed != FanSpeed::Off) ? "speed" : "fan is",
-            speedToPayload(config.speed));
-        terminalOK(ctx);
-    });
+    terminal::setup();
 #endif
 
+    return true;
 }
 
-} // namespace ifan
+RelayProviderBasePtr make_relay_provider(size_t index) {
+    RelayProviderBasePtr out;
+
+    if (setup()) {
+        out = std::make_unique<FanRelayProvider>(); 
+        internal::relay_id = index;
+    }
+
+    return out;
+}
+
+
+} // namespace
+} // namespace ifan02
+} // namespace espurna
+
+RelayProviderBasePtr fanMakeRelayProvider(size_t index) {
+    return espurna::ifan02::make_relay_provider(index);
+}
+
+void fanStatus(bool value) {
+    espurna::ifan02::currentStatus(value);
+}
+
+bool fanStatus() {
+    return espurna::ifan02::currentStatus();
+}
 
 FanSpeed fanSpeed() {
-    return ifan02::config.speed;
+    return espurna::ifan02::currentSpeed();
 }
 
 void fanSpeed(FanSpeed speed) {
-    ifan02::updateSpeed(FanSpeed::Low);
+    espurna::ifan02::update(speed);
 }
 
 void fanSetup() {
-    ifan02::setup();
+    espurna::ifan02::setup();
 }
 
 #endif // IFAN_SUPPORT

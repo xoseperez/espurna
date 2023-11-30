@@ -13,11 +13,15 @@ class AnimSalut : public Anim {
     }
 
     void SetupImpl() override {
-        shots.clear();
         // There can be more then one shot at the moment
-        // but looks like one is enough
-        // for (int i = 0; i < 3; ++i)
+        // but looks like one is enough for now
+        if (shots.size()) {
+            for (auto& s : shots) {
+                s = {palette, numLeds};
+            }
+        } else {
             shots.emplace_back(palette, numLeds);
+        }
     }
 
     void Run() override {
@@ -25,8 +29,7 @@ class AnimSalut : public Anim {
 
         for (auto& c : shots) {
             if (!c.Run(leds)) {
-                Shot new_shot(palette, numLeds);
-                std::swap(c, new_shot);
+                c = Shot(palette, numLeds);
             }
         }
     }
@@ -42,6 +45,7 @@ class AnimSalut : public Anim {
             int dir;
             Color color;
             uint16_t numLeds;
+            Spark() = default;
             Spark(int pos, Palette* pal, uint16_t numLeds) : pos(pos), dir(secureRandom(10) > 5 ? -1 : 1), color(pal->getRndInterpColor()), numLeds(numLeds) {}
             void Run(Color* leds) {
                 if (pos >= 0 && pos < numLeds) {
@@ -65,21 +69,21 @@ class AnimSalut : public Anim {
 
        public:
         int spark_num = secureRandom(30, 40);
-        int center;
-        std::vector<Spark> sparks;
-        Shot(Palette* pal, uint16_t numLeds) : center(secureRandom(15, numLeds - 15)) {
+        std::unique_ptr<Spark[]> sparks;
+        Shot(Palette* pal, uint16_t numLeds) {
             // DEBUG_MSG_P(PSTR("[GARLAND] Shot created center = %d spark_num = %d\n"), center, spark_num);
-            sparks.reserve(spark_num);
+            int center = secureRandom(15, numLeds - 15);
+            sparks.reset(new Spark[spark_num]);
             for (int i = 0; i < spark_num; ++i) {
-                sparks.emplace_back(center, pal, numLeds);
+                sparks[i] = {center, pal, numLeds};
             }
         }
         bool Run(Color* leds) {
             bool done = true;
-            for (auto& s : sparks) {
-                if (!s.done) {
+            for (int i = 0; i < spark_num; ++i) {
+                if (!sparks[i].done) {
                     done = false;
-                    s.Run(leds);
+                    sparks[i].Run(leds);
                 }
             }
             return !done;

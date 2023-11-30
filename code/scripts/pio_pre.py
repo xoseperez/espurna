@@ -9,21 +9,39 @@
 
 # Run this script every time building an env BEFORE platform-specific code is loaded
 
-from __future__ import print_function
-
-Import("env")
-
+import logging
 import os
+import shutil
 import sys
 
+from SCons.Script import Delete, Move, Import, ARGUMENTS
 
-from SCons.Script import ARGUMENTS
+from espurna_utils import check_env
+from espurna_utils.build import app_add_builder_single_source, app_add_target_build_re2c
 
-from espurna_utils.build import merge_cpp
+from platformio.package.manager.library import LibraryPackageManager
+from platformio.package.meta import PackageSpec
 
 
-def check_env(name, default):
-    return os.environ.get(name, default) in ("1", "y", "yes", "true")
+Import("env")
+env = globals()["env"]
+
+# handle `-t build-and-copy` parameters
+for name in [
+    # what is the name suffix of the .bin
+    "ESPURNA_BUILD_NAME",
+    # where to copy the resulting .bin
+    "ESPURNA_BUILD_DESTINATION",
+    # set the full string for the build, no need to change individual parts
+    "ESPURNA_BUILD_FULL_VERSION",
+    # **or**, replace parts of the version string that would've been auto-detected
+    "ESPURNA_BUILD_VERSION",
+    "ESPURNA_BUILD_REVISION",
+    "ESPURNA_BUILD_VERSION_SUFFIX",
+]:
+    value = os.environ.get(name)
+    if value:
+        env.Append(**{name: value})
 
 
 CI = check_env("CI", "false")
@@ -41,30 +59,48 @@ def log(message, verbose=False, file=sys.stderr):
         print(message, file=file)
 
 
-# Most portable way, without depending on platformio internals
-def subprocess_libdeps(lib_deps, storage, verbose=False):
-    import subprocess
-
-    args = [env.subst("$PYTHONEXE"), "-mplatformio", "lib", "-d", storage, "install"]
-    if not verbose:
-        args.append("-s")
-
-    args.extend(lib_deps)
-    subprocess.check_call(args)
+def get_shared_libdeps(config, section="common", name="shared_lib_deps"):
+    raw = config.getraw(section, name)
+    return config.parse_multi_values(raw)
 
 
-def get_shared_libdeps_dir(section, name):
-    if not CONFIG.has_option(section, name):
-        raise ExtraScriptError("{}.{} is required to be set".format(section, name))
+def get_shared_libdir(config, section="common", name="shared_lib_dir"):
+    return config.getraw(section, name)
 
-    opt = CONFIG.get(section, name)
 
-    if not opt in env.GetProjectOption("lib_extra_dirs"):
-        raise ExtraScriptError(
-            "lib_extra_dirs must contain {}.{}".format(section, name)
-        )
+def migrate_libraries(storage):
+    target = env.Dir(f"$PROJECT_DIR/{storage}")
+    if target.exists():
+        return
 
-    return os.path.join(env["PROJECT_DIR"], opt)
+    old_lib_deps = env.Dir("$PROJECT_LIBDEPS_DIR/$PIOENV")
+    if not old_lib_deps.exists() or old_lib_deps.islink():
+        return
+
+    env.Execute(env.VerboseAction(Move(target, old_lib_deps), "Migrating $TARGET"))
+
+
+def install_libraries(specs, storage, verbose=False):
+    lm = LibraryPackageManager(storage)
+    lm.set_log_level(logging.DEBUG if verbose else logging.INFO)
+
+    known = set()
+    for spec in specs:
+        pkg = lm.get_package(spec)
+        if not pkg:
+            pkg = lm.install(spec, skip_dependencies=True)
+
+        if pkg:
+            known.add(pkg)
+
+    lm.memcache_reset()
+
+    installed = set(lm.get_installed())
+    for pkg in installed.difference(known):
+        try:
+            lm.uninstall(pkg)
+        except:
+            pass
 
 
 def ensure_platform_updated():
@@ -92,20 +128,6 @@ if ESPURNA_OTA_PORT:
 else:
     env.Replace(UPLOAD_PROTOCOL="esptool")
 
-# handle `-t build-and-copy` parameters
-env.Append(
-    # what is the name suffix of the .bin
-    ESPURNA_BUILD_NAME=os.environ.get("ESPURNA_BUILD_NAME", ""),
-    # where to copy the resulting .bin
-    ESPURNA_BUILD_DESTINATION=os.environ.get("ESPURNA_BUILD_DESTINATION", ""),
-    # set the full string for the build, no need to change individual parts
-    ESPURNA_BUILD_FULL_VERSION=os.environ.get("ESPURNA_BUILD_FULL_VERSION", ""),
-    # or, replace parts of the version string that would've been auto-detected
-    ESPURNA_BUILD_VERSION=os.environ.get("ESPURNA_BUILD_VERSION", ""),
-    ESPURNA_BUILD_REVISION=os.environ.get("ESPURNA_BUILD_REVISION", ""),
-    ESPURNA_BUILD_VERSION_SUFFIX=os.environ.get("ESPURNA_BUILD_VERSION_SUFFIX", ""),
-)
-
 # updates arduino core git to the latest master commit
 if CI:
     package_overrides = env.GetProjectOption("platform_packages")
@@ -115,9 +137,12 @@ if CI:
             break
 
 # to speed-up build process, install libraries in a way they are shared between our envs
-if check_env("ESPURNA_PIO_SHARED_LIBRARIES", "0"):
-    storage = get_shared_libdeps_dir("common", "shared_libdeps_dir")
-    subprocess_libdeps(env.GetProjectOption("lib_deps"), storage, verbose=VERBOSE)
+# b/c lib_extra_dirs = ... was deprecated and global libs are not an option, just re-use the local custom lib storage
+# (...while it still works :/...)
+SHARED_LIBDIR = get_shared_libdir(CONFIG)
+migrate_libraries(SHARED_LIBDIR)
+install_libraries(get_shared_libdeps(CONFIG), SHARED_LIBDIR, verbose=VERBOSE)
+
 
 # tweak build system to ignore espurna.ino, but include user code
 # ref: platformio-core/platformio/tools/piomisc.py::ConvertInoToCpp()
@@ -131,15 +156,7 @@ if len(ino) == 1 and ino[0].name == "espurna.ino":
 
 # merge every .cpp into a single file and **only** build that single file
 if check_env("ESPURNA_BUILD_SINGLE_SOURCE", "0"):
-    cpp_files = []
-    for root, dirs, filenames in os.walk("espurna"):
-        for name in filenames:
-            if not name.endswith(".cpp"):
-                continue
+    app_add_builder_single_source(env)
 
-            abspath = os.path.join(os.path.abspath(root), name)
-            env.AddBuildMiddleware(lambda node: None, abspath)
-
-            relpath = os.path.relpath(abspath, "espurna")
-            cpp_files.append(relpath)
-    merge_cpp(cpp_files, "espurna/espurna_single_source.cpp")
+# handle explicit targets that are used to build .re files, and before falling into the next sconsfile
+app_add_target_build_re2c(env)

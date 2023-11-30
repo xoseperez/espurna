@@ -1,0 +1,90 @@
+name: Bug report
+description: Report any problem here
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        * Please search through existing [issues](https://github.com/xoseperez/espurna/issues) (both open and closed) before reporting a problem
+        * Check out our [wiki](https://github.com/xoseperez/espurna/wiki) for any common questions and or issues
+        * Consider asking at our [Gitter chat](https://gitter.im/tinkerman-cat/espurna) ([which is also accessible with any Matrix client!](https://matrix.to/#/#tinkerman-cat_espurna:gitter.im))
+        * Re-check our existing issues yet again :)
+
+  - type: input
+    id: device
+    attributes:
+      label: Device
+      description: Used development board or device brand, model and version.
+      placeholder: Sonoff Mini
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: |
+        ESPurna version. Can be either
+        * .bin filename or snapshot name / date, if downloaded from 'Releases'
+        * 'Firmware version' in WebUI
+        * First line of `info` terminal command output
+        * Output of `git rev-parse HEAD`, in the directory that was created when you cloned this repository
+      placeholder: 1.16.0-dev.git12345678+github250718
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Bug description
+      description: A concise description of what the bug is and what is the expected behaviour (if any)
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Steps to reproduce
+      description: Steps to reproduce the behavior
+
+  - type: textarea
+    attributes:
+      label: Build tools used
+      description: |
+        If ESPurna was built manually, please describe build configuration and the tools that were used.  
+        Please mention **any modifications** to our configuration headers or command line flags.
+
+        For ArduinoIDE / arduino-cli, which version was used.
+
+        For PlatformIO, also include
+        * What environment was used *or* what command line was used to build
+        * Output of `pio system info`
+
+  - type: textarea
+    attributes:
+      label: Any relevant log output (when available)
+      render: shell
+      description: |
+        Please copy and paste any relevant log output. It will be automatically formatted into code, so no need for backticks.
+
+  - type: textarea
+    attributes:
+      label: Decoded stack trace (when available)
+      render: markdown
+      description: |
+        Please provide an output of a stack decoder if this bug results in a crash
+        * See serial output, if device is connected to the computer
+        * While using WebUI, use DEBUG pannel and call `crash` command
+        * Call `crash` while connected to the telnet socket
+
+        Note that no source code changes or rebuilds should happen in the meantime. Decoder output would not be helpful unless it is the **exact same version that was uploaded to the device**!
+        * When telnet connection is available, run `pio device monitor --echo --port socket://<DEVICE IP OR HOSTNAME>:23 --environment <ENV> --filter esp8266_exception_decoder` and call `crash`
+        * When connected via serial, run `pio device monitor --echo --environment <ENV> --filter esp8266_exception_decoder` and call `crash`. Or, wait for the crash to happen.
+        * https://github.com/xoseperez/espurna/blob/dev/code/scripts/decoder.py (when using PlatformIO or Arduino IDE, either using the intermediate .elf file from the build directory; or, when using releases, similarly named .elf.debug from the Debug.zip)
+        * https://github.com/me-no-dev/EspExceptionDecoder (when using Arduino IDE)
+      placeholder: |
+          Abort called
+          sp: 3ffffde0 end: 3fffffc0 offset: 0000
+
+          ctx: cont
+          ...
+    validations:
+      required: false

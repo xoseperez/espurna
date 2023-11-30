@@ -3,7 +3,7 @@
 TERMINAL MODULE
 
 Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
-Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
+Copyright (C) 2020-2022 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 */
 
@@ -11,245 +11,207 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #if TERMINAL_SUPPORT
 
+#if API_SUPPORT
 #include "api.h"
+#endif
+
+#if WEB_SUPPORT
+#include "ws.h"
+#endif
+
 #include "crash.h"
+#include "mqtt.h"
 #include "settings.h"
 #include "system.h"
+#include "sensor.h"
 #include "telnet.h"
+#include "terminal.h"
 #include "utils.h"
-#include "mqtt.h"
 #include "wifi.h"
-#include "ws.h"
 
-#include "libs/URL.h"
-#include "libs/StreamAdapter.h"
 #include "libs/PrintString.h"
 
-#include "web_asyncwebprint_impl.h"
-
 #include <algorithm>
-#include <vector>
 #include <utility>
 
 #include <Schedule.h>
 #include <Stream.h>
 
-// not yet CONNECTING or LISTENING
-extern struct tcp_pcb *tcp_bound_pcbs;
-// accepting or sending data
-extern struct tcp_pcb *tcp_active_pcbs;
-// // TIME-WAIT status
-extern struct tcp_pcb *tcp_tw_pcbs;
+// FS 'range', declared at compile time via .ld script PROVIDE declarations
+// (althought, in recent Core versions, these may be set at runtime)
+extern "C" uint32_t _FS_start;
+extern "C" uint32_t _FS_end;
 
+#if WEB_SUPPORT
+#include "web_print.ipp"
+#endif
+
+namespace espurna {
+namespace terminal {
 namespace {
 
-// Based on libs/StreamInjector.h by Xose Pérez <xose dot perez at gmail dot com> (see git-log for more info)
-// Instead of custom write(uint8_t) callback, we provide writer implementation in-place
+namespace build {
 
-template <size_t Capacity>
-struct TerminalIO final : public Stream {
-    using Buffer = std::array<char, Capacity>;
-
-    // ---------------------------------------------------------------------
-    // Stream part of the interface injects data into the internal buffer,
-    // so we can later use the ::read()
-    // ---------------------------------------------------------------------
-
-    static constexpr size_t capacity() {
-        return Capacity;
-    }
-
-    size_t inject(char ch) {
-        _buffer[_write] = ch;
-        _write = (_write + 1) % Capacity;
-        return 1;
-    }
-
-    size_t inject(const char* data, size_t len) {
-        for (size_t index = 0; index < len; ++index) {
-            inject(data[index]);
-        }
-        return len;
-    }
-
-    // ---------------------------------------------------------------------
-    // XXX: We are only supporting part of the Print & Stream interfaces
-    //      But, we need to be have all pure virtual methods implemented
-    // ---------------------------------------------------------------------
-
-    // Return data from the internal buffer
-    // Note that this cannot be negative, but the API requires `int`
-    int available() override {
-        size_t bytes = 0;
-        if (_read > _write) {
-            bytes += (_write - _read + Capacity);
-        } else if (_read < _write) {
-            bytes += (_write - _read);
-        }
-        return bytes;
-    }
-
-    int peek() override {
-        int ch = -1;
-        if (_read != _write) {
-            ch = _buffer[_read];
-        }
-        return ch;
-    }
-
-    int read() override {
-        int ch = -1;
-        if (_read != _write) {
-            ch = _buffer[_read];
-            _read = (_read + 1) % Capacity;
-        }
-        return ch;
-    }
-
-    // {Stream,Print}::flush(), see:
-    // - https://github.com/esp8266/Arduino/blob/master/cores/esp8266/Print.h
-    // - https://github.com/espressif/arduino-esp32/blob/master/cores/esp32/Print.h
-    // - https://github.com/arduino/ArduinoCore-API/issues/102
-    // Old 2.3.0 expects flush() on Stream, latest puts in in Print
-    // We may have to cheat the system and implement everything as Stream to have it available.
-    void flush() override {
-        // Here, reset reader position so that we return -1 until we have new data
-        // writer flushing is implemented below, we don't need it here atm
-        _read = _write;
-    }
-
-    size_t write(const uint8_t* bytes, size_t size) override {
-#if DEBUG_SUPPORT
-        debugSendBytes(bytes, size);
-#endif
-        return size;
-    }
-
-    size_t write(uint8_t ch) override {
-        uint8_t buffer[1] {ch};
-        return write(buffer, 1);
-    }
-
-private:
-    Buffer _buffer {};
-    size_t _write { 0ul };
-    size_t _read { 0ul };
-};
-
-constexpr size_t _terminalBufferSize() {
-    return TERMINAL_SHARED_BUFFER_SIZE;
+constexpr size_t serialBufferSize() {
+    return TERMINAL_SERIAL_BUFFER_SIZE;
 }
 
-namespace {
+constexpr size_t serialPort() {
+    return TERMINAL_SERIAL_PORT - 1;
+}
 
-using Io = TerminalIO<_terminalBufferSize()>;
-
-Io _io;
-terminal::Terminal _terminal(_io, Io::capacity());
-
-// TODO: re-evaluate how and why this is used
-#if SERIAL_RX_ENABLED
-
-constexpr size_t SerialRxBufferSize { 128u };
-char _serial_rx_buffer[SerialRxBufferSize];
-static unsigned char _serial_rx_pointer = 0;
-
-#endif // SERIAL_RX_ENABLED
-
-} // namespace
+} // namespace build
 
 // -----------------------------------------------------------------------------
 // Commands
 // -----------------------------------------------------------------------------
 
-void _terminalHelpCommand(const terminal::CommandContext& ctx) {
-    auto names = _terminal.names();
+namespace commands {
 
-    // XXX: Core's ..._P funcs only allow 2nd pointer to be in PROGMEM,
-    //      explicitly load the 1st one
-    std::sort(names.begin(), names.end(), [](const __FlashStringHelper* lhs, const __FlashStringHelper* rhs) {
-        const String lhs_as_string(lhs);
-        return strncasecmp_P(lhs_as_string.c_str(), reinterpret_cast<const char*>(rhs), lhs_as_string.length()) < 0;
-    });
+PROGMEM_STRING(Commands, "COMMANDS");
+PROGMEM_STRING(Help, "HELP");
+
+void help(CommandContext&& ctx) {
+    auto names = terminal::names();
+
+    std::sort(names.begin(), names.end(),
+        [](StringView lhs, StringView rhs) {
+            // XXX: Core's ..._P funcs only allow 2nd pointer to be in PROGMEM,
+            //      explicitly load the 1st one
+            // TODO: can we just assume linker already sorted all strings?
+            return strncasecmp_P(
+                lhs.toString().begin(), rhs.begin(), lhs.length()) < 0;
+        });
 
     ctx.output.print(F("Available commands:\n"));
-    for (auto* name : names) {
-        ctx.output.printf("> %s\n", reinterpret_cast<const char*>(name));
+    for (auto name : names) {
+        ctx.output.printf("> %s\n", name.c_str());
     }
 
-    terminalOK(ctx.output);
+    terminalOK(ctx);
 }
 
-namespace dns {
+PROGMEM_STRING(LightSleep, "SLEEP.LIGHT");
 
-using Callback = std::function<void(const char* name, const ip_addr_t* addr, void* arg)>;
+void light_sleep(CommandContext&& ctx) {
+    if (ctx.argv.size() == 2) {
+        using namespace espurna::settings::internal::duration_convert;
 
-namespace internal {
+        const auto result = parse(ctx.argv[1], std::micro{});
+        if (!result.ok) {
+            terminalError(ctx, F("Invalid time"));
+            return;
+        }
 
-struct Task {
-    Task() = delete;
-    explicit Task(String&& hostname, Callback&& callback) :
-        _hostname(std::move(hostname)),
-        _callback(std::move(callback))
-    {}
+        const auto duration = to_chrono_duration<sleep::Microseconds>(result.value);
+        if (!instantLightSleep(duration)) {
+            terminalError(ctx, F("Could not sleep"));
+            return;
+        }
 
-    ip_addr_t* addr() {
-        return &_addr;
+        return;
     }
 
-    const char* hostname() const {
-        return _hostname.c_str();
-    }
-
-    void callback(const char* name, const ip_addr_t* addr, void* arg) {
-        _callback(name, addr, arg);
-    }
-
-    void callback() {
-        _callback(hostname(), addr(), nullptr);
-    }
-
-private:
-    String _hostname;
-    Callback _callback;
-    ip_addr_t _addr { IPADDR_NONE };
-};
-
-using TaskPtr = std::unique_ptr<Task>;
-TaskPtr task;
-
-void callback(const char* name, const ip_addr_t* addr, void* arg) {
-    if (task) {
-        task->callback(name, addr, arg);
-    }
-    task.reset();
+    instantLightSleep();
 }
 
-} // namespace internal
+PROGMEM_STRING(DeepSleep, "SLEEP.DEEP");
 
-bool started() {
-    return static_cast<bool>(internal::task);
-}
+void deep_sleep(CommandContext&& ctx) {
+    if (ctx.argv.size() != 2) {
+        terminalError(ctx, F("SLEEP.DEEP <TIME (MICROSECONDS)>"));
+        return;
+    }
 
-void start(String&& hostname, Callback&& callback) {
-    auto task = std::make_unique<internal::Task>(std::move(hostname), std::move(callback));
+    using namespace espurna::settings::internal::duration_convert;
+    const auto result = parse(ctx.argv[1], std::micro{});
 
-    switch (dns_gethostbyname(task->hostname(), task->addr(), internal::callback, nullptr)) {
-    case ERR_OK:
-        task->callback();
-        break;
-    case ERR_INPROGRESS:
-        internal::task = std::move(task);
-        break;
-    default:
-        break;
+    if (!result.ok) {
+        terminalError(ctx, F("Invalid time"));
+        return;
+    }
+
+    const auto duration = to_chrono_duration<sleep::Microseconds>(result.value);
+    if (!instantDeepSleep(duration)) {
+        terminalError(ctx, F("Could not sleep"));
+        return;
     }
 }
 
-} // namespace dns
+PROGMEM_STRING(Reset, "RESET");
 
-extern "C" uint32_t _FS_start;
-extern "C" uint32_t _FS_end;
+void reset(CommandContext&& ctx) {
+    prepareReset(CustomResetReason::Terminal);
+    terminalOK(ctx);
+}
+
+PROGMEM_STRING(EraseConfig, "ERASE.CONFIG");
+
+void erase_config(CommandContext&& ctx) {
+    terminalOK(ctx);
+    customResetReason(CustomResetReason::Terminal);
+    forceEraseSDKConfig();
+}
+
+PROGMEM_STRING(Heap, "HEAP");
+
+void heap(CommandContext&& ctx) {
+    const auto stats = systemHeapStats();
+    ctx.output.printf_P(PSTR("initial: %lu available: %lu contiguous: %lu\n"),
+            systemInitialFreeHeap(), stats.available, stats.usable);
+
+    terminalOK(ctx);
+}
+
+PROGMEM_STRING(Uptime, "UPTIME");
+
+void uptime(CommandContext&& ctx) {
+    ctx.output.printf_P(PSTR("uptime %s\n"),
+        prettyDuration(systemUptime()).c_str());
+    terminalOK(ctx);
+}
+
+PROGMEM_STRING(Info, "INFO");
+
+void info(CommandContext&& ctx) {
+    const auto app = buildApp();
+    ctx.output.printf_P(PSTR("%s %s built %s\n"),
+            app.name.c_str(), app.version.c_str(), app.build_time.c_str());
+
+    ctx.output.printf_P(PSTR("device: %s\n"),
+            systemDevice().c_str());
+    ctx.output.printf_P(PSTR("mcu: esp8266 chipid: %s freq: %hhumhz\n"),
+            systemChipId().c_str(), system_get_cpu_freq());
+
+    const auto sdk = buildSdk();
+    ctx.output.printf_P(PSTR("sdk: %s core: %s\n"),
+            sdk.base.c_str(), sdk.version.c_str());
+    ctx.output.printf_P(PSTR("md5: %s\n"), ESP.getSketchMD5().c_str());
+
+    const auto modules = buildModules();
+    ctx.output.printf_P(PSTR("support: %.*s\n"),
+        modules.length(), modules.c_str());
+
+#if SENSOR_SUPPORT
+    const auto sensors = sensorList();
+    ctx.output.printf_P(PSTR("sensors: %.*s\n"),
+        sensors.length(), sensors.c_str());
+#endif
+
+#if SYSTEM_CHECK_ENABLED
+    ctx.output.printf_P(PSTR("system: %s boot counter: %u\n"),
+        systemCheck()
+            ? PSTR("OK")
+            : PSTR("UNSTABLE"),
+        systemStabilityCounter());
+#endif
+
+#if DEBUG_SUPPORT
+    crashResetReason(ctx.output);
+#endif
+
+    terminalOK(ctx);
+}
 
 struct Layout {
     Layout() = delete;
@@ -348,312 +310,248 @@ private:
     uint32_t _sectors;
 };
 
-
-void _terminalInitCommands() {
-
-    terminalRegisterCommand(F("COMMANDS"), _terminalHelpCommand);
-    terminalRegisterCommand(F("HELP"), _terminalHelpCommand);
-
-    terminalRegisterCommand(F("ERASE.CONFIG"), [](const terminal::CommandContext&) {
-        terminalOK();
-        customResetReason(CustomResetReason::Terminal);
-        eraseSDKConfig();
-        *((int*) 0) = 0; // see https://github.com/esp8266/Arduino/issues/1494
-    });
-
-    terminalRegisterCommand(F("ADC"), [](const terminal::CommandContext& ctx) {
-        const int pin = (ctx.argc == 2)
-            ? ctx.argv[1].toInt()
-            : A0;
-
-        ctx.output.printf_P(PSTR("value %d\n"), analogRead(pin));
-        terminalOK(ctx);
-    });
-
-    terminalRegisterCommand(F("GPIO"), [](const terminal::CommandContext& ctx) {
-        const int pin = (ctx.argc >= 2)
-            ? ctx.argv[1].toInt()
-            : -1;
-
-        if ((pin >= 0) && !gpioValid(pin)) {
-            terminalError(ctx, F("Invalid pin number"));
-            return;
-        }
-
-        int start = 0;
-        int end = gpioPins();
-
-        switch (ctx.argc) {
-        case 3:
-            pinMode(pin, OUTPUT);
-            digitalWrite(pin, (1 == ctx.argv[2].toInt()));
-            break;
-        case 2:
-            start = pin;
-            end = pin + 1;
-            // fallthrough into print
-        case 1:
-            for (auto current = start; current < end; ++current) {
-                if (gpioValid(current)) {
-                    ctx.output.printf_P(PSTR("%c %s @ GPIO%02d (%s)\n"),
-                        gpioLocked(current) ? '*' : ' ',
-                        GPEP(current) ? "OUTPUT" : "INPUT ",
-                        current,
-                        (HIGH == digitalRead(current)) ? "HIGH" : "LOW"
-                    );
-                }
-            }
+StringView flash_chip_mode() {
+    static const String out = ([]() -> String {
+        switch (ESP.getFlashChipMode()) {
+        case FM_DIO:
+            return PSTR("DIO");
+        case FM_DOUT:
+            return PSTR("DOUT");
+        case FM_QIO:
+            return PSTR("QIO");
+        case FM_QOUT:
+            return PSTR("QOUT");
+        case FM_UNKNOWN:
             break;
         }
 
-        terminalOK(ctx);
-    });
+        return PSTR("UNKNOWN");
+    })();
 
-    terminalRegisterCommand(F("HEAP"), [](const terminal::CommandContext& ctx) {
-        static auto initial = systemInitialFreeHeap();
-
-        auto stats = systemHeapStats();
-        ctx.output.printf_P(PSTR("initial: %u, available: %u, fragmentation: %hhu%%\n"),
-            initial, stats.available, stats.frag_pct);
-
-        terminalOK(ctx);
-    });
-
-    terminalRegisterCommand(F("STACK"), [](const terminal::CommandContext& ctx) {
-        ctx.output.printf_P(PSTR("continuation stack initial: %d, free: %u\n"),
-            CONT_STACKSIZE, systemFreeStack());
-        terminalOK(ctx);
-    });
-
-    terminalRegisterCommand(F("INFO"), [](const terminal::CommandContext& ctx) {
-        if (!systemCheck()) {
-            ctx.output.print(F("\n\n!!! device is in safe mode !!!\n\n"));
-        }
-
-        ctx.output.printf_P(PSTR("%s %s built %s\n"), getAppName(), getVersion(), buildTime().c_str());
-        ctx.output.printf_P(PSTR("mcu: esp8266 chipid: %s\n"), getFullChipId().c_str());
-        ctx.output.printf_P(PSTR("sdk: %s core: %s\n"),
-                ESP.getSdkVersion(), getCoreVersion().c_str());
-        ctx.output.printf_P(PSTR("md5: %s\n"), ESP.getSketchMD5().c_str());
-        ctx.output.printf_P(PSTR("support: %s\n"), getEspurnaModules());
-#if SENSOR_SUPPORT
-        ctx.output.printf_P(PSTR("sensors: %s\n"), getEspurnaSensors());
-#endif
-
-#if DEBUG_SUPPORT
-        crashResetReason(ctx.output);
-#endif
-        terminalOK(ctx);
-    });
-
-    terminalRegisterCommand(F("STORAGE"), [](const terminal::CommandContext& ctx) {
-        ctx.output.printf_P(PSTR("flash chip ID: 0x%06X\n"), ESP.getFlashChipId());
-        ctx.output.printf_P(PSTR("speed: %u\n"), ESP.getFlashChipSpeed());
-        ctx.output.printf_P(PSTR("mode: %s\n"), getFlashChipMode());
-
-        ctx.output.printf_P(PSTR("size: %u (SPI), %u (SDK)\n"),
-            ESP.getFlashChipRealSize(), ESP.getFlashChipSize());
-
-        Layouts layout(ESP.getFlashChipRealSize());
-
-        // SDK specifies a hard-coded layout, there's no data beyond
-        // (...addressable by the Core, since it adheres the setting)
-        if (ESP.getFlashChipRealSize() > ESP.getFlashChipSize()) {
-            layout.add("unused", ESP.getFlashChipRealSize() - ESP.getFlashChipSize());
-        }
-
-        // app is at a normal location, [0...size), but... since it is offset by the free space, make sure it is aligned
-        // to the sector size (...and it is expected from the getFreeSketchSpace, as the app will align to use the fixed
-        // sector address for OTA writes).
-
-        layout.add("sdk", 4 * SPI_FLASH_SEC_SIZE);
-        layout.add("eeprom", eepromSpace());
-
-        auto app_size = (ESP.getSketchSize() + FLASH_SECTOR_SIZE - 1) & (~(FLASH_SECTOR_SIZE - 1));
-        auto ota_size = layout.current() - app_size;
-
-        // OTA is allowed to use all but one eeprom sectors that, leaving the last one
-        // for the settings snapshot during the update
-
-        layout.add("ota", ota_size);
-        layout.add("app", app_size);
-
-        layout.foreach([&](const Layout& l) {
-            ctx.output.printf_P("%-6s [%08X...%08X) (%u bytes)\n", l.name(), l.start(), l.end(), l.size());
-        });
-    });
-
-    terminalRegisterCommand(F("RESET"), [](const terminal::CommandContext& ctx) {
-        auto count = 1;
-        if (ctx.argc == 2) {
-            count = ctx.argv[1].toInt();
-            if (count < SYSTEM_CHECK_MAX) {
-                systemStabilityCounter(count);
-            }
-        }
-
-        terminalOK(ctx);
-        deferredReset(100, CustomResetReason::Terminal);
-    });
-
-    terminalRegisterCommand(F("UPTIME"), [](const terminal::CommandContext& ctx) {
-        ctx.output.printf_P(PSTR("uptime %s\n"), getUptime().c_str());
-        terminalOK(ctx);
-    });
-
-#if SECURE_CLIENT == SECURE_CLIENT_BEARSSL
-    terminalRegisterCommand(F("MFLN.PROBE"), [](const terminal::CommandContext& ctx) {
-        if (ctx.argc != 3) {
-            terminalError(ctx, F("<url> <value>"));
-            return;
-        }
-
-        URL _url(ctx.argv[1]);
-        uint16_t requested_mfln = atol(ctx.argv[2].c_str());
-
-        auto client = std::make_unique<BearSSL::WiFiClientSecure>();
-        client->setInsecure();
-
-        if (client->probeMaxFragmentLength(_url.host.c_str(), _url.port, requested_mfln)) {
-            terminalOK(ctx);
-            return;
-        }
-
-        terminalError(ctx, F("Buffer size not supported"));
-    });
-#endif
-
-    terminalRegisterCommand(F("HOST"), [](const terminal::CommandContext& ctx) {
-        if (ctx.argc != 2) {
-            terminalError(ctx, F("<hostname>"));
-            return;
-        }
-
-        dns::start(String(ctx.argv[1]), [&](const char* name, const ip_addr_t* addr, void*) {
-            if (!addr) {
-                ctx.output.printf_P(PSTR("%s not found\n"), name);
-                return;
-            }
-
-            ctx.output.printf_P(PSTR("%s has address %s\n"),
-                name, IPAddress(addr).toString().c_str());
-        });
-
-        while (dns::started()) {
-            delay(100);
-        }
-    });
-
-    terminalRegisterCommand(F("NETSTAT"), [](const terminal::CommandContext& ctx) {
-        auto print = [](Print& out, tcp_pcb* list) {
-            for (tcp_pcb* pcb = list; pcb != nullptr; pcb = pcb->next) {
-                out.printf_P(PSTR("state %s local %s:%hu remote %s:%hu\n"),
-                        tcp_debug_state_str(pcb->state),
-                        IPAddress(pcb->local_ip).toString().c_str(),
-                        pcb->local_port,
-                        IPAddress(pcb->remote_ip).toString().c_str(),
-                        pcb->remote_port);
-            }
-        };
-
-        print(ctx.output, tcp_active_pcbs);
-        print(ctx.output, tcp_tw_pcbs);
-        print(ctx.output, tcp_bound_pcbs);
-    });
+    return out;
 }
 
-void _terminalLoop() {
+PROGMEM_STRING(Storage, "STORAGE");
 
-#if DEBUG_SERIAL_SUPPORT
-    while (DEBUG_PORT.available()) {
-        _io.inject(DEBUG_PORT.read());
+void storage(CommandContext&& ctx) {
+    ctx.output.printf_P(PSTR("flash chip ID: 0x%06X\n"), ESP.getFlashChipId());
+    ctx.output.printf_P(PSTR("speed: %u\n"), ESP.getFlashChipSpeed());
+    ctx.output.printf_P(PSTR("mode: %s\n"), flash_chip_mode().c_str());
+
+    ctx.output.printf_P(PSTR("size: %u (SPI), %u (SDK)\n"),
+        ESP.getFlashChipRealSize(), ESP.getFlashChipSize());
+
+    Layouts layouts(ESP.getFlashChipRealSize());
+
+    // SDK specifies a hard-coded layout, there's no data beyond
+    // (...addressable by the Core, since it adheres the setting)
+    if (ESP.getFlashChipRealSize() > ESP.getFlashChipSize()) {
+        layouts.add("unused", ESP.getFlashChipRealSize() - ESP.getFlashChipSize());
     }
+
+    // app is at a normal location, [0...size), but... since it is offset by the free space, make sure it is aligned
+    // to the sector size (...and it is expected from the getFreeSketchSpace, as the app will align to use the fixed
+    // sector address for OTA writes).
+    layouts.add("sdk", 4 * SPI_FLASH_SEC_SIZE);
+    layouts.add("eeprom", eepromSpace());
+
+    auto app_size = (ESP.getSketchSize() + FLASH_SECTOR_SIZE - 1) & (~(FLASH_SECTOR_SIZE - 1));
+    auto ota_size = layouts.current() - app_size;
+
+    // OTA is allowed to use all but one eeprom sectors that, leaving the last one
+    // for the settings snapshot during the update
+    layouts.add("ota", ota_size);
+    layouts.add("app", app_size);
+
+    layouts.foreach(
+        [&](const Layout& layout) {
+            ctx.output.printf_P("%-6s [%08X...%08X) (%u bytes)\n",
+                    layout.name(), layout.start(), layout.end(), layout.size());
+        });
+
+    terminalOK(ctx);
+}
+
+PROGMEM_STRING(Adc, "ADC");
+
+void adc(CommandContext&& ctx) {
+    const int pin = (ctx.argv.size() == 2)
+        ? ctx.argv[1].toInt()
+        : A0;
+
+    ctx.output.printf_P(PSTR("value %d\n"), analogRead(pin));
+    terminalOK(ctx);
+}
+
+#if SYSTEM_CHECK_ENABLED
+PROGMEM_STRING(Stable, "STABLE");
+
+void stable(CommandContext&& ctx) {
+    systemForceStable();
+    prepareReset(CustomResetReason::Stability);
+}
+
+PROGMEM_STRING(Unstable, "UNSTABLE");
+
+void unstable(CommandContext&& ctx) {
+    systemForceUnstable();
+    prepareReset(CustomResetReason::Stability);
+}
+
+PROGMEM_STRING(Trap, "TRAP");
+
+void trap(CommandContext&& ctx) {
+    __builtin_trap();
+}
 #endif
 
-    _terminal.process([](terminal::Terminal::Result result) {
-        bool out = false;
-        switch (result) {
-            case terminal::Terminal::Result::CommandNotFound:
-                terminalError(terminalDefaultStream(), F("Command not found"));
-                out = true;
-                break;
-            case terminal::Terminal::Result::BufferOverflow:
-                terminalError(terminalDefaultStream(), F("Command line buffer overflow"));
-                out = true;
-                break;
-            case terminal::Terminal::Result::Command:
-                out = true;
-                break;
-            case terminal::Terminal::Result::Pending:
-                out = false;
-                break;
-            case terminal::Terminal::Result::Error:
-                terminalError(terminalDefaultStream(), F("Unexpected error when parsing command line"));
-                out = false;
-                break;
-            case terminal::Terminal::Result::NoInput:
-                out = false;
-                break;
-        }
-        return out;
-    });
+static constexpr ::terminal::Command List[] PROGMEM {
+    {Commands, commands::help},
+    {Help, commands::help},
 
-    #if SERIAL_RX_ENABLED
+    {Info, commands::info},
+    {Storage, commands::storage},
+    {Uptime, commands::uptime},
+    {Heap, commands::heap},
 
-        while (SERIAL_RX_PORT.available() > 0) {
-            char rc = SERIAL_RX_PORT.read();
-            _serial_rx_buffer[_serial_rx_pointer++] = rc;
-            if ((_serial_rx_pointer == SerialRxBufferSize) || (rc == 10)) {
-                terminalInject(_serial_rx_buffer, (size_t) _serial_rx_pointer);
-                _serial_rx_pointer = 0;
-            }
-        }
+    {Adc, commands::adc},
 
-    #endif // SERIAL_RX_ENABLED
+    {LightSleep, commands::light_sleep},
+    {DeepSleep, commands::deep_sleep},
 
+    {Reset, commands::reset},
+    {EraseConfig, commands::erase_config},
+
+#if SYSTEM_CHECK_ENABLED
+    {Stable, commands::stable},
+    {Unstable, commands::unstable},
+    {Trap, commands::trap},
+#endif
+};
+
+void setup() {
+    espurna::terminal::add(List);
 }
+
+} // namespace commands
+
+#if TERMINAL_SERIAL_SUPPORT
+namespace serial {
+
+using LoopFunc = void(*)();
+void empty_loop() {
+}
+
+namespace internal {
+
+Stream* stream { nullptr };
+LoopFunc loop { empty_loop };
+
+} // namespace internal
+
+void processing_loop() {
+    using LineBuffer = LineBuffer<build::serialBufferSize()>;
+    static LineBuffer buffer;
+
+    auto& port = *internal::stream;
+
+#if defined(ARDUINO_ESP8266_RELEASE_2_7_2) \
+    || defined(ARDUINO_ESP8266_RELEASE_2_7_3) \
+    || defined(ARDUINO_ESP8266_RELEASE_2_7_4)
+    // 'Stream::readBytes()' includes a deadline, so any
+    // call without using the actual value will result
+    // in a 1second wait (by default)
+    std::array<char, build::serialBufferSize()> tmp;
+    const auto available = port.available();
+    port.readBytes(tmp.data(), available);
+    buffer.append(tmp.data(), available);
+#else
+    // Recent Core versions allow to access RX buffer directly
+    const auto available = port.peekAvailable();
+    if (available <= 0) {
+        return;
+    }
+
+    buffer.append(port.peekBuffer(), available);
+    port.peekConsume(available);
+#endif
+
+    if (buffer.overflow()) {
+        terminal::error(port, F("Serial buffer overflow"));
+        buffer.reset();
+    }
+
+    for (;;) {
+        const auto result = buffer.line();
+        if (result.overflow) {
+            terminal::error(port, F("Command line buffer overflow"));
+            continue;
+        }
+
+        if (!result.line.length()) {
+            break;
+        }
+
+        find_and_call(result.line, port);
+    }
+}
+
+void loop() {
+    internal::loop();
+}
+
+void setup() {
+    auto port = uartPort(build::serialPort());
+    if (!port || (!port->rx || !port->tx)) {
+        return;
+    }
+
+    internal::stream = port->stream;
+    internal::loop = processing_loop;
+}
+
+} // namespace serial
+#endif
 
 #if MQTT_SUPPORT && TERMINAL_MQTT_SUPPORT
+namespace mqtt {
 
-void _terminalMqttSetup() {
-
-    mqttRegister([](unsigned int type, const char * topic, const char * payload) {
+void setup() {
+    mqttRegister([](unsigned int type, StringView topic, StringView payload) {
         if (type == MQTT_CONNECT_EVENT) {
             mqttSubscribe(MQTT_TOPIC_CMD);
             return;
         }
 
         if (type == MQTT_MESSAGE_EVENT) {
-            String t = mqttMagnitude((char *) topic);
-            if (!t.startsWith(MQTT_TOPIC_CMD)) return;
-            if (!strlen(payload)) return;
+            auto t = mqttMagnitude(topic);
+            if (!t.startsWith(MQTT_TOPIC_CMD)) {
+                return;
+            }
 
-            String cmd(payload);
-            if (!cmd.endsWith("\r\n") && !cmd.endsWith("\n")) {
-                cmd += '\n';
+            if (!payload.length()) {
+                return;
+            }
+
+            auto line = payload.toString();
+            if (!payload.endsWith("\r\n") && !payload.endsWith("\n")) {
+                line += '\n';
             }
 
             // TODO: unlike http handler, we have only one output stream
             //       and **must** have a fixed-size output buffer
             //       (wishlist: MQTT client does some magic and we don't buffer twice)
-            schedule_function([cmd]() {
-                PrintString buffer(TCP_MSS);
-                StreamAdapter<const char*> stream(buffer, cmd.c_str(), cmd.c_str() + cmd.length() + 1);
+            // TODO: or, at least, make it growable on-demand and cap at MSS?
+            // TODO: PrintLine<...> instead of one giant blob?
 
-                String out;
-                terminal::Terminal handler(stream);
-                switch (handler.processLine()) {
-                case terminal::Terminal::Result::CommandNotFound:
-                    out += F("Command not found");
-                    break;
-                case terminal::Terminal::Result::Command:
-                    out = std::move(buffer);
-                default:
-                    break;
-                }
+            auto ptr = std::make_shared<String>(std::move(line));
+            espurnaRegisterOnce([ptr]() {
+                PrintString out(TCP_MSS);
+                api_find_and_call(*ptr, out);
 
                 if (out.length()) {
-                    mqttSendRaw(mqttTopic(MQTT_TOPIC_CMD, false).c_str(), out.c_str(), false);
+                    static const auto topic = mqttTopic(MQTT_TOPIC_CMD);
+                    mqttSendRaw(topic.c_str(), out.c_str(), false);
                 }
             });
 
@@ -663,52 +561,189 @@ void _terminalMqttSetup() {
 
 }
 
-#endif // MQTT_SUPPORT && TERMINAL_MQTT_SUPPORT
+} // namespace mqtt
+#endif
 
-} // namespace
+#if WEB_SUPPORT
+namespace web {
+
+struct Output {
+    static constexpr auto Timeout = espurna::duration::Seconds(2);
+    static constexpr auto Wait = espurna::duration::Milliseconds(100);
+    static constexpr int Limit { 8 };
+
+    Output() = delete;
+    Output(const Output&) = default;
+    Output(Output&&) = default;
+
+    explicit Output(uint32_t id) :
+        _id(id)
+    {}
+
+    ~Output() {
+        send();
+    }
+
+    void operator()(const char* line) {
+        if (wsConnected(_id)) {
+            if ((_count > Limit) && !send()) {
+                return;
+            }
+
+            ++_count;
+            _output += line;
+        }
+    }
+
+    void clear() {
+        _output = String();
+        _count = 0;
+    }
+
+    bool send() {
+        if (!_count || !_output.length()) {
+            clear();
+            return false;
+        }
+
+        if (!wsConnected(_id)) {
+            clear();
+            return false;
+        }
+
+        using Clock = time::CoreClock;
+
+        auto start = Clock::now();
+        bool ready { false };
+
+        while (Clock::now() - start < Timeout) {
+            auto info = wsClientInfo(_id);
+            if (!info.connected) {
+                clear();
+                return false;
+            }
+
+            if (!info.stalled) {
+                ready = true;
+                break;
+            }
+
+            time::blockingDelay(Wait);
+        }
+
+        if (ready) {
+            DynamicJsonBuffer buffer((2 * JSON_OBJECT_SIZE(1)) + JSON_ARRAY_SIZE(1));
+
+            JsonObject& root = buffer.createObject();
+            JsonObject& log = root.createNestedObject("log");
+
+            JsonArray& msg = log.createNestedArray("msg");
+            msg.add(_output.c_str());
+
+            wsSend(root);
+            clear();
+
+            return true;
+        }
+
+        clear();
+        return false;
+    }
+
+private:
+    String _output;
+    uint32_t _id { 0 };
+    int _count { 0 };
+};
+
+constexpr espurna::duration::Seconds Output::Timeout;
+constexpr espurna::duration::Milliseconds Output::Wait;
+
+void onVisible(JsonObject& root) {
+    wsPayloadModule(root, PSTR("cmd"));
+}
+
+void onAction(uint32_t client_id, const char* action, JsonObject& data) {
+    PROGMEM_STRING(Cmd, "cmd");
+    if (strncmp_P(action, &Cmd[0], __builtin_strlen(Cmd)) != 0) {
+        return;
+    }
+
+    PROGMEM_STRING(Line, "line");
+    if (!data.containsKey(FPSTR(Line)) || !data[FPSTR(Line)].is<String>()) {
+        return;
+    }
+
+    const auto cmd = std::make_shared<String>(
+        data[FPSTR(Line)].as<String>());
+    if (!cmd->length()) {
+        return;
+    }
+
+    espurnaRegisterOnce([cmd, client_id]() {
+        PrintLine<Output> out(client_id);
+        api_find_and_call(*cmd, out);
+    });
+}
+
+void setup() {
+    wsRegister()
+        .onVisible(onVisible)
+        .onAction(onAction);
+}
+
+} // namespace web
+#endif
 
 // -----------------------------------------------------------------------------
 // Pubic API
 // -----------------------------------------------------------------------------
 
 #if TERMINAL_WEB_API_SUPPORT
+namespace api {
+
+STRING_VIEW_INLINE(Path, TERMINAL_WEB_API_PATH);
+STRING_VIEW_INLINE(Key, "termWebApiPath");
 
 // XXX: new `apiRegister()` depends that `webServer()` is available, meaning we can't call this setup func
 // before the `webSetup()` is called. ATM, just make sure it is in order.
 
-void terminalWebApiSetup() {
+void setup() {
 #if API_SUPPORT
-    apiRegister(getSetting("termWebApiPath", TERMINAL_WEB_API_PATH),
+    apiRegister(
+        getSetting(Key, Path),
         [](ApiRequest& api) {
             api.handle([](AsyncWebServerRequest* request) {
-                AsyncResponseStream *response = request->beginResponseStream("text/plain");
-                for (auto* name : _terminal.names()) {
-                    response->print(name);
+                auto* response = request->beginResponseStream(F("text/plain"));
+                for (auto name : names()) {
+                    response->write(name.c_str(), name.length());
                     response->print("\r\n");
                 }
 
                 request->send(response);
             });
+
             return true;
         },
         [](ApiRequest& api) {
             // TODO: since HTTP spec allows query string to contain repeating keys, allow iteration
             // over every received 'line' to provide a way to call multiple commands at once
-            auto cmd = api.param(F("line"));
-            if (!cmd.length()) {
+            auto line = api.param(F("line"));
+            if (!line.length()) {
                 return false;
             }
 
-            if (!cmd.endsWith("\r\n") && !cmd.endsWith("\n")) {
-                cmd += '\n';
+            auto cmd = std::make_shared<String>(line.toString());
+            if (!line.endsWith("\r\n") && !line.endsWith("\n")) {
+                (*cmd) += '\n';
             }
 
-            api.handle([&](AsyncWebServerRequest* request) {
-                AsyncWebPrint::scheduleFromRequest(request, [cmd](Print& print) {
-                    StreamAdapter<const char*> stream(print, cmd.c_str(), cmd.c_str() + cmd.length() + 1);
-                    terminal::Terminal handler(stream);
-                    handler.processLine();
-                });
+            api.handle([cmd](AsyncWebServerRequest* request) {
+                espurna::web::print::scheduleFromRequest(
+                    request,
+                    [cmd](Print& out) {
+                        api_find_and_call(*cmd, out);
+                    });
             });
 
             return true;
@@ -716,8 +751,12 @@ void terminalWebApiSetup() {
     );
 #else
     webRequestRegister([](AsyncWebServerRequest* request) {
-        String path(F(API_BASE_PATH));
-        path += getSetting("termWebApiPath", TERMINAL_WEB_API_PATH);
+        STRING_VIEW_INLINE(BasePath, API_BASE_PATH);
+
+        String path;
+        path += BasePath;
+        path += getSetting(Key, Path);
+
         if (path != request->url()) {
             return false;
         }
@@ -727,104 +766,94 @@ void terminalWebApiSetup() {
             return true;
         }
 
-        auto* cmd_param = request->getParam("line", (request->method() == HTTP_PUT));
-        if (!cmd_param) {
+        auto* line_param = request->getParam("line", (request->method() == HTTP_PUT));
+        if (!line_param) {
             request->send(500);
             return true;
         }
 
-        auto cmd = cmd_param->value();
-        if (!cmd.length()) {
+        auto line = line_param->value();
+        if (!line.length()) {
             request->send(500);
             return true;
         }
 
-        if (!cmd.endsWith("\r\n") && !cmd.endsWith("\n")) {
-            cmd += '\n';
+        if (!line.endsWith("\r\n") && !line.endsWith("\n")) {
+            line += '\n';
         }
 
-        // TODO: batch requests? processLine() -> process(...)
-        AsyncWebPrint::scheduleFromRequest(request, [cmd](Print& print) {
-            StreamAdapter<const char*> stream(print, cmd.c_str(), cmd.c_str() + cmd.length() + 1);
-            terminal::Terminal handler(stream);
-            handler.processLine();
-        });
+        auto cmd = std::make_shared<String>(std::move(line));
+
+        espurna::web::print::scheduleFromRequest(
+            request,
+            [cmd](Print& out) {
+                api_find_and_call(*cmd, out);
+            });
 
         return true;
     });
 #endif // API_SUPPORT
 }
 
+} // namespace api
 #endif // TERMINAL_WEB_API_SUPPORT
 
-Stream& terminalDefaultStream() {
-    return (Stream &) _io;
+void loop() {
+#if TERMINAL_SERIAL_SUPPORT
+    serial::loop();
+#endif
 }
 
-size_t terminalCapacity() {
-    return Io::capacity();
-}
+void setup() {
+#if TERMINAL_SERIAL_SUPPORT
+    serial::setup();
+#endif
 
-void terminalInject(const char* data, size_t len) {
-    _io.inject(data, len);
-}
-
-void terminalInject(char ch) {
-    _io.inject(ch);
-}
-
-void terminalRegisterCommand(const __FlashStringHelper* name, terminal::Terminal::CommandFunc func) {
-    terminal::Terminal::addCommand(name, func);
-};
-
-void terminalOK(Print& print) {
-    print.print(F("+OK\n"));
-}
-
-void terminalError(Print& print, const String& error) {
-    print.printf_P(PSTR("-ERROR: %s\n"), error.c_str());
-}
-
-void terminalOK(const terminal::CommandContext& ctx) {
-    terminalOK(ctx.output);
-}
-
-void terminalError(const terminal::CommandContext& ctx, const String& error) {
-    terminalError(ctx.output, error);
-}
-
-void terminalOK() {
-    terminalOK(_io);
-}
-
-void terminalError(const String& error) {
-    terminalError(_io, error);
-}
-
-void terminalSetup() {
-
+#if WEB_SUPPORT
     // Show DEBUG panel with input
-    #if WEB_SUPPORT
-        wsRegister()
-            .onVisible([](JsonObject& root) { root["cmdVisible"] = 1; });
-    #endif
+    web::setup();
+#endif
 
-    // Similar to the above, but we allow only very small and in-place outputs.
-    #if MQTT_SUPPORT && TERMINAL_MQTT_SUPPORT
-        _terminalMqttSetup();
-    #endif
+#if MQTT_SUPPORT && TERMINAL_MQTT_SUPPORT
+    // Similar to the above, accept cmdline(s) in payload
+    mqtt::setup();
+#endif
 
     // Initialize default commands
-    _terminalInitCommands();
-
-    #if SERIAL_RX_ENABLED
-        SERIAL_RX_PORT.begin(SERIAL_RX_BAUDRATE);
-    #endif // SERIAL_RX_ENABLED
+    commands::setup();
 
     // Register loop
-    espurnaRegisterLoop(_terminalLoop);
+    espurnaRegisterLoop(loop);
+}
 
+} // namespace
+} // namespace terminal
+} // namespace espurna
+
+void terminalOK(const espurna::terminal::CommandContext& ctx) {
+    espurna::terminal::ok(ctx);
+}
+
+void terminalError(const espurna::terminal::CommandContext& ctx, const String& message) {
+    espurna::terminal::error(ctx, message);
+}
+
+void terminalRegisterCommand(espurna::terminal::Commands commands) {
+    espurna::terminal::add(commands);
+}
+
+void terminalRegisterCommand(espurna::StringView name, espurna::terminal::CommandFunc func) {
+    espurna::terminal::add(name, func);
+}
+
+#if TERMINAL_WEB_API_SUPPORT
+void terminalWebApiSetup() {
+    espurna::terminal::api::setup();
+}
+#endif
+
+void terminalSetup() {
+    espurna::terminal::setup();
 }
 
 #endif // TERMINAL_SUPPORT
-

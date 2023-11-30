@@ -35,7 +35,7 @@ class AnimFountain : public Anim {
                 for (int i = 1; i < 5; ++i) {
                     Fountain new_fountain(palette, numLeds);
                     if (new_fountain.HaveEnoughSpace(seq)) {
-                        std::swap(d, new_fountain);
+                        d = std::move(new_fountain);
                         break;
                     }
                 }
@@ -52,17 +52,17 @@ class AnimFountain : public Anim {
         int head = 0;
         int start;
         // Color color;
-        std::vector<Color> points;
-        Fountain(Palette* pal, uint16_t numLeds) : start(secureRandom(len, numLeds - len)), /*color(pal->getRndInterpColor()),*/ points(len) {
-            // DEBUG_MSG_P(PSTR("[GARLAND] Fountain created start = %d len = %d dir = %d cr = %d cg = %d cb = %d\n"), start, len, dir, color.r, color.g, color.b);
+        std::unique_ptr<Color[]> points;
+        Fountain(Palette* pal, uint16_t numLeds) : start(secureRandom(len, numLeds - len)) /*, color(pal->getRndInterpColor())*/ {
             if (secureRandom(10) > 5) {
-                start = numLeds - start;
+                start = numLeds - start - 1;
                 dir = -1;
             }
 
-            // int halflen = len / 2;
+            // DEBUG_MSG_P(PSTR("[GARLAND] Fountain created start = %d len = %d dir = %d cr = %d cg = %d cb = %d\n"), start, len, dir, color.r, color.g, color.b);
+            points.reset(new Color[len]);
             for (int i = 0; i < len; ++i) {
-                points[i] = pal->getRndInterpColor();
+                points[i] = {pal->getRndInterpColor()};
                 // DEBUG_MSG_P(PSTR("[GARLAND] Fountain i=%d cr = %d cg = %d cb = %d\n"), i, points[i].r, points[i].g, points[i].b);
             }
         }

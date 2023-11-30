@@ -3,13 +3,15 @@
 DOMOTICZ MODULE
 
 Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 */
 
-#include "domoticz.h"
+#include "espurna.h"
 
 #if DOMOTICZ_SUPPORT
 
+#include "domoticz.h"
 #include "light.h"
 #include "mqtt.h"
 #include "relay.h"
@@ -17,190 +19,378 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "sensor.h"
 #include "ws.h"
 
-bool _dcz_enabled = false;
-std::bitset<RelaysMax> _dcz_relay_state;
+#include <ArduinoJson.h>
+#include <bitset>
 
-//------------------------------------------------------------------------------
-// Private methods
-//------------------------------------------------------------------------------
+namespace espurna {
+namespace domoticz {
+namespace {
 
-unsigned int _domoticzIdx(unsigned char relayID, unsigned int defaultValue = 0) {
-    return getSetting({"dczRelayIdx", relayID}, defaultValue);
-}
+struct Idx {
+    constexpr static size_t Default { 0 };
 
-int _domoticzRelay(unsigned int idx) {
-    for (unsigned char relayID=0; relayID<relayCount(); relayID++) {
-        if (_domoticzIdx(relayID) == idx) {
-            return relayID;
-        }
-    }
-    return -1;
-}
+    constexpr Idx() = default;
+    constexpr explicit Idx(size_t value) :
+        _value(value)
+    {}
 
-void _domoticzMqttSubscribe(bool value) {
-
-    const String dczTopicOut = getSetting("dczTopicOut", DOMOTICZ_OUT_TOPIC);
-    if (value) {
-        mqttSubscribeRaw(dczTopicOut.c_str());
-    } else {
-        mqttUnsubscribeRaw(dczTopicOut.c_str());
+    constexpr explicit operator bool() const {
+        return _value != Default;
     }
 
+    constexpr bool operator==(size_t other) const {
+        return _value == other;
+    }
+
+    constexpr bool operator==(const Idx& other) {
+        return _value == other._value;
+    }
+
+    constexpr size_t value() const {
+        return _value;
+    }
+
+private:
+    size_t _value { Default };
+};
+
+} // namespace
+} // namespace domoticz
+
+namespace settings {
+namespace internal {
+
+template <>
+espurna::domoticz::Idx convert(const String& value) {
+    return espurna::domoticz::Idx(convert<size_t>(value));
 }
 
-bool _domoticzStatus(unsigned char id) {
-    return _dcz_relay_state[id];
+} // namespace internal
+} // namespace settings
+
+namespace domoticz {
+namespace internal {
+namespace {
+
+bool enabled { false };
+
+} // namespace
+} // namespace internal
+
+namespace {
+
+bool enabled() {
+    return internal::enabled;
 }
 
-void _domoticzStatus(unsigned char id, bool status) {
-    _dcz_relay_state[id] = status;
-    relayStatus(id, status);
+void enable() {
+    internal::enabled = true;
 }
+
+void disable() {
+    internal::enabled = false;
+}
+
+} // namespace
+
+namespace build {
+namespace {
+
+static constexpr ::espurna::domoticz::Idx DefaultIdx;
+
+const __FlashStringHelper* topicOut() {
+    return F(DOMOTICZ_OUT_TOPIC);
+}
+
+const __FlashStringHelper* topicIn() {
+    return F(DOMOTICZ_IN_TOPIC);
+}
+
+constexpr bool enabled() {
+    return 1 == DOMOTICZ_ENABLED;
+}
+
+} // namespace
+} // namespace build
+
+namespace settings {
+namespace keys {
+
+PROGMEM_STRING(Enabled, "dczEnabled");
+PROGMEM_STRING(TopicOut, "dczTopicOut");
+PROGMEM_STRING(TopicIn, "dczTopicIn");
+
+#if RELAY_SUPPORT
+PROGMEM_STRING(RelayIdx, "dczRelayIdx");
+#endif
+
+#if SENSOR_SUPPORT
+PROGMEM_STRING(MagnitudeIdx, "dczMagnitude");
+#endif
 
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+PROGMEM_STRING(LightIdx, "dczLightIdx");
+#endif
 
-#include "light.h"
+} // namespace keys
 
-void _domoticzLight(unsigned int idx, const JsonObject& root) {
+namespace {
 
-    JsonObject& color = root["Color"];
+bool enabled() {
+    return getSetting(FPSTR(keys::Enabled), build::enabled());
+}
+
+String topicOut() {
+    return getSetting(FPSTR(keys::TopicOut), build::topicOut());
+}
+
+String topicIn() {
+    return getSetting(FPSTR(keys::TopicIn), build::topicIn());
+}
+
+#if RELAY_SUPPORT
+Idx relayIdx(size_t id) {
+    return getSetting({FPSTR(keys::RelayIdx), id}, build::DefaultIdx);
+}
+#endif
+
+#if SENSOR_SUPPORT
+Idx magnitudeIdx(size_t id) {
+    return getSetting({FPSTR(keys::MagnitudeIdx), id}, build::DefaultIdx);
+}
+#endif
+
+#if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+Idx lightIdx() {
+    return getSetting(FPSTR(keys::LightIdx), build::DefaultIdx);
+}
+#endif
+
+} // namespace
+} // namespace settings
+
+#if RELAY_SUPPORT
+namespace relay {
+namespace internal {
+namespace {
+
+std::bitset<RelaysMax> status;
+
+} // namespace
+} // namespace internal
+
+namespace {
+
+void send(Idx, bool);
+void send();
+
+size_t find(Idx idx) {
+    const auto Relays = relayCount();
+    for (size_t id = 0; id < Relays; ++id) {
+        if (idx == settings::relayIdx(id)) {
+            return id;
+        }
+    }
+
+    return RelaysMax;
+}
+
+void status(Idx idx, bool value) {
+    auto id = find(idx);
+    if (id < RelaysMax) {
+        internal::status[id] = value;
+        ::relayStatus(id, value);
+    }
+}
+
+void callback(size_t id, bool value) {
+    if (internal::status[id] != value) {
+        internal::status[id] = value;
+        send(settings::relayIdx(id), value);
+    }
+}
+
+void setup() {
+    ::relayOnStatusChange(callback);
+}
+
+} // namespace
+} // namespace relay
+#endif
+
+#if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+namespace light {
+namespace {
+
+void status(const JsonObject& root, unsigned char nvalue) {
+    JsonObject& color = root[F("Color")];
     if (color.success()) {
 
         // for ColorMode... see:
         // https://github.com/domoticz/domoticz/blob/development/hardware/ColorSwitch.h
         // https://www.domoticz.com/wiki/Domoticz_API/JSON_URL's#Set_a_light_to_a_certain_color_or_color_temperature
 
-        DEBUG_MSG_P(PSTR("[DOMOTICZ] Received rgb:%u,%u,%u ww:%u,cw:%u t:%u brightness:%u for IDX %u\n"),
-            color["r"].as<unsigned char>(),
-            color["g"].as<unsigned char>(),
-            color["b"].as<unsigned char>(),
-            color["ww"].as<unsigned char>(),
-            color["cw"].as<unsigned char>(),
-            color["t"].as<unsigned char>(),
-            color["Level"].as<unsigned char>(),
-            idx
-        );
+        auto r = color["r"].as<long>();
+        auto g = color["g"].as<long>();
+        auto b = color["b"].as<long>();
+
+        auto cw = color["cw"].as<long>();
+        auto ww = color["ww"].as<long>();
+
+        DEBUG_MSG_P(PSTR("[DOMOTICZ] Dimmer nvalue:%hhu rgb:%ld,%ld,%ld ww:%ld,cw:%ld t:%ld brightness:%ld\n"),
+            nvalue, r, g, b, ww, cw, color["t"].as<long>(), color[F("Level")].as<long>());
 
         // m field contains information about color mode (enum ColorMode from domoticz ColorSwitch.h):
-        unsigned int cmode = color["m"];
-
-        if (cmode == 2) { // ColorModeWhite - WW,CW,temperature (t unused for now)
-
-            if (lightChannels() < 2) return;
-
-            lightChannel(0, color["ww"]);
-            lightChannel(1, color["cw"]);
-
-        } else if (cmode == 3 || cmode == 4) { // ColorModeRGB or ColorModeCustom
-
-            if (lightChannels() < 3) return;
-
-            lightChannel(0, color["r"]);
-            lightChannel(1, color["g"]);
-            lightChannel(2, color["b"]);
-
-            // WARM WHITE (or MONOCHROME WHITE) and COLD WHITE are always sent.
-            // Apply only when supported.
-            if (lightChannels() > 3) {
-                lightChannel(3, color["ww"]);
-            }
-            if (lightChannels() > 4) {
-                lightChannel(4, color["cw"]);
-            }
-
+        switch (color["m"].as<int>()) {
+        // ColorModeWhite - WW,CW,temperature (t unused for now)
+        case 2:
+            lightColdWhite(cw);
+            lightWarmWhite(ww);
+            break;
+        // ColorModeRGB or ColorModeCustom
+        // WARM WHITE (or MONOCHROME WHITE) and COLD WHITE are always in the payload,
+        // but it only applies when supported by the lights module.
+        case 3:
+        case 4:
+            lightRed(r);
+            lightGreen(g);
+            lightBlue(b);
+            lightColdWhite(cw);
+            lightWarmWhite(ww);
+            break;
         }
     }
 
     // domoticz uses 100 as maximum value while we're using a custom scale
-    lightBrightness((root["Level"].as<long>() / 100l) * Light::BrightnessMax);
+    lightBrightnessPercent(root[F("Level")].as<long>());
+    lightState(nvalue > 0);
     lightUpdate();
-
 }
 
+} // namespace
+} // namespace light
 #endif
 
-void _domoticzMqtt(unsigned int type, const char * topic, char * payload) {
+namespace mqtt {
+namespace {
 
-    if (!_dcz_enabled) return;
+void subscribe() {
+    mqttSubscribeRaw(settings::topicOut().c_str());
+}
 
-    const String dczTopicOut = getSetting("dczTopicOut", DOMOTICZ_OUT_TOPIC);
+void unsubscribe() {
+    mqttUnsubscribeRaw(settings::topicOut().c_str());
+}
+
+void callback(unsigned int type, espurna::StringView topic, espurna::StringView payload) {
+    if (!enabled()) {
+        return;
+    }
 
     if (type == MQTT_CONNECT_EVENT) {
-
-        // Subscribe to domoticz action topics
-        mqttSubscribeRaw(dczTopicOut.c_str());
-
-        // Send relays state on connection
-        #if RELAY_SUPPORT
-            domoticzSendRelays();
-        #endif
-
+        subscribe();
+#if RELAY_SUPPORT
+        relay::send();
+#endif
+        return;
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
-
-        // Check topic
-        if (dczTopicOut.equals(topic)) {
-
-            // Parse response
+        const auto out = settings::topicOut();
+        if (topic == out) {
             DynamicJsonBuffer jsonBuffer(1024);
-            JsonObject& root = jsonBuffer.parseObject(payload);
+            JsonObject& root = jsonBuffer.parseObject(payload.begin());
             if (!root.success()) {
                 DEBUG_MSG_P(PSTR("[DOMOTICZ] Error parsing data\n"));
                 return;
             }
 
-            // IDX
-            unsigned int idx = root["idx"];
+            unsigned char nvalue = root[F("nvalue")];
+            Idx idx(root[F("idx")].as<size_t>());
 
-            #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-                String stype = root["stype"];
-                String switchType = root["switchType"];
-                if ((_domoticzIdx(0) == idx) && (stype.startsWith("RGB") || (switchType.equals("Dimmer")))) {
-                    _domoticzLight(idx, root);
-                }
-            #endif
-
-            int relayID = _domoticzRelay(idx);
-            if (relayID >= 0) {
-                unsigned char value = root["nvalue"];
-                DEBUG_MSG_P(PSTR("[DOMOTICZ] Received value %u for IDX %u\n"), value, idx);
-                _domoticzStatus(relayID, value >= 1);
+#if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+            String stype = root[F("stype")];
+            String switchType = root[F("switchType")];
+            if ((idx == settings::lightIdx()) && (stype.startsWith(F("RGB")) || (switchType.equals(F("Dimmer"))))) {
+                espurna::domoticz::light::status(root, nvalue);
+                return;
             }
-
-        }
-
-    }
-
-}
-
-void _domoticzConfigure() {
-    const bool enabled = getSetting("dczEnabled", 1 == DOMOTICZ_ENABLED);
-    if (enabled != _dcz_enabled) _domoticzMqttSubscribe(enabled);
-
-#if RELAY_SUPPORT
-    for (size_t id = 0; id < relayCount(); ++id) {
-        _dcz_relay_state[id] = relayStatus(id);
-    }
 #endif
 
-    _dcz_enabled = enabled;
-}
+#if RELAY_SUPPORT
+            espurna::domoticz::relay::status(idx, nvalue > 0);
+#endif
 
-void _domoticzRelayCallback(size_t id, bool status) {
-    if (_domoticzStatus(id) != status) {
-        _dcz_relay_state[id] = status;
-        domoticzSendRelay(id, status);
+            return;
+        }
     }
 }
 
+void send(Idx idx, int nvalue, const char* svalue) {
+    if (!enabled()) {
+        return;
+    }
+
+    if (!idx) {
+        return;
+    }
+
+    StaticJsonBuffer<JSON_OBJECT_SIZE(3)> json;
+    JsonObject& root = json.createObject();
+    root[F("idx")] = idx.value();
+    root[F("nvalue")] = nvalue;
+    root[F("svalue")] = svalue;
+
+    char payload[128] = {0};
+    root.printTo(payload);
+
+    mqttSendRaw(settings::topicIn().c_str(), payload);
+}
+
+[[gnu::unused]]
+void send(Idx idx, int nvalue) {
+    send(idx, nvalue, "");
+}
+
+void setup() {
+    ::mqttRegister(callback);
+}
+
+} // namespace
+} // namespace mqtt
+
+#if RELAY_SUPPORT
+namespace relay {
+namespace {
+
+void send(Idx idx, bool value) {
+    mqtt::send(idx, value ? 1 : 0);
+}
+
+void send() {
+    const size_t Relays { relayCount() };
+    for (size_t id = 0; id < Relays; ++id) {
+        send(settings::relayIdx(id), ::relayStatus(id));
+    }
+}
+
+} // namespace
+} // namespace relay
+#endif
+
 #if SENSOR_SUPPORT
+namespace sensor {
+namespace {
 
-void domoticzSendMagnitude(unsigned char type, unsigned char index, double value, const char* buffer) {
-    if (!_dcz_enabled) return;
+void send(unsigned char index, const espurna::sensor::Value& value) {
+    if (!enabled()) {
+        return;
+    }
 
-    char key[15];
-    snprintf_P(key, sizeof(key), PSTR("dczMagnitude%d"), index);
+    auto idx = settings::magnitudeIdx(index);
+    if (!idx) {
+        return;
+    }
 
     // Domoticz expects some additional data, dashboard might break otherwise.
 
@@ -208,122 +398,171 @@ void domoticzSendMagnitude(unsigned char type, unsigned char index, double value
     // TODO: Must send 'forecast' data. Default is last 3 hours:
     // https://github.com/domoticz/domoticz/blob/6027b1d9e3b6588a901de42d82f3a6baf1374cd1/hardware/I2C.cpp#L1092-L1193
     // For now, just send invalid value. Consider simplifying sampling function and adding it here, with custom sampling time (3 hours, 6 hours, 12 hours etc.)
-    if (MAGNITUDE_PRESSURE == type) {
-        String svalue = buffer;
-        svalue += ";-1";
-        domoticzSend(key, 0, svalue.c_str());
+    if (MAGNITUDE_PRESSURE == value.type) {
+        mqtt::send(idx, 0, (value.repr + F(";-1")).c_str());
     // Special case to allow us to use it with switches directly
-    } else if (MAGNITUDE_DIGITAL == type) {
-        int nvalue = (buffer[0] >= 48) ? (buffer[0] - 48) : 0;
-        domoticzSend(key, nvalue, buffer);
+    } else if (MAGNITUDE_DIGITAL == value.type) {
+        mqtt::send(idx, (*value.repr.c_str() == '1') ? 1 : 0, value.repr.c_str());
     // https://www.domoticz.com/wiki/Domoticz_API/JSON_URL's#Humidity
     // nvalue contains HUM (relative humidity)
     // svalue contains HUM_STAT, one of consts below
-    } else if (MAGNITUDE_HUMIDITY == type) {
+    } else if (MAGNITUDE_HUMIDITY == value.type) {
         const char status = 48 + (
-            (value > 70) ? HUMIDITY_WET :
-            (value > 45) ? HUMIDITY_COMFORTABLE :
-            (value > 30) ? HUMIDITY_NORMAL :
+            (value.value > 70) ? HUMIDITY_WET :
+            (value.value > 45) ? HUMIDITY_COMFORTABLE :
+            (value.value > 30) ? HUMIDITY_NORMAL :
             HUMIDITY_DRY
         );
-        char svalue[2] = {status, '\0'};
-        domoticzSend(key, static_cast<int>(value), svalue);
+        const char svalue[2] = {status, '\0'};
+        mqtt::send(idx, static_cast<int>(value.value), svalue);
     // https://www.domoticz.com/wiki/Domoticz_API/JSON_URL's#Air_quality
     // nvalue contains the ppm
     // svalue is not used (?)
-    } else if (MAGNITUDE_CO2 == type) {
-        domoticzSend(key, static_cast<int>(value), "");
-    // Otherwise, send char string (nvalue is only for integers)
+    } else if (MAGNITUDE_CO2 == value.type) {
+        mqtt::send(idx, static_cast<int>(value.value));
+    // Otherwise, send char string aka formatted float (nvalue is only for integers)
     } else {
-        domoticzSend(key, 0, buffer);
+        mqtt::send(idx, 0, value.repr.c_str());
     }
 }
 
+} // namespace
+} // namespace sensor
 #endif // SENSOR_SUPPORT
 
 #if WEB_SUPPORT
+namespace web {
+namespace {
 
-bool _domoticzWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
-    return (strncmp(key, "dcz", 3) == 0);
+PROGMEM_STRING(Prefix, "dcz");
+
+bool onKeyCheck(espurna::StringView key, const JsonVariant&) {
+    return espurna::settings::query::samePrefix(key, Prefix);
 }
 
-void _domoticzWebSocketOnVisible(JsonObject& root) {
-    root["dczVisible"] = static_cast<unsigned char>(haveRelaysOrSensors());
-}
-
-void _domoticzWebSocketOnConnected(JsonObject& root) {
-
-    root["dczEnabled"] = getSetting("dczEnabled", 1 == DOMOTICZ_ENABLED);
-    root["dczTopicIn"] = getSetting("dczTopicIn", DOMOTICZ_IN_TOPIC);
-    root["dczTopicOut"] = getSetting("dczTopicOut", DOMOTICZ_OUT_TOPIC);
-
-    JsonArray& relays = root.createNestedArray("dczRelays");
-    for (unsigned char i=0; i<relayCount(); i++) {
-        relays.add(_domoticzIdx(i));
+void onVisible(JsonObject& root) {
+    bool module { false };
+#if RELAY_SUPPORT
+    module = module || (relayCount() > 0);
+#endif
+#if SENSOR_SUPPORT
+    module = module || (magnitudeCount() > 0);
+#endif
+    if (module) {
+        wsPayloadModule(root, Prefix);
     }
-
-    #if SENSOR_SUPPORT
-        sensorWebSocketMagnitudes(root, "dcz");
-    #endif
-
 }
 
+void onConnected(JsonObject& root) {
+    root[FPSTR(settings::keys::Enabled)] = settings::enabled();
+    root[FPSTR(settings::keys::TopicIn)] = settings::topicIn();
+    root[FPSTR(settings::keys::TopicOut)] = settings::topicOut();
+
+#if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
+    root[FPSTR(settings::keys::LightIdx)] = settings::lightIdx().value();
+#endif
+
+#if RELAY_SUPPORT
+    const size_t Relays { relayCount() };
+
+    JsonArray& relays = root.createNestedArray(F("dczRelays"));
+    for (size_t id = 0; id < Relays; ++id) {
+        relays.add(settings::relayIdx(id).value());
+    }
+#endif
+
+#if SENSOR_SUPPORT
+    sensorWebSocketMagnitudes(root, PSTR("dcz"), [](JsonArray& out, size_t index) {
+        out.add(settings::magnitudeIdx(index).value());
+    });
+#endif
+}
+
+void setup() {
+    wsRegister()
+        .onVisible(onVisible)
+        .onConnected(onConnected)
+        .onKeyCheck(onKeyCheck);
+}
+
+} // namespace
+} // namespace web
 #endif // WEB_SUPPORT
 
 //------------------------------------------------------------------------------
-// Public API
-//------------------------------------------------------------------------------
 
-template<typename T> void domoticzSend(const char * key, T nvalue, const char * svalue) {
-    if (!_dcz_enabled) return;
-    const auto idx = getSetting(key, 0);
-    if (idx > 0) {
-        char payload[128];
-        snprintf(payload, sizeof(payload), "{\"idx\": %d, \"nvalue\": %s, \"svalue\": \"%s\"}", idx, String(nvalue).c_str(), svalue);
-        mqttSendRaw(getSetting("dczTopicIn", DOMOTICZ_IN_TOPIC).c_str(), payload);
+namespace {
+
+void configure() {
+    auto enabled_in_cfg = settings::enabled();
+    if (enabled_in_cfg != enabled()) {
+        if (enabled_in_cfg) {
+            mqtt::subscribe();
+        } else {
+            mqtt::unsubscribe();
+        }
+    }
+
+#if RELAY_SUPPORT
+    for (size_t id = 0; id < relayCount(); ++id) {
+        relay::internal::status[id] = relayStatus(id);
+    }
+#endif
+
+    if (enabled_in_cfg) {
+        enable();
+    } else {
+        disable();
     }
 }
 
-template<typename T> void domoticzSend(const char * key, T nvalue) {
-    domoticzSend(key, nvalue, "");
-}
+#if RELAY_SUPPORT && (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE)
+void migrate(int version) {
+    if (version < 10) {
+        if (relayCount() != 1) {
+            return;
+        }
 
-void domoticzSendRelay(unsigned char relayID, bool status) {
-    if (!_dcz_enabled) return;
-    char buffer[15];
-    snprintf_P(buffer, sizeof(buffer), PSTR("dczRelayIdx%u"), relayID);
-    domoticzSend(buffer, status ? "1" : "0");
-}
-
-void domoticzSendRelays() {
-    for (uint8_t relayID=0; relayID < relayCount(); relayID++) {
-        domoticzSendRelay(relayID, relayStatus(relayID));
+        moveSetting(F("dczRelayIdx0"), FPSTR(settings::keys::LightIdx));
     }
+}
+#endif
+
+void setup() {
+#if RELAY_SUPPORT && (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE)
+    migrateVersion(migrate);
+#endif
+
+#if WEB_SUPPORT
+    web::setup();
+#endif
+
+#if RELAY_SUPPORT
+    relay::setup();
+#endif
+
+    mqtt::setup();
+
+    ::espurnaRegisterReload(configure);
+    configure();
+}
+
+} // namespace
+} // namespace domoticz
+} // namespace espurna
+
+#if SENSOR_SUPPORT
+void domoticzSendMagnitude(unsigned char index, const espurna::sensor::Value& value) {
+    espurna::domoticz::sensor::send(index, value);
+}
+#endif
+
+bool domoticzEnabled() {
+    return espurna::domoticz::enabled();
 }
 
 void domoticzSetup() {
-
-    _domoticzConfigure();
-
-    #if WEB_SUPPORT
-        wsRegister()
-            .onVisible(_domoticzWebSocketOnVisible)
-            .onConnected(_domoticzWebSocketOnConnected)
-            .onKeyCheck(_domoticzWebSocketOnKeyCheck);
-    #endif
-
-    #if RELAY_SUPPORT
-        relaySetStatusChange(_domoticzRelayCallback);
-    #endif
-
-    // Callbacks
-    mqttRegister(_domoticzMqtt);
-    espurnaRegisterReload(_domoticzConfigure);
-
-}
-
-bool domoticzEnabled() {
-    return _dcz_enabled;
+    espurna::domoticz::setup();
 }
 
 #endif

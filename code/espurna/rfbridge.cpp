@@ -6,12 +6,13 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#include "rfbridge.h"
+#include "espurna.h"
 
 #if RFB_SUPPORT
 
 #include "api.h"
 #include "relay.h"
+#include "rfbridge.h"
 #include "terminal.h"
 #include "mqtt.h"
 #include "ws.h"
@@ -32,12 +33,13 @@ unsigned char _rfb_repeats = RFB_SEND_REPEATS;
 #if RFB_PROVIDER == RFB_PROVIDER_RCSWITCH
 
 #include <RCSwitch.h>
-RCSwitch * _rfb_modem;
+std::unique_ptr<RCSwitch> _rfb_modem;
 bool _rfb_receive { false };
 bool _rfb_transmit { false };
 
 #else
 
+static Stream* _rfb_port { nullptr };
 constexpr bool _rfb_receive { true };
 constexpr bool _rfb_transmit { true };
 
@@ -45,7 +47,7 @@ constexpr bool _rfb_transmit { true };
 
 std::forward_list<RfbCodeHandler> _rfb_code_handlers;
 
-void rfbSetCodeHandler(RfbCodeHandler handler) {
+void rfbOnCode(RfbCodeHandler handler) {
     _rfb_code_handlers.push_front(handler);
 }
 
@@ -330,6 +332,60 @@ void _rfbLearnImpl();
 void _rfbReceiveImpl();
 void _rfbSendImpl(const RfbMessage& message);
 
+#if RELAY_SUPPORT
+
+namespace rfbridge {
+namespace settings {
+namespace keys {
+
+PROGMEM_STRING(On, "rfbON");
+PROGMEM_STRING(Off, "rfbOFF");
+
+} // namespace keys
+
+String off(size_t id) {
+    return getSetting({FPSTR(keys::Off), id});
+}
+
+String on(size_t id) {
+    return getSetting({FPSTR(keys::On), id});
+}
+
+void store(espurna::StringView prefix, size_t id, const String& value) {
+    const espurna::settings::Key key(prefix, id);
+    setSetting(key, value);
+    DEBUG_MSG_P(PSTR("[RF] Saved %s => \"%s\"\n"), key.c_str(), value.c_str());
+}
+
+void off(size_t id, const String& value) {
+    store(keys::Off, id, value);
+}
+
+void on(size_t id, const String& value) {
+    store(keys::On, id, value);
+}
+
+} // namespace settings
+} // namespace rfbridge
+
+void _rfbStore(size_t id, bool status, String code) {
+    if (status) {
+        rfbridge::settings::on(id, code);
+    } else {
+        rfbridge::settings::off(id, code);
+    }
+}
+
+String _rfbRetrieve(size_t id, bool status) {
+    if (status) {
+        return rfbridge::settings::on(id);
+    } else {
+        return rfbridge::settings::off(id);
+    }
+}
+
+#endif
+
 // -----------------------------------------------------------------------------
 // WEBUI INTEGRATION
 // -----------------------------------------------------------------------------
@@ -337,7 +393,10 @@ void _rfbSendImpl(const RfbMessage& message);
 #if WEB_SUPPORT
 
 void _rfbWebSocketOnVisible(JsonObject& root) {
-    root["rfbVisible"] = 1;
+    wsPayloadModule(root, PSTR("rfb"));
+#if RFB_PROVIDER == RFB_PROVIDER_RCSWITCH
+    wsPayloadModule(root, PSTR("rfbdirect"));
+#endif
 }
 
 #if RELAY_SUPPORT
@@ -350,8 +409,8 @@ void _rfbWebSocketSendCodeArray(JsonObject& root, size_t start, size_t size) {
 
     for (auto id = start; id < (start + size); ++id) {
         JsonArray& pair = codes.createNestedArray();
-        pair.add(rfbRetrieve(id, false));
-        pair.add(rfbRetrieve(id, true));
+        pair.add(rfbridge::settings::off(id));
+        pair.add(rfbridge::settings::on(id));
     }
 }
 
@@ -367,22 +426,40 @@ void _rfbWebSocketOnConnected(JsonObject& root) {
     root["rfbCount"] = relayCount();
 #endif
 #if RFB_PROVIDER == RFB_PROVIDER_RCSWITCH
-    root["rfbdirectVisible"] = 1;
     root["rfbRX"] = getSetting("rfbRX", RFB_RX_PIN);
     root["rfbTX"] = getSetting("rfbTX", RFB_TX_PIN);
 #endif
 }
 
-void _rfbWebSocketOnAction(uint32_t client_id, const char * action, JsonObject& data) {
+void _rfbWebSocketOnAction(uint32_t client_id, const char* action, JsonObject& data) {
 #if RELAY_SUPPORT
-    if (strcmp(action, "rfblearn") == 0) rfbLearn(data["id"], data["status"]);
-    if (strcmp(action, "rfbforget") == 0) rfbForget(data["id"], data["status"]);
-    if (strcmp(action, "rfbsend") == 0) rfbStore(data["id"], data["status"], data["data"].as<const char*>());
+    if (STRING_VIEW("rfb") == action) {
+        return;
+    }
+
+    auto idValue = data[F("id")];
+    if (!idValue.success()) {
+        return;
+    }
+
+    auto statusValue = data[F("status")];
+    if (!statusValue.success()) {
+        return;
+    }
+
+    const size_t id { idValue.as<size_t>() };
+    const size_t status { statusValue.as<bool>() };
+
+    if (STRING_VIEW("rfblearn") == action) {
+        rfbLearn(id, status);
+    } else if (STRING_VIEW("rfbforget") == action) {
+        rfbForget(id, status);
+    }
 #endif
 }
 
-bool _rfbWebSocketOnKeyCheck(const char * key, JsonVariant& value) {
-    return (strncmp(key, "rfb", 3) == 0);
+bool _rfbWebSocketOnKeyCheck(espurna::StringView key, const JsonVariant& value) {
+    return espurna::settings::query::samePrefix(key, STRING_VIEW("rfb"));
 }
 
 #endif // WEB_SUPPORT
@@ -417,68 +494,66 @@ bool _rfbCompare(const char* lhs, const char* rhs, size_t length) {
 // **always** expect full length code as input to simplify comparison
 // previous implementation tried to help MQTT / API requests to match based on the saved code,
 // thus requiring us to 'return' value from settings as the real code, replacing input
-RfbRelayMatch _rfbMatch(const char* code) {
-
+RfbRelayMatch _rfbMatch(espurna::StringView code) {
+    RfbRelayMatch matched;
     if (!relayCount()) {
-        return {};
+        return matched;
     }
-
-    const auto len = strlen(code);
 
     // we gather all available options, as the kv store might be defined in any order
     // scan kvs only once, since we want both ON and OFF options and don't want to depend on the relayCount()
-    RfbRelayMatch matched;
+    espurna::settings::foreach_prefix(
+        [code, &matched](espurna::StringView prefix, String key, const espurna::settings::kvs_type::ReadResult& value) {
+            if (code.length() != value.length()) {
+                return;
+            }
 
-    settings::internal::foreach([code, len, &matched](settings::kvs_type::KeyValueResult&& kv) {
-        const auto key = kv.key.read();
-        PayloadStatus status = key.startsWith(F("rfbON"))
-            ? PayloadStatus::On : key.startsWith(F("rfbOFF"))
-            ? PayloadStatus::Off : PayloadStatus::Unknown;
+            PayloadStatus status {
+                (prefix.c_str() == &rfbridge::settings::keys::On[0]) ? PayloadStatus::On :
+                (prefix.c_str() == &rfbridge::settings::keys::Off[0]) ? PayloadStatus::Off :
+                PayloadStatus::Unknown };
 
-        if (PayloadStatus::Unknown == status) {
-            return;
-        }
+            if (PayloadStatus::Unknown == status) {
+                return;
+            }
 
-        const auto value = kv.value.read();
-        if (len != value.length()) {
-            return;
-        }
+            if (!_rfbCompare(code.begin(), value.read().begin(), code.length())) {
+                return;
+            }
 
-        if (!_rfbCompare(code, value.c_str(), len)) {
-            return;
-        }
+            espurna::StringView id_view(key.begin() + prefix.length(), key.end());
+            if (!id_view.length() || (*id_view.begin()) == '\0') {
+                return;
+            }
 
-        // note: strlen is constexpr here
-        const char* id_ptr = key.c_str() + (
-            (PayloadStatus::On == status) ? strlen("rfbON") : strlen("rfbOFF"));
-        if (*id_ptr == '\0') {
-            return;
-        }
+            size_t id;
+            if (!tryParseId(id_view, relayCount(), id)) {
+                return;
+            }
 
-        size_t id;
-        if (!tryParseId(id_ptr, relayCount, id)) {
-            return;
-        }
+            // when we see the same id twice, we match the opposite statuses
+            if (matched && (id == matched.id())) {
+                matched.reset(matched.id(), PayloadStatus::Toggle);
+                return;
+            }
 
-        // when we see the same id twice, we match the opposite statuses
-        if (matched && (id == matched.id())) {
-            matched.reset(matched.id(), PayloadStatus::Toggle);
-            return;
-        }
-
-        matched.reset(matched ? std::min(id, matched.id()) : id, status);
-    });
-
+            matched.reset(matched ? std::min(id, matched.id()) : id, status);
+        },
+        {
+            rfbridge::settings::keys::On,
+            rfbridge::settings::keys::Off
+        });
 
     return matched;
-
 }
 
-void _rfbLearnFromString(std::unique_ptr<RfbLearn>& learn, const char* buffer) {
-    if (!learn) return;
+void _rfbLearnFromString(std::unique_ptr<RfbLearn>& learn, espurna::StringView buffer) {
+    if (!learn) {
+        return;
+    }
 
     DEBUG_MSG_P(PSTR("[RF] Learned relay ID %u after %u ms\n"), learn->id, millis() - learn->ts);
-    rfbStore(learn->id, learn->status, buffer);
+    _rfbStore(learn->id, learn->status, buffer.toString());
 
     // Websocket update needs to happen right here, since the only time
     // we send these in bulk is at the very start of the connection
@@ -492,10 +567,10 @@ void _rfbLearnFromString(std::unique_ptr<RfbLearn>& learn, const char* buffer) {
     learn.reset(nullptr);
 }
 
-bool _rfbRelayHandler(const char* buffer, bool locked = false) {
+bool _rfbRelayHandler(espurna::StringView payload, bool locked = false) {
     bool result { false };
 
-    auto match = _rfbMatch(buffer);
+    const auto match = _rfbMatch(payload);
     if (match) {
         DEBUG_MSG_P(PSTR("[RF] Matched with the relay ID %u\n"), match.id());
         _rfb_relay_status_lock.set(match.id(), locked);
@@ -517,34 +592,38 @@ bool _rfbRelayHandler(const char* buffer, bool locked = false) {
     return result;
 }
 
-void _rfbLearnStartFromPayload(const char* payload) {
+void _rfbLearnStartFromPayload(espurna::StringView payload) {
     // The payload must be the `relayID,mode` (where mode is either 0 or 1)
-    const char* sep = strchr(payload, ',');
-    if (nullptr == sep) {
+    auto it = std::find(payload.begin(), payload.end(), ',');
+    if (it == payload.end()) {
         return;
     }
 
     // ref. RelaysMax, we only have up to 2 digits
-    char relay[3] {0, 0, 0};
-    if ((sep - payload) > 2) {
+    if ((it + 1) == payload.end()) {
         return;
     }
 
-    std::copy(payload, sep, relay);
+    char relay[3] {0, 0, 0};
+    if (std::distance(payload.begin(), it) > 2) {
+        return;
+    }
+
+    std::copy(payload.begin(), it, relay);
 
     size_t id;
-    if (!tryParseId(relay, relayCount, id)) {
+    if (!tryParseId(relay, relayCount(), id)) {
         DEBUG_MSG_P(PSTR("[RF] Invalid relay ID (%u)\n"), id);
         return;
     }
 
-    ++sep;
-    if ((*sep == '0') || (*sep == '1')) {
-        rfbLearn(id, (*sep != '0'));
+    ++it;
+    if ((*it == '0') || (*it == '1')) {
+        rfbLearn(id, (*it != '0'));
     }
 }
 
-void _rfbLearnFromReceived(std::unique_ptr<RfbLearn>& learn, const char* buffer) {
+void _rfbLearnFromReceived(std::unique_ptr<RfbLearn>& learn, espurna::StringView buffer) {
     if (millis() - learn->ts > RFB_LEARN_TIMEOUT) {
         DEBUG_MSG_P(PSTR("[RF] Learn timeout after %u ms\n"), millis() - learn->ts);
         learn.reset(nullptr);
@@ -567,9 +646,9 @@ void _rfbEnqueue(uint8_t (&code)[RfbParser::PayloadSizeBasic], unsigned char rep
     _rfb_message_queue.push_back(RfbMessage(code, repeats));
 }
 
-bool _rfbEnqueue(const char* code, size_t length, unsigned char repeats = 1u) {
+bool _rfbEnqueue(espurna::StringView code, unsigned char repeats = 1u) {
     uint8_t buffer[RfbParser::PayloadSizeBasic] { 0u };
-    if (hexDecode(code, length, buffer, sizeof(buffer))) {
+    if (hexDecode(code.begin(), code.length(), buffer, sizeof(buffer))) {
         _rfbEnqueue(buffer, repeats);
         return true;
     }
@@ -579,7 +658,7 @@ bool _rfbEnqueue(const char* code, size_t length, unsigned char repeats = 1u) {
 }
 
 void _rfbSendRaw(const uint8_t* message, size_t size) {
-    Serial.write(message, size);
+    _rfb_port->write(message, size);
 }
 
 void _rfbAckImpl() {
@@ -588,8 +667,8 @@ void _rfbAckImpl() {
     };
 
     DEBUG_MSG_P(PSTR("[RF] Sending ACK\n"));
-    Serial.write(message, sizeof(message));
-    Serial.flush();
+    _rfb_port->write(message, sizeof(message));
+    _rfb_port->flush();
 }
 
 void _rfbLearnImpl() {
@@ -598,16 +677,16 @@ void _rfbLearnImpl() {
     };
 
     DEBUG_MSG_P(PSTR("[RF] Sending LEARN\n"));
-    Serial.write(message, sizeof(message));
-    Serial.flush();
+    _rfb_port->write(message, sizeof(message));
+    _rfb_port->flush();
 }
 
 void _rfbSendImpl(const RfbMessage& message) {
-    Serial.write(CodeStart);
-    Serial.write(CodeSendBasic);
+    _rfb_port->write(CodeStart);
+    _rfb_port->write(CodeSendBasic);
     _rfbSendRaw(message.code, sizeof(message.code));
-    Serial.write(CodeEnd);
-    Serial.flush();
+    _rfb_port->write(CodeEnd);
+    _rfb_port->flush();
 }
 
 void _rfbParse(uint8_t code, const std::vector<uint8_t>& payload) {
@@ -648,7 +727,10 @@ void _rfbParse(uint8_t code, const std::vector<uint8_t>& payload) {
 #endif
 
             for (auto& handler : _rfb_code_handlers) {
-                handler(RfbDefaultProtocol, buffer + 12);
+                const auto begin = std::begin(buffer) + 12;
+                const auto end = std::end(buffer);
+                handler(RfbDefaultProtocol,
+                    espurna::StringView(begin, end));
             }
         }
         break;
@@ -669,7 +751,10 @@ void _rfbParse(uint8_t code, const std::vector<uint8_t>& payload) {
 
             // ref. https://github.com/Portisch/RF-Bridge-EFM8BB1/wiki/0xA6#example-of-a-received-decoded-protocol
             for (auto& handler : _rfb_code_handlers) {
-                handler(payload[0], buffer + 2);
+                const auto begin = std::begin(buffer) + 2;
+                const auto end = std::end(buffer);
+                handler(payload[0],
+                    espurna::StringView(begin, end));
             }
         } else {
             DEBUG_MSG_P(PSTR("[RF] Received 0x%02X (%u bytes)\n"), code, payload.size());
@@ -684,8 +769,8 @@ static RfbParser _rfb_parser(_rfbParse);
 
 void _rfbReceiveImpl() {
 
-    while (Serial.available()) {
-        auto c = Serial.read();
+    while (_rfb_port->available()) {
+        auto c = _rfb_port->read();
         if (c < 0) {
             continue;
         }
@@ -699,18 +784,29 @@ void _rfbReceiveImpl() {
 }
 
 // note that we don't care about queue here, just dump raw message as-is
-void _rfbSendRawFromPayload(const char * raw) {
-    auto rawlen = strlen(raw);
-    if (rawlen > (RfbParser::MessageSizeMax * 2)) return;
-    if ((rawlen < 6) || (rawlen & 1)) return;
+void _rfbSendRawFromPayload(espurna::StringView raw) {
+    if (raw.length() > (RfbParser::MessageSizeMax * 2)) {
+        return;
+    }
 
-    DEBUG_MSG_P(PSTR("[RF] Sending RAW MESSAGE \"%s\"\n"), raw);
+    if ((raw.length() < 6) || (raw.length() & 1)) {
+        return;
+    }
+
+    DEBUG_MSG_P(PSTR("[RF] Sending RAW MESSAGE \"%.*s\"\n"),
+            raw.length(), raw.begin());
 
     size_t bytes = 0;
     uint8_t message[RfbParser::MessageSizeMax] { 0u };
-    if ((bytes = hexDecode(raw, rawlen, message, sizeof(message)))) {
-        if (message[0] != CodeStart) return;
-        if (message[bytes - 1] != CodeEnd) return;
+    if ((bytes = hexDecode(raw.begin(), raw.length(), message, sizeof(message)))) {
+        if (message[0] != CodeStart) {
+            return;
+        }
+
+        if (message[bytes - 1] != CodeEnd) {
+            return;
+        }
+
         _rfbSendRaw(message, bytes);
     }
 }
@@ -731,37 +827,38 @@ size_t _rfb_bytes_for_bits(size_t bits) {
     return bytes;
 }
 
-// TODO: RCSwitch code type: long unsigned int != uint32_t, thus the specialization
-static_assert(sizeof(uint32_t) == sizeof(long unsigned int), "");
-
+// internally, library encodes the received data payload into an integer
+// as the result, we are capped to 8bytes to things larger than that are silently ignored
+// resulting type depends on the currently used rcswitch implementation
+// (also notice the use of `long unsigned int`, since we have strict type match)
 template <typename T>
-T _rfb_bswap(T value);
+inline T _rfb_bswap(T);
 
 template <>
-[[gnu::unused]] uint32_t _rfb_bswap(uint32_t value) {
+[[gnu::unused]] inline uint32_t _rfb_bswap(uint32_t value) {
     return __builtin_bswap32(value);
 }
 
 template <>
-[[gnu::unused]] long unsigned int _rfb_bswap(long unsigned int value) {
-    return __builtin_bswap32(value);
-}
-
-template <>
-[[gnu::unused]] uint64_t _rfb_bswap(uint64_t value) {
+[[gnu::unused]] inline uint64_t _rfb_bswap(uint64_t value) {
     return __builtin_bswap64(value);
 }
 
+template <>
+[[gnu::unused]] inline long unsigned int _rfb_bswap(long unsigned int value) {
+    return __builtin_bswap32(value);
 }
+
+} // namespace
 
 void _rfbEnqueue(uint8_t protocol, uint16_t timing, uint8_t bits, RfbMessage::code_type code, unsigned char repeats = 1u) {
     if (!_rfb_transmit) return;
     _rfb_message_queue.push_back(RfbMessage{protocol, timing, bits, code, repeats});
 }
 
-void _rfbEnqueue(const char* message, size_t length, unsigned char repeats = 1u) {
+void _rfbEnqueue(espurna::StringView message, unsigned char repeats = 1u) {
     uint8_t buffer[RfbMessage::BufferSize] { 0u };
-    if (hexDecode(message, length, buffer, sizeof(buffer))) {
+    if (hexDecode(message.begin(), message.length(), buffer, sizeof(buffer))) {
         const auto bytes = _rfb_bytes_for_bits(buffer[4]);
 
         uint8_t raw_code[sizeof(RfbMessage::code_type)] { 0u };
@@ -885,7 +982,10 @@ void _rfbReceiveImpl() {
 #endif
 
         for (auto& handler : _rfb_code_handlers) {
-            handler(message[1], buffer + 10);
+            const auto begin = std::begin(buffer) + 10;
+            const auto end = std::end(buffer);
+            handler(message[1],
+                espurna::StringView(begin, end));
         }
     }
 
@@ -920,52 +1020,49 @@ void _rfbSendQueued() {
 }
 
 // Check if the payload looks like a HEX code (plus comma, specifying the 'repeats' arg for the queue)
-void _rfbSendFromPayload(const char * payload) {
-    size_t len { strlen(payload) };
-    if (!len) {
+void _rfbSendFromPayload(espurna::StringView payload) {
+    if (!payload.length()) {
         return;
     }
 
     decltype(_rfb_repeats) repeats { _rfb_repeats };
 
-    const char* sep { strchr(payload, ',') };
-    if (sep) {
-        len -= strlen(sep);
-
-        sep += 1;
-        if ('\0' == *sep) return;
-        if ('-' == *sep) return;
-
-        char *endptr = nullptr;
-        repeats = strtoul(sep, &endptr, 10);
-        if (endptr == payload || endptr[0] != '\0') {
+    auto it = std::find(payload.begin(), payload.end(), ',');
+    if (it != payload.end()) {
+        it += 1;
+        if ((it == payload.end()) || (*it == '\0') || (*it == '-')) {
             return;
         }
+
+        const auto result = parseUnsigned(
+            espurna::StringView(it, payload.end()), 10);
+        if (!result.ok) {
+            return;
+        }
+
+        repeats = result.value;
     }
 
-    if (!len || (len & 1)) {
+    payload = espurna::StringView(it, payload.end());
+    if (!payload.length()) {
         return;
     }
 
-    DEBUG_MSG_P(PSTR("[RF] Enqueuing MESSAGE '%s' %u time(s)\n"), payload, repeats);
+    DEBUG_MSG_P(PSTR("[RF] Enqueuing MESSAGE '%.*s' %u time(s)\n"),
+            payload.length(), payload.begin(), repeats);
 
     // We postpone the actual sending until the loop, as we may've been called from MQTT or HTTP API
     // RFB_PROVIDER implementation should select the appropriate de-serialization function
-    _rfbEnqueue(payload, len, repeats);
+    _rfbEnqueue(payload, repeats);
 }
 
-void rfbSend(const char* code) {
+void rfbSend(espurna::StringView code) {
     _rfbSendFromPayload(code);
-}
-
-void rfbSend(const String& code) {
-    _rfbSendFromPayload(code.c_str());
 }
 
 #if MQTT_SUPPORT
 
-void _rfbMqttCallback(unsigned int type, const char * topic, char * payload) {
-
+void _rfbMqttCallback(unsigned int type, espurna::StringView topic, espurna::StringView payload) {
     if (type == MQTT_CONNECT_EVENT) {
 
 #if RELAY_SUPPORT
@@ -983,8 +1080,7 @@ void _rfbMqttCallback(unsigned int type, const char * topic, char * payload) {
     }
 
     if (type == MQTT_MESSAGE_EVENT) {
-
-        String t = mqttMagnitude((char *) topic);
+        auto t = mqttMagnitude(topic);
 
 #if RELAY_SUPPORT
         if (t.equals(MQTT_TOPIC_RFLEARN)) {
@@ -1045,7 +1141,7 @@ void _rfbApiSetup() {
                     _rfb_learn->id, _rfb_learn->status ? 't' : 'f'
                 );
             } else {
-                snprintf_P(buffer, sizeof(buffer), PSTR("waiting"));
+                memcpy_P(buffer, PSTR("waiting"), sizeof("waiting"));
             }
             request.send(buffer);
             return true;
@@ -1061,7 +1157,7 @@ void _rfbApiSetup() {
     apiRegister(F(MQTT_TOPIC_RFRAW),
         apiOk, // just a stub, nothing to return
         [](ApiRequest& request) {
-            _rfbSendRawFromPayload(request.param(F("value")).c_str());
+            _rfbSendRawFromPayload(request.param(F("value")));
             return true;
         }
     );
@@ -1073,8 +1169,8 @@ void _rfbApiSetup() {
 
 #if TERMINAL_SUPPORT
 
-void _rfbCommandStatusDispatch(const terminal::CommandContext& ctx, size_t id, const String& payload, RelayStatusCallback callback) {
-    auto parsed = rpcParsePayload(payload.c_str());
+void _rfbCommandStatusDispatch(::terminal::CommandContext&& ctx, size_t id, RelayStatusCallback callback) {
+    const auto parsed = rpcParsePayload(ctx.argv[2]);
     switch (parsed) {
     case PayloadStatus::On:
     case PayloadStatus::Off:
@@ -1087,68 +1183,87 @@ void _rfbCommandStatusDispatch(const terminal::CommandContext& ctx, size_t id, c
     }
 }
 
-void _rfbInitCommands() {
+PROGMEM_STRING(RfbCommandSend, "RFB.SEND");
 
-    terminalRegisterCommand(F("RFB.SEND"), [](const terminal::CommandContext& ctx) {
-        if (ctx.argc == 2) {
-            rfbSend(ctx.argv[1]);
-            return;
-        }
+static void _rfbCommandSend(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() == 2) {
+        rfbSend(ctx.argv[1]);
+        return;
+    }
 
-        terminalError(ctx, F("RFB.SEND <CODE>"));
-    });
+    terminalError(ctx, F("RFB.SEND <CODE>"));
+}
 
 #if RELAY_SUPPORT
-    terminalRegisterCommand(F("RFB.LEARN"), [](const terminal::CommandContext& ctx) {
-        if (ctx.argc != 3) {
-            terminalError(ctx, F("RFB.LEARN <ID> <STATUS>"));
-            return;
-        }
+PROGMEM_STRING(RfbCommandLearn, "RFB.LEARN");
 
-        size_t id;
-        if (!tryParseId(ctx.argv[1].c_str(), relayCount, id)) {
-            terminalError(ctx, F("Invalid relay ID"));
-            return;
-        }
+static void _rfbCommandLearn(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() != 3) {
+        terminalError(ctx, F("RFB.LEARN <ID> <STATUS>"));
+        return;
+    }
 
-        _rfbCommandStatusDispatch(ctx, id, ctx.argv[2], rfbLearn);
-    });
+    size_t id;
+    if (!tryParseId(ctx.argv[1], relayCount(), id)) {
+        terminalError(ctx, F("Invalid relay ID"));
+        return;
+    }
 
-    terminalRegisterCommand(F("RFB.FORGET"), [](const terminal::CommandContext& ctx) {
-        if (ctx.argc < 2) {
-            terminalError(ctx, F("RFB.FORGET <ID> [<STATUS>]"));
-            return;
-        }
+    _rfbCommandStatusDispatch(std::move(ctx), id, rfbLearn);
+}
 
-        size_t id;
-        if (!tryParseId(ctx.argv[1].c_str(), relayCount, id)) {
-            terminalError(ctx, F("Invalid relay ID"));
-            return;
-        }
+PROGMEM_STRING(RfbCommandForget, "RFB.FORGET");
 
-        if (ctx.argc == 3) {
-            _rfbCommandStatusDispatch(ctx, id, ctx.argv[2], rfbForget);
-            return;
-        }
+static void _rfbCommandForget(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() < 2) {
+        terminalError(ctx, F("RFB.FORGET <ID> [<STATUS>]"));
+        return;
+    }
 
-        rfbForget(id, true);
-        rfbForget(id, false);
+    size_t id;
+    if (!tryParseId(ctx.argv[1], relayCount(), id)) {
+        terminalError(ctx, F("Invalid relay ID"));
+        return;
+    }
 
-        terminalOK(ctx);
-    });
+    if (ctx.argv.size() == 3) {
+        _rfbCommandStatusDispatch(std::move(ctx), id, rfbForget);
+        return;
+    }
+
+    rfbForget(id, true);
+    rfbForget(id, false);
+
+    terminalOK(ctx);
+}
 #endif // if RELAY_SUPPORT
 
 #if RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
-    terminalRegisterCommand(F("RFB.WRITE"), [](const terminal::CommandContext& ctx) {
-        if (ctx.argc != 2) {
-            terminalError(ctx, F("RFB.WRITE <PAYLOAD>"));
-            return;
-        }
-        _rfbSendRawFromPayload(ctx.argv[1].c_str());
-        terminalOK(ctx);
-    });
+PROGMEM_STRING(RfbCommandWrite, "RFB.WRITE");
+
+static void _rfbCommandWrite(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() != 2) {
+        terminalError(ctx, F("RFB.WRITE <PAYLOAD>"));
+        return;
+    }
+    _rfbSendRawFromPayload(ctx.argv[1]);
+    terminalOK(ctx);
+}
 #endif
 
+static constexpr ::terminal::Command RfbCommands[] PROGMEM {
+    {RfbCommandSend, _rfbCommandSend},
+#if RELAY_SUPPORT
+    {RfbCommandLearn, _rfbCommandLearn},
+    {RfbCommandForget, _rfbCommandForget},
+#endif
+#if RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
+    {RfbCommandWrite, _rfbCommandWrite},
+#endif
+};
+
+void _rfbCommandsSetup() {
+    espurna::terminal::add(RfbCommands);
 }
 
 #endif // TERMINAL_SUPPORT
@@ -1157,17 +1272,15 @@ void _rfbInitCommands() {
 // PUBLIC
 // -----------------------------------------------------------------------------
 
-void rfbStore(size_t id, bool status, const char * code) {
-    SettingsKey key { status ? F("rfbON") : F("rfbOFF"), id };
-    setSetting(key, code);
-    DEBUG_MSG_P(PSTR("[RF] Saved %s => \"%s\"\n"), key.c_str(), code);
+#if RELAY_SUPPORT
+
+void rfbStore(size_t id, bool status, String code) {
+    _rfbStore(id, status, std::move(code));
 }
 
 String rfbRetrieve(size_t id, bool status) {
-    return getSetting({ status ? F("rfbON") : F("rfbOFF"), id });
+    return _rfbRetrieve(id, status);
 }
-
-#if RELAY_SUPPORT
 
 void rfbStatus(size_t id, bool status) {
     // TODO: This is a left-over from the old implementation. Right now we set this lock when relay handler
@@ -1176,7 +1289,7 @@ void rfbStatus(size_t id, bool status) {
     // TODO: Consider having 'origin' of the relay change. Either supply relayStatus with an additional arg,
     //       or track these statuses directly.
     if (!_rfb_relay_status_lock[id]) {
-        rfbSend(rfbRetrieve(id, status));
+        rfbSend(_rfbRetrieve(id, status));
     }
 
     _rfb_relay_status_lock[id] = false;
@@ -1209,60 +1322,65 @@ void rfbForget(size_t id, bool status) {
 
 #if RELAY_SUPPORT && (RFB_PROVIDER == RFB_PROVIDER_RCSWITCH)
 
+namespace {
+
 // TODO: remove this in 1.16.0
 
-void _rfbSettingsMigrate(int version) {
-    if (!version || (version > 4)) {
-        return;
+bool _rfbSettingsMigrateCode(String& out, const String& in) {
+    out = "";
+
+    if (18 == in.length()) {
+        uint8_t bits { 0u };
+        if (!hexDecode(in.c_str() + 8, 2, &bits, 1)) {
+            return false;
+        }
+
+        auto bytes = _rfb_bytes_for_bits(bits);
+        out = in.substring(0, 10);
+        out += (in.c_str() + in.length() - (2 * bytes));
+
+        return in != out;
     }
 
-    auto migrate_code = [](String& out, const String& in) -> bool {
-        out = "";
+    return false;
+}
 
-        if (18 == in.length()) {
-            uint8_t bits { 0u };
-            if (!hexDecode(in.c_str() + 8, 2, &bits, 1)) {
-                return false;
+void _rfbSettingsMigrate(int version) {
+    if (version < 4) {
+        String buffer;
+
+        auto relays = relayCount();
+        for (decltype(relays) id = 0; id < relays; ++id) {
+            const espurna::settings::Key on(F("rfbON"), id);
+            if (_rfbSettingsMigrateCode(buffer, getSetting(on))) {
+                setSetting(on, buffer);
             }
 
-            auto bytes = _rfb_bytes_for_bits(bits);
-            out = in.substring(0, 10);
-            out += (in.c_str() + in.length() - (2 * bytes));
-
-            return in != out;
-        }
-
-        return false;
-    };
-
-    String buffer;
-
-    auto relays = relayCount();
-    for (decltype(relays) id = 0; id < relays; ++id) {
-        SettingsKey on_key {F("rfbON"), id};
-        if (migrate_code(buffer, getSetting(on_key))) {
-            setSetting(on_key, buffer);
-        }
-
-        SettingsKey off_key {F("rfbOFF"), id};
-        if (migrate_code(buffer, getSetting(off_key))) {
-            setSetting(off_key, buffer);
+            const espurna::settings::Key off(F("rfbOFF"), id);
+            if (_rfbSettingsMigrateCode(buffer, getSetting(off))) {
+                setSetting(off, buffer);
+            }
         }
     }
 }
 
+} // namespace
+
 #endif
 
 void rfbSetup() {
-
 #if RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
+    const auto port = uartPort(RFB_PORT - 1);
+    if (!port || (!port->tx || !port->rx)) {
+        return;
+    }
 
+    _rfb_port = port->stream;
     _rfb_parser.reserve(RfbParser::MessageSizeBasic);
-
 #elif RFB_PROVIDER == RFB_PROVIDER_RCSWITCH
 
 #if RELAY_SUPPORT
-    _rfbSettingsMigrate(migrateVersion());
+    migrateVersion(_rfbSettingsMigrate);
 #endif
 
     {
@@ -1274,7 +1392,7 @@ void rfbSetup() {
             return;
         }
 
-        _rfb_modem = new RCSwitch();
+        _rfb_modem.reset(new RCSwitch());
         if (gpioLock(rx)) {
             _rfb_receive = true;
             _rfb_modem->enableReceive(rx);
@@ -1292,8 +1410,8 @@ void rfbSetup() {
 #endif
 
 #if RELAY_SUPPORT
-    relaySetStatusNotify(rfbStatus);
-    relaySetStatusChange(rfbStatus);
+    relayOnStatusNotify(rfbStatus);
+    relayOnStatusChange(rfbStatus);
 #endif
 
 #if MQTT_SUPPORT
@@ -1316,7 +1434,7 @@ void rfbSetup() {
 #endif
 
 #if TERMINAL_SUPPORT
-    _rfbInitCommands();
+    _rfbCommandsSetup();
 #endif
 
     _rfb_repeats = getSetting("rfbRepeat", RFB_SEND_REPEATS);

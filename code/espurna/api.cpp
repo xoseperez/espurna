@@ -7,17 +7,19 @@ Copyright (C) 2020-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 
 */
 
-#include "api.h"
-
 // -----------------------------------------------------------------------------
 
-#include "system.h"
-#include "rpc.h"
+#include "espurna.h"
+
+#if API_SUPPORT
+#include "api.h"
+#endif
 
 #if WEB_SUPPORT
-#include "web.h"
 #include <ESPAsyncTCP.h>
 #include <ArduinoJson.h>
+
+#include "web.h"
 #endif
 
 #include <algorithm>
@@ -26,9 +28,14 @@ Copyright (C) 2020-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include <forward_list>
 #include <vector>
 
+#include "system.h"
+#include "rpc.h"
+
+#include "api_path.h"
+
 // -----------------------------------------------------------------------------
 
-PathParts::PathParts(const String& path) :
+PathParts::PathParts(espurna::StringView path) :
     _path(path)
 {
     if (!_path.length()) {
@@ -40,7 +47,7 @@ PathParts::PathParts(const String& path) :
     size_t length { 0ul };
     size_t offset { 0ul };
 
-    const char* p { _path.c_str() };
+    const char* p { _path.begin() };
     if (*p == '\0') {
        goto error;
     }
@@ -193,81 +200,152 @@ error:
     return false;
 }
 
-String ApiRequest::wildcard(int index) const {
+espurna::StringView PathParts::wildcard(const PathParts& pattern, const PathParts& value, int index) {
     if (index < 0) {
         index = std::abs(index + 1);
     }
 
-    if (std::abs(index) >= _pattern.parts().size()) {
-        return _empty_string();
-    }
+    espurna::StringView out;
 
-    int counter { 0 };
-    auto& pattern = _pattern.parts();
+    if (std::abs(index) < pattern.parts().size()) {
+        const auto& pattern_parts = pattern.parts();
+        int counter { 0 };
 
-    for (unsigned int part = 0; part < pattern.size(); ++part) {
-        auto& lhs = pattern[part];
-        if (PathPart::Type::SingleWildcard == lhs.type) {
-            if (counter == index) {
-                auto& rhs = _parts.parts()[part];
-                return _parts.path().substring(rhs.offset, rhs.offset + rhs.length);
+        for (size_t part = 0; part < pattern.size(); ++part) {
+            const auto& lhs = pattern_parts[part];
+            const auto& rhs = value.parts()[part];
+
+            const auto path = value.path();
+
+            switch (lhs.type) {
+            case PathPart::Type::Value:
+            case PathPart::Type::Unknown:
+                break;
+
+            case PathPart::Type::SingleWildcard:
+                if (counter == index) {
+                    out = espurna::StringView(
+                        path.begin() + rhs.offset, path.begin() + rhs.offset + rhs.length);
+                    return out;
+                }
+                ++counter;
+                break;
+
+            case PathPart::Type::MultiWildcard:
+                if (counter == index) {
+                    out = espurna::StringView(
+                        path.begin() + rhs.offset, path.end());
+                }
+                return out;
             }
-            ++counter;
         }
     }
 
-    return _empty_string();
+    return out;
+}
+
+size_t PathParts::wildcards(const PathParts& pattern) {
+    size_t out { 0 };
+
+    for (const auto& part : pattern) {
+        switch (part.type) {
+        case PathPart::Type::Unknown:
+        case PathPart::Type::Value:
+        case PathPart::Type::MultiWildcard:
+            break;
+        case PathPart::Type::SingleWildcard:
+            ++out;
+            break;
+        }
+    }
+
+    return out;
+}
+
+#if WEB_SUPPORT
+String ApiRequest::wildcard(int index) const {
+    return PathParts::wildcard(_pattern, _parts, index).toString();
 }
 
 size_t ApiRequest::wildcards() const {
-    size_t result { 0ul };
-    for (auto& part : _pattern) {
-        if (PathPart::Type::SingleWildcard == part.type) {
-            ++result;
-        }
-    }
-
-    return result;
+    return PathParts::wildcards(_pattern);
 }
+#endif
 
 // -----------------------------------------------------------------------------
 
 #if API_SUPPORT
+namespace espurna {
+namespace api {
+namespace content_type {
+namespace {
 
-bool _apiAccepts(AsyncWebServerRequest* request, const __FlashStringHelper* str) {
-    auto* header = request->getHeader(F("Accept"));
-    if (header) {
-        return
-            (header->value().indexOf(F("*/*")) >= 0)
-         || (header->value().indexOf(str) >= 0);
+STRING_VIEW_INLINE(Anything, "*/*");
+STRING_VIEW_INLINE(Text, "text/plain");
+STRING_VIEW_INLINE(Json, "application/json");
+STRING_VIEW_INLINE(Form, "application/x-www-form-urlencoded");
+
+} // namespace
+} // namespace content_type
+
+StringView Request::param(const String& name) {
+    const auto* result = _request.getParam(name, HTTP_PUT == _request.method());
+
+    espurna::StringView out;
+    if (result) {
+        out = result->value();
     }
 
-    return false;
+    return out;
 }
 
-bool _apiAcceptsText(AsyncWebServerRequest* request) {
-    return _apiAccepts(request, F("text/plain"));
-}
-
-bool _apiAcceptsJson(AsyncWebServerRequest* request) {
-    return _apiAccepts(request, F("application/json"));
-}
-
-bool _apiMatchHeader(AsyncWebServerRequest* request, const __FlashStringHelper* key, const __FlashStringHelper* value) {
-    auto* header = request->getHeader(key);
-    if (header) {
-        return header->value().equals(value);
+void Request::send(const String& payload) {
+    if (_done) {
+        return;
     }
 
-    return false;
+    _done = true;
+    if (payload.length()) {
+        _request.send(200,
+            content_type::Text.toString(),
+            payload);
+    } else {
+        _request.send(204);
+    }
 }
 
-bool _apiIsJsonContent(AsyncWebServerRequest* request) {
-    return _apiMatchHeader(request, F("Content-Type"), F("application/json"));
+namespace {
+
+bool accepts(AsyncWebServerRequest* request, StringView pattern) {
+    STRING_VIEW_INLINE(Accept, "Accept");
+    auto* header = request->getHeader(Accept.toString());
+    if (!header) {
+        return true;
+    }
+
+    return (header->value().indexOf(
+                StringView(content_type::Anything).toString()) >= 0)
+        || (header->value().indexOf(pattern.toString()) >= 0);
 }
 
-bool _apiIsFormDataContent(AsyncWebServerRequest* request) {
-    return _apiMatchHeader(request, F("Content-Type"), F("application/x-www-form-urlencoded"));
+bool accepts_text(AsyncWebServerRequest* request) {
+    return accepts(request, content_type::Text);
+}
+
+bool accepts_json(AsyncWebServerRequest* request) {
+    return accepts(request, content_type::Json);
+}
+
+bool is_content_type(AsyncWebServerRequest* request, StringView value) {
+    return value == request->contentType();
+}
+
+bool is_form_data(AsyncWebServerRequest* request) {
+    return is_content_type(request, content_type::Form);
+}
+
+bool is_json(AsyncWebServerRequest* request) {
+    return is_content_type(request, content_type::Json);
 }
 
 // Because the webserver request is split between multiple separate function invocations, we need to preserve some state.
@@ -286,27 +364,36 @@ bool _apiIsFormDataContent(AsyncWebServerRequest* request) {
 // - ALL headers are parsed (and we could access those during filter and canHandle callbacks), but we need to explicitly
 //   request them to stay in memory so that the actual handler can work with them
 
-void _apiAttachHelper(AsyncWebServerRequest& request, ApiRequestHelper&& helper) {
-    request._tempObject = new ApiRequestHelper(std::move(helper));
-    request.onDisconnect([&]() {
-        auto* ptr = reinterpret_cast<ApiRequestHelper*>(request._tempObject);
-        delete ptr;
-        request._tempObject = nullptr;
-    });
-    request.addInterestingHeader(F("Api-Key"));
+void attach_helper(AsyncWebServerRequest& request, RequestHelper&& helper) {
+    request._tempObject = new RequestHelper(std::move(helper));
+    request.onDisconnect(
+        [&]() {
+            auto* ptr = reinterpret_cast<RequestHelper*>(request._tempObject);
+            delete ptr;
+            request._tempObject = nullptr;
+        });
+    request.addInterestingHeader(
+        STRING_VIEW("Api-Key").toString());
+    request.addInterestingHeader(
+        STRING_VIEW("Accept").toString());
 }
 
-class ApiBaseWebHandler : public AsyncWebHandler {
+class BaseWebHandler : public AsyncWebHandler {
 public:
-    ApiBaseWebHandler() = delete;
-    ApiBaseWebHandler(const ApiBaseWebHandler&) = delete;
-    ApiBaseWebHandler(ApiBaseWebHandler&&) = delete;
+    BaseWebHandler() = delete;
+
+    BaseWebHandler(const BaseWebHandler&) = delete;
+    BaseWebHandler& operator=(const BaseWebHandler&) = delete;
+
+    BaseWebHandler(BaseWebHandler&&) = delete;
+    BaseWebHandler& operator=(BaseWebHandler&&) = delete;
 
     // In case this needs to be copied or moved, ensure PathParts copy references the new object's string
-
-    template <typename Pattern>
-    explicit ApiBaseWebHandler(Pattern&& pattern) :
-        _pattern(std::forward<Pattern>(pattern)),
+    template <typename T,
+              typename = typename std::enable_if<
+                  std::is_constructible<String, T>::value>::type>
+    explicit BaseWebHandler(T&& pattern) :
+        _pattern(std::forward<T>(pattern)),
         _parts(_pattern)
     {}
 
@@ -333,78 +420,23 @@ private:
 // TODO: somehow detect partial data and buffer (optionally)
 // TODO: POST instead of PUT?
 
-class ApiJsonWebHandler final : public ApiBaseWebHandler {
+class JsonWebHandler final : public BaseWebHandler {
 public:
     static constexpr size_t BufferSize { API_JSON_BUFFER_SIZE };
 
-    struct ReadOnlyStream : public Stream {
-        ReadOnlyStream() = delete;
-        explicit ReadOnlyStream(const uint8_t* buffer, size_t size) :
-            _buffer(buffer),
-            _size(size)
-        {}
+    JsonWebHandler() = delete;
 
-        int available() override {
-            return _size - _index;
-        }
+    JsonWebHandler(const JsonWebHandler&) = delete;
+    JsonWebHandler& operator=(const JsonWebHandler&) = delete;
 
-        int peek() override {
-            if (_index < _size) {
-                return static_cast<int>(_buffer[_index]);
-            }
+    JsonWebHandler(JsonWebHandler&&) = delete;
+    JsonWebHandler& operator=(JsonWebHandler&&) = delete;
 
-            return -1;
-        }
-
-        int read() override {
-            auto peeked = peek();
-            if (peeked >= 0) {
-                ++_index;
-            }
-
-            return peeked;
-        }
-
-        // since we are fixed in size, no need for any timeouts and the only available option is to return full chunk of data
-        size_t readBytes(uint8_t* ptr, size_t size) override {
-            if ((_index < _size) && ((_size - _index) >= size)) {
-                std::copy(_buffer + _index, _buffer + _index + size, ptr);
-                _index += size;
-                return size;
-            }
-
-            return 0;
-        }
-
-        size_t readBytes(char* ptr, size_t size) override {
-			return readBytes(reinterpret_cast<uint8_t*>(ptr), size);
-		}
-
-        void flush() override {
-        }
-
-        size_t write(const uint8_t*, size_t) override {
-            return 0;
-        }
-
-        size_t write(uint8_t) override {
-            return 0;
-        }
-
-        const uint8_t* _buffer;
-        const size_t _size;
-        size_t _index { 0 };
-    };
-
-    ApiJsonWebHandler() = delete;
-    ApiJsonWebHandler(const ApiJsonWebHandler&) = delete;
-    ApiJsonWebHandler(ApiJsonWebHandler&&) = delete;
-
-    template <typename Path, typename Callback>
-    ApiJsonWebHandler(Path&& path, Callback&& get, Callback&& put) :
-        ApiBaseWebHandler(std::forward<Path>(path)),
-        _get(std::forward<Callback>(get)),
-        _put(std::forward<Callback>(put))
+    template <typename Path, typename Get, typename Put>
+    JsonWebHandler(Path&& path, Get&& get, Put&& put) :
+        BaseWebHandler(std::forward<Path>(path)),
+        _get(std::forward<Get>(get)),
+        _put(std::forward<Put>(put))
     {}
 
     bool isRequestHandlerTrivial() override {
@@ -416,22 +448,19 @@ public:
             return false;
         }
 
-        if (!_apiAcceptsJson(request)) {
-            return false;
-        }
-
-        auto helper = ApiRequestHelper(*request, parts());
+        auto helper = RequestHelper(*request, parts());
         if (helper.match() && apiAuthenticate(request)) {
             switch (request->method()) {
             case HTTP_HEAD:
                 return true;
             case HTTP_PUT:
-                if (!_apiIsJsonContent(request)) {
+                if (!is_json(request)) {
                     return false;
                 }
                 if (!_put) {
                     return false;
                 }
+                // fallthrough!
             case HTTP_GET:
                 if (!_get) {
                     return false;
@@ -440,15 +469,15 @@ public:
             default:
                 return false;
             }
-            _apiAttachHelper(*request, std::move(helper));
+            attach_helper(*request, std::move(helper));
             return true;
         }
 
         return false;
     }
 
-    void _handleGet(AsyncWebServerRequest* request, ApiRequest& apireq) {
-        DynamicJsonBuffer jsonBuffer(API_JSON_BUFFER_SIZE);
+    void _handleGet(AsyncWebServerRequest* request, Request& apireq) {
+        DynamicJsonBuffer jsonBuffer(BufferSize);
         JsonObject& root = jsonBuffer.createObject();
         if (!_get(apireq, root)) {
             request->send(500);
@@ -456,7 +485,8 @@ public:
         }
 
         if (!apireq.done()) {
-            AsyncResponseStream *response = request->beginResponseStream("application/json", root.measureLength() + 1);
+            auto* response = request->beginResponseStream(
+                content_type::Json.toString(), root.measureLength() + 1);
             root.printTo(*response);
             request->send(response);
             return;
@@ -468,16 +498,17 @@ public:
     void _handlePut(AsyncWebServerRequest* request, uint8_t* data, size_t size) {
         // XXX: arduinojson v5 de-serializer will happily read garbage from raw ptr, since there's no length limit
         //      this is fixed in v6 though. for now, use a wrapper, but be aware that this actually uses more mem for the jsonbuffer
-        DynamicJsonBuffer jsonBuffer(API_JSON_BUFFER_SIZE);
-        ReadOnlyStream stream(data, size);
+        auto* ptr = reinterpret_cast<const char*>(data);
+        auto reader = StringView(ptr, ptr + size);
 
-        JsonObject& root = jsonBuffer.parseObject(stream);
+        DynamicJsonBuffer jsonBuffer(BufferSize);
+        JsonObject& root = jsonBuffer.parseObject(reader);
         if (!root.success()) {
             request->send(500);
             return;
         }
 
-        auto& helper = *reinterpret_cast<ApiRequestHelper*>(request->_tempObject);
+        auto& helper = *reinterpret_cast<RequestHelper*>(request->_tempObject);
 
         auto apireq = helper.request();
         if (!_put(apireq, root)) {
@@ -499,7 +530,14 @@ public:
     }
 
     void handleRequest(AsyncWebServerRequest* request) override {
-        auto& helper = *reinterpret_cast<ApiRequestHelper*>(request->_tempObject);
+        if (!accepts_json(request)) {
+            request->send(406,
+                content_type::Text.toString(),
+                content_type::Json.toString());
+            return;
+        }
+
+        auto& helper = *reinterpret_cast<RequestHelper*>(request->_tempObject);
 
         switch (request->method()) {
         case HTTP_HEAD:
@@ -522,17 +560,12 @@ public:
         }
     }
 
-    const String& pattern() const {
-        return ApiBaseWebHandler::pattern();
-    }
-
-    const PathParts& parts() const {
-        return ApiBaseWebHandler::parts();
-    }
+    using BaseWebHandler::pattern;
+    using BaseWebHandler::parts;
 
 private:
-    ApiJsonHandler _get;
-    ApiJsonHandler _put;
+    JsonHandler _get;
+    JsonHandler _put;
 };
 
 // ESPurna legacy API configuration
@@ -541,13 +574,13 @@ private:
 // MUST correctly override isRequestHandlerTrivial() to allow auth with PUT
 // (i.e. so that ESPAsyncWebServer parses the body and adds form-data to request params list)
 
-class ApiBasicWebHandler final : public ApiBaseWebHandler {
+class BasicWebHandler final : public BaseWebHandler {
 public:
-    template <typename Path, typename Callback>
-    ApiBasicWebHandler(Path&& path, Callback&& get, Callback&& put) :
-        ApiBaseWebHandler(std::forward<Path>(path)),
-        _get(std::forward<Callback>(get)),
-        _put(std::forward<Callback>(put))
+    template <typename Path, typename Get, typename Put>
+    BasicWebHandler(Path&& path, Get&& get, Put&& put) :
+        BaseWebHandler(std::forward<Path>(path)),
+        _get(std::forward<Get>(get)),
+        _put(std::forward<Put>(put))
     {}
 
     bool isRequestHandlerTrivial() override {
@@ -559,16 +592,12 @@ public:
             return false;
         }
 
-        if (!_apiAcceptsText(request)) {
-            return false;
-        }
-
         switch (request->method()) {
         case HTTP_HEAD:
         case HTTP_GET:
             break;
         case HTTP_PUT:
-            if (!_apiIsFormDataContent(request)) {
+            if (!is_form_data(request)) {
                 return false;
             }
             break;
@@ -576,9 +605,9 @@ public:
             return false;
         }
 
-        auto helper = ApiRequestHelper(*request, parts());
+        auto helper = RequestHelper(*request, parts());
         if (helper.match()) {
-            _apiAttachHelper(*request, std::move(helper));
+            attach_helper(*request, std::move(helper));
             return true;
         }
 
@@ -588,6 +617,13 @@ public:
     void handleRequest(AsyncWebServerRequest* request) override {
         if (!apiAuthenticate(request)) {
             request->send(403);
+            return;
+        }
+
+        if (!accepts_text(request)) {
+            request->send(406,
+                content_type::Text.toString(),
+                content_type::Text.toString());
             return;
         }
 
@@ -604,7 +640,7 @@ public:
 
         case HTTP_GET:
         case HTTP_PUT: {
-            auto& helper = *reinterpret_cast<ApiRequestHelper*>(request->_tempObject);
+            auto& helper = *reinterpret_cast<RequestHelper*>(request->_tempObject);
 
             auto apireq = helper.request();
             if (is_put) {
@@ -637,57 +673,76 @@ public:
         }
     }
 
-    const ApiBasicHandler& get() const {
+    const BasicHandler& get() const {
         return _get;
     }
 
-    const ApiBasicHandler& put() const {
+    const BasicHandler& put() const {
         return _put;
     }
 
-    const String& pattern() const {
-        return ApiBaseWebHandler::pattern();
-    }
-
-    const PathParts& parts() const {
-        return ApiBaseWebHandler::parts();
-    }
+    using BaseWebHandler::pattern;
+    using BaseWebHandler::parts;
 
 private:
-    ApiBasicHandler _get;
-    ApiBasicHandler _put;
+    BasicHandler _get;
+    BasicHandler _put;
 };
 
-// -----------------------------------------------------------------------------
+namespace internal {
 
-namespace {
+std::forward_list<BaseWebHandler*> list;
 
-std::forward_list<ApiBaseWebHandler*> _apis;
+} // namespace internal
 
-template <typename Handler, typename Callback>
-void _apiRegister(const String& path, Callback&& get, Callback&& put) {
-    // `String` is a given, since we *do* need to construct this dynamically in sensors
-    auto* ptr = new Handler(String(F(API_BASE_PATH)) + path, std::forward<Callback>(get), std::forward<Callback>(put));
-    webServer().addHandler(reinterpret_cast<AsyncWebHandler*>(ptr));
-    _apis.emplace_front(ptr);
+namespace simple {
+
+bool ok(Request& request) {
+    STRING_VIEW_INLINE(Ok, "OK");
+    request.send(Ok.toString());
+    return true;
 }
 
-} // namespace
-
-void apiRegister(const String& path, ApiBasicHandler&& get, ApiBasicHandler&& put) {
-    _apiRegister<ApiBasicWebHandler>(path, std::move(get), std::move(put));
+bool error(ApiRequest& request) {
+    STRING_VIEW_INLINE(Error, "ERROR");
+    request.send(Error.toString());
+    return true;
 }
 
-void apiRegister(const String& path, ApiJsonHandler&& get, ApiJsonHandler&& put) {
-    _apiRegister<ApiJsonWebHandler>(path, std::move(get), std::move(put));
+} // namespace simple
+
+STRING_VIEW_INLINE(BasePath, API_BASE_PATH);
+
+void add(BaseWebHandler* ptr) {
+    webServer().addHandler(ptr);
+    internal::list.emplace_front(ptr);
 }
 
-void apiSetup() {
-    apiRegister(F("list"),
-        [](ApiRequest& request) {
+template <typename Handler, typename Get, typename Put>
+void add(String path, Get&& get, Put&& put) {
+    add(new Handler(
+        BasePath + path,
+        std::forward<Get>(get),
+        std::forward<Put>(put)));
+}
+
+template <typename Handler, typename Get, typename Put>
+void add(StringView path, Get&& get, Put&& put) {
+    add<Handler, Get, Put>(
+        path.toString(),
+        std::forward<Get>(get), 
+        std::forward<Put>(put));
+}
+
+void setup() {
+    add<BasicWebHandler, BasicHandler>(
+        STRING_VIEW("list"),
+        [](Request& request) {
             String paths;
-            for (auto& api : _apis) {
-                paths += api->pattern() + "\r\n";
+            for (auto& api : internal::list) {
+                paths += api->pattern();
+                paths += '\r';
+                paths += '\n';
             }
             request.send(paths);
             return true;
@@ -695,27 +750,45 @@ void apiSetup() {
         nullptr
     );
 
-    apiRegister(F("rpc"),
+    add<BasicWebHandler, BasicHandler>(
+        STRING_VIEW("rpc"),
         nullptr,
-        [](ApiRequest& request) {
-            if (rpcHandleAction(request.param(F("action")))) {
-                return apiOk(request);
+        [](Request& request) {
+            STRING_VIEW_INLINE(Action, "action");
+            if (rpcHandleAction(request.param(Action.toString()))) {
+                return simple::ok(request);
             }
-            return apiError(request);
+            return simple::error(request);
         }
     );
+}
 
+} // namespace
+} // namespace api 
+} // namespace espurna
+
+// -----------------------------------------------------------------------------
+
+void apiRegister(String path, espurna::api::BasicHandler&& get, espurna::api::BasicHandler&& put) {
+    using namespace espurna::api;
+    add<BasicWebHandler>(std::move(path), std::move(get), std::move(put));
+}
+
+void apiRegister(String path, espurna::api::JsonHandler&& get, espurna::api::JsonHandler&& put) {
+    using namespace espurna::api;
+    add<JsonWebHandler>(std::move(path), std::move(get), std::move(put));
+}
+
+void apiSetup() {
+    espurna::api::setup();
 }
 
 bool apiOk(ApiRequest& request) {
-    request.send(F("OK"));
-    return true;
+    return espurna::api::simple::ok(request);
 }
 
 bool apiError(ApiRequest& request) {
-    request.send(F("ERROR"));
-    return true;
+    return espurna::api::simple::error(request);
 }
 
 #endif // API_SUPPORT
-

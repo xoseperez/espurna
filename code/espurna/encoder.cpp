@@ -6,11 +6,13 @@ Copyright (C) 2018-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#include "encoder.h"
+#include "espurna.h"
 
 #if ENCODER_SUPPORT && (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE)
 
+#include "encoder.h"
 #include "light.h"
+
 #include "libs/Encoder.h"
 
 #include <vector>

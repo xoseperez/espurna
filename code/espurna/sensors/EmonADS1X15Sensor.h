@@ -113,8 +113,9 @@ public:
         {}
 
         bool lock(uint8_t address) {
-            static uint8_t addresses[] = {0x48, 0x49, 0x4A, 0x4B};
-            return _sensor_address.lock(address) || _sensor_address.findAndLock(sizeof(addresses), addresses);
+            static constexpr uint8_t addresses[] {0x48, 0x49, 0x4A, 0x4B};
+            return _sensor_address.findAndLock(address)
+                || _sensor_address.findAndLock(std::begin(addresses), std::end(addresses));
         }
 
         bool lock() {
@@ -165,7 +166,8 @@ public:
                 config(_channel, true, false);
                 config(_channel, false, false);
                 config(_channel, false, true);
-                nice_delay(10);
+                espurna::time::blockingDelay(
+                    espurna::duration::Milliseconds(10));
                 read();
             }
             config(_channel, true, true);
@@ -197,9 +199,7 @@ public:
     EmonADS1X15Sensor() = delete;
     EmonADS1X15Sensor(PortPtr port) :
         _port(port)
-    {
-        _sensor_id = SENSOR_EMON_ADS1X15_ID;
-    }
+    {}
 
     // ---------------------------------------------------------------------
 
@@ -213,6 +213,10 @@ public:
     // ---------------------------------------------------------------------
     // Sensor API
     // ---------------------------------------------------------------------
+
+    unsigned char id() const override {
+        return SENSOR_EMON_ADS1X15_ID;
+    }
 
     // Initialization method, must be idempotent
     void begin() override {
@@ -234,7 +238,7 @@ public:
     }
 
     // Descriptive name of the sensor
-    String description() override {
+    String description() const override {
         char buffer[30];
         snprintf_P(buffer, sizeof(buffer),
             PSTR("EMON @ ADS1%c15 @ I2C (0x%02X)"),
@@ -244,7 +248,7 @@ public:
     }
 
     // Descriptive name of the slot # index
-    String description(unsigned char) override {
+    String description(unsigned char) const override {
         char buffer[35];
         snprintf_P(buffer, sizeof(buffer),
             PSTR("EMON @ ADS1%c15 (A%hhu) @ I2C (0x%02X)"),
@@ -254,7 +258,7 @@ public:
     }
 
     // Address of the sensor (it could be the GPIO or I2C address)
-    String address(unsigned char) override {
+    String address(unsigned char) const override {
         char buffer[18];
         snprintf_P(buffer, sizeof(buffer),
             PSTR("A%hhu @ I2C (0x%02X)"),

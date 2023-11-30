@@ -75,8 +75,7 @@ var toHeader = function(name, debug) {
 
         // Generate output
         var output = '';
-        output += '#define ' + safename + '_len ' + source.contents.length + '\n';
-        output += 'const uint8_t ' + safename + '[] PROGMEM = {';
+        output += 'alignas(4) static constexpr uint8_t ' + safename + '[] PROGMEM = {';
         for (var i=0; i<source.contents.length; i++) {
             if (i > 0) { output += ','; }
             if (0 === (i % 20)) { output += '\n'; }

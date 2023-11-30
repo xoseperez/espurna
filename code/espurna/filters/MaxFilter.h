@@ -3,38 +3,26 @@
 // Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
-#if SENSOR_SUPPORT
-
 #pragma once
 
 #include "BaseFilter.h"
 
+#include <algorithm>
+
 class MaxFilter : public BaseFilter {
+public:
+    void update(double value) override {
+        _value = std::max(value, _value);
+    }
 
-    public:
+    void reset() override {
+        _value = 0;
+    }
 
-        void add(double value) {
-            if (value > _max) _max = value;
-        }
+    double value() const {
+        return _value;
+    }
 
-        unsigned char count() {
-            return 1;
-        }
-
-        void reset() {
-            _max = 0;
-        }
-
-        double result() {
-            return _max;
-        }
-
-        void resize(unsigned char size) {}
-
-    protected:
-
-        double _max = 0;
-
+private:
+    double _value = 0;
 };
-
-#endif // SENSOR_SUPPORT

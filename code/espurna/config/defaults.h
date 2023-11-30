@@ -4,6 +4,179 @@
 
 #pragma once
 
+// **NOTICE** that erasing settings storage will restore to these values.
+// make sure these are set to some sane defaults that won't break anything
+
+// -----------------------------------------------------------------------------
+// WiFi
+// -----------------------------------------------------------------------------
+
+// (required) SSID must be set for network to be considered enabled.
+// (optional) PASS with some value will require the network to use WPA (or better) authentication, otherwise it must be an OPEN network.
+// (optional) IP, GW, MASK and DNS must all be defined for static configuration to be applied.
+// (optional) BSSID and CHANNEL are only used when WIFI_SCAN_NETWORKS is disabled.
+
+#ifndef WIFI1_SSID
+#define WIFI1_SSID                  ""
+#endif
+
+#ifndef WIFI1_PASS
+#define WIFI1_PASS                  ""
+#endif
+
+#ifndef WIFI1_IP
+#define WIFI1_IP                    ""
+#endif
+
+#ifndef WIFI1_GW
+#define WIFI1_GW                    ""
+#endif
+
+#ifndef WIFI1_MASK
+#define WIFI1_MASK                  ""
+#endif
+
+#ifndef WIFI1_DNS
+#define WIFI1_DNS                   ""
+#endif
+
+#ifndef WIFI1_BSSID
+#define WIFI1_BSSID                 ""
+#endif
+
+#ifndef WIFI1_CHANNEL
+#define WIFI1_CHANNEL               0
+#endif
+
+#ifndef WIFI2_SSID
+#define WIFI2_SSID                  ""
+#endif
+
+#ifndef WIFI2_PASS
+#define WIFI2_PASS                  ""
+#endif
+
+#ifndef WIFI2_IP
+#define WIFI2_IP                    ""
+#endif
+
+#ifndef WIFI2_GW
+#define WIFI2_GW                    ""
+#endif
+
+#ifndef WIFI2_MASK
+#define WIFI2_MASK                  ""
+#endif
+
+#ifndef WIFI2_DNS
+#define WIFI2_DNS                   ""
+#endif
+
+#ifndef WIFI2_BSSID
+#define WIFI2_BSSID                 ""
+#endif
+
+#ifndef WIFI2_CHANNEL
+#define WIFI2_CHANNEL               0
+#endif
+
+#ifndef WIFI3_SSID
+#define WIFI3_SSID                  ""
+#endif
+
+#ifndef WIFI3_PASS
+#define WIFI3_PASS                  ""
+#endif
+
+#ifndef WIFI3_IP
+#define WIFI3_IP                    ""
+#endif
+
+#ifndef WIFI3_GW
+#define WIFI3_GW                    ""
+#endif
+
+#ifndef WIFI3_MASK
+#define WIFI3_MASK                  ""
+#endif
+
+#ifndef WIFI3_DNS
+#define WIFI3_DNS                   ""
+#endif
+
+#ifndef WIFI3_BSSID
+#define WIFI3_BSSID                 ""
+#endif
+
+#ifndef WIFI3_CHANNEL
+#define WIFI3_CHANNEL               0
+#endif
+
+#ifndef WIFI4_SSID
+#define WIFI4_SSID                  ""
+#endif
+
+#ifndef WIFI4_PASS
+#define WIFI4_PASS                  ""
+#endif
+
+#ifndef WIFI4_IP
+#define WIFI4_IP                    ""
+#endif
+
+#ifndef WIFI4_GW
+#define WIFI4_GW                    ""
+#endif
+
+#ifndef WIFI4_MASK
+#define WIFI4_MASK                  ""
+#endif
+
+#ifndef WIFI4_DNS
+#define WIFI4_DNS                   ""
+#endif
+
+#ifndef WIFI4_BSSID
+#define WIFI4_BSSID                 ""
+#endif
+
+#ifndef WIFI4_CHANNEL
+#define WIFI4_CHANNEL               0
+#endif
+
+#ifndef WIFI5_SSID
+#define WIFI5_SSID                  ""
+#endif
+
+#ifndef WIFI5_PASS
+#define WIFI5_PASS                  ""
+#endif
+
+#ifndef WIFI5_IP
+#define WIFI5_IP                    ""
+#endif
+
+#ifndef WIFI5_GW
+#define WIFI5_GW                    ""
+#endif
+
+#ifndef WIFI5_MASK
+#define WIFI5_MASK                  ""
+#endif
+
+#ifndef WIFI5_DNS
+#define WIFI5_DNS                   ""
+#endif
+
+#ifndef WIFI5_BSSID
+#define WIFI5_BSSID                 ""
+#endif
+
+#ifndef WIFI5_CHANNEL
+#define WIFI5_CHANNEL               0
+#endif
+
+
 // -----------------------------------------------------------------------------
 // Buttons
 // -----------------------------------------------------------------------------
@@ -1171,60 +1344,148 @@
 // Tuya
 // -----------------------------------------------------------------------------
 
-#ifndef TUYA_CH_STATE_DPID
-#define TUYA_CH_STATE_DPID  0
+#ifndef TUYA_LIGHT_STATE_DPID
+#define TUYA_LIGHT_STATE_DPID  0
 #endif
 
-#ifndef TUYA_CH1_DPID
-#define TUYA_CH1_DPID       0
+#ifndef TUYA_LIGHT_CH1_DPID
+#define TUYA_LIGHT_CH1_DPID       0
 #endif
 
-#ifndef TUYA_CH2_DPID
-#define TUYA_CH2_DPID       0
+#ifndef TUYA_LIGHT_CH2_DPID
+#define TUYA_LIGHT_CH2_DPID       0
 #endif
 
-#ifndef TUYA_CH3_DPID
-#define TUYA_CH3_DPID       0
+#ifndef TUYA_LIGHT_CH3_DPID
+#define TUYA_LIGHT_CH3_DPID       0
 #endif
 
-#ifndef TUYA_CH4_DPID
-#define TUYA_CH4_DPID       0
+#ifndef TUYA_LIGHT_CH4_DPID
+#define TUYA_LIGHT_CH4_DPID       0
 #endif
 
-#ifndef TUYA_CH5_DPID
-#define TUYA_CH5_DPID       0
+#ifndef TUYA_LIGHT_CH5_DPID
+#define TUYA_LIGHT_CH5_DPID       0
 #endif
 
-#ifndef TUYA_SW1_DPID
-#define TUYA_SW1_DPID       0
+#ifndef TUYA_RELAY1_DPID
+#define TUYA_RELAY1_DPID          0
 #endif
 
-#ifndef TUYA_SW2_DPID
-#define TUYA_SW2_DPID       0
+#ifndef TUYA_RELAY2_DPID
+#define TUYA_RELAY2_DPID          0
 #endif
 
-#ifndef TUYA_SW3_DPID
-#define TUYA_SW3_DPID       0
+#ifndef TUYA_RELAY3_DPID
+#define TUYA_RELAY3_DPID          0
 #endif
 
-#ifndef TUYA_SW4_DPID
-#define TUYA_SW4_DPID       0
+#ifndef TUYA_RELAY4_DPID
+#define TUYA_RELAY4_DPID          0
 #endif
 
-#ifndef TUYA_SW5_DPID
-#define TUYA_SW5_DPID       0
+#ifndef TUYA_RELAY5_DPID
+#define TUYA_RELAY5_DPID          0
 #endif
 
-#ifndef TUYA_SW6_DPID
-#define TUYA_SW6_DPID       0
+#ifndef TUYA_RELAY6_DPID
+#define TUYA_RELAY6_DPID          0
 #endif
 
-#ifndef TUYA_SW7_DPID
-#define TUYA_SW7_DPID       0
+#ifndef TUYA_RELAY7_DPID
+#define TUYA_RELAY7_DPID          0
 #endif
 
-#ifndef TUYA_SW8_DPID
-#define TUYA_SW8_DPID       0
+#ifndef TUYA_RELAY8_DPID
+#define TUYA_RELAY8_DPID          0
+#endif
+
+// -----------------------------------------------------------------------------
+// UART
+// -----------------------------------------------------------------------------
+
+#ifndef UART1_BAUDRATE
+#define UART1_BAUDRATE              115200
+#endif
+
+#ifndef UART1_TX_PIN
+#define UART1_TX_PIN                1
+#endif
+
+#ifndef UART1_RX_PIN
+#define UART1_RX_PIN                3
+#endif
+
+#ifndef UART1_DATA_BITS
+#define UART1_DATA_BITS             8
+#endif
+
+#ifndef UART1_PARITY
+#define UART1_PARITY                None
+#endif
+
+#ifndef UART1_STOP_BITS
+#define UART1_STOP_BITS             1
+#endif
+
+#ifndef UART1_INVERT
+#define UART1_INVERT                0
+#endif
+
+#ifndef UART2_BAUDRATE
+#define UART2_BAUDRATE              115200
+#endif
+
+#ifndef UART2_TX_PIN
+#define UART2_TX_PIN                GPIO_NONE
+#endif
+
+#ifndef UART2_RX_PIN
+#define UART2_RX_PIN                GPIO_NONE
+#endif
+
+#ifndef UART2_DATA_BITS
+#define UART2_DATA_BITS             8
+#endif
+
+#ifndef UART2_PARITY
+#define UART2_PARITY                None
+#endif
+
+#ifndef UART2_STOP_BITS
+#define UART2_STOP_BITS             1
+#endif
+
+#ifndef UART2_INVERT
+#define UART2_INVERT                0
+#endif
+
+#ifndef UART3_BAUDRATE
+#define UART3_BAUDRATE              115200
+#endif
+
+#ifndef UART3_TX_PIN
+#define UART3_TX_PIN                GPIO_NONE
+#endif
+
+#ifndef UART3_RX_PIN
+#define UART3_RX_PIN                GPIO_NONE
+#endif
+
+#ifndef UART3_DATA_BITS
+#define UART3_DATA_BITS             8
+#endif
+
+#ifndef UART3_PARITY
+#define UART3_PARITY                None
+#endif
+
+#ifndef UART3_STOP_BITS
+#define UART3_STOP_BITS             1
+#endif
+
+#ifndef UART3_INVERT
+#define UART3_INVERT                0
 #endif
 
 // -----------------------------------------------------------------------------

@@ -14,16 +14,16 @@
 
 class EmonAnalogSensor : public SimpleAnalogEmonSensor {
 public:
-    EmonAnalogSensor() {
-        _sensor_id = SENSOR_EMON_ANALOG_ID;
-    }
-
     // ---------------------------------------------------------------------
     // Sensor API
     // ---------------------------------------------------------------------
 
+    unsigned char id() const override {
+        return SENSOR_EMON_ANALOG_ID;
+    }
+
     // Initialization method, must be idempotent
-    void begin() {
+    void begin() override {
         if (_dirty) {
             BaseAnalogEmonSensor::begin();
             BaseAnalogEmonSensor::sampleCurrent();
@@ -32,25 +32,21 @@ public:
         _ready = true;
     }
 
-    String description() {
-        return String("EMON @ A0");
+    String description() const override {
+        return F("EMON @ A0");
     }
 
-    String description(unsigned char) {
-        return description();
-    }
-
-    String address(unsigned char index) {
-        return String(F("A0"));
+    String address(unsigned char) const override {
+        return F("A0");
     }
 
     // Cannot hammer analogRead() all the time:
     // https://github.com/esp8266/Arduino/issues/1634
 
     unsigned int analogRead() override {
-        auto cycles = ESP.getCycleCount();
-        if (cycles - _last > _interval) {
-            _last = cycles;
+        auto now = TimeSource::now();
+        if (now - _last > _interval) {
+            _last = now;
             _value = ::analogRead(A0);
         }
 
@@ -58,8 +54,9 @@ public:
     }
 
 private:
-    unsigned long _interval { microsecondsToClockCycles(200u) };
-    unsigned long _last { ESP.getCycleCount() };
+    using TimeSource = espurna::time::CpuClock;
+    TimeSource::duration _interval { espurna::duration::Milliseconds(200) };
+    TimeSource::time_point _last { TimeSource::now() };
 
     unsigned int _value { 0 };
 };

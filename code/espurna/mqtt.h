@@ -9,7 +9,7 @@ Updated secure client support by Niek van der Maas < mail at niekvandermaas dot 
 
 #pragma once
 
-#include "espurna.h"
+#include "system.h"
 
 #include <functional>
 
@@ -19,6 +19,7 @@ Updated secure client support by Niek van der Maas < mail at niekvandermaas dot 
 #define MQTT_TOPIC_ACTION           "action"
 #define MQTT_TOPIC_RELAY            "relay"
 #define MQTT_TOPIC_LED              "led"
+#define MQTT_TOPIC_LOCK             "lock"
 #define MQTT_TOPIC_BUTTON           "button"
 #define MQTT_TOPIC_IP               "ip"
 #define MQTT_TOPIC_SSID             "ssid"
@@ -48,30 +49,30 @@ Updated secure client support by Niek van der Maas < mail at niekvandermaas dot 
 #define MQTT_TOPIC_BOARD            "board"
 #define MQTT_TOPIC_PULSE            "pulse"
 #define MQTT_TOPIC_SPEED            "speed"
-#define MQTT_TOPIC_IRIN             "irin"
-#define MQTT_TOPIC_IROUT            "irout"
 #define MQTT_TOPIC_OTA              "ota"
 #define MQTT_TOPIC_TELNET_REVERSE   "telnet_reverse"
 #define MQTT_TOPIC_CURTAIN          "curtain"
 #define MQTT_TOPIC_CMD              "cmd"
 #define MQTT_TOPIC_SCHEDULE         "schedule"
 
-using mqtt_callback_f = std::function<void(unsigned int type, const char * topic, char * payload)>;
-using mqtt_pid_callback_f = std::function<void()>;
+void mqttHeartbeat(espurna::heartbeat::Callback);
 
-void mqttHeartbeat(heartbeat::Callback);
-void mqttRegister(mqtt_callback_f callback);
+// stateless callback; generally, registered once per module when calling setup()
+using MqttCallback = void(*)(unsigned int type, espurna::StringView topic, espurna::StringView payload);
+void mqttRegister(MqttCallback);
 
-void mqttOnPublish(uint16_t pid, mqtt_pid_callback_f);
-void mqttOnSubscribe(uint16_t pid, mqtt_pid_callback_f);
+// stateful callback for ACK'ed messages; should be used when waiting for certain messsage to be PUBlished
+using MqttPidCallback = std::function<void()>;
+void mqttOnPublish(uint16_t pid, MqttPidCallback);
+void mqttOnSubscribe(uint16_t pid, MqttPidCallback);
 
-String mqttTopic(const String& magnitude, bool is_set);
-String mqttTopic(const char* magnitude, bool is_set);
+String mqttTopic(const String& magnitude);
+String mqttTopic(const String& magnitude, size_t index);
 
-String mqttTopic(const String& magnitude, unsigned int index, bool is_set);
-String mqttTopic(const char* magnitude, unsigned int index, bool is_set);
+String mqttTopicSetter(const String& magnitude);
+String mqttTopicSetter(const String& magnitude, size_t index);
 
-String mqttMagnitude(const char* topic);
+espurna::StringView mqttMagnitude(espurna::StringView topic);
 
 uint16_t mqttSendRaw(const char * topic, const char * message, bool retain, int qos);
 uint16_t mqttSendRaw(const char * topic, const char * message, bool retain);
@@ -95,14 +96,11 @@ bool mqttSend(const char * topic, unsigned int index, const char * message);
 void mqttSendStatus();
 void mqttFlush();
 
-void mqttEnqueue(const char* topic, const char* message);
+void mqttEnqueue(espurna::StringView topic, espurna::StringView payload);
 
 const String& mqttPayloadOnline();
 const String& mqttPayloadOffline();
 const char* mqttPayloadStatus(bool status);
-
-void mqttSetBroker(IPAddress ip, uint16_t port);
-void mqttSetBrokerIfNone(IPAddress ip, uint16_t port);
 
 void mqttEnabled(bool status);
 bool mqttEnabled();

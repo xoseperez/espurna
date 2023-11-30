@@ -22,7 +22,7 @@ import zeroconf
 
 # -------------------------------------------------------------------------------
 
-__version__ = (0, 4, 2)
+__version__ = (0, 4, 3)
 
 DESCRIPTION = "ESPurna OTA Manager v{}".format(".".join(str(x) for x in __version__))
 DISCOVERY_TIMEOUT = 10
@@ -301,7 +301,6 @@ def run(device, env):
     environ["ESPURNA_BOARD"] = device["board"]
     environ["ESPURNA_AUTH"] = device["auth"]
     environ["ESPURNA_FLAGS"] = device["flags"]
-    environ["ESPURNA_PIO_SHARED_LIBRARIES"] = "1"
 
     command = ("platformio", "run", "--silent", "--environment", env, "-t", "upload")
     subprocess.check_call(command, env=environ)
@@ -315,34 +314,31 @@ def run(device, env):
 def parse_commandline_args():
     parser = argparse.ArgumentParser(description=DESCRIPTION)
     parser.add_argument(
-        "-c",
-        "--core",
-        help="Use ESPurna core configuration",
-        action="store_true",
-        default=False,
+        "--minimal",
+        help="Use ESPurna minimal configuration",
+        action="choice",
+        choices=["arduino-ota", "webui"],
+        default="arduino-ota",
     )
     parser.add_argument(
-        "-f", "--flash", help="Flash device", action="store_true", default=False
+        "--flash", help="Flash device", action="store_true", default=False
     )
     parser.add_argument(
-        "-a",
         "--arduino-core",
         help="Arduino ESP8266 Core version",
         default="current",
         choices=["current", "latest", "git"],
     )
-    parser.add_argument("-o", "--flags", help="extra flags", default="")
-    parser.add_argument("-p", "--password", help="auth password", default="")
-    parser.add_argument("-s", "--sort", help="sort devices list by field", default="")
+    parser.add_argument("--flags", help="extra flags", default="")
+    parser.add_argument("--password", help="auth password", default="")
+    parser.add_argument("--sort", help="sort devices list by field", default="")
     parser.add_argument(
-        "-y",
         "--yes",
         help="do not ask for confirmation",
         action="store_true",
         default=False,
     )
     parser.add_argument(
-        "-t",
         "--timeout",
         type=int,
         help="how long to wait for mDNS discovery",
@@ -453,10 +449,10 @@ def main(args):
 
         # Flash each board
         for board in queue:
-
-            # Flash core version?
-            if args.core:
-                board["flags"] = "-DESPURNA_CORE " + board["flags"]
+            if args.minimal:
+                flag = args.minimal.replace("-", "_").upper()
+                flag = f"ESPURNA_MINIMAL_{flag}"
+                board["flags"] = "-D${flag} " + board["flags"]
 
             env = get_platformio_env(args.arduino_core, board["size"])
 

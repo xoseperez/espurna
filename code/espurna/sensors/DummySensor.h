@@ -10,17 +10,29 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 // - #include "sensors/DummySensor.h"
 // - add `_sensors.push_back(new DummySensor());` at the end of _sensorLoad();
 
-#include "BaseSensor.h"
+#include "BaseEmonSensor.h"
 
-struct DummySensor : public BaseSensor {
+struct DummySensor : public BaseEmonSensor {
+
+    static constexpr Magnitude Magnitudes[] {
+        MAGNITUDE_TEMPERATURE,
+        MAGNITUDE_HUMIDITY,
+        MAGNITUDE_PRESSURE,
+        MAGNITUDE_LUX,
+        MAGNITUDE_ENERGY_DELTA,
+        MAGNITUDE_ENERGY,
+    };
 
     DummySensor() :
-        _temperature(25.0),
-        _humidity(50.0),
-        _pressure(1000.0),
-        _lux(0.0)
-    {
-        _count = 4;
+        BaseEmonSensor(Magnitudes)
+    {}
+
+    unsigned char id() const override {
+        return 0;
+    }
+
+    unsigned char count() const override {
+        return std::size(Magnitudes);
     }
 
     void begin() override {
@@ -28,37 +40,40 @@ struct DummySensor : public BaseSensor {
         _error = SENSOR_ERROR_OK;
     }
 
-    String description() override {
-        static String dummy(F("Dummy"));
-        return dummy;
+    String description() const override {
+        return F("DummySensor");
     }
 
-    String description(unsigned char) override {
-        return description();
+    String address(unsigned char) const override {
+        return F("/dev/null");
     }
 
-    String address(unsigned char) override {
-        static String dummy(F("/dev/null"));
-        return dummy;
-    }
-
-    unsigned char type(unsigned char index) override {
-        switch (index) {
-        case 0: return MAGNITUDE_TEMPERATURE;
-        case 1: return MAGNITUDE_HUMIDITY;
-        case 2: return MAGNITUDE_PRESSURE;
-        case 3: return MAGNITUDE_LUX;
+    unsigned char type(unsigned char index) const override {
+        if (index < std::size(Magnitudes)) {
+            return Magnitudes[index].type;
         }
+
         return MAGNITUDE_NONE;
     }
 
     double value(unsigned char index) override {
-        switch (index) {
-        case 0: return _temperature;
-        case 1: return _humidity;
-        case 2: return _pressure;
-        case 3: return _lux;
+        if (index < std::size(Magnitudes)) {
+            switch (Magnitudes[index].type) {
+            case MAGNITUDE_TEMPERATURE:
+                return _temperature;
+            case MAGNITUDE_HUMIDITY:
+                return _humidity;
+            case MAGNITUDE_PRESSURE:
+                return _pressure;
+            case MAGNITUDE_LUX:
+                return _lux;
+            case MAGNITUDE_ENERGY_DELTA:
+                return _delta;
+            case MAGNITUDE_ENERGY:
+                return _energy[0].asDouble();
+            }
         }
+
         return 0.0;
     }
 
@@ -83,14 +98,24 @@ struct DummySensor : public BaseSensor {
         if (_lux >= 100.0) {
             _lux = 0.0;
         }
+
+        _delta += 10.0;
+        if (_delta >= 50.0) {
+            _delta = 0.0;
+        }
+
+        _energy[0] += espurna::sensor::Energy(
+            espurna::sensor::WattSeconds(_delta));
     }
 
-    private:
-
-    double _temperature;
-    double _humidity;
-    double _pressure;
-    double _lux;
-
+private:
+    double _temperature { 25.0 };
+    double _humidity { 50.0 };
+    double _pressure { 1000.0 };
+    double _lux { 0.0 };
+    double _delta { 0.0 };
 };
 
+#if __cplusplus < 201703L
+constexpr BaseSensor::Magnitude DummySensor::Magnitudes[];
+#endif

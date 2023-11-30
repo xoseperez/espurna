@@ -14,26 +14,9 @@
 
 #include "BaseSensor.h"
 
-#define MAX6675_READ_INTERVAL 3000
-
 class MAX6675Sensor : public BaseSensor {
 
     public:
-
-        // ---------------------------------------------------------------------
-        // Public
-        // ---------------------------------------------------------------------
-
-        MAX6675Sensor() {
-            _sensor_id = SENSOR_MAX6675_ID;
-            _count = 1;
-        }
-
-        ~MAX6675Sensor() {
-        }
-
-        // ---------------------------------------------------------------------
-	// ---------------------------------------------------------------------
 
         void setCS(unsigned char pin_cs) {
             if (_pin_cs == pin_cs) return;
@@ -57,15 +40,26 @@ class MAX6675Sensor : public BaseSensor {
         // Sensor API
         // ---------------------------------------------------------------------
 
+        unsigned char id() const override {
+            return SENSOR_MAX6675_ID;
+        }
+
+        unsigned char count() const override {
+            return 1;
+        }
+
+        // ---------------------------------------------------------------------
         // Initialization method, must be idempotent
-        void begin() {
+        void begin() override {
 
             if (!_dirty) return;
 
-            //// MAX6675
-	        int units = 1;            // Units to readout temp (0 = raw, 1 = ˚C, 2 = ˚F)
-            if (_max) delete _max;
-            _max = new MAX6675(_pin_cs, _pin_so, _pin_sck, units);
+            if (_max) {
+                _max.reset(nullptr);
+            }
+
+            // MAX6675 Units to readout temp (0 = raw, 1 = ˚C, 2 = ˚F)
+            _max = std::make_unique<MAX6675>(_pin_cs, _pin_so, _pin_sck, 1);
 
             _ready = true;
             _dirty = false;
@@ -73,71 +67,57 @@ class MAX6675Sensor : public BaseSensor {
         }
 
         // Loop-like method, call it in your main loop
-        void tick() {
-            static unsigned long last = 0;
-            if (millis() - last < MAX6675_READ_INTERVAL) return;
-            last = millis();
-            last_read = _max->read_temp();
+        void tick() override {
+            const auto now = TimeSource::now();
+            if (now - _last_reading > ReadInterval) {
+                _last_reading = now;
+                _value = _max->read_temp();
+            }
         }
 
         // Descriptive name of the sensor
-        String description() {
-            char buffer[20];
-            //snprintf(buffer, sizeof(buffer), "MAX6675 @ CS %d", _gpio);
-            snprintf(buffer, sizeof(buffer), "MAX6675");
+        String description() const override {
+            return F("MAX6675");
+        }
+
+        String address(unsigned char) const override {
+            char buffer[16] {0};
+            snprintf_P(buffer, sizeof(buffer),
+                PSTR("%hhu:%hhu:%hhu"), _pin_cs, _pin_so, _pin_sck);
             return String(buffer);
         }
 
-        String address(unsigned char index) {
-		    return String("@ address");
-	    }
-
-        // Address of the device
-        // Descriptive name of the slot # index
-        String description(unsigned char index) {
-            if (index < _count) {
-            //    char buffer[40];
-            //    uint8_t * address = _devices[index].address;
-            //    snprintf(buffer, sizeof(buffer), "%s (%02X%02X%02X%02X%02X%02X%02X%02X) @ GPIO%d",
-            //        chipAsString(index).c_str(),
-            //        address[0], address[1], address[2], address[3],
-            //        address[4], address[5], address[6], address[7],
-            //        _gpio
-            //    );
-                return description();
-            }
-            return String();
-        }
-
         // Type for slot # index
-        unsigned char type(unsigned char index) {
-            if (index < _count) return MAGNITUDE_TEMPERATURE;
+        unsigned char type(unsigned char index) const override {
+            if (index == 0) return MAGNITUDE_TEMPERATURE;
             return MAGNITUDE_NONE;
         }
 
         // Pre-read hook (usually to populate registers with up-to-date data)
-        void pre() {
+        void pre() override {
             _error = SENSOR_ERROR_OK;
         }
 
         // Current value for slot # index
-        double value(unsigned char index) {
-            return last_read;
+        double value(unsigned char index) override {
+            if (index == 0) {
+                return _value;
+            }
+
+            return 0.0;
         }
 
-    protected:
+    private:
+        using TimeSource = espurna::time::CoreClock;
+        static constexpr auto ReadInterval = TimeSource::duration { 3000 };
+        TimeSource::time_point _last_reading = TimeSource::now();
 
-        // ---------------------------------------------------------------------
-        // Protected
-        // ---------------------------------------------------------------------
-
-        unsigned int _pin_cs = MAX6675_CS_PIN;
-        unsigned int _pin_so = MAX6675_SO_PIN;
-        unsigned int _pin_sck = MAX6675_SCK_PIN;
+        unsigned char _pin_cs = MAX6675_CS_PIN;
+        unsigned char _pin_so = MAX6675_SO_PIN;
+        unsigned char _pin_sck = MAX6675_SCK_PIN;
         bool _busy = false;
-	    double last_read = 0;
-        MAX6675 * _max = NULL;
-
+        double _value = 0;
+        std::unique_ptr<MAX6675> _max;
 
 };
 

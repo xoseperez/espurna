@@ -11,8 +11,6 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include <Arduino.h>
 #include <cstdint>
 
-#include "espurna.h"
-
 // Base address of USER RTC memory
 // https://github.com/esp8266/esp8266-wiki/wiki/Memory-Map#memmory-mapped-io-registers
 #define RTCMEM_ADDR_BASE (0x60001200)
@@ -56,10 +54,10 @@ struct RtcmemData {
     uint32_t mqtt;
     uint64_t light;
     RtcmemEnergy energy[4];
+    uint32_t gpio_ignore;
 };
 
 static_assert(sizeof(RtcmemData) <= (RTCMEM_BLOCKS * 4u), "RTCMEM struct is too big");
-constexpr uint8_t RtcmemSize = (sizeof(RtcmemData) / 4u);
 
 extern volatile RtcmemData* Rtcmem;
 

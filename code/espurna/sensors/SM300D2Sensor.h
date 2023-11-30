@@ -1,7 +1,6 @@
 // -----------------------------------------------------------------------------
 // SmartMeasure SM300D2-VO2
 // https://es.aliexpress.com/item/32984571140.html
-// Uses SoftwareSerial library
 // Copyright (C) 2021 by Xose Pérez <xose dot perez at gmail dot com>
 // -----------------------------------------------------------------------------
 
@@ -9,98 +8,53 @@
 
 #pragma once
 
-#include <SoftwareSerial.h>
-
 #include "BaseSensor.h"
 
 class SM300D2Sensor : public BaseSensor {
 
     public:
 
-        // ---------------------------------------------------------------------
-        // Public
-        // ---------------------------------------------------------------------
-
-        SM300D2Sensor() {
-            _count = 7;
-            _sensor_id = SENSOR_SM300D2_ID;
-        }
-
-        ~SM300D2Sensor() {
-            if (_serial) delete _serial;
-        }
-
-        // ---------------------------------------------------------------------
-
-        void setRX(unsigned char pin_rx) {
-            if (_pin_rx == pin_rx) return;
-            _pin_rx = pin_rx;
+        void setPort(Stream* port) {
+            _serial = port;
             _dirty = true;
-        }
-
-        // ---------------------------------------------------------------------
-
-        unsigned char getRX() {
-            return _pin_rx;
         }
 
         // ---------------------------------------------------------------------
         // Sensor API
         // ---------------------------------------------------------------------
 
+        unsigned char id() const override {
+            return SENSOR_SM300D2_ID;
+        }
+
+        unsigned char count() const override {
+            return 7;
+        }
+
         // Initialization method, must be idempotent
-        void begin() {
-
+        void begin() override {
             if (!_dirty) return;
-
-            if (_serial) delete _serial;
-
-            if (3 == _pin_rx) {
-                Serial.begin(SM300D2_BAUDRATE);
-            } else if (13 == _pin_rx) {
-                Serial.begin(SM300D2_BAUDRATE);
-                Serial.flush();
-                Serial.swap();
-            } else {
-                _serial = new SoftwareSerial(_pin_rx, -1, false);
-                _serial->enableIntTx(false);
-                _serial->begin(SM300D2_BAUDRATE);
-            }
 
             _ready = true;
             _dirty = false;
-
         }
 
         // Descriptive name of the sensor
-        String description() {
-            char buffer[28];
-            if (_serial_is_hardware()) {
-                snprintf(buffer, sizeof(buffer), "SM300D2 @ HwSerial");
-            } else {
-                snprintf(buffer, sizeof(buffer), "SM300D2 @ SwSerial(%u,NULL)", _pin_rx);
-            }
-            return String(buffer);
+        String description() const override {
+            return F("SM300D2");
         }
 
-        // Descriptive name of the slot # index
-        String description(unsigned char index) {
-            return description();
-        };
-
         // Address of the sensor (it could be the GPIO or I2C address)
-        String address(unsigned char index) {
-            char buffer[6];
-            snprintf(buffer, sizeof(buffer), "%u", _pin_rx);
-            return String(buffer);
+        String address(unsigned char index) const override {
+            return String(SM300D2_PORT, 10);
         }
 
         // Type for slot # index
-        unsigned char type(unsigned char index) {
+        unsigned char type(unsigned char index) const override {
             if (index == 0) return MAGNITUDE_CO2;
             if (index == 1) return MAGNITUDE_CH2O;
             if (index == 2) return MAGNITUDE_TVOC;
-            if (index == 3) return MAGNITUDE_PM2dot5;
+            if (index == 3) return MAGNITUDE_PM2DOT5;
             if (index == 4) return MAGNITUDE_PM10;
             if (index == 5) return MAGNITUDE_TEMPERATURE;
             if (index == 6) return MAGNITUDE_HUMIDITY;
@@ -108,7 +62,7 @@ class SM300D2Sensor : public BaseSensor {
         }
 
         // Current value for slot # index
-        double value(unsigned char index) {
+        double value(unsigned char index) override {
             if (index == 0) return _co2;
             if (index == 1) return _ch2o;
             if (index == 2) return _tvoc;
@@ -120,7 +74,7 @@ class SM300D2Sensor : public BaseSensor {
         }
 
         // Process sensor UART
-        void tick() {
+        void tick() override {
             _read();
         }
 
@@ -130,50 +84,17 @@ class SM300D2Sensor : public BaseSensor {
         // Protected
         // ---------------------------------------------------------------------
 
-        bool _serial_is_hardware() {
-            return (3 == _pin_rx) || (13 == _pin_rx);
-        }
-
-        bool _serial_available() {
-            if (_serial_is_hardware()) {
-                return Serial.available();
-            } else {
-                return _serial->available();
-            }
-        }
-
-        void _serial_flush() {
-            if (_serial_is_hardware()) {
-                return Serial.flush();
-            } else {
-                return _serial->flush();
-            }
-        }
-
-        uint8_t _serial_read() {
-            if (_serial_is_hardware()) {
-                return Serial.read();
-            } else {
-                return _serial->read();
-            }
-        }
-
-        // ---------------------------------------------------------------------
-
         void _parse() {
 
-            #if SENSOR_DEBUG
-            char hex[(sizeof(_buffer)*2)+1] = {0};
-            if (hexEncode(_buffer, sizeof(_buffer), hex, sizeof(hex))) {
-                DEBUG_MSG("[SENSOR] SM300D2: %s\n", hex);
-            }
-            #endif
+#if SENSOR_DEBUG
+            DEBUG_MSG_P(PSTR("[SENSOR] SM300D2: %s\n"), hexEncode(_buffer).c_str());
+#endif
 
             // check second header byte
             if (_buffer[1] != 0x02) {
-                #if SENSOR_DEBUG
-                    DEBUG_MSG("[SENSOR] SM300D2: Wrong header\n");
-                #endif
+#if SENSOR_DEBUG
+                DEBUG_MSG_P(PSTR("[SENSOR] SM300D2: Wrong header\n"));
+#endif
                 return;
             }
 
@@ -181,9 +102,9 @@ class SM300D2Sensor : public BaseSensor {
             uint8_t crc = 0;
             for (unsigned char i=0; i<16; i++) crc += _buffer[i];
             if (crc != _buffer[16]) {
-                #if SENSOR_DEBUG
-                    DEBUG_MSG("[SENSOR] SM300D2: Wrong CRC\n");
-                #endif
+#if SENSOR_DEBUG
+                DEBUG_MSG_P(PSTR("[SENSOR] SM300D2: Wrong CRC\n"));
+#endif
                 return;
             }
 
@@ -215,9 +136,9 @@ class SM300D2Sensor : public BaseSensor {
 
         void _read() {
 
-            while(_serial_available()) {
+            while(_serial->available()) {
                 
-                unsigned char ch = _serial_read();
+                unsigned char ch = _serial->read();
                 if ((_position > 0) || (ch == 0x3C)) {
                     _buffer[_position] = ch;
                     _position++;
@@ -245,8 +166,7 @@ class SM300D2Sensor : public BaseSensor {
         double _temperature = 0;
         double _humidity = 0;
 
-        unsigned int _pin_rx;
-        SoftwareSerial * _serial = NULL;
+        Stream* _serial { nullptr };
 
 };
 

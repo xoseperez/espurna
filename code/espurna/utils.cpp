@@ -6,148 +6,147 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#include "espurna.h"
+#include "utils.h"
 
-#include "board.h"
-#include "ntp.h"
+#include <limits>
 
-bool tryParseId(const char* p, TryParseIdFunc limit, size_t& out) {
-    static_assert(std::numeric_limits<size_t>::max() >= std::numeric_limits<unsigned long>::max(), "");
+// We can only return small values (max 'z' aka 122)
+static constexpr uint8_t InvalidByte { 255u };
 
-    char* endp { nullptr };
-    out = strtoul(p, &endp, 10);
-    if ((endp == p) || (*endp != '\0') || (out >= limit())) {
-        return false;
+static uint8_t bin_char2byte(char c) {
+    switch (c) {
+    case '0'...'1':
+        return (c - '0');
     }
 
-    return true;
+    return InvalidByte;
 }
 
-void setDefaultHostname() {
-    if (strlen(HOSTNAME) > 0) {
-        setSetting("hostname", F(HOSTNAME));
-    } else {
-        setSetting("hostname", getIdentifier());
+static uint8_t oct_char2byte(char c) {
+    switch (c) {
+    case '0'...'7':
+        return (c - '0');
     }
+
+    return InvalidByte;
 }
 
-String getBoardName() {
-    return getSetting("boardName", F(DEVICE_NAME));
-}
-
-void setBoardName() {
-    if (!isEspurnaCore()) {
-        setSetting("boardName", F(DEVICE_NAME));
+static uint8_t dec_char2byte(char c) {
+    switch (c) {
+    case '0'...'9':
+        return (c - '0');
     }
+
+    return InvalidByte;
 }
 
-String getAdminPass() {
-    static const String defaultValue(F(ADMIN_PASS));
-    return getSetting("adminPass", defaultValue);
+static uint8_t hex_char2byte(char c) {
+    switch (c) {
+    case '0'...'9':
+        return (c - '0');
+    case 'a'...'f':
+        return 10 + (c - 'a');
+    case 'A'...'F':
+        return 10 + (c - 'A');
+    }
+
+    return InvalidByte;
 }
 
-const String& getCoreVersion() {
-    static String version;
-    if (!version.length()) {
-#ifdef ARDUINO_ESP8266_RELEASE
-        version = ESP.getCoreVersion();
-        if (version.equals("00000000")) {
-            version = String(ARDUINO_ESP8266_RELEASE);
+static ParseUnsignedResult parseUnsignedImpl(espurna::StringView value, int base) {
+    auto out = ParseUnsignedResult{
+        .ok = false,
+        .value = 0,
+    };
+
+    using Char2Byte = uint8_t(*)(char);
+    Char2Byte char2byte = nullptr;
+
+    switch (base) {
+    case 2:
+        char2byte = bin_char2byte;
+        break;
+    case 8:
+        char2byte = oct_char2byte;
+        break;
+    case 10:
+        char2byte = dec_char2byte;
+        break;
+    case 16:
+        char2byte = hex_char2byte;
+        break;
+    }
+
+    if (!char2byte) {
+        return out;
+    }
+
+    for (auto it = value.begin(); it != value.end(); ++it) {
+        const auto digit = char2byte(*it);
+        if (digit == InvalidByte) {
+            out.ok = false;
+            goto err;
         }
-        version.replace("_", ".");
-#else
-#define _GET_COREVERSION_STR(X) #X
-#define GET_COREVERSION_STR(X) _GET_COREVERSION_STR(X)
-        version = GET_COREVERSION_STR(ARDUINO_ESP8266_GIT_DESC);
-#undef _GET_COREVERSION_STR
-#undef GET_COREVERSION_STR
-#endif
+
+        const auto value = out.value;
+        out.value = out.value * uint32_t(base);
+
+        // TODO explicitly set the output bit width?
+        if (value > out.value) {
+            out.ok = false;
+            goto err;
+        }
+
+        out.value += uint32_t(digit);
+        out.ok = true;
     }
-    return version;
+
+err:
+    return out;
 }
 
-const String& getCoreRevision() {
-    static String revision;
-    if (!revision.length()) {
-#ifdef ARDUINO_ESP8266_GIT_VER
-        revision = String(ARDUINO_ESP8266_GIT_VER, 16);
-#else
-        revision = "(unspecified)";
-#endif
+bool tryParseId(espurna::StringView value, size_t limit, size_t& out) {
+    using T = std::remove_cvref<decltype(out)>::type;
+    static_assert(std::is_same<T, size_t>::value, "");
+
+    if (value.length()) {
+        const auto result = parseUnsignedImpl(value, 10);
+        if (result.ok && (result.value < limit)) {
+            out = result.value;
+            return true;
+        }
     }
-    return revision;
+
+    return false;
 }
 
-const char* getVersion() {
-    static const char version[] = APP_VERSION;
-    return version;
+bool tryParseIdPath(espurna::StringView value, size_t limit, size_t& out) {
+    if (value.length()) {
+        const auto before_begin = value.begin() - 1;
+        for (auto it = value.end() - 1; it != before_begin; --it) {
+            if ((*it) == '/') {
+                return tryParseId(
+                    espurna::StringView(it + 1, value.end()),
+                    limit, out);
+            }
+        }
+    }
+
+    return false;
 }
 
-const char* getAppName() {
-    static const char app[] = APP_NAME;
-    return app;
-}
-
-const char* getAppAuthor() {
-    static const char author[] = APP_AUTHOR;
-    return author;
-}
-
-const char* getAppWebsite() {
-    static const char website[] = APP_WEBSITE;
-    return website;
-}
-
-const char* getDevice() {
-    static const char device[] = DEVICE;
-    return device;
-}
-
-const char* getManufacturer() {
-    static const char manufacturer[] = MANUFACTURER;
-    return manufacturer;
-}
-
-String buildTime() {
-#if NTP_SUPPORT
-    constexpr const time_t ts = __UNIX_TIMESTAMP__;
-    tm timestruct;
-    gmtime_r(&ts, &timestruct);
-    return ntpDateTime(&timestruct);
-#else
-    char buffer[20];
-    snprintf_P(
-        buffer, sizeof(buffer), PSTR("%04d-%02d-%02d %02d:%02d:%02d"),
-        __TIME_YEAR__, __TIME_MONTH__, __TIME_DAY__,
-        __TIME_HOUR__, __TIME_MINUTE__, __TIME_SECOND__
-    );
-    return String(buffer);
-#endif
-}
-
-#if NTP_SUPPORT
-
-String getUptime() {
-    time_t uptime = systemUptime();
+String prettyDuration(espurna::duration::Seconds seconds) {
+    time_t timestamp = static_cast<time_t>(seconds.count());
     tm spec;
-    gmtime_r(&uptime, &spec);
+    gmtime_r(&timestamp, &spec);
 
     char buffer[64];
     sprintf_P(buffer, PSTR("%02dy %02dd %02dh %02dm %02ds"),
         (spec.tm_year - 70), spec.tm_yday, spec.tm_hour,
-        spec.tm_min, spec.tm_sec
-    );
+        spec.tm_min, spec.tm_sec);
 
     return String(buffer);
 }
-
-#else
-
-String getUptime() {
-    return String(systemUptime(), 10);
-}
-
-#endif // NTP_SUPPORT
 
 // -----------------------------------------------------------------------------
 // SSL
@@ -192,161 +191,246 @@ bool sslFingerPrintChar(const char * fingerprint, char * destination) {
 // Helper functions
 // -----------------------------------------------------------------------------
 
-char* ltrim(char * s) {
-    char *p = s;
-    while ((unsigned char) *p == ' ') ++p;
-    return p;
-}
-
 double roundTo(double num, unsigned char positions) {
     double multiplier = 1;
     while (positions-- > 0) multiplier *= 10;
     return round(num * multiplier) / multiplier;
 }
 
-void nice_delay(unsigned long ms) {
-    unsigned long start = millis();
-    while (millis() - start < ms) delay(1);
+// ref. https://en.cppreference.com/w/cpp/types/numeric_limits/epsilon
+// the machine epsilon has to be scaled to the magnitude of the values used
+// and multiplied by the desired precision in ULPs (units in the last place)
+// unless the result is subnormal
+bool almostEqual(double lhs, double rhs, int ulp) {
+    return __builtin_fabs(lhs - rhs) <= std::numeric_limits<double>::epsilon() * __builtin_fabs(lhs + rhs) * ulp
+        || __builtin_fabs(lhs - rhs) < std::numeric_limits<double>::min();
 }
 
-bool isNumber(const String& value) {
-    if (value.length()) {
-        const char* begin { value.c_str() };
-        const char* end { value.c_str() + value.length() };
+bool almostEqual(double lhs, double rhs) {
+    return almostEqual(lhs, rhs, 3);
+}
 
-        bool dot { false };
-        bool digit { false };
-        const char* ptr { begin };
-
-        while (ptr != end) {
-            switch (*ptr) {
-            case '\0':
-                break;
-            case '-':
-            case '+':
-                if (ptr != begin) {
-                    return false;
-                }
-                break;
-            case '.':
-                if (dot) {
-                    return false;
-                }
-                dot = true;
-                break;
-            case '0' ... '9':
-                digit = true;
-                break;
-            case 'a' ... 'z':
-            case 'A' ... 'Z':
-                return false;
-            }
-
-            ++ptr;
-        }
-
-        return digit;
+espurna::StringView stripNewline(espurna::StringView value) {
+    if ((value.length() >= 2)
+     && (*(value.end() - 1) == '\n')
+     && (*(value.end() - 2) == '\r')) {
+        value = espurna::StringView(value.begin(), value.end() - 2);
+    } else if ((value.length() >= 1) && (*(value.end() - 1) == '\n')) {
+        value = espurna::StringView(value.begin(), value.end() - 1);
     }
 
-    return false;
+    return value;
+}
+
+bool isNumber(espurna::StringView view) {
+    bool dot { false };
+    bool digit { false };
+
+    for (auto ptr = view.begin(); ptr != view.end(); ++ptr) {
+        switch (*ptr) {
+        case '-':
+        case '+':
+            if (ptr != view.begin()) {
+                return false;
+            }
+            break;
+
+        case '.':
+            if (dot) {
+                return false;
+            }
+            dot = true;
+            break;
+
+        case '0' ... '9':
+            digit = true;
+            break;
+
+        case 'a' ... 'z':
+        case 'A' ... 'Z':
+            return false;
+        }
+    }
+
+    return digit;
 }
 
 // ref: lwip2 lwip_strnstr with strnlen
 char* strnstr(const char* buffer, const char* token, size_t n) {
-  size_t token_len = strnlen(token, n);
-  if (token_len == 0) {
-    return const_cast<char*>(buffer);
+  const auto token_len = strnlen_P(token, n);
+  if (!token_len) {
+      return const_cast<char*>(buffer);
   }
 
+  const auto first = pgm_read_byte(token);
   for (const char* p = buffer; *p && (p + token_len <= buffer + n); p++) {
-    if ((*p == *token) && (strncmp(p, token, token_len) == 0)) {
-      return const_cast<char*>(p);
-    }
+      if ((*p == first) && (strncmp_P(p, token, token_len) == 0)) {
+          return const_cast<char*>(p);
+      }
   }
 
   return nullptr;
 }
 
-// From a byte array to an hexa char array ("A220EE...", double the size)
-size_t hexEncode(const uint8_t * in, size_t in_size, char * out, size_t out_size) {
-    if ((2 * in_size + 1) > (out_size)) return 0;
-
-    static const char base16[] = "0123456789ABCDEF";
-    size_t index = 0;
-
-    while (index < in_size) {
-        out[(index*2)]   = base16[(in[index] & 0xf0) >> 4];
-        out[(index*2)+1] = base16[(in[index] & 0xf)];
-        ++index;
-    }
-
-    out[2*index] = '\0';
-
-    return index ? (1 + (2 * index)) : 0;
+ParseUnsignedResult parseUnsigned(espurna::StringView value, int base) {
+    return parseUnsignedImpl(value, base);
 }
 
+static constexpr int base_from_char(char c) {
+    return (c == 'b') ? 2 :
+        (c == 'o') ? 8 :
+        (c == 'x') ? 16 : 0;
+}
+
+ParseUnsignedResult parseUnsigned(espurna::StringView value) {
+    int base = 10;
+
+    if (value.length() && (value.length() > 2)) {
+        const auto from_base = base_from_char(value[1]);
+        if ((value[0] == '0') && (from_base != 0)) {
+            base = from_base;
+            value = espurna::StringView(
+                value.begin() + 2, value.end());
+        }
+    }
+
+    return parseUnsignedImpl(value, base);
+}
+
+String formatUnsigned(uint32_t value, int base) {
+    constexpr size_t BufferSize { 8 * sizeof(decltype(value)) };
+
+    String result;
+    if (base == 2) {
+        result += "0b";
+    } else if (base == 8) {
+        result += "0o";
+    } else if (base == 16) {
+        result += "0x";
+    }
+
+    char buffer[BufferSize + 1] = {0};
+    ultoa(value, buffer, base);
+    result += buffer;
+
+    return result;
+}
+
+namespace {
+
+// From a byte array to an hexa char array ("A220EE...", double the size)
+template <typename T>
+const uint8_t* hexEncodeImpl(const uint8_t* in_begin, const uint8_t* in_end, T&& callback) {
+    static const char base16[] = "0123456789ABCDEF";
+
+    constexpr uint8_t Left { 0xf0 };
+    constexpr uint8_t Right { 0xf };
+    constexpr uint8_t Shift { 4 };
+
+    auto* in_ptr = in_begin;
+    for (; in_ptr != in_end; ++in_ptr) {
+        const char buf[2] {
+            base16[((*in_ptr) & Left) >> Shift],
+            base16[(*in_ptr) & Right]
+        };
+        if (!callback(buf)) {
+            break;
+        }
+    }
+
+    return in_ptr;
+}
+
+} // namespace
+
+char* hexEncode(const uint8_t* in_begin, const uint8_t* in_end, char* out_begin, char* out_end) {
+    char* out_ptr { out_begin };
+
+    hexEncodeImpl(in_begin, in_end, [&](const char (&byte)[2]) {
+        *(out_ptr) = byte[0];
+        ++out_ptr;
+
+        *(out_ptr) = byte[1];
+        ++out_ptr;
+
+        return out_ptr != out_end;
+    });
+
+    return out_ptr;
+}
+
+String hexEncode(const uint8_t* in_begin, const uint8_t* in_end) {
+    String out;
+    out.reserve(in_end - in_begin);
+
+    hexEncodeImpl(in_begin, in_end, [&](const char (&byte)[2]) {
+        out.concat(byte, 2);
+        return true;
+    });
+
+    return out;
+}
+
+size_t hexEncode(const uint8_t* in, size_t in_size, char* out, size_t out_size) {
+    if (out_size >= ((in_size * 2) + 1)) {
+        char* out_ptr = hexEncode(in, in + in_size, out, out + out_size);
+        *out_ptr = '\0';
+        ++out_ptr;
+        return out_ptr - out;
+    }
+
+    return 0;
+}
 
 // From an hexa char array ("A220EE...") to a byte array (half the size)
+uint8_t* hexDecode(const char* in_begin, const char* in_end, uint8_t* out_begin, uint8_t* out_end) {
+    constexpr uint8_t Shift { 4 };
+
+    const char* in_ptr { in_begin };
+    uint8_t* out_ptr { out_begin };
+    while ((in_ptr != in_end) && (out_ptr != out_end)) {
+        uint8_t lhs = hex_char2byte(*in_ptr);
+        if (lhs == InvalidByte) {
+            break;
+        }
+        ++in_ptr;
+
+        uint8_t rhs = hex_char2byte(*in_ptr);
+        if (rhs == InvalidByte) {
+            break;
+        }
+        ++in_ptr;
+
+        (*out_ptr) = (lhs << Shift) | rhs;
+        ++out_ptr;
+    }
+
+    return out_ptr;
+}
+
 size_t hexDecode(const char* in, size_t in_size, uint8_t* out, size_t out_size) {
     if ((in_size & 1) || (out_size < (in_size / 2))) {
         return 0;
     }
 
-    // We can only return small values
-    constexpr uint8_t InvalidByte { 255u };
-
-    auto char2byte = [](char ch) -> uint8_t {
-        if ((ch >= '0') && (ch <= '9')) {
-            return (ch - '0');
-        } else if ((ch >= 'a') && (ch <= 'f')) {
-            return 10 + (ch - 'a');
-        } else if ((ch >= 'A') && (ch <= 'F')) {
-            return 10 + (ch - 'A');
-        } else {
-            return InvalidByte;
-        }
-    };
-
-    size_t index = 0;
-    size_t out_index = 0;
-
-    while (index < in_size) {
-        const uint8_t lhs = char2byte(in[index]) << 4;
-        const uint8_t rhs = char2byte(in[index + 1]);
-        if ((InvalidByte != lhs) && (InvalidByte != rhs)) {
-            out[out_index++] = lhs | rhs;
-            index += 2;
-            continue;
-        }
-        out_index = 0;
-        break;
-    }
-
-    return out_index;
+    uint8_t* out_ptr { hexDecode(in, in + in_size, out, out + out_size) };
+    return out_ptr - out;
 }
 
-const char* getFlashChipMode() {
-    const char* mode { nullptr };
-    if (!mode) {
-        switch (ESP.getFlashChipMode()) {
-        case FM_QIO:
-            mode = "QIO";
-            break;
-        case FM_QOUT:
-            mode = "QOUT";
-            break;
-        case FM_DIO:
-            mode = "DIO";
-            break;
-        case FM_DOUT:
-            mode = "DOUT";
-            break;
-        case FM_UNKNOWN:
-        default:
-            mode = "UNKNOWN";
-            break;
-        }
+size_t consumeAvailable(Stream& stream) {
+    const auto result = stream.available();
+    if (result <= 0) {
+        return 0;
     }
 
-    return mode;
+    const auto available = static_cast<size_t>(result);
+    size_t size = 0;
+    uint8_t buf[64];
+    do {
+        const auto chunk = std::min(available, std::size(buf));
+        stream.readBytes(&buf[0], chunk);
+        size += chunk;
+    } while (size != available);
+
+    return size;
 }

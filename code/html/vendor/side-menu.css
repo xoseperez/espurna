@@ -112,7 +112,6 @@ appears on the left side of the page.
     /*
     Add that light border to separate items into groups.
     */
-    #menu .pure-menu ul,
     #menu .pure-menu .menu-item-divided {
         border-top: 1px solid #333;
     }
@@ -125,18 +124,29 @@ appears on the left side of the page.
         }
 
     /*
-    This styles the selected menu item `<li>`.
+    This styles the selected menu item `<li>` and the top item.
     */
     #menu .pure-menu-selected,
     #menu .pure-menu-heading {
         background: #1f8dd6;
     }
-        /*
-        This styles a link within a selected menu item `<li>`.
-        */
-        #menu .pure-menu-selected a {
-            color: #fff;
-        }
+
+    .pure-menu-item:first-child {
+        border-top: none;
+        color: #fefefe;
+        background: #1f8dd6;
+    }
+
+    #menu .pure-menu-item:first-child a {
+        color: #fefefe;
+    }
+
+    /*
+    This styles a link within a selected menu item `<li>`.
+    */
+    #menu .pure-menu-selected a {
+        color: #fff;
+    }
 
     /*
     This styles the menu heading.

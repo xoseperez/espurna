@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
+# Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,166 +15,170 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import print_function
-
-import time
-import glob
 import argparse
-import atexit
-import subprocess
-import os
-import sys
 import datetime
+import logging
+import os
+import pathlib
+import subprocess
+import time
 
-from espurna_utils.display import clr, print_warning, Color
+from espurna_utils.display import clr, Color
 
-
-def restore_source_tree(files):
-    cmd = ["git", "checkout", "-f", "--"]
-    cmd.extend(files)
-    subprocess.check_call(cmd)
-
-
-def try_remove(path):
-    try:
-        os.remove(path)
-    except:  # pylint: disable=bare-except
-        print_warning("Please manually remove the file `{}`".format(path))
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+log = logging.getLogger("main")
 
 
-total_time = 0
+def bold(string):
+    return clr(Color.BOLD, string)
 
 
-def print_total_time():
-    print()
-    print(
-        clr(
-            Color.BOLD,
-            "> Total time: {}".format(datetime.timedelta(seconds=total_time)),
-        )
-    )
+def format_configurations(configurations):
+    return "\n".join(str(cfg) for cfg in configurations)
 
 
-def run_configurations(args, configurations):
+def pluralize(string, length):
+    if length > 1:
+        return f"{string}s"
+
+    return string
+
+
+def build_configurations(args, configurations):
     cmd = ["platformio", "run"]
     if not args.no_silent:
         cmd.extend(["-s"])
     cmd.extend(["-e", args.environment])
 
-    for cfg in configurations:
-        print(clr(Color.BOLD, "> Building {}".format(cfg)), flush=True)
-        with open(args.custom_h, "w") as custom_h:
+    build_time = datetime.timedelta(seconds=0)
 
-            def write(line):
-                sys.stdout.write(line)
-                custom_h.write(line)
-
-            name, _ = os.path.splitext(cfg)
-            name = os.path.basename(name)
-            write('#define MANUFACTURER "TEST_BUILD"\n')
-            write('#define DEVICE "{}"\n'.format(name.upper()))
-            with open(cfg, "r") as cfg_file:
-                for line in cfg_file:
-                    write(line)
+    while len(configurations):
+        cfg = configurations.pop()
+        with open(cfg, "r") as contents:
+            log.info("%s contents\n%s", bold(cfg), contents.read())
 
         os_env = os.environ.copy()
-        os_env["PLATFORMIO_SRC_BUILD_FLAGS"] = "-DUSE_CUSTOM_H"
         os_env["PLATFORMIO_BUILD_CACHE_DIR"] = "test/pio_cache"
         if not args.no_single_source:
             os_env["ESPURNA_BUILD_SINGLE_SOURCE"] = "1"
 
-        start = time.time()
-        subprocess.check_call(cmd, env=os_env)
-        diff = time.time() - start
-
-        global total_time
-        total_time += diff
-
-        print(
-            clr(
-                Color.BOLD,
-                "> {}: {} bytes, {}".format(
-                    cfg,
-                    os.stat(
-                        os.path.join(".pio", "build", args.environment, "firmware.bin")
-                    ).st_size,
-                    datetime.timedelta(seconds=diff),
-                ),
-            ),
-            flush=True,
+        os_env["PLATFORMIO_BUILD_SRC_FLAGS"] = " ".join(
+            [
+                '-DMANUFACTURER=\\"TEST_BUILD\\"',
+                '-DDEVICE=\\"{}\\"'.format(cfg.stem.replace(" ", "_").upper()),
+                '-include "{}"'.format(cfg.resolve().as_posix()),
+            ]
         )
+
+        build_start = time.time()
+        try:
+            subprocess.check_call(cmd, env=os_env)
+        except subprocess.CalledProcessError as e:
+            log.error("%s failed to build", bold(cfg))
+            log.exception(e)
+            if configurations:
+                log.info(
+                    "%s %s left\n%s",
+                    bold(len(configurations)),
+                    pluralize("configuration", len(configurations)),
+                    format_configurations(configurations),
+                )
+            raise
+
+        diff = datetime.timedelta(seconds=time.time() - build_start)
+
+        firmware_bin = pathlib.Path(".pio/build").joinpath(
+            args.environment, "firmware.bin"
+        )
+
+        log.info(
+            "%s finished in %s, %s is %s bytes",
+            *(bold(x) for x in (cfg, diff, firmware_bin, firmware_bin.stat().st_size)),
+        )
+
+        build_time += diff
+
+    if build_time:
+        log.info("Done after %s", bold(build_time))
 
 
 def main(args):
-    if os.path.exists(args.custom_h):
-        raise SystemExit(
-            clr(
-                Color.YELLOW,
-                "{} already exists, please run this script in a git-worktree(1) or a separate directory".format(
-                    args.custom_h
-                ),
-            )
-        )
+    if not args.environment:
+        log.error("No environment selected")
+        return
+
+    log.info("Using env:%s", bold(args.environment))
 
     configurations = []
     if not args.no_default:
-        configurations = list(glob.glob(args.default_configurations))
+        configurations = list(pathlib.Path(".").glob(args.default_configurations))
+        if args.start_from:
+            try:
+                offset = configurations.index(pathlib.Path(args.start_from))
+                configurations = configurations[offset:]
+            except ValueError:
+                pass
 
-    configurations.extend(x for x in (args.add or []))
+    if args.add:
+        configurations.extend(args.add)
+
     if not configurations:
-        raise SystemExit(clr(Color.YELLOW, "No configurations selected"))
-
-    if len(configurations) > 1:
-        atexit.register(print_total_time)
-
-    print(clr(Color.BOLD, "> Selected configurations:"))
-    for cfg in configurations:
-        print(cfg)
-    if args.list:
+        log.error("No configurations selected")
         return
 
-    if not args.environment:
-        raise SystemExit(clr(Color.YELLOW, "No environment selected"))
-    print(clr(Color.BOLD, "> Selected environment: {}".format(args.environment)))
+    log.info(
+        "Found %s %s\n%s",
+        bold(len(configurations)),
+        pluralize("configuration", len(configurations)),
+        format_configurations(configurations),
+    )
 
-    atexit.register(try_remove, args.custom_h)
-
-    run_configurations(args, configurations)
+    if not args.no_build:
+        build_configurations(args, configurations)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-l", "--list", action="store_true", help="List selected configurations"
-    )
-    parser.add_argument(
-        "--custom-h",
-        default="espurna/config/custom.h",
-        help="Header that will be included in by the config/all.h",
-    )
     parser.add_argument(
         "-n",
         "--no-default",
         action="store_true",
         help="Do not use default configurations (--default-configurations=...)",
     )
+
     parser.add_argument(
         "-a",
         "--add",
+        type=pathlib.Path,
         action="append",
         help="Add path to selected configurations (can specify multiple times)",
     )
+
     parser.add_argument("-e", "--environment", help="PIO environment")
+
     parser.add_argument(
         "--default-configurations",
         default="test/build/*.h",
         help="(glob) default configuration headers",
     )
+
+    parser.add_argument(
+        "--start-from",
+        help="When using default configuration, skip everything until this name",
+    )
+
     parser.add_argument(
         "--no-silent", action="store_true", help="Do not silence pio-run"
     )
+
     parser.add_argument(
         "--no-single-source", action="store_true", help="Disable 'unity' build"
+    )
+
+    parser.add_argument(
+        "--no-build",
+        action="store_true",
+        help="Stop after listing the available configurations",
     )
 
     main(parser.parse_args())

@@ -1,0 +1,41 @@
+name: Questions or troubleshooting
+description: When it is neither a bug or a feature request
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        * Please search through existing [issues](https://github.com/xoseperez/espurna/issues) (both open and closed)
+        * Check out our [wiki](https://github.com/xoseperez/espurna/wiki) for any common questions and or issues
+        * Consider asking at our [Gitter chat](https://gitter.im/tinkerman-cat/espurna) ([which is also accessible with any Matrix client!](https://matrix.to/#/#tinkerman-cat_espurna:gitter.im))
+        * Re-check our existing issues yet again :)
+
+  - type: input
+    attributes:
+      label: Device
+      description: Used development board or device brand, model and version.
+      placeholder: Sonoff Mini
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: |
+        ESPurna version, if this question is related to something happening with the firmware
+        * .bin filename or snapshot name / date, if downloaded from 'Releases'
+        * 'Firmware version' in WebUI
+        * First line of `info` terminal command output
+        * Output of `git rev-parse HEAD`, in the directory that was created when you cloned this repository
+      placeholder: 1.16.0-dev.git12345678+github250718
+    validations:
+      required: false
+
+  - type: textarea
+    attributes:
+      label: Question
+      description:
+        A clear and concise description of what the problem / question / usage issue is.
+    validations:
+      required: true

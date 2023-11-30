@@ -1,0 +1,35 @@
+name: Feature request
+description: Suggest an idea for this project
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before creating a feature request, please search for any existing [issues](https://github.com/xoseperez/espurna/issues) (both open and closed).
+        Fulfilling this template will help developers and contributors to triage and evalute this request.
+
+  - type: textarea
+    attributes:
+      label: Description
+      description: |
+        Is your feature request related to a problem? Please describe
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Solution
+      description: |
+        A clear and concise description of what you want to happen
+
+  - type: textarea
+    attributes:
+      label: Alternatives
+      description: |
+        A clear and concise description of any alternative solutions or features you have considered
+
+  - type: textarea
+    attributes:
+      label: Additional context
+      description: |
+        Add any other information about the feature request (references, screenshots, etc.)

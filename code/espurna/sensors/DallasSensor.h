@@ -10,6 +10,7 @@
 
 #include <OneWire.h>
 
+#include <memory>
 #include <vector>
 
 #include "BaseSensor.h"
@@ -20,7 +21,6 @@
 #define DS_CHIP_DS18B20             0x28
 #define DS_CHIP_DS1825              0x3B
 
-#define DS_DATA_SIZE                9
 #define DS_PARASITE                 1
 #define DS_DISCONNECTED             -127
 
@@ -63,20 +63,17 @@
 
 class DallasSensor : public BaseSensor {
 
+    private:
+
+        using Address = std::array<uint8_t, 8>;
+        using Data = std::array<uint8_t, 9>;
+
+        struct Device {
+            Address address;
+            Data data;
+        };
+
     public:
-
-        // ---------------------------------------------------------------------
-        // Public
-        // ---------------------------------------------------------------------
-
-        DallasSensor() {
-            _sensor_id = SENSOR_DALLAS_ID;
-        }
-
-        ~DallasSensor() {
-            if (_wire) delete _wire;
-            gpioUnlock(_gpio);
-        }
 
         // ---------------------------------------------------------------------
 
@@ -88,7 +85,7 @@ class DallasSensor : public BaseSensor {
 
         // ---------------------------------------------------------------------
 
-        unsigned char getGPIO() {
+        unsigned char getGPIO() const {
             return _gpio;
         }
 
@@ -96,8 +93,16 @@ class DallasSensor : public BaseSensor {
         // Sensor API
         // ---------------------------------------------------------------------
 
+        unsigned char id() const override {
+            return SENSOR_DALLAS_ID;
+        }
+
+        unsigned char count() const override {
+            return _devices.size();
+        }
+
         // Initialization method, must be idempotent
-        void begin() {
+        void begin() override {
 
             if (!_dirty) return;
 
@@ -113,39 +118,46 @@ class DallasSensor : public BaseSensor {
             }
 
             // OneWire
-            if (_wire) delete _wire;
-            _wire = new OneWire(_gpio);
+            if (_wire) {
+                _wire.reset(nullptr);
+            }
+
+            _wire = std::make_unique<OneWire>(_gpio);
 
             // Search devices
             loadDevices();
 
             // If no devices found check again pulling up the line
-            if (_count == 0) {
+            if (!_devices.size()) {
                 pinMode(_gpio, INPUT_PULLUP);
                 loadDevices();
             }
 
             // Check connection
-            if (_count == 0) {
+            if (_devices.size() == 0) {
                 gpioUnlock(_gpio);
             } else {
                 _previous = _gpio;
             }
+
+            _last_reading = TimeSource::now();
             _ready = true;
             _dirty = false;
 
         }
 
         // Loop-like method, call it in your main loop
-        void tick() {
+        void tick() override {
 
-            static unsigned long last = 0;
-            if (millis() - last < DALLAS_READ_INTERVAL) return;
-            last = millis();
+            const auto now = TimeSource::now();
+            if (now - _last_reading < ReadInterval) {
+                return;
+            }
+
+            _last_reading = now;
 
             // Every second we either start a conversion or read the scratchpad
-            static bool conversion = true;
-            if (conversion) {
+            if (_conversion) {
 
                 // Start conversion
                 _wire->reset();
@@ -155,7 +167,7 @@ class DallasSensor : public BaseSensor {
             } else {
 
                 // Read scratchpads
-                for (unsigned char index=0; index<_devices.size(); index++) {
+                for (size_t index = 0; index < _devices.size(); ++index) {
 
                     if (_devices[index].address[0] == DS_CHIP_DS2406) {
 
@@ -168,16 +180,16 @@ class DallasSensor : public BaseSensor {
                             return;
                         }
 
-                        _wire->select(_devices[index].address);
+                        _wire->select(_devices[index].address.data());
 
                         data[0] = DS2406_CHANNEL_ACCESS;
                         data[1] = DS2406_CHANNEL_CONTROL_BYTE;
                         data[2] = 0xFF;
 
-                        _wire->write_bytes(data,3);
+                        _wire->write_bytes(data, 3);
 
                         // 3 cmd bytes, 1 channel info byte, 1 0x00, 2 CRC16
-                        for(int i = 3; i<DS2406_STATE_BUF_LEN; i++) {
+                        for(size_t i = 3; i < DS2406_STATE_BUF_LEN; ++i) {
                             data[i] = _wire->read();
                         }
 
@@ -188,7 +200,7 @@ class DallasSensor : public BaseSensor {
                             return;
                         }
 
-                        memcpy(_devices[index].data, data, DS2406_STATE_BUF_LEN);
+                        memcpy(_devices[index].data.data(), data, DS2406_STATE_BUF_LEN);
 
                     } else {
 
@@ -199,11 +211,11 @@ class DallasSensor : public BaseSensor {
                             return;
                         }
 
-                        _wire->select(_devices[index].address);
+                        _wire->select(_devices[index].address.data());
                         _wire->write(DS_CMD_READ_SCRATCHPAD);
 
-                        uint8_t data[DS_DATA_SIZE];
-                        for (unsigned char i = 0; i < DS_DATA_SIZE; i++) {
+                        Data data{};
+                        for (size_t i = 0; i < data.size(); ++i) {
                             data[i] = _wire->read();
                         }
 
@@ -213,52 +225,53 @@ class DallasSensor : public BaseSensor {
                             return;
                         }
 
-                        memcpy(_devices[index].data, data, DS_DATA_SIZE);
+                        _devices[index].data = data;
                     }
                 }
             }
-            conversion = !conversion;
+            _conversion = !_conversion;
         }
 
         // Descriptive name of the sensor
-        String description() {
+        String description() const override {
             char buffer[20];
-            snprintf(buffer, sizeof(buffer), "Dallas @ GPIO%d", _gpio);
+            snprintf_P(buffer, sizeof(buffer),
+                PSTR("Dallas @ GPIO%hhu"), _gpio);
             return String(buffer);
         }
 
         // Address of the device
-        String address(unsigned char index) {
+        String address(unsigned char index) const override {
             char buffer[20] = {0};
-            if (index < _count) {
-                uint8_t * address = _devices[index].address;
-                snprintf(buffer, sizeof(buffer), "%02X%02X%02X%02X%02X%02X%02X%02X",
+            if (index < _devices.size()) {
+                const auto& address = _devices[index].address;
+                snprintf_P(buffer, sizeof(buffer),
+                    PSTR("%02X%02X%02X%02X%02X%02X%02X%02X"),
                     address[0], address[1], address[2], address[3],
-                    address[4], address[5], address[6], address[7]
-                );
+                    address[4], address[5], address[6], address[7]);
             }
             return String(buffer);
         }
 
         // Descriptive name of the slot # index
-        String description(unsigned char index) {
-            if (index < _count) {
-                char buffer[40];
-                uint8_t * address = _devices[index].address;
-                snprintf(buffer, sizeof(buffer), "%s (%02X%02X%02X%02X%02X%02X%02X%02X) @ GPIO%d",
+        String description(unsigned char index) const override {
+            char buffer[40];
+            if (index < _devices.size()) {
+                const auto& address = _devices[index].address;
+                snprintf_P(buffer, sizeof(buffer),
+                    PSTR("%s (%02X%02X%02X%02X%02X%02X%02X%02X) @ GPIO%hhu"),
                     chipAsString(index).c_str(),
                     address[0], address[1], address[2], address[3],
                     address[4], address[5], address[6], address[7],
                     _gpio
                 );
-                return String(buffer);
             }
-            return String();
+            return String(buffer);
         }
 
         // Type for slot # index
-        unsigned char type(unsigned char index) {
-            if (index < _count) {
+        unsigned char type(unsigned char index) const override {
+            if (index < _devices.size()) {
                 if (chip(index) == DS_CHIP_DS2406) {
                     return MAGNITUDE_DIGITAL;
                 } else {
@@ -269,32 +282,33 @@ class DallasSensor : public BaseSensor {
         }
 
         // Number of decimals for a magnitude (or -1 for default)
-        signed char decimals(sensor::Unit unit) {
-            switch (unit) {
-                // Smallest increment is 0.0625 C, so 2 decimals
-                case sensor::Unit::Celcius:
-                    return 2;
-                // In case we have DS2406, there is no decimal places
-                default:
-                    return 0;
+        signed char decimals(espurna::sensor::Unit unit) const override {
+            // Smallest increment is 0.0625 °C
+            if (unit == espurna::sensor::Unit::Celcius) {
+                return 2;
             }
+
+            // In case we have DS2406, there is no decimal places
+            return 0;
         }
 
         // Pre-read hook (usually to populate registers with up-to-date data)
-        void pre() {
+        void pre() override {
             _error = SENSOR_ERROR_OK;
         }
 
         // Current value for slot # index
-        double value(unsigned char index) {
+        double value(unsigned char index) override {
 
-            if (index >= _count) return 0;
+            if (index >= _devices.size()) {
+                return 0;
+            }
 
-            uint8_t * data = _devices[index].data;
+            const auto& data = _devices[index].data;
 
             if (chip(index) == DS_CHIP_DS2406) {
 
-                if (!OneWire::check_crc16(data, 5, &data[5])) {
+                if (!OneWire::check_crc16(data.data(), 5, &data[5])) {
                     _error = SENSOR_ERROR_CRC;
                     return 0;
                 }
@@ -312,7 +326,7 @@ class DallasSensor : public BaseSensor {
                 return (data[3] & 0x04) !=  0;
             }
 
-            if (OneWire::crc8(data, DS_DATA_SIZE-1) != data[DS_DATA_SIZE-1]) {
+            if (OneWire::crc8(data.data(), data.size() - 1) != data.back()) {
                 _error = SENSOR_ERROR_CRC;
                 return 0;
             }
@@ -338,20 +352,19 @@ class DallasSensor : public BaseSensor {
                     raw = (raw & 0xFFF0) + 12 - data[6]; // "count remain" gives full 12 bit resolution
                 }
             } else {
-                byte cfg = (data[4] & 0x60);
+                uint8_t cfg = (data[4] & 0x60);
                 if (cfg == 0x00) raw = raw & ~7;        //  9 bit res, 93.75 ms
                 else if (cfg == 0x20) raw = raw & ~3;   // 10 bit res, 187.5 ms
                 else if (cfg == 0x40) raw = raw & ~1;   // 11 bit res, 375 ms
                                                         // 12 bit res, 750 ms
             }
 
-            double value = (float) raw / 16.0;
-            if (value == DS_DISCONNECTED) {
+            if ((raw & (int16_t) 0xfff0) == DS_DISCONNECTED) {
                 _error = SENSOR_ERROR_CRC;
                 return 0;
             }
 
-            return value;
+            return raw / 16.0;
 
         }
 
@@ -361,58 +374,83 @@ class DallasSensor : public BaseSensor {
         // Protected
         // ---------------------------------------------------------------------
 
-        bool validateID(unsigned char id) {
-            return (id == DS_CHIP_DS18S20) || (id == DS_CHIP_DS18B20) || (id == DS_CHIP_DS1822) || (id == DS_CHIP_DS1825) || (id == DS_CHIP_DS2406) ;
+        static bool validateID(unsigned char id) {
+            return (id == DS_CHIP_DS18S20)
+                || (id == DS_CHIP_DS18B20)
+                || (id == DS_CHIP_DS1822)
+                || (id == DS_CHIP_DS1825)
+                || (id == DS_CHIP_DS2406);
         }
 
-        unsigned char chip(unsigned char index) {
-            if (index < _count) return _devices[index].address[0];
+        String chipAsString(unsigned char index) const {
+            const char* ptr { nullptr };
+
+            switch (chip(index)) {
+            case DS_CHIP_DS18S20:
+                ptr = PSTR("DS18S20");
+                break;
+            case DS_CHIP_DS18B20:
+                ptr = PSTR("DS18B20");
+                break;
+            case DS_CHIP_DS1822:
+                ptr = PSTR("DS1822");
+                break;
+            case DS_CHIP_DS1825:
+                ptr = PSTR("DS1825");
+                break;
+            case DS_CHIP_DS2406:
+                ptr = PSTR("DS2406");
+                break;
+            }
+
+            if (!ptr) {
+                ptr = PSTR("Unknown");
+            }
+
+            return String(FPSTR(ptr));
+        }
+
+        unsigned char chip(unsigned char index) const {
+            if (index < _devices.size()) {
+                return _devices[index].address[0];
+            }
+
             return 0;
         }
 
-        String chipAsString(unsigned char index) {
-            unsigned char chip_id = chip(index);
-            if (chip_id == DS_CHIP_DS18S20) return String("DS18S20");
-            if (chip_id == DS_CHIP_DS18B20) return String("DS18B20");
-            if (chip_id == DS_CHIP_DS1822) return String("DS1822");
-            if (chip_id == DS_CHIP_DS1825) return String("DS1825");
-            if (chip_id == DS_CHIP_DS2406) return String("DS2406");
-            return String("Unknown");
-        }
-
         void loadDevices() {
+            Address address;
 
-            uint8_t address[8];
             _wire->reset();
             _wire->reset_search();
-            while (_wire->search(address)) {
 
-                // Check CRC
-                if (_wire->crc8(address, 7) == address[7]) {
-
-                    // Check ID
-                    if (validateID(address[0])) {
-                        ds_device_t device;
-                        memcpy(device.address, address, 8);
-                        _devices.push_back(device);
-                    }
-
+            while (_wire->search(address.data())) {
+                if (_wire->crc8(address.data(), address.size() - 1) != address.back()) {
+                    continue;
                 }
 
-            }
-            _count = _devices.size();
+                if (!validateID(address.front())) {
+                    continue;
+                }
 
+                _devices.push_back(Device{
+                    .address = address,
+                    .data = Data{},
+                });
+            }
         }
 
-        typedef struct {
-            uint8_t address[8];
-            uint8_t data[DS_DATA_SIZE];
-        } ds_device_t;
-        std::vector<ds_device_t> _devices;
+        using TimeSource = espurna::time::CoreClock;
+        TimeSource::time_point _last_reading;
 
+        static constexpr auto ReadInterval = TimeSource::duration { DALLAS_READ_INTERVAL };
+
+        std::vector<Device> _devices;
+
+        bool _conversion = true;
         unsigned char _gpio = GPIO_NONE;
         unsigned char _previous = GPIO_NONE;
-        OneWire * _wire = NULL;
+        std::unique_ptr<OneWire> _wire;
 
 };
 

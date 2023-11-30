@@ -13,7 +13,9 @@ Copyright (C) 2016 Plamen Kovandjiev <p.kovandiev@kmpelectronics.eu> & Dimitar A
 
 #pragma once
 
-#include "espurna.h"
+#include <cstdint>
+
+#include "gpio.h"
 
 constexpr size_t McpGpioPins = 8;
 

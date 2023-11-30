@@ -30,7 +30,6 @@
 #include "custom.h"
 #endif
 
-#include "buildtime.h"
 #include "version.h"
 #include "types.h"
 #include "arduino.h"
@@ -38,6 +37,6 @@
 #include "general.h"
 #include "defaults.h"
 #include "deprecated.h"
-#include "dependencies.h"
 #include "sensors.h"
+#include "dependencies.h"
 #include "webui.h"

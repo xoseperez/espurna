@@ -6,18 +6,40 @@
 // Copyright (C) 2020-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 // -----------------------------------------------------------------------------
 
-#if SENSOR_SUPPORT
-
 #pragma once
 
 #include "BaseEmonSensor.h"
 
-extern "C" {
 #include "../libs/fs_math.h"
-}
 
 class BaseAnalogEmonSensor : public BaseEmonSensor {
 public:
+    static const BaseSensor::ClassKind Kind;
+    BaseSensor::ClassKind kind() const override {
+        return Kind;
+    }
+
+    using TimeSource = espurna::time::CoreClock;
+    static constexpr auto MaxTime = TimeSource::duration { EMON_MAX_TIME };
+
+    static constexpr double IRef { EMON_CURRENT_RATIO };
+
+    // TODO: mask common magnitudes (...voltage), when there are multiple channels?
+    static constexpr Magnitude Magnitudes[] {
+        MAGNITUDE_CURRENT,
+        MAGNITUDE_VOLTAGE,
+        MAGNITUDE_POWER_APPARENT,
+        MAGNITUDE_ENERGY
+    };
+
+    BaseAnalogEmonSensor() :
+        BaseEmonSensor(Magnitudes)
+    {}
+
+    unsigned char count() const override {
+        return std::size(Magnitudes);
+    }
+
     virtual unsigned int analogRead() = 0;
 
 	virtual void setVoltage(double) = 0;
@@ -26,26 +48,11 @@ public:
     virtual void setReferenceVoltage(double) = 0;
     virtual double getReferenceVoltage() const = 0;
 
-    virtual void setCurrentRatio(double) = 0;
-    virtual double getCurrentRatio() const = 0;
-
     virtual void setPivot(double) = 0;
     virtual double getPivot() const = 0;
 
     virtual void updateCurrent(double) = 0;
     virtual double getCurrent() const = 0;
-
-    BaseAnalogEmonSensor() {
-        _count = 4;
-    }
-
-    double defaultCurrentRatio() const override {
-        return EMON_CURRENT_RATIO;
-    }
-
-    unsigned char type() override {
-        return sensor::type::AnalogEmon;
-    }
 
     double defaultVoltage() const {
         return EMON_MAINS_VOLTAGE;
@@ -67,27 +74,11 @@ public:
         setPivot(_adc_counts >> 1);
     }
 
-    void expectedPower(unsigned int expected) final override {
-        unsigned int actual = getCurrent() * getVoltage();
-        if ((!actual) || (expected == actual)) {
-            return;
-        }
-
-        setCurrentRatio(getCurrentRatio() * ((double) expected / (double) actual));
-        calculateFactors();
-        _dirty = true;
-    }
-
-    void resetRatios() override {
-        setCurrentRatio(defaultCurrentRatio());
-        calculateFactors();
-    }
-
     // ---------------------------------------------------------------------
     // Sensor API
     // ---------------------------------------------------------------------
 
-    void begin() {
+    void begin() override {
         updateCurrent(0.0);
         setPivot(_adc_counts >> 1); // aka divide by 2
         calculateFactors();
@@ -96,10 +87,13 @@ public:
         _dirty = false;
 
 #if SENSOR_DEBUG
-        DEBUG_MSG_P(PSTR("[EMON] Reference (mV): %d\n"), int(1000 * getReferenceVoltage()));
+        DEBUG_MSG_P(PSTR("[EMON] Reference (mV): %ld\n"),
+                std::lround(1000.0 * getReferenceVoltage()));
         DEBUG_MSG_P(PSTR("[EMON] ADC counts: %lu\n"), _adc_counts);
-        DEBUG_MSG_P(PSTR("[EMON] Channel current ratio (mA/V): %d\n"), int(1000 * getCurrentRatio()));
-        DEBUG_MSG_P(PSTR("[EMON] Channel current factor (mA/bit): %d\n"), int(1000 * _current_factor));
+        DEBUG_MSG_P(PSTR("[EMON] Channel current ratio (mA/V): %ld\n"),
+                std::lround(1000.0 * getRatio(0)));
+        DEBUG_MSG_P(PSTR("[EMON] Channel current factor (mA/bit): %ld\n"),
+                std::lround(1000.0 * _current_factor));
         DEBUG_MSG_P(PSTR("[EMON] Channel multiplier: %u\n"), _multiplier);
 #endif
     }
@@ -107,28 +101,21 @@ public:
     void pre() override {
         updateCurrent(sampleCurrent());
 
-        if (_initial) {
-            _initial = false;
-        } else {
-            _energy[0] += sensor::Ws {
-                static_cast<uint32_t>(getCurrent() * getVoltage() * (millis() - _last_reading) / 1000)
-            };
+        const auto now = TimeSource::now();
+        if (!_initial) {
+            using namespace espurna::sensor;
+            const auto elapsed = std::chrono::duration_cast<espurna::duration::Seconds>(now - _last_reading);
+            _energy[0] += WattSeconds(Watts{getCurrent() * getVoltage()}, elapsed);
         }
 
-        _last_reading = millis();
+        _initial = false;
+        _last_reading = now;
         _error = SENSOR_ERROR_OK;
     }
 
-    unsigned char type(unsigned char index) override {
-        switch (index) {
-        case 0:
-            return MAGNITUDE_CURRENT;
-        case 1:
-            return MAGNITUDE_VOLTAGE;
-        case 2:
-            return MAGNITUDE_POWER_APPARENT;
-        case 3:
-            return MAGNITUDE_ENERGY;
+    unsigned char type(unsigned char index) const override {
+        if (index < std::size(Magnitudes)) {
+            return Magnitudes[index].type;
         }
 
         return MAGNITUDE_NONE;
@@ -156,8 +143,8 @@ public:
 
         auto pivot = getPivot();
 
-        unsigned long time_span = millis();
-        for (unsigned long i=0; i<_samples; i++) {
+        const auto time_span = TimeSource::now();
+        for (size_t i = 0; i < _samples; i++) {
             int sample;
             double filtered;
 
@@ -173,7 +160,7 @@ public:
             sum += (filtered * filtered);
         }
 
-        time_span = millis() - time_span;
+        const auto elapsed = TimeSource::now() - time_span;
 
         // Quick fix
         if (pivot < min || max < pivot) {
@@ -193,8 +180,8 @@ public:
 
 #if SENSOR_DEBUG
         DEBUG_MSG_P(PSTR("[EMON] Total samples: %d\n"), _samples);
-        DEBUG_MSG_P(PSTR("[EMON] Total time (ms): %d\n"), time_span);
-        DEBUG_MSG_P(PSTR("[EMON] Sample frequency (Hz): %d\n"), int(1000 * _samples / time_span));
+        DEBUG_MSG_P(PSTR("[EMON] Total time (ms): %u\n"), elapsed.count());
+        DEBUG_MSG_P(PSTR("[EMON] Sample frequency (Hz): %d\n"), int(1000 * _samples / elapsed.count()));
         DEBUG_MSG_P(PSTR("[EMON] Max value: %d\n"), max);
         DEBUG_MSG_P(PSTR("[EMON] Min value: %d\n"), min);
         DEBUG_MSG_P(PSTR("[EMON] Midpoint value: %d\n"), int(getPivot()));
@@ -202,17 +189,17 @@ public:
         DEBUG_MSG_P(PSTR("[EMON] Current (mA): %d\n"), int(1000 * current));
 #endif
 
-        // Check timing
-        if ((time_span > EMON_MAX_TIME)
-            || ((time_span < EMON_MAX_TIME) && (_samples < _samples_max))) {
-            _samples = (_samples * EMON_MAX_TIME) / time_span;
+        if ((elapsed > MaxTime)
+            || ((elapsed < MaxTime) && (_samples < _samples_max)))
+        {
+            _samples = (_samples * MaxTime.count()) / elapsed.count();
         }
 
         return current;
     }
 
     void calculateFactors() {
-        _current_factor = getCurrentRatio() * getReferenceVoltage() / _adc_counts;
+        _current_factor = getRatio(0) * getReferenceVoltage() / _adc_counts;
         unsigned int s = 1;
         unsigned int i = 1;
         unsigned int m = 1;
@@ -227,8 +214,8 @@ public:
     }
 
 private:
+    TimeSource::time_point _last_reading;
     bool _initial { true };
-    unsigned long _last_reading { millis() };
 
     double _current_factor { 1.0 };                 // Calculated, reads (RMS) to current
     unsigned int _multiplier { 1 };                 // Calculated, error
@@ -236,9 +223,13 @@ private:
     size_t _samples_max { EMON_MAX_SAMPLES };       // Number of samples, will be adjusted at runtime
     size_t _samples { _samples_max };               // based on the maximum value
 
-    size_t _resolution { 10 };                      // ADC resolution (in bits)
-    size_t _adc_counts { _resolution << 1 };        // Max count
+    size_t _resolution { EMON_ANALOG_RESOLUTION };  // ADC resolution (in bits)
+    size_t _adc_counts { static_cast<size_t>(1) << _resolution };       // Max count
 };
+
+#if __cplusplus < 201703L
+constexpr BaseSensor::Magnitude BaseAnalogEmonSensor::Magnitudes[];
+#endif
 
 // Provide EMON API helper where we don't care about specifics of how the values are stored
 
@@ -270,13 +261,33 @@ public:
         return _reference_voltage;
     }
 
-    void setCurrentRatio(double ratio) override {
-        _current_ratio = ratio;
-        _dirty = true;
+    double defaultRatio(unsigned char index) const override {
+        if (index == 0) {
+            return IRef;
+        }
+
+        return BaseEmonSensor::defaultRatio(index);
     }
 
-    double getCurrentRatio() const override {
-        return _current_ratio;
+    double getRatio(unsigned char index) const override {
+        if (index == 0) {
+            return _current_ratio;
+        }
+
+        return BaseEmonSensor::getRatio(index);
+    }
+
+    void setRatio(unsigned char index, double ratio) override {
+        if ((index == 0) && (ratio > 0.0)) {
+            _current_ratio = ratio;
+            calculateFactors();
+            _dirty = true;
+        }
+    }
+
+    void resetRatios() override {
+        setRatio(0, defaultRatio(0));
+        calculateFactors();
     }
 
     void setPivot(double pivot) override {
@@ -300,9 +311,7 @@ private:
     double _voltage { 0.0 };
     double _reference_voltage { 0.0 };
     double _pivot { 0.0 };
-
-    double _current_ratio { EMON_CURRENT_RATIO };
     double _current { 0.0 };
 };
 
-#endif // SENSOR_SUPPORT
+const BaseSensor::ClassKind BaseAnalogEmonSensor::Kind;

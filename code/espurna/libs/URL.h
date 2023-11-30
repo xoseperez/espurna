@@ -8,29 +8,35 @@
 
 #pragma once
 
+#include <Arduino.h>
+
+#include <cstdint>
+#include <utility>
+
+#include "../types.h"
+
 class URL {
-    public:
+public:
+    URL() = default;
+    URL(const URL&) = default;
+    URL(URL&&) = default;
 
-    URL() :
-        protocol(),
-        host(),
-        path(),
-        port(0)
-    {}
+    URL& operator=(const URL&) = default;
+    URL& operator=(URL&&) = default;
 
-    URL(const String& string) {
+    explicit URL(espurna::StringView string) {
         _parse(string);
     }
 
     String protocol;
     String host;
     String path;
-    uint16_t port;
+    uint16_t port { 0 };
 
-    private:
+private:
+    void _parse(espurna::StringView string) {
+        auto buffer = string.toString();
 
-    void _parse(String buffer) {
-        // cut the protocol part
         int index = buffer.indexOf("://");
         if (index > 0) {
             this->protocol = buffer.substring(0, index);
@@ -70,6 +76,4 @@ class URL {
             this->host = _host;
         }
     }
-
 };
-

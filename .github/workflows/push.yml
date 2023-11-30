@@ -1,27 +1,27 @@
-# Check the build status for the nighly builder, release or pull request
+name: PlatformIO Build
 
-name: ESPurna build
-
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - dev
+      - 'test/**'
+    tags-ignore: '**'
+  pull_request:
+    branches: [dev]
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-python@v2
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
       with:
         python-version: '3.x'
-    - name: Cache pip
-      uses: actions/cache@v2
+    - name: Cache CMake
+      uses: actions/cache@v3
       with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('ci_install.sh') }}
-    - name: Cache PlatformIO
-      uses: actions/cache@v2
-      with:
-        path: ~/.platformio
-        key: ${{ runner.os }}-${{ hashFiles('code/platformio.ini') }}
+        path: code/test/unit/cache
+        key: ${{ runner.os }}-cmake-${{ hashFiles('code/test/unit/CMakeLists.txt') }}
     - name: Host tests
       run: |
         ./ci_install.sh host
@@ -30,15 +30,15 @@ jobs:
   webui:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-node@v2
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
       with:
-        node-version: '14'
+        node-version: '18'
     - name: Cache Node
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: ~/.npm
-        key: ${{ runner.os }}-${{ hashFiles('code/package-lock.json', 'code/package.json') }}
+        key: ${{ runner.os }}-npm-${{ hashFiles('code/package-lock.json', 'code/package.json') }}
     - name: WebUI tests
       run: |
         ./ci_install.sh webui
@@ -46,28 +46,43 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-    env:
-      ESPURNA_PIO_SHARED_LIBRARIES: "1"
+    strategy:
+      matrix:
+        env: [nodemcu-lolin, esp8266-4m-base, esp8266-4m-latest-base]
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-python@v2
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
       with:
         python-version: '3.x'
     - name: Cache pip
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: ~/.cache/pip
         key: ${{ runner.os }}-pip-${{ hashFiles('ci_install.sh') }}
     - name: Cache PlatformIO
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: ~/.platformio
-        key: ${{ runner.os }}-${{ hashFiles('code/platformio.ini') }}
+        key: ${{ runner.os }}-build-${{ matrix.env }}-${{ hashFiles('code/platformio.ini') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ matrix.env }}-
+          ${{ runner.os }}-build-
+    - name: Cache libraries
+      uses: actions/cache@v3
+      with:
+        path: libraries/
+        key: ${{ runner.os }}-libraries-${{ hashFiles('code/platformio.ini') }}
+        restore-keys: |
+          ${{ runner.os }}-libraries-
     - name: PlatformIO prepare
       run: |
         git config --global advice.detachedHead false
-        ./ci_install.sh build
-    - run: |
-        ./ci_script.sh build esp8266-4m-base
-    - run: |
-        ./ci_script.sh build esp8266-4m-latest-base
+        ./ci_install.sh build ${{ matrix.env }}
+    - if: ${{ matrix.env == 'nodemcu-lolin' }}
+      name: Basic build
+      run: |
+        ./ci_script.sh build ${{ matrix.env }}
+    - if: ${{ endsWith(matrix.env, '-base') }}
+      name: Test build
+      run: |
+        ./ci_script.sh test ${{ matrix.env }}

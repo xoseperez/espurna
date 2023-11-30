@@ -16,10 +16,11 @@ def app_revision():
     def git(*args):
         cmd = ["git"]
         cmd.extend(args)
-        proc = subprocess.Popen(
-            cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE, universal_newlines=True
-        )
-        return proc.stdout.readlines()[0].strip()
+
+        result = subprocess.run(cmd, capture_output=True, universal_newlines=True)
+        result.check_returncode()
+
+        return result.stdout.strip()
 
     revision = None
     try:

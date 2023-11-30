@@ -19,23 +19,33 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from .build import firmware_destination, app_add_target_build_and_copy
-from .checks import check_cppcheck, check_printsize
+from .build import (
+    firmware_destination,
+    app_add_builder_single_source,
+    app_add_target_build_and_copy,
+    app_add_gzip_file,
+    app_add_target_build_re2c,
+    app_patch_cachedir,
+)
+from .checks import check_env, check_binsize
 from .flags import app_inject_flags
-from .float_support import remove_float_support
+from .hooks import remove_float_support, disable_postmortem_output
 from .ldscripts import ldscripts_inject_libpath
-from .postmortem import dummy_ets_printf
 from .version import app_inject_version, app_full_version_for_env
 
 __all__ = [
+    "app_add_builder_single_source",
     "app_add_target_build_and_copy",
+    "app_add_target_build_re2c",
+    "app_add_gzip_file",
     "app_full_version_for_env",
     "app_inject_flags",
     "app_inject_version",
     "app_version",
-    "check_cppcheck",
-    "check_printsize",
-    "dummy_ets_printf",
+    "app_patch_cachedir",
+    "check_env",
+    "check_binsize",
+    "disable_postmortem_output",
     "firmware_destination",
     "ldscripts_inject_libpath",
     "remove_float_support",

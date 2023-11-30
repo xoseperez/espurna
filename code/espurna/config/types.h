@@ -9,8 +9,6 @@
 // GPIO
 // -----------------------------------------------------------------------------
 
-#define GPIO_NONE           0x99
-
 #define GPIO_TYPE_NONE          GpioType::None
 #define GPIO_TYPE_HARDWARE      GpioType::Hardware
 #define GPIO_TYPE_MCP23S08      GpioType::Mcp23s08
@@ -19,25 +17,24 @@
 // BUTTONS
 //------------------------------------------------------------------------------
 
-#define BUTTON_ACTION_NONE            ButtonAction::None
-#define BUTTON_ACTION_TOGGLE          ButtonAction::Toggle
-#define BUTTON_ACTION_ON              ButtonAction::On
-#define BUTTON_ACTION_OFF             ButtonAction::Off
-#define BUTTON_ACTION_AP              ButtonAction::AccessPoint
-#define BUTTON_ACTION_RESET           ButtonAction::Reset
-#define BUTTON_ACTION_PULSE           ButtonAction::Pulse
-#define BUTTON_ACTION_FACTORY         ButtonAction::FactoryReset
-#define BUTTON_ACTION_WPS             ButtonAction::Wps
-#define BUTTON_ACTION_SMART_CONFIG    ButtonAction::SmartConfig
-#define BUTTON_ACTION_DIM_UP          ButtonAction::BrightnessIncrease
-#define BUTTON_ACTION_DIM_DOWN        ButtonAction::BrightnessDecrease
-#define BUTTON_ACTION_DISPLAY_ON      ButtonAction::DisplayOn
-#define BUTTON_ACTION_CUSTOM          ButtonAction::Custom
-#define BUTTON_ACTION_FAN_LOW         ButtonAction::FanLow
-#define BUTTON_ACTION_FAN_MEDIUM      ButtonAction::FanMedium
-#define BUTTON_ACTION_FAN_HIGH        ButtonAction::FanHigh
-
-#define BUTTON_ACTION_MAX             ButtonsActionMax
+#define BUTTON_ACTION_NONE                ButtonAction::None
+#define BUTTON_ACTION_TOGGLE              ButtonAction::Toggle
+#define BUTTON_ACTION_ON                  ButtonAction::On
+#define BUTTON_ACTION_OFF                 ButtonAction::Off
+#define BUTTON_ACTION_AP                  ButtonAction::AccessPoint
+#define BUTTON_ACTION_RESET               ButtonAction::Reset
+#define BUTTON_ACTION_PULSE               ButtonAction::Pulse
+#define BUTTON_ACTION_FACTORY             ButtonAction::FactoryReset
+#define BUTTON_ACTION_WPS                 ButtonAction::Wps
+#define BUTTON_ACTION_SMART_CONFIG        ButtonAction::SmartConfig
+#define BUTTON_ACTION_DIM_UP              ButtonAction::BrightnessIncrease
+#define BUTTON_ACTION_DIM_DOWN            ButtonAction::BrightnessDecrease
+#define BUTTON_ACTION_DISPLAY_ON          ButtonAction::DisplayOn
+#define BUTTON_ACTION_CUSTOM              ButtonAction::Custom
+#define BUTTON_ACTION_FAN_LOW             ButtonAction::FanLow
+#define BUTTON_ACTION_FAN_MEDIUM          ButtonAction::FanMedium
+#define BUTTON_ACTION_FAN_HIGH            ButtonAction::FanHigh
+#define BUTTON_ACTION_TERMINAL_COMMAND    ButtonAction::TerminalCommand
 
 // Deprecated: legacy mapping, changed to action from above
 #define BUTTON_MODE_NONE              BUTTON_ACTION_NONE
@@ -65,8 +62,10 @@
 
 // configure where do we get the button events
 #define BUTTON_PROVIDER_NONE        ButtonProvider::None
+#define BUTTON_PROVIDER_DUMMY       ButtonProvider::Dummy
 #define BUTTON_PROVIDER_GPIO        ButtonProvider::Gpio
 #define BUTTON_PROVIDER_ANALOG      ButtonProvider::Analog
+#define BUTTON_PROVIDER_LIGHTFOX    ButtonProvider::Lightfox
 
 //------------------------------------------------------------------------------
 // ENCODER
@@ -81,33 +80,37 @@
 
 #define RELAY_NONE          0x99
 
-#define RELAY_BOOT_OFF              0
-#define RELAY_BOOT_ON               1
-#define RELAY_BOOT_SAME             2
-#define RELAY_BOOT_TOGGLE           3
-#define RELAY_BOOT_LOCKED_OFF       4
-#define RELAY_BOOT_LOCKED_ON        5
+#define RELAY_BOOT_OFF              RelayBoot::Off
+#define RELAY_BOOT_ON               RelayBoot::On
+#define RELAY_BOOT_SAME             RelayBoot::Same
+#define RELAY_BOOT_TOGGLE           RelayBoot::Toggle
+#define RELAY_BOOT_LOCKED_OFF       RelayBoot::LockedOff
+#define RELAY_BOOT_LOCKED_ON        RelayBoot::LockedOn
 
 #define RELAY_TYPE_NORMAL           RelayType::Normal
 #define RELAY_TYPE_INVERSE          RelayType::Inverse
 #define RELAY_TYPE_LATCHED          RelayType::Latched
 #define RELAY_TYPE_LATCHED_INVERSE  RelayType::LatchedInverse
 
-#define RELAY_SYNC_ANY              0
-#define RELAY_SYNC_NONE_OR_ONE      1
-#define RELAY_SYNC_ONE              2
-#define RELAY_SYNC_SAME             3
-#define RELAY_SYNC_FIRST            4
+#define RELAY_SYNC_ANY              RelaySync::None
+#define RELAY_SYNC_NONE_OR_ONE      RelaySync::ZeroOrOne
+#define RELAY_SYNC_ONE              RelaySync::JustOne
+#define RELAY_SYNC_SAME             RelaySync::All
+#define RELAY_SYNC_FIRST            RelaySync::First
 
-#define RELAY_PULSE_NONE            RelayPulse::None
-#define RELAY_PULSE_OFF             RelayPulse::Off
-#define RELAY_PULSE_ON              RelayPulse::On
+#define RELAY_PULSE_NONE            Mode::None
+#define RELAY_PULSE_OFF             Mode::Off
+#define RELAY_PULSE_ON              Mode::On
 
 #define RELAY_PROVIDER_NONE         RelayProvider::None
 #define RELAY_PROVIDER_DUMMY        RelayProvider::Dummy
 #define RELAY_PROVIDER_GPIO         RelayProvider::Gpio
 #define RELAY_PROVIDER_DUAL         RelayProvider::Dual
 #define RELAY_PROVIDER_STM          RelayProvider::Stm
+#define RELAY_PROVIDER_LIGHT_STATE  RelayProvider::LightState
+#define RELAY_PROVIDER_FAN          RelayProvider::Fan
+#define RELAY_PROVIDER_LIGHTFOX     RelayProvider::Lightfox
+#define RELAY_PROVIDER_TUYA         RelayProvider::Tuya
 
 #define RFB_PROVIDER_RCSWITCH       0
 #define RFB_PROVIDER_EFM8BB1        1
@@ -166,9 +169,9 @@
 // Heartbeat
 //------------------------------------------------------------------------------
 
-#define HEARTBEAT_NONE      heartbeat::Mode::None
-#define HEARTBEAT_ONCE      heartbeat::Mode::Once
-#define HEARTBEAT_REPEAT    heartbeat::Mode::Repeat
+#define HEARTBEAT_NONE      espurna::heartbeat::Mode::None
+#define HEARTBEAT_ONCE      espurna::heartbeat::Mode::Once
+#define HEARTBEAT_REPEAT    espurna::heartbeat::Mode::Repeat
 
 //------------------------------------------------------------------------------
 // MQTT
@@ -191,14 +194,14 @@
 
 #define LED_MODE_MANUAL             LedMode::Manual         // LED will be managed manually (OFF by default)
 #define LED_MODE_WIFI               LedMode::WiFi           // LED will blink according to the WIFI status
-#define LED_MODE_FOLLOW             LedMode::Follow         // LED will follow state of linked LED#_RELAY relay ID
-#define LED_MODE_FOLLOW_INVERSE     LedMode::FollowInverse  // LED will follow the opposite state of linked LED#_RELAY relay ID
+#define LED_MODE_FOLLOW             LedMode::Relay          // LED will follow state of linked LED#_RELAY relay ID
+#define LED_MODE_FOLLOW_INVERSE     LedMode::RelayInverse   // LED will follow the opposite state of linked LED#_RELAY relay ID
 #define LED_MODE_FINDME             LedMode::FindMe         // LED will be ON if all relays are OFF
 #define LED_MODE_FINDME_WIFI        LedMode::FindMeWiFi     // A mixture between WIFI and FINDME
 #define LED_MODE_ON                 LedMode::On             // LED always ON
 #define LED_MODE_OFF                LedMode::Off            // LED always OFF
-#define LED_MODE_RELAY              LedMode::Relay          // If any relay is ON, LED will be ON, otherwise OFF
-#define LED_MODE_RELAY_WIFI         LedMode::RelayWiFi      // A mixture between WIFI and RELAY, the reverse of MIXED
+#define LED_MODE_RELAY              LedMode::Relays         // If any relay is ON, LED will be ON, otherwise OFF
+#define LED_MODE_RELAY_WIFI         LedMode::RelaysWiFi     // A mixture between WIFI and RELAY, the reverse of MIXED
 
 // -----------------------------------------------------------------------------
 // UI
@@ -225,10 +228,10 @@
 // SCHEDULER
 // -----------------------------------------------------------------------------
 
-#define SCHEDULER_TYPE_NONE         0
-#define SCHEDULER_TYPE_SWITCH       1
-#define SCHEDULER_TYPE_DIM          2
-#define SCHEDULER_TYPE_CURTAIN      3
+#define SCHEDULER_TYPE_NONE         scheduler::Type::None
+#define SCHEDULER_TYPE_RELAY        scheduler::Type::Relay
+#define SCHEDULER_TYPE_CHANNEL      scheduler::Type::Channel
+#define SCHEDULER_TYPE_CURTAIN      scheduler::Type::Curtain
 
 // -----------------------------------------------------------------------------
 // IR
@@ -255,6 +258,14 @@
 #define LIGHT_EFFECT_STROBE         2
 #define LIGHT_EFFECT_FADE           3
 #define LIGHT_EFFECT_SMOOTH         4
+
+//------------------------------------------------------------------------------
+// PWM
+//------------------------------------------------------------------------------
+
+#define PWM_PROVIDER_NONE           0
+#define PWM_PROVIDER_GENERIC        1
+#define PWM_PROVIDER_ARDUINO        2
 
 //------------------------------------------------------------------------------
 // ENVIRONMENTAL
@@ -328,6 +339,8 @@
 #define SENSOR_PZEM004TV30_ID       41
 #define SENSOR_BME680_ID            42
 #define SENSOR_SM300D2_ID           43
+#define SENSOR_PM1006_ID            44
+#define SENSOR_INA219_ID            45
 
 //--------------------------------------------------------------------------------
 // Magnitudes
@@ -349,8 +362,8 @@
 #define MAGNITUDE_ANALOG            12
 #define MAGNITUDE_DIGITAL           13
 #define MAGNITUDE_EVENT             14
-#define MAGNITUDE_PM1dot0           15
-#define MAGNITUDE_PM2dot5           16
+#define MAGNITUDE_PM1DOT0           15
+#define MAGNITUDE_PM2DOT5           16
 #define MAGNITUDE_PM10              17
 #define MAGNITUDE_CO2               18
 #define MAGNITUDE_LUX               19
@@ -376,6 +389,9 @@
 
 #define MAGNITUDE_MAX               39
 
+// TODO: backwards compatible sensor integer values. should probably allow custom messsages
+// (even with the increased flash arequirements)
+
 #define SENSOR_ERROR_OK             0       // No error
 #define SENSOR_ERROR_OUT_OF_RANGE   1       // Result out of sensor range
 #define SENSOR_ERROR_WARM_UP        2       // Sensor is warming-up
@@ -385,16 +401,13 @@
 #define SENSOR_ERROR_I2C            6       // Wrong or locked I2C address
 #define SENSOR_ERROR_GPIO_USED      7       // The GPIO is already in use
 #define SENSOR_ERROR_CALIBRATION    8       // Calibration error or Not calibrated
+#define SENSOR_ERROR_OVERFLOW       9       // Value overflow
+#define SENSOR_ERROR_NOT_READY      10      // Device is not ready / available / disconnected
+#define SENSOR_ERROR_CONFIG         11      // Configuration values were invalid
+#define SENSOR_ERROR_SUPPORT        12      // Not supported
 #define SENSOR_ERROR_OTHER          99      // Any other error
 
-#define SENSOR_ERROR_MAX            9
-
-//------------------------------------------------------------------------------
-// Telnet server
-//------------------------------------------------------------------------------
-
-#define TELNET_SERVER_ASYNC        0
-#define TELNET_SERVER_WIFISERVER   1
+#define SENSOR_ERROR_MAX            13
 
 //------------------------------------------------------------------------------
 // OTA Client (not related to the Web OTA support)
@@ -415,3 +428,14 @@
 #define SECURE_CLIENT_CHECK_NONE          0 // !!! INSECURE CONNECTION !!!
 #define SECURE_CLIENT_CHECK_FINGERPRINT   1 // legacy fingerprint validation
 #define SECURE_CLIENT_CHECK_CA            2 // set trust anchor from PROGMEM CA certificate
+
+//------------------------------------------------------------------------------
+// WiFi
+//------------------------------------------------------------------------------
+
+#define WIFI_SLEEP_MODE_NONE        NONE_SLEEP_T
+#define WIFI_SLEEP_MODE_MODEM       MODEM_SLEEP_T
+#define WIFI_SLEEP_MODE_LIGHT       LIGHT_SLEEP_T
+
+#define WIFI_DISABLED               BootMode::Disabled
+#define WIFI_ENABLED                BootMode::Enabled
