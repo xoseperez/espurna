@@ -32,9 +32,9 @@ public:
 
     void setAnim(Anim* anim) { _anim = anim; }
     bool finishedAnimCycle() { return _anim ? _anim->finishedycle() : true; }
-    unsigned long getAvgCalcTime() { return sum_calc_time / calc_num; }
-    unsigned long getAvgPixlTime() { return sum_pixl_time / pixl_num; }
-    unsigned long getAvgShowTime() { return sum_show_time / show_num; }
+    unsigned long getAvgCalcTime() { return calc_num > 0 ? sum_calc_time / calc_num : 0; }
+    unsigned long getAvgPixlTime() { return pixl_num > 0 ? sum_pixl_time / pixl_num : 0; }
+    unsigned long getAvgShowTime() { return show_num > 0 ? sum_show_time / show_num : 0; }
     int getNumShows() { return numShows; }
     byte getBrightness() { return brightness; }
     void setBrightness(byte value) { brightness = value; }
