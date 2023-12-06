@@ -236,7 +236,6 @@ void _garlandWebSocketOnAction(uint32_t client_id, const char* action, JsonObjec
     if (strcmp(action, NAME_GARLAND_SET_BRIGHTNESS) == 0) {
         if (data.containsKey("brightness")) {
             byte new_brightness = data.get<byte>("brightness");
-            DEBUG_MSG_P(PSTR("[GARLAND] new brightness = %d\n"), new_brightness);
             setSetting(NAME_GARLAND_BRIGHTNESS, new_brightness);
             scene.setBrightness(new_brightness);
         }
@@ -245,7 +244,6 @@ void _garlandWebSocketOnAction(uint32_t client_id, const char* action, JsonObjec
     if (strcmp(action, NAME_GARLAND_SET_SPEED) == 0) {
         if (data.containsKey("speed")) {
             byte new_speed = data.get<byte>("speed");
-            DEBUG_MSG_P(PSTR("[GARLAND] new speed = %d\n"), new_speed);
             setSetting(NAME_GARLAND_SPEED, new_speed);
             scene.setSpeed(new_speed);
         }
@@ -472,18 +470,25 @@ void Scene<Leds>::setPalette(Palette* palette) {
     }
 }
 
+template<uint16_t Leds>
+void Scene<Leds>::setBrightness(byte value) {
+    DEBUG_MSG_P(PSTR("[GARLAND] new brightness = %d\n"), value);
+    brightness = value;
+}
+
 // Speed is reverse to cycleFactor and 10x
 template<uint16_t Leds>
 void Scene<Leds>::setSpeed(byte speed) {
+    DEBUG_MSG_P(PSTR("[GARLAND] new speed = %d\n"), speed);
     this->speed = speed;
     cycleFactor = (float)(GARLAND_SCENE_SPEED_MAX - speed) / GARLAND_SCENE_SPEED_FACTOR;
 }
 
 template<uint16_t Leds>
 void Scene<Leds>::setDefault() {
-    speed = GARLAND_SCENE_DEFAULT_SPEED;
-    cycleFactor = (float)(GARLAND_SCENE_SPEED_MAX - speed) / GARLAND_SCENE_SPEED_FACTOR;
-    brightness = GARLAND_SCENE_DEFAULT_BRIGHTNESS;
+    DEBUG_MSG_P(PSTR("[GARLAND] set default\n"));
+    this->setBrightness(GARLAND_SCENE_DEFAULT_BRIGHTNESS);
+    this->setSpeed(GARLAND_SCENE_DEFAULT_SPEED);
 }
 
 template<uint16_t Leds>

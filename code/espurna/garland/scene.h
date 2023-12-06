@@ -37,10 +37,10 @@ public:
     unsigned long getAvgShowTime() { return show_num > 0 ? sum_show_time / show_num : 0; }
     int getNumShows() { return numShows; }
     byte getBrightness() { return brightness; }
-    void setBrightness(byte value) { brightness = value; }
     byte getSpeed() { return speed; }
 
     void setPalette(Palette* palette);
+    void setBrightness(byte value);
     void setSpeed(byte speed);
     void setDefault();
     void run();
