@@ -24,6 +24,10 @@ Inspired by https://github.com/Vasil-Pahomov/ArWs2812 (currently https://github.
 #include "animations/anim_start.h"
 #include "animations/anim_waves.h"
 
+#define GARLAND_SCENE_SPEED_MAX          70
+#define GARLAND_SCENE_SPEED_FACTOR       10
+#define GARLAND_SCENE_DEFAULT_SPEED      40
+
 template <uint16_t Leds>
 class Scene {
 public:
@@ -38,6 +42,7 @@ public:
     int getNumShows() { return numShows; }
     byte getBrightness() { return brightness; }
     byte getSpeed() { return speed; }
+    float getCycleFactor(byte speed) { return (float)(GARLAND_SCENE_SPEED_MAX - speed) / GARLAND_SCENE_SPEED_FACTOR; }
 
     void setPalette(Palette* palette);
     void setBrightness(byte value);
@@ -70,13 +75,13 @@ private:
     // if cycleFactor is 2 or more, than calculation and drawing made in different cycles
     // cycleFactor is float. For example cycleFactor=2.5 gives one step 2 than next 3 cycles per anim step
     // Recommended values: 1 < cycleFactor < 4
-    float              cycleFactor = 2.0;
+    float              cycleFactor = getCycleFactor(GARLAND_SCENE_DEFAULT_SPEED);
     // speed is reverse to cycleFactor. For forward direction control of animation speed.
     // Recommended values: 30 < speed < 60.
     // Correspondence: 
     //   speed=60, cycleFactor=1
     //   speed=30, cycleFactor=4
-    byte               speed = 50;
+    byte               speed = GARLAND_SCENE_DEFAULT_SPEED;
     float              cycleTail = 0;
     int                cyclesRemain = 0;
 

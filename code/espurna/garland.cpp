@@ -89,8 +89,8 @@ alignas(4) static constexpr char MQTT_COMMAND_RESET[] = "reset"; // reset queue
 alignas(4) static constexpr char MQTT_COMMAND_QUEUE[] = "queue"; // enqueue command payload
 alignas(4) static constexpr char MQTT_COMMAND_SEQUENCE[] = "sequence"; // place command to sequence
 
-#define EFFECT_UPDATE_INTERVAL_MIN      7000  // 5 sec
-#define EFFECT_UPDATE_INTERVAL_MAX      12000 // 10 sec
+#define EFFECT_UPDATE_INTERVAL_MIN      15000  // 15 sec
+#define EFFECT_UPDATE_INTERVAL_MAX      30000 // 30 sec
 
 #define NUMLEDS_CAN_CAUSE_WDT_RESET     100
 
@@ -457,9 +457,6 @@ void garlandMqttCallback(unsigned int type, espurna::StringView topic, espurna::
 #######################################################################*/
 
 #define GARLAND_SCENE_TRANSITION_MS      1000    // transition time between animations, ms
-#define GARLAND_SCENE_SPEED_MAX          70
-#define GARLAND_SCENE_SPEED_FACTOR       10
-#define GARLAND_SCENE_DEFAULT_SPEED      50
 #define GARLAND_SCENE_DEFAULT_BRIGHTNESS 255
 
 template<uint16_t Leds>
