@@ -2896,6 +2896,17 @@ function processData(data) {
             return;
         }
 
+        if ("garlandBrightness" === key) {
+            const brightnessSlider = document.getElementById("garlandBrightness");
+            brightnessSlider.value = value;
+        }
+
+        if ("garlandSpeed" === key) {
+            const speedSlider = document.getElementById("garlandSpeed");
+            speedSlider.value = value;
+        }
+
+
         initGenericKeyValueElement(key, value);
     });
 }
