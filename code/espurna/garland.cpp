@@ -103,17 +103,13 @@ std::queue<String>  _command_queue;
 std::vector<String> _command_sequence;
 
 // Palette should
-std::array<Palette, 10> pals {
+std::array<Palette, 14> pals {
     // palettes below are taken from http://www.color-hex.com/color-palettes/ (and modified)
     // RGB: Red,Green,Blue sequence
     Palette("RGB", {0xFF0000, 0x00FF00, 0x0000FF}),
 
     // Rainbow: Rainbow colors
-    Palette("Rainbow", {0xFF0000, 0xAB5500, 0xABAB00, 0x00FF00, 0x00AB55, 0x0000FF, 0x5500AB, 0xAB0055}),
-
-    // RainbowStripe: Rainbow colors with alternating stripes of black
-    Palette("Stripe", {0xFF0000, 0x000000, 0xAB5500, 0x000000, 0xABAB00, 0x000000, 0x00FF00, 0x000000,
-                       0x00AB55, 0x000000, 0x0000FF, 0x000000, 0x5500AB, 0x000000, 0xAB0055, 0x000000}),
+    Palette("Rainbow", {0xFF0000, 0xFF8000, 0xFFFF00, 0x00FF00, 0x00FFFF, 0x0000FF, 0x5500AB}),
 
     // Party: Blue purple ping red orange yellow (and back). Basically, everything but the greens.
     // This palette is good for lighting at a club or party.
@@ -126,7 +122,7 @@ std::array<Palette, 10> pals {
     Palette("Heat", {0x700070, 0xFF0000, 0xFFFF00, 0xFFFFCC}),
 
     // Fire:
-    Palette("Fire", {0x000000, 0x220000, 0x880000, 0xFF0000, 0xFF6600, 0xFFCC00}),
+    Palette("Fire", {0x300000, 0x440000, 0x880000, 0xFF0000, 0xFF6600, 0xFFCC00}),
 
     // Blue:
     Palette("Blue", {0xffffff, 0x0000ff, 0x00ffff}),
@@ -137,8 +133,18 @@ std::array<Palette, 10> pals {
     // Lime: yellow green mix
     Palette("Lime", {0x51f000, 0x6fff00, 0x96ff00, 0xc9ff00, 0xf0ff00}),
 
+    Palette("Greens", {0xe5f2e5, 0x91f086, 0x48bf53, 0x11823b, 0x008000, 0x004d25, 0x18392b, 0x02231c}),
+
     // Pastel: Pastel Fruity Mixture
-    Palette("Pastel", {0x75aa68, 0x5960ae, 0xe4be6c, 0xca5959, 0x8366ac})
+    Palette("Pastel", {0x75aa68, 0x5960ae, 0xe4be6c, 0xca5959, 0x8366ac}),
+
+    Palette("Summer", {0xb81616, 0xf13057, 0xf68118, 0xf2ab1e, 0xf9ca00, 0xaef133,  0x19ee9f, 0x0ea7b5, 0x0c457d}),
+
+    Palette("Autumn", {0x8b1509, 0xce7612, 0x11805d, 0x801138, 0x32154b, 0x724c04}),
+
+    Palette("Winter", {0xca9eb8, 0xfeeacf, 0xe0ecf2, 0x89e1c9, 0x72c3c5, 0x92c1ff, 0x3e6589, 0x052542}),
+
+    Palette("Gaang", {0xe7a532, 0x46a8ca, 0xaf7440, 0xb4d29d, 0x9f5b72, 0x585c82})
 };
 
 constexpr uint16_t GarlandLeds { GARLAND_LEDS };
@@ -148,7 +154,7 @@ constexpr neoPixelType GarlandPixelType { NEO_GRB + NEO_KHZ800 };
 Adafruit_NeoPixel pixels(GarlandLeds, GarlandPin, GarlandPixelType);
 Scene<GarlandLeds> scene(&pixels);
 
-std::array<Anim*, 15> anims {
+std::array<Anim*, 16> anims {
     new AnimGlow(),
     new AnimStart(),
     new AnimPixieDust(),
@@ -163,7 +169,8 @@ std::array<Anim*, 15> anims {
     new AnimDolphins(),
     new AnimSalut(),
     new AnimFountain(),
-    new AnimWaves()
+    new AnimWaves(),
+    new AnimRandRun(),
 };
 
 #define START_ANIMATION  1
@@ -673,7 +680,7 @@ byte Anim::rngb() {
 //------------------------------------------------------------------------------
 
 void garlandEnabled(bool enabled) {
-    setSetting(NAME_GARLAND_ENABLED, _garland_enabled);
+    setSetting(NAME_GARLAND_ENABLED, enabled);
     if (_garland_enabled != enabled) {
         espurnaRegisterOnceUnique([]() {
             pixels.clear();
@@ -719,7 +726,7 @@ void garlandSetup() {
     scene.setPalette(_currentPalette);
     scene.setup();
 
-    _currentDuration = secureRandom(EFFECT_UPDATE_INTERVAL_MIN, EFFECT_UPDATE_INTERVAL_MAX);
+    _currentDuration = 12000; // Start animation duration
 }
 
 #endif  // GARLAND_SUPPORT

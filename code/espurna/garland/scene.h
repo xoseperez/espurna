@@ -15,6 +15,7 @@ Inspired by https://github.com/Vasil-Pahomov/ArWs2812 (currently https://github.
 #include "animations/anim_fly.h"
 #include "animations/anim_glow.h"
 #include "animations/anim_pixiedust.h"
+#include "animations/anim_randrun.h"
 #include "animations/anim_randcyc.h"
 #include "animations/anim_run.h"
 #include "animations/anim_salut.h"
