@@ -590,7 +590,7 @@ void Scene<Leds>::setupImpl() {
     }
 
     if (_anim) {
-        _anim->Setup(_palette, Leds, _leds, _ledstmp.data(), _seq.data());
+        _anim->Setup(_palette, _pals, _palsNum, Leds, _leds, _ledstmp.data(), _seq.data());
     }
 }
 
@@ -620,8 +620,10 @@ void Scene<Leds>::setup() {
 
 Anim::Anim(const char* name) : _name(name) {}
 
-void Anim::Setup(Palette* palette, uint16_t numLeds, Color* leds, Color* ledstmp, byte* seq) {
+void Anim::Setup(Palette* palette, Palette* pals, size_t palsNum, uint16_t numLeds, Color* leds, Color* ledstmp, byte* seq) {
     this->palette = palette;
+    this->pals = pals;
+    this->palsNum = palsNum;
     this->numLeds = numLeds;
     this->leds = leds;
     this->ledstmp = ledstmp;
@@ -726,6 +728,7 @@ void garlandSetup() {
     pixels.begin();
     scene.setAnim(anims[START_ANIMATION]);
     scene.setPalette(&pals[0]);
+    scene.setPals(pals.data(), pals.size());
     scene.setup();
 
     _currentDuration = 12000; // Start animation duration

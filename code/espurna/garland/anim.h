@@ -19,7 +19,7 @@ class Anim {
 public:
     Anim(const char* name);
     const char* name() const { return _name; }
-    void Setup(Palette* palette, uint16_t numLeds, Color* leds, Color* _ledstmp, byte* seq);
+    void Setup(Palette* palette, Palette* pals, size_t pals_size, uint16_t numLeds, Color* leds, Color* _ledstmp, byte* seq);
     virtual bool finishedycle() const { return true; };
     virtual void Run() = 0;
     virtual void setCycleFactor(float new_cycle_factor) { cycleFactor = new_cycle_factor; }
@@ -28,6 +28,8 @@ public:
 protected:
     uint16_t    numLeds     = 0;
     Palette*    palette     = nullptr;
+    Palette*    pals        = nullptr;
+    size_t      palsNum     = 0;
     Color*      leds        = nullptr;
     Color*      ledstmp     = nullptr;
     byte*       seq         = nullptr;

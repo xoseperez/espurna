@@ -49,6 +49,7 @@ public:
 
     void setAnim(Anim* anim) { _anim = anim; }
     void setPalette(Palette* palette);
+    void setPals(Palette* palettes, size_t palsNum) { _pals = palettes; _palsNum = palsNum; }
     void setBrightness(byte value);
     void setSpeed(byte speed);
     void setDefault();
@@ -69,6 +70,8 @@ private:
     std::array<byte, Leds>  _seq;
 
     Palette*           _palette = nullptr;
+    Palette*           _pals = nullptr;
+    size_t             _palsNum = 0;
 
     // millis to transition end
     unsigned long      transms;

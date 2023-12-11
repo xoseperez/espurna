@@ -12,8 +12,8 @@ class AnimCrossing : public Anim {
 
     void SetupImpl() override {
 
-        wave1 = generateWave();
-        wave2 = generateWave();
+        wave1 = generateWave(1);
+        wave2 = generateWave(-1);
     }
 
     void Run() override {
@@ -79,15 +79,15 @@ class AnimCrossing : public Anim {
         byte fade_step;
     };
 
-    ColorWave generateWave() {
+    ColorWave generateWave(int dir) {
         unsigned int _waveLen = secureRandom(10, 30);
         bool _cleanColors = secureRandom(10) > 5;
         bool _startEmpty = secureRandom(10) > 5;
-        int _dir = secureRandom(10) > 5 ? 1 : -1;
-        float _speed = secureRandom(10, 30) / 10.0;
+        float _speed = secureRandom(5, 20) / 10.0;
         byte _fade = secureRandom(0, 256);
-        DEBUG_MSG_P(PSTR("[GARLAND] Wave created waveLen = %d cleanColors = %d startEmpty = %d dir = %d speed = %g fade = %d\n"), _waveLen, _cleanColors, _startEmpty, _dir, _speed, _fade);
-        return ColorWave(numLeds, palette, _waveLen, _cleanColors, _startEmpty, _dir, _speed, _fade);
+        Palette* wavePal = &pals[secureRandom(palsNum)];
+        DEBUG_MSG_P(PSTR("[GARLAND] Wave created waveLen = %d Pal: %-8s cleanColors = %d startEmpty = %d dir = %d speed = %d fade = %d\n"), _waveLen, wavePal->name(), _cleanColors, _startEmpty, dir, (int)(_speed * 10.0), _fade);
+        return ColorWave(numLeds, wavePal, _waveLen, _cleanColors, _startEmpty, dir, _speed, _fade);
     }
 
     ColorWave wave1;
