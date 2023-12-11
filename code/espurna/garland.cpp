@@ -154,7 +154,7 @@ constexpr neoPixelType GarlandPixelType { NEO_GRB + NEO_KHZ800 };
 Adafruit_NeoPixel pixels(GarlandLeds, GarlandPin, GarlandPixelType);
 Scene<GarlandLeds> scene(&pixels);
 
-std::array<Anim*, 16> anims {
+std::array<Anim*, 17> anims {
     new AnimStart(),
     new AnimGlow(),
     new AnimPixieDust(),
@@ -171,6 +171,7 @@ std::array<Anim*, 16> anims {
     new AnimFountain(),
     new AnimWaves(),
     new AnimRandRun(),
+    new AnimCrossing()
 };
 
 #define START_ANIMATION  0
@@ -396,10 +397,12 @@ void garlandLoop(void) {
         }
 
         if (!scene_setup_done) {
-            Anim* newAnim = _currentAnim;
-            while (newAnim == _currentAnim) {
-                newAnim = anims[secureRandom(START_ANIMATION + 1, anims.size())];
-            }
+            // Anim* newAnim = _currentAnim;
+            // while (newAnim == _currentAnim) {
+            //     newAnim = anims[secureRandom(START_ANIMATION + 1, anims.size())];
+            // }
+
+            Anim* newAnim = anims[16];
 
             Palette* newPalette = _currentPalette;
             while (newPalette == _currentPalette) {

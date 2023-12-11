@@ -10,6 +10,7 @@ Inspired by https://github.com/Vasil-Pahomov/ArWs2812 (currently https://github.
 #include "anim.h"
 #include "animations/anim_assemble.h"
 #include "animations/anim_comets.h"
+#include "animations/anim_crossing.h"
 #include "animations/anim_dolphins.h"
 #include "animations/anim_fountain.h"
 #include "animations/anim_fly.h"
@@ -44,6 +45,7 @@ public:
     byte getBrightness() { return brightness; }
     byte getSpeed() { return speed; }
     float getCycleFactor(byte speed) { return (float)(GARLAND_SCENE_SPEED_MAX - speed) / GARLAND_SCENE_SPEED_FACTOR; }
+    const Palette* getPalette() const { return _palette; }
 
     void setPalette(Palette* palette);
     void setBrightness(byte value);

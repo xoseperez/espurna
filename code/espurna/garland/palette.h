@@ -81,9 +81,33 @@ class Palette {
         return bestColor;
     }
 
+    Color getCleanColor(unsigned int i) const {
+        return _colors[i % _numColors];
+    }
+
+    Color getCloseCleanColor(const Color& refColor) const {
+        int bestDiff = 0;
+        Color bestColor;
+        
+        for (unsigned int i = 0; i < _numColors; ++i) {
+            Color newColor = _colors[i];
+            int diff = refColor.howCloseTo(newColor);
+            if (bestDiff < diff) {
+                bestDiff = diff;
+                bestColor = newColor;
+            }
+        }
+        return bestColor;
+    }
+
+    Color getRndCleanColor() const {
+        return _colors[secureRandom(_numColors)];
+    }
+
+
    private:
     const char* _name;
-    const int _numColors;
+    const unsigned int _numColors;
     std::vector<Color> _colors;
     std::vector<Color> _cache;
 };
