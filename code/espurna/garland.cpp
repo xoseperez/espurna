@@ -147,6 +147,8 @@ std::array<Palette, 14> pals {
     Palette("Gaang", {0xe7a532, 0x46a8ca, 0xaf7440, 0xb4d29d, 0x9f5b72, 0x585c82})
 };
 
+auto one_color_palette = std::unique_ptr<Palette>(new Palette("White", {0xffffff}));
+
 constexpr uint16_t GarlandLeds { GARLAND_LEDS };
 constexpr unsigned char GarlandPin { GARLAND_DATA_PIN };
 constexpr neoPixelType GarlandPixelType { NEO_GRB + NEO_KHZ800 };
@@ -175,9 +177,8 @@ std::array<Anim*, 17> anims {
 };
 
 #define START_ANIMATION  0
-Anim* _currentAnim       = anims[START_ANIMATION];
-Palette* _currentPalette = &pals[0];
-auto one_color_palette = std::unique_ptr<Palette>(new Palette("White", {0xffffff}));
+// Anim* _currentAnim       = anims[START_ANIMATION];
+// Palette* _currentPalette = &pals[0];
 
 //------------------------------------------------------------------------------
 // Setup
@@ -273,18 +274,16 @@ void setupScene(Anim* new_anim, Palette* new_palette, unsigned long new_duration
 
     static String palette_name = "Start";
     DEBUG_MSG_P(PSTR("[GARLAND] Anim: %-10s Pal: %-8s timings: calc: %4d pixl: %3d show: %4d frate: %d\n"),
-                _currentAnim->name(), palette_name.c_str(),
+                scene.getAnim()->name(), palette_name.c_str(),
                 scene.getAvgCalcTime(), scene.getAvgPixlTime(), scene.getAvgShowTime(), frameRate);
 
     _currentDuration = new_duration;
-    _currentAnim     = new_anim;
-    _currentPalette  = new_palette;
-    palette_name = _currentPalette->name();
+    palette_name = new_palette->name();
     DEBUG_MSG_P(PSTR("[GARLAND] Anim: %-10s Pal: %-8s Inter: %d\n"),
-                _currentAnim->name(), palette_name.c_str(), _currentDuration);
+                new_anim->name(), palette_name.c_str(), _currentDuration);
 
-    scene.setAnim(_currentAnim);
-    scene.setPalette(_currentPalette);
+    scene.setAnim(new_anim);
+    scene.setPalette(new_palette);
     scene.setup();
 }
 
@@ -316,7 +315,7 @@ bool executeCommand(const String& command) {
         scene.setSpeed(speed);
     }
 
-    Anim* newAnim = _currentAnim;
+    Anim* newAnim = anims[0];
     if (root.containsKey(MQTT_PAYLOAD_ANIMATION)) {
         auto animation = root[MQTT_PAYLOAD_ANIMATION].as<const char*>();
         for (size_t i = 0; i < anims.size(); ++i) {
@@ -329,7 +328,7 @@ bool executeCommand(const String& command) {
         }
     }
 
-    Palette* newPalette = _currentPalette;
+    Palette* newPalette = &pals[0];
     if (root.containsKey(MQTT_PAYLOAD_PALETTE)) {
         if (root.is<int>(MQTT_PAYLOAD_PALETTE)) {
             one_color_palette.reset(new Palette("Color", {root[MQTT_PAYLOAD_PALETTE].as<uint32_t>()}));
@@ -404,8 +403,8 @@ void garlandLoop(void) {
 
             Anim* newAnim = anims[16];
 
-            Palette* newPalette = _currentPalette;
-            while (newPalette == _currentPalette) {
+            Palette* newPalette = &pals[0];
+            while (newPalette == scene.getPalette()) {
                 newPalette = &pals[secureRandom(pals.size())];
             }
 
@@ -725,8 +724,8 @@ void garlandSetup() {
     espurnaRegisterReload(_garlandReload);
 
     pixels.begin();
-    scene.setAnim(_currentAnim);
-    scene.setPalette(_currentPalette);
+    scene.setAnim(anims[START_ANIMATION]);
+    scene.setPalette(&pals[0]);
     scene.setup();
 
     _currentDuration = 12000; // Start animation duration

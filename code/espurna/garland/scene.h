@@ -36,7 +36,6 @@ public:
     Scene(Adafruit_NeoPixel* pixels) : _pixels(pixels) {}
     constexpr uint16_t getLeds() const { return Leds; }
 
-    void setAnim(Anim* anim) { _anim = anim; }
     bool finishedAnimCycle() { return _anim ? _anim->finishedycle() : true; }
     unsigned long getAvgCalcTime() { return calc_num > 0 ? sum_calc_time / calc_num : 0; }
     unsigned long getAvgPixlTime() { return pixl_num > 0 ? sum_pixl_time / pixl_num : 0; }
@@ -46,7 +45,9 @@ public:
     byte getSpeed() { return speed; }
     float getCycleFactor(byte speed) { return (float)(GARLAND_SCENE_SPEED_MAX - speed) / GARLAND_SCENE_SPEED_FACTOR; }
     const Palette* getPalette() const { return _palette; }
+    const Anim* getAnim() const { return _anim; }
 
+    void setAnim(Anim* anim) { _anim = anim; }
     void setPalette(Palette* palette);
     void setBrightness(byte value);
     void setSpeed(byte speed);

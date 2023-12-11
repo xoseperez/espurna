@@ -18,7 +18,7 @@ class Palette;
 class Anim {
 public:
     Anim(const char* name);
-    const char* name() { return _name; }
+    const char* name() const { return _name; }
     void Setup(Palette* palette, uint16_t numLeds, Color* leds, Color* _ledstmp, byte* seq);
     virtual bool finishedycle() const { return true; };
     virtual void Run() = 0;
