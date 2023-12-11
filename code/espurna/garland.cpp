@@ -155,8 +155,8 @@ Adafruit_NeoPixel pixels(GarlandLeds, GarlandPin, GarlandPixelType);
 Scene<GarlandLeds> scene(&pixels);
 
 std::array<Anim*, 16> anims {
-    new AnimGlow(),
     new AnimStart(),
+    new AnimGlow(),
     new AnimPixieDust(),
     new AnimSparkr(),
     new AnimRun(),
@@ -173,8 +173,8 @@ std::array<Anim*, 16> anims {
     new AnimRandRun(),
 };
 
-#define START_ANIMATION  1
-Anim* _currentAnim       = anims[1];
+#define START_ANIMATION  0
+Anim* _currentAnim       = anims[START_ANIMATION];
 Palette* _currentPalette = &pals[0];
 auto one_color_palette = std::unique_ptr<Palette>(new Palette("White", {0xffffff}));
 
