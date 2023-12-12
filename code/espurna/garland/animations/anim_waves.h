@@ -2,54 +2,34 @@
 
 #include "../anim.h"
 #include "../palette.h"
+#include "color_wave.h"
 
 //------------------------------------------------------------------------------
 class AnimWaves : public Anim {
-    private:
-     int bra_phase;
-     int bra_phase_speed;
-     byte bra_speed;
-     byte bra_min;
-     int sign;
-
    public:
     AnimWaves() : Anim("Waves") {
     }
 
     void SetupImpl() override {
-        curColor = palette->getRndInterpColor().max_bright();
+        unsigned int waveLen = secureRandom(50, 100);
+        bool cleanColors = secureRandom(10) > 7;
+        byte fade = palette->bright() ? secureRandom(180, 220) : 0;
+        wave = ColorWave(numLeds, palette, waveLen, cleanColors, fade);
         glowSetUp();
-        sign = braPhaseSpd > 128 ? -1 : 1;
-        bra_phase = secureRandom(255);
-        bra_phase_speed = secureRandom(2, 5);
-        bra_speed = secureRandom(4, 12);
-        bra_min = secureRandom(20, 30);
     }
 
     void Run() override {
-        int bra = bra_phase;
-        int8_t bra_inc = -sign * bra_speed;
-
-        for (int i = 0; i < numLeds; ++i) {
-            leds[i] = curColor;
+        for (auto i = 0; i < numLeds; ++i) {
+            leds[i] = wave.getLedColor(i);
             glowForEachLed(i);
-            leds[i] = leds[i].brightness((byte)bra);
-            bra += bra_inc;
-            if (bra > 255 || bra < bra_min) {
-                bra_inc = -bra_inc;
-                bra = bra > 255 ? 255 : bra_min;
-            }            
         }
+
+        wave.move();
 
         glowRun();
-
-        bra_phase += bra_phase_speed;
-        if (bra_phase > 255 || bra_phase < bra_min) {
-            bra_phase_speed = -bra_phase_speed;
-            sign = -sign;
-            bra_phase = bra_phase > 255 ? 255 : bra_min;
-        }
     }
+
+    ColorWave wave;
 };
 
 #endif  // GARLAND_SUPPORT

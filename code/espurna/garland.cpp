@@ -106,48 +106,48 @@ std::vector<String> _command_sequence;
 std::array<Palette, 14> pals {
     // palettes below are taken from http://www.color-hex.com/color-palettes/ (and modified)
     // RGB: Red,Green,Blue sequence
-    Palette("RGB", {0xFF0000, 0x00FF00, 0x0000FF}),
+    Palette("RGB", true, {0xFF0000, 0x00FF00, 0x0000FF}),
 
     // Rainbow: Rainbow colors
-    Palette("Rainbow", {0xFF0000, 0xFF8000, 0xFFFF00, 0x00FF00, 0x00FFFF, 0x0000FF, 0x5500AB}),
+    Palette("Rainbow", true, {0xFF0000, 0xFF8000, 0xFFFF00, 0x00FF00, 0x00FFFF, 0x0000FF, 0x5500AB}),
 
     // Party: Blue purple ping red orange yellow (and back). Basically, everything but the greens.
     // This palette is good for lighting at a club or party.
-    Palette("Party", {0x5500AB, 0x84007C, 0xB5004B, 0xE5001B, 0xE81700, 0xB84700, 0xAB7700, 0xABAB00,
+    Palette("Party", false, {0x5500AB, 0x84007C, 0xB5004B, 0xE5001B, 0xE81700, 0xB84700, 0xAB7700, 0xABAB00,
                       0xAB5500, 0xDD2200, 0xF2000E, 0xC2003E, 0x8F0071, 0x5F00A1, 0x2F00D0, 0x0007F9}),
 
     // Heat: Approximate "black body radiation" palette, akin to the FastLED 'HeatColor' function.
     // Recommend that you use values 0-240 rather than the usual 0-255, as the last 15 colors will be
     // 'wrapping around' from the hot end to the cold end, which looks wrong.
-    Palette("Heat", {0x700070, 0xFF0000, 0xFFFF00, 0xFFFFCC}),
+    Palette("Heat", false, {0x700070, 0xFF0000, 0xFFFF00, 0xFFFFCC}),
 
     // Fire:
-    Palette("Fire", {0x300000, 0x440000, 0x880000, 0xFF0000, 0xFF6600, 0xFFCC00}),
+    Palette("Fire", false, {0x300000, 0x440000, 0x880000, 0xFF0000, 0xFF6600, 0xFFCC00}),
 
     // Blue:
-    Palette("Blue", {0xffffff, 0x0000ff, 0x00ffff}),
+    Palette("Blue", true, {0xffffff, 0x0000ff, 0x00ffff}),
 
     // Sun: Slice Of The Sun
-    Palette("Sun", {0xfff95b, 0xffe048, 0xffc635, 0xffad22, 0xff930f}),
+    Palette("Sun", true, {0xfff95b, 0xffe048, 0xffc635, 0xffad22, 0xff930f}),
 
     // Lime: yellow green mix
-    Palette("Lime", {0x51f000, 0x6fff00, 0x96ff00, 0xc9ff00, 0xf0ff00}),
+    Palette("Lime", true, {0x51f000, 0x6fff00, 0x96ff00, 0xc9ff00, 0xf0ff00}),
 
-    Palette("Greens", {0xe5f2e5, 0x91f086, 0x48bf53, 0x11823b, 0x008000, 0x004d25, 0x18392b, 0x02231c}),
+    Palette("Greens", false, {0xe5f2e5, 0x91f086, 0x48bf53, 0x11823b, 0x008000, 0x004d25, 0x18392b, 0x02231c}),
 
     // Pastel: Pastel Fruity Mixture
-    Palette("Pastel", {0x75aa68, 0x5960ae, 0xe4be6c, 0xca5959, 0x8366ac}),
+    Palette("Pastel", true, {0x75aa68, 0x5960ae, 0xe4be6c, 0xca5959, 0x8366ac}),
 
-    Palette("Summer", {0xb81616, 0xf13057, 0xf68118, 0xf2ab1e, 0xf9ca00, 0xaef133,  0x19ee9f, 0x0ea7b5, 0x0c457d}),
+    Palette("Summer", true, {0xb81616, 0xf13057, 0xf68118, 0xf2ab1e, 0xf9ca00, 0xaef133,  0x19ee9f, 0x0ea7b5, 0x0c457d}),
 
-    Palette("Autumn", {0x8b1509, 0xce7612, 0x11805d, 0x801138, 0x32154b, 0x724c04}),
+    Palette("Autumn", false, {0x8b1509, 0xce7612, 0x11805d, 0x801138, 0x32154b, 0x724c04}),
 
-    Palette("Winter", {0xca9eb8, 0xfeeacf, 0xe0ecf2, 0x89e1c9, 0x72c3c5, 0x92c1ff, 0x3e6589, 0x052542}),
+    Palette("Winter", true, {0xca9eb8, 0xfeeacf, 0xe0ecf2, 0x89e1c9, 0x72c3c5, 0x92c1ff, 0x3e6589, 0x052542}),
 
-    Palette("Gaang", {0xe7a532, 0x46a8ca, 0xaf7440, 0xb4d29d, 0x9f5b72, 0x585c82})
+    Palette("Gaang", true, {0xe7a532, 0x46a8ca, 0xaf7440, 0xb4d29d, 0x9f5b72, 0x585c82})
 };
 
-auto one_color_palette = std::unique_ptr<Palette>(new Palette("White", {0xffffff}));
+auto one_color_palette = std::unique_ptr<Palette>(new Palette("White", true, {0xffffff}));
 
 constexpr uint16_t GarlandLeds { GARLAND_LEDS };
 constexpr unsigned char GarlandPin { GARLAND_DATA_PIN };
@@ -331,7 +331,7 @@ bool executeCommand(const String& command) {
     Palette* newPalette = &pals[0];
     if (root.containsKey(MQTT_PAYLOAD_PALETTE)) {
         if (root.is<int>(MQTT_PAYLOAD_PALETTE)) {
-            one_color_palette.reset(new Palette("Color", {root[MQTT_PAYLOAD_PALETTE].as<uint32_t>()}));
+            one_color_palette.reset(new Palette("Color", true, {root[MQTT_PAYLOAD_PALETTE].as<uint32_t>()}));
             newPalette = one_color_palette.get();
         } else {
             auto palette = root[MQTT_PAYLOAD_PALETTE].as<String>();
@@ -348,7 +348,7 @@ bool executeCommand(const String& command) {
             if (!palette_found) {
                 const auto result = parseUnsigned(palette);
                 if (result.ok) {
-                    one_color_palette.reset(new Palette("Color", {result.value}));
+                    one_color_palette.reset(new Palette("Color", true, {result.value}));
                     newPalette = one_color_palette.get();
                 }
             }
@@ -396,14 +396,12 @@ void garlandLoop(void) {
         }
 
         if (!scene_setup_done) {
-            // Anim* newAnim = _currentAnim;
-            // while (newAnim == _currentAnim) {
-            //     newAnim = anims[secureRandom(START_ANIMATION + 1, anims.size())];
-            // }
+            Anim* newAnim = scene.getAnim();
+            while (newAnim == scene.getAnim()) {
+                newAnim = anims[secureRandom(START_ANIMATION + 1, anims.size())];
+            }
 
-            Anim* newAnim = anims[16];
-
-            Palette* newPalette = &pals[0];
+            Palette* newPalette = scene.getPalette();
             while (newPalette == scene.getPalette()) {
                 newPalette = &pals[secureRandom(pals.size())];
             }

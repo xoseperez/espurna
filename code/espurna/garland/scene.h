@@ -44,8 +44,8 @@ public:
     byte getBrightness() { return brightness; }
     byte getSpeed() { return speed; }
     float getCycleFactor(byte speed) { return (float)(GARLAND_SCENE_SPEED_MAX - speed) / GARLAND_SCENE_SPEED_FACTOR; }
-    const Palette* getPalette() const { return _palette; }
-    const Anim* getAnim() const { return _anim; }
+    Palette* getPalette() const { return _palette; }
+    Anim* getAnim() const { return _anim; }
 
     void setAnim(Anim* anim) { _anim = anim; }
     void setPalette(Palette* palette);
