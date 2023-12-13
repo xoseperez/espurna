@@ -177,8 +177,6 @@ std::array<Anim*, 17> anims {
 };
 
 #define START_ANIMATION  0
-// Anim* _currentAnim       = anims[START_ANIMATION];
-// Palette* _currentPalette = &pals[0];
 
 //------------------------------------------------------------------------------
 // Setup
