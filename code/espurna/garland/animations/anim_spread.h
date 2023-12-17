@@ -13,7 +13,7 @@ class AnimSpread : public Anim {
 
     int GeneratePos() {
         int pos = -1;
-        for (int i = 0; i < numTries; ++i) {
+        for (auto i = 0; i < numTries; ++i) {
             pos = secureRandom(0, numLeds);
             for (int j = pos - maxWidth; j < pos + maxWidth; ++j) {
                 if (j >= 0 && j < numLeds && seq[j] > 0) {
@@ -35,15 +35,15 @@ class AnimSpread : public Anim {
         fade_ind = secureRandom(1, 20);
         inc = secureRandom(2, 4);
         // DEBUG_MSG_P(PSTR("[GARLAND] AnimSpread inc = %d, fade_inc = %d\n"), inc, fade_ind);
-        for (int i = 0; i < numLeds; ++i)
+        for (auto i = 0; i < numLeds; ++i)
             seq[i] = 0;
     }
 
     void Run() override {
-        for (int i = 0; i < numLeds; ++i)
+        for (auto i = 0; i < numLeds; ++i)
             leds[i] = 0;
 
-        for (int i = 0; i < numLeds; ++i) {
+        for (auto i = 0; i < numLeds; ++i) {
             if (!ledstmp[i].empty()) {
                 byte width = maxWidth - seq[i];
                 for (int j = i - width; j <= (i + width); j++) {

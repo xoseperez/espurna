@@ -65,10 +65,13 @@ protected:
     //glow animation - must be called for each LED after it's BASIC color is set
     //note this overwrites the LED color, so the glow assumes that color will be stored elsewhere (not in leds[])
     //or computed each time regardless previous leds[] value
-    void glowForEachLed(int i);
+    void glowForEachLed(uint16_t i);
 
     //glow animation - must be called at the end of each animaton run
     void glowRun();
+
+    //flash some random LEDs
+    void flashRandomLeds(uint16_t deciPercent);
 
     //random number helpers for animations
     static unsigned int rng();
@@ -77,3 +80,6 @@ protected:
 private:
     const char* _name;
 };
+
+bool fiftyFifty();
+int randDir();

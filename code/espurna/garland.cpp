@@ -650,7 +650,7 @@ void Anim::glowSetUp() {
     braFreq = secureRandom(20, 60);
 }
 
-void Anim::glowForEachLed(int i) {
+void Anim::glowForEachLed(uint16_t i) {
     int8 bra = braPhase + i * braFreq;
     bra = BRA_OFFSET + (abs(bra) >> BRA_AMP_SHIFT);
     leds[i] = leds[i].brightness(bra);
@@ -658,6 +658,14 @@ void Anim::glowForEachLed(int i) {
 
 void Anim::glowRun() {
     braPhase += braPhaseSpd;
+}
+
+void Anim::flashRandomLeds(uint16_t deciPercent) {
+    int numLedsToFlash = numLeds * deciPercent / 1000;
+    for (int i = 0; i < numLedsToFlash; ++i) {
+        int ind = secureRandom(numLeds);
+        leds[ind] = sparkleColor;
+    }
 }
 
 unsigned int Anim::rng() {
@@ -673,6 +681,14 @@ unsigned int Anim::rng() {
 // For usage in time-critical places.
 byte Anim::rngb() {
     return static_cast<byte>(rng());
+}
+
+bool fiftyFifty() {
+    return secureRandom(2) == 0;
+}
+
+int randDir() {
+    return secureRandom(2) == 0 ? -1 : 1;
 }
 
 } // namespace

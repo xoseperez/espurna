@@ -32,10 +32,10 @@ class AnimCrossing : public Anim {
 
     ColorWave generateWave(int dir) {
         unsigned int waveLen = secureRandom(10, 50);
-        bool cleanColors = secureRandom(10) > 5;
-        bool startEmpty = secureRandom(10) > 5;
+        bool cleanColors = fiftyFifty();
+        bool startEmpty = fiftyFifty();
         float speed = secureRandom(5, 20) / 10.0;
-        byte fade = secureRandom(10) > 5 ? 0 : palette->bright() ? secureRandom(180, 220) : 120;
+        byte fade = fiftyFifty() ? 0 : palette->bright() ? secureRandom(180, 220) : 120;
         Palette* wavePal = &pals[secureRandom(palsNum)];
 
         return ColorWave(numLeds, wavePal, waveLen, cleanColors, fade, speed, dir, startEmpty);

@@ -10,12 +10,12 @@ class AnimRandCyc : public Anim {
     }
 
     void SetupImpl() override {
-        for (int i = 0; i < numLeds; ++i)
+        for (auto i = 0; i < numLeds; ++i)
             seq[i] = rngb();
     }
 
     void Run() override {
-        for (int i = 0; i < numLeds; ++i) {
+        for (auto i = 0; i < numLeds; ++i) {
             leds[i] = palette->getCachedPalColor(seq[i]);
             seq[i] += rngb() >> 6;
         }

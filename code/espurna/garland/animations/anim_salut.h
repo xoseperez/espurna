@@ -25,7 +25,7 @@ class AnimSalut : public Anim {
     }
 
     void Run() override {
-        for (int i = 0; i < numLeds; ++i) leds[i] = 0;
+        for (auto i = 0; i < numLeds; ++i) leds[i] = 0;
 
         for (auto& c : shots) {
             if (!c.Run(leds)) {
@@ -42,11 +42,11 @@ class AnimSalut : public Anim {
             float speed = ((float)secureRandom(1, 25)) / 10;
             float speed_dec = ((float)secureRandom(1, 3)) / 10;
             float pos;
-            int dir;
+            int dir = randDir();
             Color color;
             uint16_t numLeds;
             Spark() = default;
-            Spark(int pos, Palette* pal, uint16_t numLeds) : pos(pos), dir(secureRandom(10) > 5 ? -1 : 1), color(pal->getRndInterpColor()), numLeds(numLeds) {}
+            Spark(int pos, Palette* pal, uint16_t numLeds) : pos(pos), color(pal->getRndInterpColor()), numLeds(numLeds) {}
             void Run(Color* leds) {
                 if (pos >= 0 && pos < numLeds) {
                     leds[(int)pos] = color;
@@ -74,13 +74,13 @@ class AnimSalut : public Anim {
             // DEBUG_MSG_P(PSTR("[GARLAND] Shot created center = %d spark_num = %d\n"), center, spark_num);
             int center = secureRandom(15, numLeds - 15);
             sparks.reset(new Spark[spark_num]);
-            for (int i = 0; i < spark_num; ++i) {
+            for (auto i = 0; i < spark_num; ++i) {
                 sparks[i] = {center, pal, numLeds};
             }
         }
         bool Run(Color* leds) {
             bool done = true;
-            for (int i = 0; i < spark_num; ++i) {
+            for (auto i = 0; i < spark_num; ++i) {
                 if (!sparks[i].done) {
                     done = false;
                     sparks[i].Run(leds);

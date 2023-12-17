@@ -8,6 +8,7 @@ class AnimGlow : public Anim {
    private:
     float colorInterp;
     float colorInterpSpeed;
+    uint16_t flashDeciPercent;
    public:
     AnimGlow() : Anim("Glow") {
     }
@@ -19,6 +20,7 @@ class AnimGlow : public Anim {
         
         colorInterp = 0;
         colorInterpSpeed = ((float)secureRandom(10, 20)) / 1000;
+        flashDeciPercent = fiftyFifty() ? 0 : secureRandom(5, 20);
         glowSetUp();
     }
 
@@ -31,18 +33,16 @@ class AnimGlow : public Anim {
             curColor = palette->getContrastColor(prevColor);
         }
 
-        if (inc > 0) {
-            for (int i = 0; i < numLeds; ++i) {
-                leds[i] = actualColor;
-                glowForEachLed(i);
-            }
-        } else {
-            for (int i = numLeds - 1 ; i >= 0; --i) {
-                leds[i] = actualColor;
-                glowForEachLed(i);
-            }
+        for (auto i = 0; i < numLeds; ++i) {
+            auto j = inc > 0 ? i : numLeds - i - 1;
+            leds[j] = actualColor;
+            glowForEachLed(j);
         }
+
         glowRun();
+        if (flashDeciPercent) {
+            flashRandomLeds(flashDeciPercent);
+        }
     }
 };
 
