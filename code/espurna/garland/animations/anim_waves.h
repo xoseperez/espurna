@@ -14,7 +14,7 @@ class AnimWaves : public Anim {
         unsigned int waveLen = secureRandom(50, 100);
         bool cleanColors = secureRandom(10) > 7;
         byte fade = palette->bright() ? secureRandom(180, 220) : 0;
-        wave = ColorWave(numLeds, palette, waveLen, cleanColors, fade);
+        wave = ColorWave(numLeds, palette, waveLen, cleanColors, fade, ledstmp);
         glowSetUp();
     }
 

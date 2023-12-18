@@ -15,7 +15,7 @@ class AnimRun : public Anim {
         unsigned int waveLen = secureRandom(10, 30);
         bool cleanColors = secureRandom(10) > 7;
         byte fade = palette->bright() ? secureRandom(180, 220) : 0;
-        wave = ColorWave(numLeds, palette, waveLen, cleanColors, fade);
+        wave = ColorWave(numLeds, palette, waveLen, cleanColors, fade, ledstmp);
     }
 
     void Run() override {

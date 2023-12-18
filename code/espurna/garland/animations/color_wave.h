@@ -19,14 +19,27 @@ class ColorWave {
         uint16_t _waveLen,
         bool _cleanColors,
         byte _fade = 0,
+        Color* _pixelCache = nullptr,
         float _speed = secureRandom(5, 15) / 10.0,
-        int _dir = secureRandom(10) > 5 ? 1 : -1,
+        int _dir = randDir(),
         bool _startEmpty = false)
-        : numLeds(_numLeds), palette(_palette), waveLen(_waveLen), cleanColors(_cleanColors), dir(_dir), speed(_speed), fade(_fade) {
-        DEBUG_MSG_P(PSTR("[GARLAND] Wave: waveLen = %d Pal: %-8s fade = %d cleanColors = %d speed = %d\n"),
-                    waveLen, palette->name(), fade, cleanColors, (int)(speed * 10.0));
+        : numLeds(_numLeds), palette(_palette), waveLen(_waveLen), cleanColors(_cleanColors), fade(_fade), pixelCache(_pixelCache), speed(_speed), dir(_dir) {
+        if (speed < 0) {
+            speed = -speed;
+            dir = -dir;
+        }
+
         head = _startEmpty ? 0 : numLeds - 1;
         fade_step = fade * 2 / waveLen;
+
+        DEBUG_MSG_P(PSTR("[GARLAND] Wave: waveLen = %d Pal: %-8s fade = %d cleanColors = %d speed = %d\n"),
+                    waveLen, palette->name(), fade, cleanColors, (int)(speed * 10.0));
+
+        if (pixelCache) {
+            for (auto i = 0; i < numLeds; ++i) {
+                pixelCache[i] = Color();
+            }
+        }
     }
 
     Color getLedColor(uint16_t ledNum) {
@@ -36,8 +49,11 @@ class ColorWave {
             return Color();
         }
 
-        uint16_t dist_to_head = head - real_led_num;
+        if (pixelCache && !(pixelCache[real_led_num] == Color())) {
+            return pixelCache[real_led_num];
+        }
 
+        uint16_t dist_to_head = head - real_led_num;
         Color c = cleanColors ? palette->getCleanColor(dist_to_head / waveLen) : palette->getCachedPalColor(dist_to_head * 256 * 20 / waveLen / numLeds);
 
         if (fade_step > 0) {
@@ -45,11 +61,27 @@ class ColorWave {
             c = c.brightness(fadeFactor);
         }
 
+        if (pixelCache) {
+            pixelCache[real_led_num] = c;
+        }
+
         return c;
     }
 
     void move() {
+        uint16_t prevHead = head;
         head += speed;
+        uint16_t headDelta = head - prevHead;
+
+        if (pixelCache && headDelta > 0) {
+            for (auto i = numLeds - 1; i >= 0; --i) {
+                if (i >= headDelta) {
+                    pixelCache[i] = pixelCache[i - headDelta];
+                } else {
+                    pixelCache[i] = Color();
+                }
+            }
+        }
     }
 
    private:
@@ -57,9 +89,10 @@ class ColorWave {
     Palette *palette;
     uint16_t waveLen;
     bool cleanColors;
-    int dir;
-    float speed;
     byte fade;
+    Color* pixelCache;
+    float speed;
+    int dir;
     float head;
     byte fade_step;
 };
