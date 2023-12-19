@@ -18,7 +18,7 @@ class AnimComets : public Anim {
                 c = {palette, numLeds};
             }
         } else {
-            for (auto i = 0; i < 4; ++i) {
+            for (auto i = 0; i < 5; ++i) {
                 comets.emplace_back(palette, numLeds);
             }
         }
@@ -47,12 +47,12 @@ class AnimComets : public Anim {
    private:
     struct Comet {
         int dir = randDir();
-        int len = secureRandom(10, 20);
-        float speed = ((float)secureRandom(4, 10)) / 10;
+        int len = secureRandom(10, 30);
+        float speed = ((float)secureRandom(4, 20)) / 10;
         float head;
         Color color;
         std::unique_ptr<Color[]> points;
-        Comet(Palette* pal, uint16_t numLeds) : head(dir ? secureRandom(0, numLeds / 2) : secureRandom(numLeds / 2, numLeds)), color(pal->getRndInterpColor()) {
+        Comet(Palette* pal, uint16_t numLeds) : head(dir > 0 ? secureRandom(0, numLeds / 2) : secureRandom(numLeds / 2, numLeds)), color(pal->getRndInterpColor()) {
             // DEBUG_MSG_P(PSTR("[GARLAND] Comet created head = %d len = %d speed = %g cr = %d cg = %d cb = %d\n"), head, len, speed, color.r, color.g, color.b);
 
             points.reset(new Color[len]);
