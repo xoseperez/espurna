@@ -19,7 +19,7 @@ class AnimDolphins : public Anim {
                 d = {palette, numLeds};
             }
         } else {
-            for (auto i = 0; i < 4; ++i) {
+            for (auto i = 0; i < 5; ++i) {
                 dolphins.emplace_back(palette, numLeds);
             }
         }
@@ -31,7 +31,7 @@ class AnimDolphins : public Anim {
             seq[i] = 0;
         }
 
-        // Run dolphins animation. Fill seq (accupied space)
+        // Run dolphins animation. Fill seq (occupied space)
         for (auto& d : dolphins)
             d.Run(leds, seq);
 
@@ -51,15 +51,16 @@ class AnimDolphins : public Anim {
 
    private:
     struct Dolphin {
+        uint16_t numLeds;
         bool done = false;
-        int len = secureRandom(10, 20);
+        int len = secureRandom(10, 30);
         int speed = secureRandom(1, 3);
         int dir = randDir();
         int head = 0;
         int start;
         Color color;
         std::unique_ptr<Color[]> points;
-        Dolphin(Palette* pal, uint16_t numLeds) : start(head ? secureRandom(0, numLeds - len) : secureRandom(len, numLeds)), color(pal->getRndInterpColor()) {
+        Dolphin(Palette* pal, uint16_t numLeds) : numLeds(numLeds), start(head ? secureRandom(0, numLeds - len) : secureRandom(len, numLeds)), color(pal->getRndInterpColor()) {
             // DEBUG_MSG_P(PSTR("[GARLAND] Dolphin created start = %d len = %d dir = %d cr = %d cg = %d cb = %d\n"), start, len, dir, color.r, color.g, color.b);
 
             int halflen = len / 2;
@@ -82,7 +83,10 @@ class AnimDolphins : public Anim {
             for (auto i = 0; i < len; ++i) {
                 p = head - i;
                 if (p >= 0 && p < len) {
-                    leds[start + p * dir] = points[i];
+                    int j = start + p * dir;
+                    if (j > 0 && j < numLeds) {
+                        leds[j] = points[i];
+                    }
                 }
             }
 
@@ -97,7 +101,10 @@ class AnimDolphins : public Anim {
                 // dolphin occupy space for future movement
                 int s = p < 0 ? 0 : p;
                 for (auto i = s; i < len; ++i) {
-                    seq[start + i * dir] = 1;
+                    int j = start + i * dir;
+                    if (j > 0 && j < numLeds) {
+                        seq[j] = 1;
+                    }
                 }
             }
 
@@ -107,9 +114,12 @@ class AnimDolphins : public Anim {
         // Decide that dolphin have ehough space if seq of len before it is empty
         bool HaveEnoughSpace(byte* seq) {
             for (auto i = 0; i < len; ++i) {
-                if (seq[start + i * dir] != 0) {
-                    // DEBUG_MSG_P(PSTR("[GARLAND] Dolphin chaven't enouhg space to move.\n"));
-                    return false;
+                int j = start + i * dir;
+                if (j > 0 && j < numLeds) {
+                    if (seq[j] != 0) {
+                        // DEBUG_MSG_P(PSTR("[GARLAND] Dolphin chaven't enouhg space to move.\n"));
+                        return false;
+                    }
                 }
             }
             return true;
