@@ -156,12 +156,11 @@ constexpr neoPixelType GarlandPixelType { NEO_GRB + NEO_KHZ800 };
 Adafruit_NeoPixel pixels(GarlandLeds, GarlandPin, GarlandPixelType);
 Scene<GarlandLeds> scene(&pixels);
 
-std::array<Anim*, 17> anims {
+std::array<Anim*, 18> anims {
     new AnimStart(),
     new AnimGlow(),
     new AnimPixieDust(),
     new AnimSparkr(),
-    new AnimRun(),
     new AnimStars(),
     new AnimSpread(),
     new AnimRandCyc(),
@@ -171,9 +170,11 @@ std::array<Anim*, 17> anims {
     new AnimDolphins(),
     new AnimSalut(),
     new AnimFountain(),
-    new AnimWaves(),
     new AnimRandRun(),
-    new AnimCrossing()
+    new AnimWaves(AnimWaves::Type::LongWaves),
+    new AnimWaves(AnimWaves::Type::ShortWaves),
+    new AnimWaves(AnimWaves::Type::Comets),
+    new AnimWaves(AnimWaves::Type::CrossWaves),
 };
 
 #define START_ANIMATION  0
