@@ -66,3 +66,7 @@ void thermostatModeCooler(bool cooler);
 bool thermostatModeCooler();
 
 void thermostatSetup();
+
+void displayOn();
+void displaySetup();
+void displayLoop();
