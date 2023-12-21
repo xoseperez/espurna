@@ -70,33 +70,38 @@ class AnimWaves : public Anim {
 
     private:
     ColorWave generateLongWave() {
-        unsigned int waveLen = secureRandom(50, 100);
+        uint16_t waveLen = secureRandom(50, 100);
         bool cleanColors = secureRandom(10) > 7;
-        return ColorWave(numLeds, palette, waveLen, cleanColors, 0, ledstmp);
+        float speed = secureRandom(5, 15) / 10.0;
+        int dir = randDir();
+        return ColorWave(ColorWave::Params{numLeds, palette, waveLen, cleanColors, 0, ledstmp, WaveType::Wave, speed, dir, false});
     }
 
     ColorWave generateShortWave() {
-        unsigned int waveLen = secureRandom(10, 30);
+        uint16_t waveLen = secureRandom(10, 30);
         bool cleanColors = secureRandom(10) > 7;
         byte fade = palette->bright() ? secureRandom(180, 220) : 0;
-        return ColorWave(numLeds, palette, waveLen, cleanColors, fade, ledstmp);
+        float speed = secureRandom(5, 15) / 10.0;
+        int dir = randDir();
+        return ColorWave(ColorWave::Params{numLeds, palette, waveLen, cleanColors, fade, ledstmp, WaveType::Wave, speed, dir, false});
     }
 
     ColorWave generateCometWave() {
-        unsigned int waveLen = secureRandom(10, 40);
+        uint16_t waveLen = secureRandom(10, 40);
         bool cleanColors = secureRandom(10) > 5;
-        return ColorWave(numLeds, palette, waveLen, cleanColors, 0, ledstmp, WaveType::Comet);
+        float speed = secureRandom(5, 15) / 10.0;
+        int dir = randDir();
+        return ColorWave(ColorWave::Params{numLeds, palette, waveLen, cleanColors, 0, ledstmp, WaveType::Comet, speed, dir, false});
     }
 
     ColorWave generateCrossingWave(int dir,  WaveType waveType, Color* pixelCache) {
-        unsigned int waveLen = secureRandom(10, 50);
-        bool cleanColors = fiftyFifty();
-        bool startEmpty = fiftyFifty();
-        float speed = secureRandom(5, 20) / 10.0;
-        byte fade = fiftyFifty() ? 0 : palette->bright() ? secureRandom(180, 220) : 120;
         Palette* wavePal = &pals[secureRandom(palsNum)];
-
-        return ColorWave(numLeds, wavePal, waveLen, cleanColors, fade, pixelCache, waveType, speed, dir, startEmpty);
+        uint16_t waveLen = secureRandom(10, 50);
+        bool cleanColors = fiftyFifty();
+        byte fade = fiftyFifty() ? 0 : palette->bright() ? secureRandom(180, 220) : 120;
+        float speed = secureRandom(5, 20) / 10.0;
+        bool startEmpty = fiftyFifty();
+        return ColorWave(ColorWave::Params{numLeds, wavePal, waveLen, cleanColors, fade, pixelCache, waveType, speed, dir, startEmpty});
     }
 
     Type type;

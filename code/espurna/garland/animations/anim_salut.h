@@ -55,7 +55,7 @@ class AnimSalut : public Anim {
                         speed -= speed_dec;
                     } else {
                         color.fade(5);
-                        if (color.empty()) {
+                        if (color.is_empty()) {
                             if (secureRandom(10) > 8)
                                 leds[(int)pos] = 0xFFFFFF;
                             done = true;

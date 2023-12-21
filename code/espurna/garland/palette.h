@@ -32,11 +32,11 @@ class Palette {
     }
 
     Color getCachedPalColor(byte i) {
-        if (!_cache[i].empty())
+        if (!_cache[i].is_empty())
             return _cache[i];
 
         Color col = getPalColor((float)i / 256);
-        if (col.empty())
+        if (col.is_empty())
             col = 1;
 
         _cache[i] = col;

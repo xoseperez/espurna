@@ -44,12 +44,12 @@ class AnimSpread : public Anim {
             leds[i] = 0;
 
         for (auto i = 0; i < numLeds; ++i) {
-            if (!ledstmp[i].empty()) {
+            if (!ledstmp[i].is_empty()) {
                 byte width = maxWidth - seq[i];
                 for (int j = i - width; j <= (i + width); j++) {
                     Color c = ledstmp[i];
                     if (j >= 0 && j < numLeds) {
-                        if (leds[j].empty()) {
+                        if (leds[j].is_empty()) {
                             leds[j] = c;
                         } else {
                             leds[j] = leds[j].interpolate(c, 0.5);

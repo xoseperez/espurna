@@ -34,6 +34,10 @@ public:
         : r((colorcode >> 16) & 0xFF), g((colorcode >> 8) & 0xFF), b((colorcode >> 0) & 0xFF) {
     }
 
+    static Color empty() {
+        return Color();
+    }
+
     //interpolates between this color and provided. 
     //x is from 0 to 1, 0 gives this color, 1 gives provided color, values between give interpolation
     Color interpolate(Color color, float x) const {
@@ -92,7 +96,7 @@ public:
         return abs(r - c.r) + abs(g - c.g) + abs(b - c.b);
     }
 
-    bool empty() const {
+    bool is_empty() const {
         return r == 0 && g == 0 && b == 0;
     }
 
