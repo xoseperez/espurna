@@ -1310,7 +1310,7 @@
                 </form>
 
                 <!-- removeIf(!garland) -->
-                <form id="form-garland" class="pure-form form-settings">
+                <form id="form-garland" class="pure-form pure-form-aligned  form-settings">
                     <div class="panel" id="panel-garland">
 
                         <div class="header">
@@ -1322,17 +1322,19 @@
 
                             <div class="pure-control-group">
                                 <label>Enable Garland</label>
-                                <div><input class="checkbox-garland-enable" type="checkbox" name="garlandEnabled"></div>
+                                <div class="pure-input-2-3">
+                                    <input class="checkbox-garland-enable" type="checkbox" name="garlandEnabled">
+                                </div>
                             </div>
 
                             <div class="pure-control-group">
                                 <label>Brightness</label>
-                                <input class="slider slider-garland-brightness pure-input-1" type="range" min="12" max="254" step="22" name="garlandBrightness">
+                                <input class="slider slider-garland-brightness pure-input-3-4" type="range" min="12" max="254" step="22" id="garlandBrightness">
                             </div>
 
                             <div class="pure-control-group">
                                 <label>Speed</label>
-                                <input class="slider slider-garland-speed" type="range" min="10" max="70" name="garlandSpeed">
+                                <input class="slider slider-garland-speed  pure-input-3-4" type="range" min="10" max="70" id="garlandSpeed">
                             </div>
 
                             <button type="button" class="pure-button button-garland-set-default">Set default</button>

@@ -15,12 +15,12 @@ class AnimFountain : public Anim {
 
     void SetupImpl() override {
         fountains.clear();
-        for (int i = 0; i < 3; ++i)
+        for (auto i = 0; i < 3; ++i)
             fountains.emplace_back(palette, numLeds);
     }
 
     void Run() override {
-        for (int i = 0; i < numLeds; ++i) {
+        for (auto i = 0; i < numLeds; ++i) {
             leds[i] = 0;
             seq[i] = 0;
         }
@@ -61,7 +61,7 @@ class AnimFountain : public Anim {
 
             // DEBUG_MSG_P(PSTR("[GARLAND] Fountain created start = %d len = %d dir = %d cr = %d cg = %d cb = %d\n"), start, len, dir, color.r, color.g, color.b);
             points.reset(new Color[len]);
-            for (int i = 0; i < len; ++i) {
+            for (auto i = 0; i < len; ++i) {
                 points[i] = {pal->getRndInterpColor()};
                 // DEBUG_MSG_P(PSTR("[GARLAND] Fountain i=%d cr = %d cg = %d cb = %d\n"), i, points[i].r, points[i].g, points[i].b);
             }
@@ -72,7 +72,7 @@ class AnimFountain : public Anim {
                 return false;
 
             int p = 0;
-            for (int i = 0; i < len; ++i) {
+            for (auto i = 0; i < len; ++i) {
                 p = head - i;
                 if (p >= 0 && p < len) {
                     if (dir == 1) {
@@ -106,7 +106,7 @@ class AnimFountain : public Anim {
 
         // Decide that fountain have ehough space if seq of len before it is empty
         bool HaveEnoughSpace(byte* seq) {
-            for (int i = 0; i < len; ++i) {
+            for (auto i = 0; i < len; ++i) {
                 if (seq[start + i] != 0 && seq[start - i] != 0) {
                     // DEBUG_MSG_P(PSTR("[GARLAND] Fountain chaven't enouhg space to move.\n"));
                     return false;

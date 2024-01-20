@@ -18,8 +18,8 @@ class Palette;
 class Anim {
 public:
     Anim(const char* name);
-    const char* name() { return _name; }
-    void Setup(Palette* palette, uint16_t numLeds, Color* leds, Color* _ledstmp, byte* seq);
+    const char* name() const { return _name; }
+    void Setup(Palette* palette, Palette* pals, size_t pals_size, uint16_t numLeds, Color* leds, Color* _ledstmp, byte* seq);
     virtual bool finishedycle() const { return true; };
     virtual void Run() = 0;
     virtual void setCycleFactor(float new_cycle_factor) { cycleFactor = new_cycle_factor; }
@@ -28,6 +28,8 @@ public:
 protected:
     uint16_t    numLeds     = 0;
     Palette*    palette     = nullptr;
+    Palette*    pals        = nullptr;
+    size_t      palsNum     = 0;
     Color*      leds        = nullptr;
     Color*      ledstmp     = nullptr;
     byte*       seq         = nullptr;
@@ -63,10 +65,13 @@ protected:
     //glow animation - must be called for each LED after it's BASIC color is set
     //note this overwrites the LED color, so the glow assumes that color will be stored elsewhere (not in leds[])
     //or computed each time regardless previous leds[] value
-    void glowForEachLed(int i);
+    void glowForEachLed(uint16_t i);
 
     //glow animation - must be called at the end of each animaton run
     void glowRun();
+
+    //flash some random LEDs
+    void flashRandomLeds(uint16_t deciPercent);
 
     //random number helpers for animations
     static unsigned int rng();
@@ -75,3 +80,6 @@ protected:
 private:
     const char* _name;
 };
+
+bool fiftyFifty();
+int randDir();

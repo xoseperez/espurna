@@ -89,8 +89,8 @@ alignas(4) static constexpr char MQTT_COMMAND_RESET[] = "reset"; // reset queue
 alignas(4) static constexpr char MQTT_COMMAND_QUEUE[] = "queue"; // enqueue command payload
 alignas(4) static constexpr char MQTT_COMMAND_SEQUENCE[] = "sequence"; // place command to sequence
 
-#define EFFECT_UPDATE_INTERVAL_MIN      7000  // 5 sec
-#define EFFECT_UPDATE_INTERVAL_MAX      12000 // 10 sec
+#define EFFECT_UPDATE_INTERVAL_MIN      15000  // 15 sec
+#define EFFECT_UPDATE_INTERVAL_MAX      30000 // 30 sec
 
 #define NUMLEDS_CAN_CAUSE_WDT_RESET     100
 
@@ -103,43 +103,51 @@ std::queue<String>  _command_queue;
 std::vector<String> _command_sequence;
 
 // Palette should
-std::array<Palette, 10> pals {
+std::array<Palette, 14> pals {
     // palettes below are taken from http://www.color-hex.com/color-palettes/ (and modified)
     // RGB: Red,Green,Blue sequence
-    Palette("RGB", {0xFF0000, 0x00FF00, 0x0000FF}),
+    Palette("RGB", true, {0xFF0000, 0x00FF00, 0x0000FF}),
 
     // Rainbow: Rainbow colors
-    Palette("Rainbow", {0xFF0000, 0xAB5500, 0xABAB00, 0x00FF00, 0x00AB55, 0x0000FF, 0x5500AB, 0xAB0055}),
-
-    // RainbowStripe: Rainbow colors with alternating stripes of black
-    Palette("Stripe", {0xFF0000, 0x000000, 0xAB5500, 0x000000, 0xABAB00, 0x000000, 0x00FF00, 0x000000,
-                       0x00AB55, 0x000000, 0x0000FF, 0x000000, 0x5500AB, 0x000000, 0xAB0055, 0x000000}),
+    Palette("Rainbow", true, {0xFF0000, 0xFF8000, 0xFFFF00, 0x00FF00, 0x00FFFF, 0x0000FF, 0x5500AB}),
 
     // Party: Blue purple ping red orange yellow (and back). Basically, everything but the greens.
     // This palette is good for lighting at a club or party.
-    Palette("Party", {0x5500AB, 0x84007C, 0xB5004B, 0xE5001B, 0xE81700, 0xB84700, 0xAB7700, 0xABAB00,
+    Palette("Party", false, {0x5500AB, 0x84007C, 0xB5004B, 0xE5001B, 0xE81700, 0xB84700, 0xAB7700, 0xABAB00,
                       0xAB5500, 0xDD2200, 0xF2000E, 0xC2003E, 0x8F0071, 0x5F00A1, 0x2F00D0, 0x0007F9}),
 
     // Heat: Approximate "black body radiation" palette, akin to the FastLED 'HeatColor' function.
     // Recommend that you use values 0-240 rather than the usual 0-255, as the last 15 colors will be
     // 'wrapping around' from the hot end to the cold end, which looks wrong.
-    Palette("Heat", {0x700070, 0xFF0000, 0xFFFF00, 0xFFFFCC}),
+    Palette("Heat", false, {0x700070, 0xFF0000, 0xFFFF00, 0xFFFFCC}),
 
     // Fire:
-    Palette("Fire", {0x000000, 0x220000, 0x880000, 0xFF0000, 0xFF6600, 0xFFCC00}),
+    Palette("Fire", false, {0x300000, 0x440000, 0x880000, 0xFF0000, 0xFF6600, 0xFFCC00}),
 
     // Blue:
-    Palette("Blue", {0xffffff, 0x0000ff, 0x00ffff}),
+    Palette("Blue", true, {0xffffff, 0x0000ff, 0x00ffff}),
 
     // Sun: Slice Of The Sun
-    Palette("Sun", {0xfff95b, 0xffe048, 0xffc635, 0xffad22, 0xff930f}),
+    Palette("Sun", true, {0xfff95b, 0xffe048, 0xffc635, 0xffad22, 0xff930f}),
 
     // Lime: yellow green mix
-    Palette("Lime", {0x51f000, 0x6fff00, 0x96ff00, 0xc9ff00, 0xf0ff00}),
+    Palette("Lime", true, {0x51f000, 0x6fff00, 0x96ff00, 0xc9ff00, 0xf0ff00}),
+
+    Palette("Greens", false, {0xe5f2e5, 0x91f086, 0x48bf53, 0x11823b, 0x008000, 0x004d25, 0x18392b, 0x02231c}),
 
     // Pastel: Pastel Fruity Mixture
-    Palette("Pastel", {0x75aa68, 0x5960ae, 0xe4be6c, 0xca5959, 0x8366ac})
+    Palette("Pastel", true, {0x75aa68, 0x5960ae, 0xe4be6c, 0xca5959, 0x8366ac}),
+
+    Palette("Summer", true, {0xb81616, 0xf13057, 0xf68118, 0xf2ab1e, 0xf9ca00, 0xaef133,  0x19ee9f, 0x0ea7b5, 0x0c457d}),
+
+    Palette("Autumn", false, {0x8b1509, 0xce7612, 0x11805d, 0x801138, 0x32154b, 0x724c04}),
+
+    Palette("Winter", true, {0xca9eb8, 0xfeeacf, 0xe0ecf2, 0x89e1c9, 0x72c3c5, 0x92c1ff, 0x3e6589, 0x052542}),
+
+    Palette("Gaang", true, {0xe7a532, 0x46a8ca, 0xaf7440, 0xb4d29d, 0x9f5b72, 0x585c82})
 };
+
+auto one_color_palette = std::unique_ptr<Palette>(new Palette("White", true, {0xffffff}));
 
 constexpr uint16_t GarlandLeds { GARLAND_LEDS };
 constexpr unsigned char GarlandPin { GARLAND_DATA_PIN };
@@ -148,12 +156,11 @@ constexpr neoPixelType GarlandPixelType { NEO_GRB + NEO_KHZ800 };
 Adafruit_NeoPixel pixels(GarlandLeds, GarlandPin, GarlandPixelType);
 Scene<GarlandLeds> scene(&pixels);
 
-std::array<Anim*, 15> anims {
-    new AnimGlow(),
+std::array<Anim*, 18> anims {
     new AnimStart(),
+    new AnimGlow(),
     new AnimPixieDust(),
     new AnimSparkr(),
-    new AnimRun(),
     new AnimStars(),
     new AnimSpread(),
     new AnimRandCyc(),
@@ -163,13 +170,14 @@ std::array<Anim*, 15> anims {
     new AnimDolphins(),
     new AnimSalut(),
     new AnimFountain(),
-    new AnimWaves()
+    new AnimRandRun(),
+    new AnimWaves(AnimWaves::Type::LongWaves),
+    new AnimWaves(AnimWaves::Type::ShortWaves),
+    new AnimWaves(AnimWaves::Type::Comets),
+    new AnimWaves(AnimWaves::Type::CrossWaves),
 };
 
-#define START_ANIMATION  1
-Anim* _currentAnim       = anims[1];
-Palette* _currentPalette = &pals[0];
-auto one_color_palette = std::unique_ptr<Palette>(new Palette("White", {0xffffff}));
+#define START_ANIMATION  0
 
 //------------------------------------------------------------------------------
 // Setup
@@ -236,7 +244,6 @@ void _garlandWebSocketOnAction(uint32_t client_id, const char* action, JsonObjec
     if (strcmp(action, NAME_GARLAND_SET_BRIGHTNESS) == 0) {
         if (data.containsKey("brightness")) {
             byte new_brightness = data.get<byte>("brightness");
-            DEBUG_MSG_P(PSTR("[GARLAND] new brightness = %d\n"), new_brightness);
             setSetting(NAME_GARLAND_BRIGHTNESS, new_brightness);
             scene.setBrightness(new_brightness);
         }
@@ -245,7 +252,6 @@ void _garlandWebSocketOnAction(uint32_t client_id, const char* action, JsonObjec
     if (strcmp(action, NAME_GARLAND_SET_SPEED) == 0) {
         if (data.containsKey("speed")) {
             byte new_speed = data.get<byte>("speed");
-            DEBUG_MSG_P(PSTR("[GARLAND] new speed = %d\n"), new_speed);
             setSetting(NAME_GARLAND_SPEED, new_speed);
             scene.setSpeed(new_speed);
         }
@@ -267,18 +273,16 @@ void setupScene(Anim* new_anim, Palette* new_palette, unsigned long new_duration
 
     static String palette_name = "Start";
     DEBUG_MSG_P(PSTR("[GARLAND] Anim: %-10s Pal: %-8s timings: calc: %4d pixl: %3d show: %4d frate: %d\n"),
-                _currentAnim->name(), palette_name.c_str(),
+                scene.getAnim()->name(), palette_name.c_str(),
                 scene.getAvgCalcTime(), scene.getAvgPixlTime(), scene.getAvgShowTime(), frameRate);
 
     _currentDuration = new_duration;
-    _currentAnim     = new_anim;
-    _currentPalette  = new_palette;
-    palette_name = _currentPalette->name();
+    palette_name = new_palette->name();
     DEBUG_MSG_P(PSTR("[GARLAND] Anim: %-10s Pal: %-8s Inter: %d\n"),
-                _currentAnim->name(), palette_name.c_str(), _currentDuration);
+                new_anim->name(), palette_name.c_str(), _currentDuration);
 
-    scene.setAnim(_currentAnim);
-    scene.setPalette(_currentPalette);
+    scene.setAnim(new_anim);
+    scene.setPalette(new_palette);
     scene.setup();
 }
 
@@ -310,7 +314,7 @@ bool executeCommand(const String& command) {
         scene.setSpeed(speed);
     }
 
-    Anim* newAnim = _currentAnim;
+    Anim* newAnim = anims[0];
     if (root.containsKey(MQTT_PAYLOAD_ANIMATION)) {
         auto animation = root[MQTT_PAYLOAD_ANIMATION].as<const char*>();
         for (size_t i = 0; i < anims.size(); ++i) {
@@ -323,10 +327,10 @@ bool executeCommand(const String& command) {
         }
     }
 
-    Palette* newPalette = _currentPalette;
+    Palette* newPalette = &pals[0];
     if (root.containsKey(MQTT_PAYLOAD_PALETTE)) {
         if (root.is<int>(MQTT_PAYLOAD_PALETTE)) {
-            one_color_palette.reset(new Palette("Color", {root[MQTT_PAYLOAD_PALETTE].as<uint32_t>()}));
+            one_color_palette.reset(new Palette("Color", true, {root[MQTT_PAYLOAD_PALETTE].as<uint32_t>()}));
             newPalette = one_color_palette.get();
         } else {
             auto palette = root[MQTT_PAYLOAD_PALETTE].as<String>();
@@ -343,7 +347,7 @@ bool executeCommand(const String& command) {
             if (!palette_found) {
                 const auto result = parseUnsigned(palette);
                 if (result.ok) {
-                    one_color_palette.reset(new Palette("Color", {result.value}));
+                    one_color_palette.reset(new Palette("Color", true, {result.value}));
                     newPalette = one_color_palette.get();
                 }
             }
@@ -391,13 +395,13 @@ void garlandLoop(void) {
         }
 
         if (!scene_setup_done) {
-            Anim* newAnim = _currentAnim;
-            while (newAnim == _currentAnim) {
+            Anim* newAnim = scene.getAnim();
+            while (newAnim == scene.getAnim()) {
                 newAnim = anims[secureRandom(START_ANIMATION + 1, anims.size())];
             }
 
-            Palette* newPalette = _currentPalette;
-            while (newPalette == _currentPalette) {
+            Palette* newPalette = scene.getPalette();
+            while (newPalette == scene.getPalette()) {
                 newPalette = &pals[secureRandom(pals.size())];
             }
 
@@ -459,9 +463,6 @@ void garlandMqttCallback(unsigned int type, espurna::StringView topic, espurna::
 #######################################################################*/
 
 #define GARLAND_SCENE_TRANSITION_MS      1000    // transition time between animations, ms
-#define GARLAND_SCENE_SPEED_MAX          70
-#define GARLAND_SCENE_SPEED_FACTOR       10
-#define GARLAND_SCENE_DEFAULT_SPEED      50
 #define GARLAND_SCENE_DEFAULT_BRIGHTNESS 255
 
 template<uint16_t Leds>
@@ -472,18 +473,25 @@ void Scene<Leds>::setPalette(Palette* palette) {
     }
 }
 
+template<uint16_t Leds>
+void Scene<Leds>::setBrightness(byte value) {
+    DEBUG_MSG_P(PSTR("[GARLAND] new brightness = %d\n"), value);
+    brightness = value;
+}
+
 // Speed is reverse to cycleFactor and 10x
 template<uint16_t Leds>
 void Scene<Leds>::setSpeed(byte speed) {
+    DEBUG_MSG_P(PSTR("[GARLAND] new speed = %d\n"), speed);
     this->speed = speed;
     cycleFactor = (float)(GARLAND_SCENE_SPEED_MAX - speed) / GARLAND_SCENE_SPEED_FACTOR;
 }
 
 template<uint16_t Leds>
 void Scene<Leds>::setDefault() {
-    speed = GARLAND_SCENE_DEFAULT_SPEED;
-    cycleFactor = (float)(GARLAND_SCENE_SPEED_MAX - speed) / GARLAND_SCENE_SPEED_FACTOR;
-    brightness = GARLAND_SCENE_DEFAULT_BRIGHTNESS;
+    DEBUG_MSG_P(PSTR("[GARLAND] set default\n"));
+    this->setBrightness(GARLAND_SCENE_DEFAULT_BRIGHTNESS);
+    this->setSpeed(GARLAND_SCENE_DEFAULT_SPEED);
 }
 
 template<uint16_t Leds>
@@ -579,7 +587,7 @@ void Scene<Leds>::setupImpl() {
     }
 
     if (_anim) {
-        _anim->Setup(_palette, Leds, _leds, _ledstmp.data(), _seq.data());
+        _anim->Setup(_palette, _pals, _palsNum, Leds, _leds, _ledstmp.data(), _seq.data());
     }
 }
 
@@ -609,8 +617,10 @@ void Scene<Leds>::setup() {
 
 Anim::Anim(const char* name) : _name(name) {}
 
-void Anim::Setup(Palette* palette, uint16_t numLeds, Color* leds, Color* ledstmp, byte* seq) {
+void Anim::Setup(Palette* palette, Palette* pals, size_t palsNum, uint16_t numLeds, Color* leds, Color* ledstmp, byte* seq) {
     this->palette = palette;
+    this->pals = pals;
+    this->palsNum = palsNum;
     this->numLeds = numLeds;
     this->leds = leds;
     this->ledstmp = ledstmp;
@@ -641,7 +651,7 @@ void Anim::glowSetUp() {
     braFreq = secureRandom(20, 60);
 }
 
-void Anim::glowForEachLed(int i) {
+void Anim::glowForEachLed(uint16_t i) {
     int8 bra = braPhase + i * braFreq;
     bra = BRA_OFFSET + (abs(bra) >> BRA_AMP_SHIFT);
     leds[i] = leds[i].brightness(bra);
@@ -649,6 +659,14 @@ void Anim::glowForEachLed(int i) {
 
 void Anim::glowRun() {
     braPhase += braPhaseSpd;
+}
+
+void Anim::flashRandomLeds(uint16_t deciPercent) {
+    int numLedsToFlash = numLeds * deciPercent / 1000;
+    for (int i = 0; i < numLedsToFlash; ++i) {
+        int ind = secureRandom(numLeds);
+        leds[ind] = sparkleColor;
+    }
 }
 
 unsigned int Anim::rng() {
@@ -666,12 +684,20 @@ byte Anim::rngb() {
     return static_cast<byte>(rng());
 }
 
+bool fiftyFifty() {
+    return secureRandom(2) == 0;
+}
+
+int randDir() {
+    return secureRandom(2) == 0 ? -1 : 1;
+}
+
 } // namespace
 
 //------------------------------------------------------------------------------
 
 void garlandEnabled(bool enabled) {
-    setSetting(NAME_GARLAND_ENABLED, _garland_enabled);
+    setSetting(NAME_GARLAND_ENABLED, enabled);
     if (_garland_enabled != enabled) {
         espurnaRegisterOnceUnique([]() {
             pixels.clear();
@@ -713,11 +739,12 @@ void garlandSetup() {
     espurnaRegisterReload(_garlandReload);
 
     pixels.begin();
-    scene.setAnim(_currentAnim);
-    scene.setPalette(_currentPalette);
+    scene.setAnim(anims[START_ANIMATION]);
+    scene.setPalette(&pals[0]);
+    scene.setPals(pals.data(), pals.size());
     scene.setup();
 
-    _currentDuration = secureRandom(EFFECT_UPDATE_INTERVAL_MIN, EFFECT_UPDATE_INTERVAL_MAX);
+    _currentDuration = 12000; // Start animation duration
 }
 
 #endif  // GARLAND_SUPPORT

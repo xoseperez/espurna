@@ -14,10 +14,7 @@ class AnimFly : public Anim {
         //length of particle tail
         pos = secureRandom(2, 15);
         //probability of the tail
-        inc = secureRandom(5, 15);
-        if (secureRandom(10) > 5) {
-            inc = -inc;
-        }
+        inc = secureRandom(5, 15) * randDir();
         phase = 0;
     }
 
@@ -25,12 +22,12 @@ class AnimFly : public Anim {
         byte launchpos;
         if (inc > 0) {
             launchpos = numLeds - 1;
-            for (int i = 1; i < numLeds; i++) {
+            for (auto i = 1; i < numLeds; i++) {
                 leds[i - 1] = leds[i];
             }
         } else {
             launchpos = 0;
-            for (int i = numLeds - 2; i >= 0; i--) {
+            for (auto i = numLeds - 2; i >= 0; i--) {
                 leds[i + 1] = leds[i];
             }
         }

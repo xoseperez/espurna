@@ -20,13 +20,10 @@ class AnimAssemble : public Anim {
         cycleFactor = 2;
     }
     void SetupImpl() override {
-        inc = 1 + (rngb() >> 5);
-        if (secureRandom(10) > 5) {
-            inc = -inc;
-        }
+        inc = (1 + (rngb() >> 5)) * randDir();
 
         int p = 0;
-        for (int i = 0; i < numLeds; ++i) {
+        for (auto i = 0; i < numLeds; ++i) {
             leds[i] = 0;
             Color c = palette->getCachedPalColor((byte)p);
             ledstmp[i] = c;
@@ -56,7 +53,7 @@ class AnimAssemble : public Anim {
             }
         } else if (phase == Phases::Glow) {
             if (pos < numLeds/2) {
-                for (int i = 0; i < numLeds; ++i) {
+                for (auto i = 0; i < numLeds; ++i) {
                     leds[i] = ledstmp[i];
                     glowForEachLed(i);
                 }

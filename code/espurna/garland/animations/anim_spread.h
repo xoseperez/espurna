@@ -9,11 +9,11 @@ class AnimSpread : public Anim {
     const byte minWidth = 10;
     const byte maxWidth = 15;
     const byte numTries = 5;
-    const byte fade_ind = 255 / minWidth;
+    byte fade_ind = 10;
 
     int GeneratePos() {
         int pos = -1;
-        for (int i = 0; i < numTries; ++i) {
+        for (auto i = 0; i < numTries; ++i) {
             pos = secureRandom(0, numLeds);
             for (int j = pos - maxWidth; j < pos + maxWidth; ++j) {
                 if (j >= 0 && j < numLeds && seq[j] > 0) {
@@ -32,29 +32,34 @@ class AnimSpread : public Anim {
     }
 
     void SetupImpl() override {
+        fade_ind = secureRandom(1, 20);
         inc = secureRandom(2, 4);
-        // DEBUG_MSG_P(PSTR("[GARLAND] AnimSpread inc = %d\n"), inc);
-        for (int i = 0; i < numLeds; ++i)
+        // DEBUG_MSG_P(PSTR("[GARLAND] AnimSpread inc = %d, fade_inc = %d\n"), inc, fade_ind);
+        for (auto i = 0; i < numLeds; ++i)
             seq[i] = 0;
     }
 
     void Run() override {
-        for (int i = 0; i < numLeds; ++i)
+        for (auto i = 0; i < numLeds; ++i)
             leds[i] = 0;
 
-        for (int i = 0; i < numLeds; ++i) {
-            if (seq[i] > 0) {
+        for (auto i = 0; i < numLeds; ++i) {
+            if (!ledstmp[i].is_empty()) {
                 byte width = maxWidth - seq[i];
                 for (int j = i - width; j <= (i + width); j++) {
                     Color c = ledstmp[i];
                     if (j >= 0 && j < numLeds) {
-                        leds[j].r += c.r;
-                        leds[j].g += c.g;
-                        leds[j].b += c.b;
+                        if (leds[j].is_empty()) {
+                            leds[j] = c;
+                        } else {
+                            leds[j] = leds[j].interpolate(c, 0.5);
+                        }
                     }
                 }
                 ledstmp[i].fade(fade_ind);
                 seq[i]--;
+            } else {
+                seq[i] = 0;
             }
         }
 

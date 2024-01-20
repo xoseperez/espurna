@@ -18,12 +18,12 @@ class AnimStars : public Anim {
         inc = secureRandom(2, 5);
 
         //reset all phases
-        for (int i = 0; i < numLeds; ++i)
+        for (auto i = 0; i < numLeds; ++i)
             seq[i] = 255;
     }
 
     void Run() override {
-        for (int i = 0; i < numLeds; i++) {
+        for (auto i = 0; i < numLeds; i++) {
             byte phi = seq[i];
             if (phi < 254) {
                 Color col = ledstmp[i];
