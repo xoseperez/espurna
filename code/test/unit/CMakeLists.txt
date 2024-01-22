@@ -29,6 +29,7 @@ set(COMMON_FLAGS
     -Dstrnlen_P=strnlen
     -Dmemcmp_P=memcmp
     -Dstrncasecmp_P=strncasecmp
+    -DUNITY_INCLUDE_DOUBLE
 )
 
 set(ESPURNA_PATH ${CMAKE_SOURCE_DIR}/../../../ CACHE PATH "ESPurna source code repo root")
@@ -57,6 +58,7 @@ FetchContent_GetProperties(unitygit SOURCE_DIR)
 
 target_compile_options(unity BEFORE PRIVATE
     -DUNITY_OUTPUT_COLOR
+    -DUNITY_INCLUDE_DOUBLE
 )
 
 set(esp8266_version a4a8782c5611c02df3c0dd4744c86d02a4f037d3)
