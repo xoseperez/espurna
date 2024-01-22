@@ -102,7 +102,7 @@ using std::isnan;
 
 namespace std {
 
-#if __cplusplus < 202002L
+#if !defined(__cpp_lib_remove_cvref) && (__cplusplus < 202002L)
 template <typename T>
 using remove_cvref = typename std::remove_cv<std::remove_reference<T>>::type;
 #endif
