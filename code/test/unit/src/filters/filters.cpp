@@ -94,7 +94,22 @@ void test_median() {
 }
 
 void test_moving_average() {
-    // TODO
+    auto filter = MovingAverageFilter();
+
+    TEST_ASSERT_EQUAL(0, filter.capacity());
+    TEST_ASSERT_EQUAL_DOUBLE(0.0, filter.value());
+
+    const double samples[] {22., 22.3, 22.1, 22.1, 22.1, 22.0, 22.5, 22.1};
+    filter.resize(std::size(samples));
+
+    TEST_ASSERT_EQUAL(std::size(samples), filter.capacity());
+    TEST_ASSERT_EQUAL_DOUBLE(0.0, filter.value());
+
+    for (const auto& sample : samples) {
+        filter.update(sample);
+    }
+
+    TEST_ASSERT_EQUAL_DOUBLE(22.15, filter.value());
 }
 
 void test_sum() {

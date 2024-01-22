@@ -12,9 +12,9 @@
 class MovingAverageFilter : public BaseFilter {
 public:
     void update(double value) override {
-        _sum = _sum + value - _values[_sample];
-        _values[_sample] = value;
-        _sample = (_sample + 1) % _values.capacity();
+        if (_values.size() < _values.capacity()) {
+            _values.push_back(value);
+        }
     }
 
     size_t capacity() const override {
@@ -22,18 +22,28 @@ public:
     }
 
     double value() const override {
-        return _sum;
+        double out{ 0. };
+
+        for (const auto& value : _values) {
+            out += value;
+        }
+
+        if (_values.size()) {
+            out /= _values.size();
+        }
+
+        return out;
     }
 
     void resize(size_t size) override {
-        _sum = 0.0;
-        _sample = 0;
         _values.clear();
-        _values.resize(size, 0.0);
+        _values.reserve(size);
+    }
+
+    void reset() override {
+        _values.clear();
     }
 
 private:
-    std::vector<double> _values {{0.0}};
-    size_t _sample = 0;
-    double _sum = 0;
+    std::vector<double> _values{};
 };
