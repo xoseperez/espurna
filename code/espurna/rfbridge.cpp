@@ -1025,25 +1025,20 @@ void _rfbSendFromPayload(espurna::StringView payload) {
         return;
     }
 
-    decltype(_rfb_repeats) repeats { _rfb_repeats };
+    uint8_t repeats { _rfb_repeats };
 
     auto it = std::find(payload.begin(), payload.end(), ',');
     if (it != payload.end()) {
-        it += 1;
-        if ((it == payload.end()) || (*it == '\0') || (*it == '-')) {
-            return;
+        auto value = espurna::StringView(it + 1, payload.end());
+        if (value.length()) {
+            const auto result = parseUnsigned(value, 10);
+            if (result.ok) {
+                repeats = result.value;
+            }
         }
-
-        const auto result = parseUnsigned(
-            espurna::StringView(it, payload.end()), 10);
-        if (!result.ok) {
-            return;
-        }
-
-        repeats = result.value;
     }
 
-    payload = espurna::StringView(it, payload.end());
+    payload = espurna::StringView(payload.begin(), it);
     if (!payload.length()) {
         return;
     }
