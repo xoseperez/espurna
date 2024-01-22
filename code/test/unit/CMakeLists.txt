@@ -192,7 +192,8 @@ list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")
 
 function(build_tests)
     foreach(ARG IN LISTS ARGN)
-        add_executable(test-${ARG} src/${ARG}/${ARG}.cpp)
+        file(GLOB ${ARG}_sources "src/${ARG}/*.h" "src/${ARG}/*.cpp")
+        add_executable(test-${ARG} ${${ARG}_sources})
         target_link_libraries(test-${ARG} espurna unity)
         target_compile_options(test-${ARG} PRIVATE
             ${COMMON_FLAGS}
@@ -213,4 +214,5 @@ build_tests(
     types
     url
     utils
+    filters
 )
