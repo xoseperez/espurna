@@ -13,6 +13,10 @@ public:
         _value = value;
     }
 
+    size_t capacity() const override {
+        return 1;
+    }
+
     void reset() override {
         _value = 0;
     }
