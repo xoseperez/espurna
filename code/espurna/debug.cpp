@@ -12,13 +12,16 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "settings.h"
 #include "telnet.h"
-#include "web.h"
 #include "ntp.h"
-#include "ws.h"
 
 #include <limits>
 #include <type_traits>
 #include <vector>
+
+#if WEB_SUPPORT
+#include "web.h"
+#include "ws.h"
+#endif
 
 #if DEBUG_WEB_SUPPORT
 #include <ArduinoJson.h>
