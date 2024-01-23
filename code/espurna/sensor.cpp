@@ -1746,6 +1746,7 @@ namespace internal {
 namespace {
 
 std::vector<Magnitude> magnitudes;
+bool real_time { sensor::build::realTimeValues() };
 
 using ReadHandlers = std::forward_list<MagnitudeReadHandler>;
 ReadHandlers read_handlers;
@@ -1870,6 +1871,14 @@ Value safe_value(size_t index, T&& retrieve) {
     return out;
 }
 
+void prefer_real_time_values(bool real_time) {
+    internal::real_time = real_time;
+}
+
+bool prefer_real_time_values() {
+    return internal::real_time;
+}
+
 Value safe_value_last(size_t index) {
     return safe_value(
         index,
@@ -1902,9 +1911,8 @@ enum class State {
 namespace internal {
 
 std::vector<BaseSensorPtr> sensors;
-size_t read_count;
 
-bool real_time { build::realTimeValues() };
+size_t read_count;
 size_t report_every { build::reportEvery() };
 
 duration::Seconds read_interval { build::readInterval() };
@@ -1912,36 +1920,16 @@ duration::Seconds init_interval { build::initInterval() };
 
 } // namespace internal
 
-bool realTimeValues() {
-    return internal::real_time;
-}
-
-void realTimeValues(bool value) {
-    internal::real_time = value;
-}
-
 size_t reportEvery() {
     return internal::report_every;
-}
-
-void reportEvery(size_t value) {
-    internal::report_every = value;
 }
 
 duration::Seconds readInterval() {
     return internal::read_interval;
 }
 
-void readInterval(duration::Seconds value) {
-    internal::read_interval = value;
-}
-
 duration::Seconds initInterval() {
     return internal::init_interval;
-}
-
-void initInterval(duration::Seconds value) {
-    internal::init_interval = value;
 }
 
 template <typename T>
@@ -1957,28 +1945,6 @@ void add(BaseSensor* sensor) {
 
 size_t count() {
     return internal::sensors.size();
-}
-
-void tick() {
-    for (auto sensor : internal::sensors) {
-        sensor->tick();
-    }
-}
-
-void pre() {
-    for (auto sensor : internal::sensors) {
-        sensor->pre();
-        if (!sensor->status()) {
-            DEBUG_MSG_P(PSTR("[SENSOR] Could not read from %s (%s)\n"),
-                sensor->description().c_str(), error(sensor->error()).c_str());
-        }
-    }
-}
-
-void post() {
-    for (auto sensor : internal::sensors) {
-        sensor->post();
-    }
 }
 
 // Registers available sensor classes.
@@ -3405,7 +3371,7 @@ void settings(JsonObject& root) {
         }}
     });
 
-    root[FPSTR(settings::keys::RealTimeValues)] = realTimeValues();
+    root[FPSTR(settings::keys::RealTimeValues)] = magnitude::prefer_real_time_values();
 
     root[FPSTR(settings::keys::ReadInterval)] = readInterval().count();
     root[FPSTR(settings::keys::InitInterval)] = initInterval().count();
@@ -3604,7 +3570,7 @@ void setup() {
             return tryHandle(request, type,
                 [&](const Magnitude& magnitude) {
                     request.send(magnitude::format(magnitude,
-                        realTimeValues() ? magnitude.last : magnitude.reported));
+                        magnitude::prefer_real_time_values() ? magnitude.last : magnitude.reported));
                     return true;
                 });
         };
@@ -3825,7 +3791,7 @@ void suspend() {
 void resume() {
     internal::last_init = TimeSource::now();
     internal::last_reading = TimeSource::now();
-    internal::read_count = 1;
+    internal::read_count = 0;
 
     magnitude::forEachInstance(
         [](sensor::Magnitude& instance) {
@@ -3892,6 +3858,43 @@ bool try_init() {
     }
 
     return false;
+}
+
+// -----------------------------------------------------------------------------
+// Magnitude processing
+// -----------------------------------------------------------------------------
+
+void tick() {
+    for (auto sensor : internal::sensors) {
+        sensor->tick();
+    }
+}
+
+void pre() {
+    for (auto sensor : internal::sensors) {
+        sensor->pre();
+        if (!sensor->status()) {
+            DEBUG_MSG_P(PSTR("[SENSOR] Could not read from %s (%s)\n"),
+                sensor->description().c_str(), error(sensor->error()).c_str());
+        }
+    }
+}
+
+void post() {
+    for (auto sensor : internal::sensors) {
+        sensor->post();
+    }
+}
+
+void reset_init(duration::Seconds init_interval) {
+    internal::init_interval = init_interval;
+}
+
+void reset_report(duration::Seconds read_interval, size_t report_every) {
+    internal::read_interval = read_interval;
+    internal::report_every = report_every;
+    internal::last_reading = TimeSource::now();
+    internal::read_count = 0;
 }
 
 bool ready_to_read() {
@@ -4074,10 +4077,15 @@ void configure() {
     // TODO: implement scheduling in the sensor itself.
     // allow reads faster than 1sec, not just internal ones via tick()
     // allow 'manual' sensors that may be triggered programatically
-    readInterval(sensor::settings::readInterval());
-    initInterval(sensor::settings::initInterval());
-    reportEvery(sensor::settings::reportEvery());
-    realTimeValues(sensor::settings::realTimeValues());
+    reset_report(
+        sensor::settings::readInterval(),
+        sensor::settings::reportEvery());
+
+    // Initialization interval is also shared
+    reset_init(sensor::settings::initInterval());
+
+    // Generic 'get magnitude value' API calls prefer latest values over the reported ones
+    magnitude::prefer_real_time_values(sensor::settings::realTimeValues());
 
     // TODO: something more generic? energy is an accumulating value, only allow for similar ones?
     // TODO: move to an external module?
@@ -4095,9 +4103,7 @@ void configure() {
         }
 
         // Some filters must be able store up to a certain amount of readings.
-        if (magnitude.filter->capacity() != reportEvery()) {
-            magnitude.filter->resize(reportEvery());
-        }
+        magnitude.filter->resize(reportEvery());
 
         // process emon-specific settings first. ensure that settings use global index and we access sensor with the local one
         if (isEmon(magnitude.sensor) && magnitude::traits::ratio_supported(magnitude.type)) {
@@ -4260,9 +4266,10 @@ espurna::sensor::Value magnitudeReportValue(unsigned char index) {
 }
 
 espurna::sensor::Value magnitudeValue(unsigned char index) {
-    return espurna::sensor::realTimeValues()
-        ? espurna::sensor::magnitude::safe_value_last(index)
-        : espurna::sensor::magnitude::safe_value_reported(index);
+    using namespace espurna::sensor::magnitude;
+    return prefer_real_time_values()
+        ? safe_value_last(index)
+        : safe_value_reported(index);
 }
 
 String magnitudeDescription(unsigned char index) {
