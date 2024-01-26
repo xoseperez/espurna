@@ -17,8 +17,8 @@ public:
         }
     }
 
-    size_t capacity() const override {
-        return _values.capacity();
+    bool status() const override {
+        return _values.capacity() > 0;
     }
 
     double value() const override {

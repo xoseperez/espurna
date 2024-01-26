@@ -61,8 +61,8 @@ public:
         return out;
     }
 
-    size_t capacity() const override {
-        return _capacity;
+    bool status() const override {
+        return _values.capacity() > 0;
     }
 
     void resize(size_t capacity) override {
@@ -72,14 +72,12 @@ public:
 
 private:
     void _reset() {
-        auto previous = _values.size()
-            ? _values.back()
-            : 0.0;
-        _values.clear();
-        _values.push_back(previous);
-
+        if (_values.size()) {
+            _values.erase(_values.begin(), _values.end() - 1);
+        } else {
+            _values.clear();
+        }
     }
 
     std::vector<double> _values;
-    size_t _capacity = 0;
 };

@@ -15,8 +15,8 @@ public:
         _value = std::max(value, _value);
     }
 
-    size_t capacity() const override {
-        return 1;
+    bool status() const override {
+        return true;
     }
 
     void resize(size_t) override {

@@ -19,12 +19,12 @@ namespace {
 void test_last() {
     auto filter = LastFilter();
 
-    TEST_ASSERT_EQUAL(1, filter.capacity());
+    TEST_ASSERT(filter.status());
     TEST_ASSERT_EQUAL_DOUBLE(0.0, filter.value());
 
     filter.resize(123);
 
-    TEST_ASSERT_EQUAL(1, filter.capacity());
+    TEST_ASSERT(filter.status());
     TEST_ASSERT_EQUAL_DOUBLE(0.0, filter.value());
 
     filter.update(123.4);
@@ -43,12 +43,12 @@ void test_last() {
 void test_max() {
     auto filter = MaxFilter();
 
-    TEST_ASSERT_EQUAL(1, filter.capacity());
+    TEST_ASSERT(filter.status());
     TEST_ASSERT_EQUAL_DOUBLE(0.0, filter.value());
 
     filter.resize(567);
 
-    TEST_ASSERT_EQUAL(1, filter.capacity());
+    TEST_ASSERT(filter.status());
     TEST_ASSERT_EQUAL_DOUBLE(0.0, filter.value());
 
     filter.update(5.0);
@@ -78,12 +78,12 @@ void test_max() {
 
 void test_median() {
     auto filter = MedianFilter();
-    TEST_ASSERT_EQUAL(0, filter.capacity());
+    TEST_ASSERT(!filter.status());
 
     const double one[] {4., 3., 5., 6., 2., 2., 3., 4., 7., 9.};
     filter.resize(std::size(one));
 
-    TEST_ASSERT_EQUAL(std::size(samples), filter.capacity());
+    TEST_ASSERT(filter.status());
     TEST_ASSERT_EQUAL_DOUBLE(0.0, filter.value());
 
     for (const auto& sample : one) {
@@ -95,6 +95,7 @@ void test_median() {
     const double two[] {6., 6.1, 6.2, 6.3, 6.4, 6.5, 2.5, 4.5, 2.6, 2.5, 2.4};
     filter.resize(std::size(two));
 
+    TEST_ASSERT(filter.status());
     TEST_ASSERT_EQUAL_DOUBLE(9, filter.value());
 
     for (const auto& sample : two) {
@@ -106,6 +107,7 @@ void test_median() {
     const double three[] {2.4, 2.4};
     filter.resize(std::size(three));
 
+    TEST_ASSERT(filter.status());
     TEST_ASSERT_EQUAL_DOUBLE(2.4, filter.value());
 
     for (const auto& sample : three) {
@@ -118,13 +120,13 @@ void test_median() {
 void test_moving_average() {
     auto filter = MovingAverageFilter();
 
-    TEST_ASSERT_EQUAL(0, filter.capacity());
+    TEST_ASSERT(!filter.status());
     TEST_ASSERT_EQUAL_DOUBLE(0.0, filter.value());
 
     const double samples[] {22., 22.3, 22.1, 22.1, 22.1, 22.0, 22.5, 22.1};
     filter.resize(std::size(samples));
 
-    TEST_ASSERT_EQUAL(std::size(samples), filter.capacity());
+    TEST_ASSERT(filter.status());
     TEST_ASSERT_EQUAL_DOUBLE(0.0, filter.value());
 
     for (const auto& sample : samples) {
@@ -137,13 +139,13 @@ void test_moving_average() {
 void test_sum() {
     auto filter = SumFilter();
 
-    TEST_ASSERT_EQUAL(1, filter.capacity());
+    TEST_ASSERT(filter.status());
     TEST_ASSERT_EQUAL_DOUBLE(0.0, filter.value());
 
     const double samples[] {20., 20.1, 13., 10., 5., 14., 29., 32.};
     filter.resize(std::size(samples));
 
-    TEST_ASSERT_EQUAL(1, filter.capacity());
+    TEST_ASSERT(filter.status());
     TEST_ASSERT_EQUAL_DOUBLE(0.0, filter.value());
 
     for (const auto& sample : samples) {

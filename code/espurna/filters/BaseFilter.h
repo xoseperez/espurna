@@ -11,16 +11,16 @@ class BaseFilter {
 public:
     virtual ~BaseFilter() = default;
 
-    // Reset internal value to default and also erases internal storage
+    // Reset internal state to default
     virtual void reset() {
     }
 
-    // Defaults to 0 aka no backing storage
-    virtual size_t capacity() const {
-        return 0;
+    // Defaults to false aka filter is not initialized
+    virtual bool status() const {
+        return false;
     }
 
-    // Resize the backing storage (when it is available)
+    // Resize the backing storage (when it is available) and reset internal state
     virtual void resize(size_t) {
     }
 
