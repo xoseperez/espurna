@@ -17,8 +17,12 @@ public:
         return 1;
     }
 
+    void resize(size_t) override {
+        _reset();
+    }
+
     void reset() override {
-        _value = 0.0;
+        _reset();
     }
 
     double value() const override {
@@ -26,5 +30,9 @@ public:
     }
 
 private:
+    void _reset() {
+        _value = 0.0;
+    }
+
     double _value = 0.0;
 };

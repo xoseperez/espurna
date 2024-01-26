@@ -19,12 +19,7 @@ public:
     }
 
     void reset() override {
-        if (_values.size() > 2) {
-            _values[0] = _values.back();
-            _values.resize(1);
-        } else {
-            _values.clear();
-        }
+        _reset();
     }
 
     double value() const override {
@@ -66,14 +61,20 @@ public:
     }
 
     void resize(size_t capacity) override {
-        if (_capacity != capacity) {
-            _capacity = capacity;
-            _values.clear();
-            _values.reserve(_capacity + 1);
-        }
+        _values.reserve(capacity + 1);
+        _reset();
     }
 
 private:
+    void _reset() {
+        auto previous = _values.size()
+            ? _values.back()
+            : 0.0;
+        _values.clear();
+        _values.push_back(previous);
+
+    }
+
     std::vector<double> _values;
     size_t _capacity = 0;
 };

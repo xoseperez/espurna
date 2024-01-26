@@ -36,14 +36,22 @@ public:
     }
 
     void resize(size_t size) override {
-        _values.clear();
         _values.reserve(size);
+        _reset();
     }
 
     void reset() override {
-        _values.clear();
+        _reset();
     }
 
 private:
+    void _reset() {
+        if (_values.size()) {
+            _values.erase(_values.begin(), _values.end() - 1);
+        } else {
+            _values.clear();
+        }
+    }
+
     std::vector<double> _values{};
 };
