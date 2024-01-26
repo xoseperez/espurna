@@ -80,17 +80,39 @@ void test_median() {
     auto filter = MedianFilter();
     TEST_ASSERT_EQUAL(0, filter.capacity());
 
-    const double samples[] {1., 2., 2., 3., 4., 7., 9.};
-    filter.resize(std::size(samples));
+    const double one[] {4., 3., 5., 6., 2., 2., 3., 4., 7., 9.};
+    filter.resize(std::size(one));
 
     TEST_ASSERT_EQUAL(std::size(samples), filter.capacity());
     TEST_ASSERT_EQUAL_DOUBLE(0.0, filter.value());
 
-    for (const auto& sample : samples) {
+    for (const auto& sample : one) {
         filter.update(sample);
     }
 
-    TEST_ASSERT_EQUAL_DOUBLE(3.6, filter.value());
+    TEST_ASSERT_EQUAL_DOUBLE(4.0, filter.value());
+
+    const double two[] {6., 6.1, 6.2, 6.3, 6.4, 6.5, 2.5, 4.5, 2.6, 2.5, 2.4};
+    filter.resize(std::size(two));
+
+    TEST_ASSERT_EQUAL_DOUBLE(9, filter.value());
+
+    for (const auto& sample : two) {
+        filter.update(sample);
+    }
+
+    TEST_ASSERT_EQUAL_DOUBLE(4.97, filter.value());
+
+    const double three[] {2.4, 2.4};
+    filter.resize(std::size(three));
+
+    TEST_ASSERT_EQUAL_DOUBLE(2.4, filter.value());
+
+    for (const auto& sample : three) {
+        filter.update(sample);
+    }
+
+    TEST_ASSERT_EQUAL_DOUBLE(2.4, filter.value());
 }
 
 void test_moving_average() {

@@ -23,7 +23,7 @@ public:
     }
 
     double value() const override {
-        double sum { 0.0 };
+        double out { 0.0 };
 
         if (_values.size() > 2) {
             auto median = [](double previous, double current, double next) {
@@ -44,16 +44,21 @@ public:
                 return current;
             };
 
-            for (auto prev = _values.begin(); prev != (_values.end() - 2); ++prev) {
-                sum += median(*prev, *std::next(prev, 1), *std::next(prev, 2));
+            double counter = 0.0;
+            for (auto it = _values.begin(); it != (_values.end() - 2); ++it) {
+                out += median(*it, *std::next(it, 1), *std::next(it, 2));
+                counter += 1.0;
             }
 
-            sum /= (_values.size() - 2);
-        } else if (_values.size() > 0) {
-            sum = _values.front();
+            out /= counter;
+        } else if (_values.size() == 2) {
+            out = _values[0] + _values[1];
+            out /= 2.0;
+        } else if (_values.size() == 1) {
+            out = _values.front();
         }
 
-        return sum;
+        return out;
     }
 
     size_t capacity() const override {
