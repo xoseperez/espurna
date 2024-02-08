@@ -71,8 +71,8 @@ class DallasSensor : public BaseSensor {
         using Data = std::array<uint8_t, DS18x20_SCRATCHPAD_LEN>;
 
         struct Device {
-            Address address;
-            Data data;
+            Address address{};
+            Data data{};
             uint8_t error{ SENSOR_ERROR_OK };
             double value{ 0.0 };
         };
@@ -507,10 +507,9 @@ class DallasSensor : public BaseSensor {
                     continue;
                 }
 
-                _devices.push_back(Device{
-                    .address = address,
-                    .data = Data{},
-                });
+                Device out;
+                out.address = address;
+                _devices.emplace_back(std::move(out));
             }
         }
 
