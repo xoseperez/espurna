@@ -9,7 +9,7 @@
   "license": "GPL-3.0",
   "devDependencies": {
     "eslint": "^8.57.0",
-    "gulp": "^4.0.2",
+    "gulp": "^5.0.0",
     "gulp-csslint": "^1.0.0",
     "gulp-gzip": "^1.4.0",
     "gulp-htmllint": "0.0.19",
