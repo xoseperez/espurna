@@ -621,7 +621,6 @@ public:
             //   'rgbww' - we receive and map 'c' to our 'cold' and 'w' to our 'warm'
             //   'cw' / 'ww' without 'rgb' are not supported; see 'brightness' or 'color_temp'
             json["brightness"] = true;
-            json["color_mode"] = true;
             JsonArray& modes = json.createNestedArray("supported_color_modes");
 
             if (lightHasColor()) {
