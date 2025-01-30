@@ -474,13 +474,9 @@ size_t hexDecode(const char* in, size_t in_size, uint8_t* out, size_t out_size) 
     return out_ptr - out;
 }
 
-size_t consumeAvailable(Stream& stream) {
-    const auto result = stream.available();
-    if (result <= 0) {
-        return 0;
-    }
+namespace {
 
-    const auto available = static_cast<size_t>(result);
+size_t consumeAvailableReadBytes(Stream& stream, size_t available) {
     size_t size = 0;
     uint8_t buf[64];
     do {
@@ -490,4 +486,30 @@ size_t consumeAvailable(Stream& stream) {
     } while (size != available);
 
     return size;
+}
+
+size_t consumeAvailableImpl(Stream& stream, size_t size) {
+#if defined(ARDUINO_ESP8266_RELEASE_2_7_2) \
+|| defined(ARDUINO_ESP8266_RELEASE_2_7_3) \
+|| defined(ARDUINO_ESP8266_RELEASE_2_7_4)
+    return consumeAvailableReadBytes(stream, size);
+#else
+    if (stream.hasPeekBufferAPI()) {
+        stream.peekConsume(size);
+        return size;
+    }
+
+    return consumeAvailableReadBytes(stream, size);
+#endif
+}
+
+} // namespace
+
+size_t consumeAvailable(Stream& stream) {
+    const auto result = stream.available();
+    if (result <= 0) {
+        return 0;
+    }
+
+    return consumeAvailableImpl(stream, static_cast<size_t>(result));
 }

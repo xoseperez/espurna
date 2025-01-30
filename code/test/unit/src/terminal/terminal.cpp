@@ -461,11 +461,33 @@ void test_line_buffer() {
 
     buffer.append("\r\n");
 
-    const auto next = buffer.next();
+    const auto first = buffer.next();
     TEST_ASSERT_EQUAL(0, buffer.size());
-    TEST_ASSERT_EQUAL(__builtin_strlen(input), next.value.length());
+    TEST_ASSERT_EQUAL(__builtin_strlen(input), first.value.length());
     TEST_ASSERT_EQUAL_CHAR_ARRAY(
-        &input[0], next.value.data(), __builtin_strlen(input));
+        &input[0], first.value.data(), __builtin_strlen(input));
+
+    StreamString stream;
+    stream.write(
+        reinterpret_cast<const uint8_t*>(&input[0]), __builtin_strlen(input));
+
+    buffer.append(stream);
+
+    TEST_ASSERT_EQUAL(buffer.size(), __builtin_strlen(input));
+    TEST_ASSERT_EQUAL(0, stream.length());
+    TEST_ASSERT_EQUAL(0, buffer.next().value.length());
+
+    stream.write('\r');
+    stream.write('\n');
+
+    buffer.append(stream);
+
+    TEST_ASSERT_EQUAL(buffer.size(), 2 + __builtin_strlen(input));
+    TEST_ASSERT_EQUAL(0, stream.length());
+
+    const auto second = buffer.next();
+    TEST_ASSERT_EQUAL_CHAR_ARRAY(
+        &input[0], second.value.data(), __builtin_strlen(input));
 }
 
 // Ensure that when buffer overflows, we set 'overflow' flags

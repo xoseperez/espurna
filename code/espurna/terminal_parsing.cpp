@@ -716,15 +716,26 @@ void DelimiterBuffer::append(Stream& stream, size_t length) {
     auto output = &_storage[_size];
     auto capacity = _capacity - _size;
 
+#if defined(ARDUINO_ESP8266_RELEASE_2_7_2) \
+|| defined(ARDUINO_ESP8266_RELEASE_2_7_3) \
+|| defined(ARDUINO_ESP8266_RELEASE_2_7_4)
+#else
+    const auto peek = stream.hasPeekBufferAPI();
+#endif
+
     while (length > capacity) {
         const auto chunk = std::min(_capacity - _size, length);
 
 #if defined(ARDUINO_ESP8266_RELEASE_2_7_2) \
 || defined(ARDUINO_ESP8266_RELEASE_2_7_3) \
 || defined(ARDUINO_ESP8266_RELEASE_2_7_4)
-        stream.readBytes(_storage, chunk);
+        stream.readBytes(output, chunk);
 #else
-        stream.peekConsume(chunk);
+        if (peek) {
+            stream.peekConsume(chunk);
+        } else {
+            stream.readBytes(output, chunk);
+        }
 #endif
 
         length -= capacity;

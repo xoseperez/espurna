@@ -9,6 +9,24 @@ namespace espurna {
 namespace test {
 namespace {
 
+void test_consume_available() {
+    const char tmp[] {
+        "aaaa"
+        "bbbb"
+        "cccc"
+        "dddd"
+    };
+
+    StreamString stream;
+    TEST_ASSERT(stream.hasPeekBufferAPI());
+
+    stream.concat(&tmp[0], __builtin_strlen(tmp));
+
+    const auto available = stream.available();
+    TEST_ASSERT_EQUAL(__builtin_strlen(tmp), available);
+    TEST_ASSERT_EQUAL(__builtin_strlen(tmp), consumeAvailable(stream));
+}
+
 void test_pretty_duration() {
     const duration::Seconds one =
         duration::Days{5}
@@ -84,6 +102,7 @@ void test_parse_unsigned_prefix() {
 int main(int, char**) {
     UNITY_BEGIN();
     using namespace espurna::test;
+    RUN_TEST(test_consume_available);
     RUN_TEST(test_pretty_duration);
     RUN_TEST(test_parse_unsigned_result);
     RUN_TEST(test_parse_unsigned_value);
