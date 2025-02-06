@@ -1,4 +1,5 @@
 #include <unity.h>
+#include <unity_extra.hpp>
 
 #include <Arduino.h>
 
@@ -172,8 +173,7 @@ void test_invalid_suffix() {
         if (len == 0) {\
             TEST_ASSERT_EQUAL(0, result.length());\
         } else {\
-            TEST_ASSERT_EQUAL_MESSAGE(len, result.length(), "Result length is different");\
-            TEST_ASSERT_EQUAL_CHAR_ARRAY((EXPECTED), result.data(), len);\
+            TEST_ASSERT_EQUAL_STRING_VIEW((EXPECTED), result);\
         }\
     })()
 

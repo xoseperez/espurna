@@ -103,7 +103,6 @@ target_compile_options(common INTERFACE
 # - we need to specify bunch of things that the original Makefile does
 # - there are a lot of cross-dependencies, we need to include a lot of .cpp files here
 add_library(esp8266 STATIC
-    src/unity_fixtures.c
     src/ArduinoMainOverride.cpp
     ${esp8266git_SOURCE_DIR}/tests/host/common/Arduino.cpp
     ${esp8266git_SOURCE_DIR}/tests/host/common/ArduinoMainUdp.cpp
@@ -190,6 +189,19 @@ target_compile_options(espurna PRIVATE
     -Wextra
 )
 
+# extra code linked w/ the unity for every test executable
+add_library(unity-local STATIC
+    ${CMAKE_SOURCE_DIR}/unity/unity_fixtures.c
+    ${CMAKE_SOURCE_DIR}/unity/unity_extra.cpp
+)
+target_link_libraries(unity-local PUBLIC espurna unity)
+target_include_directories(unity-local PUBLIC
+    ${CMAKE_SOURCE_DIR}/unity
+)
+target_compile_options(unity-local PUBLIC
+    ${COMMON_FLAGS}
+)
+
 # each case is built separately, we expect these to work like a normal executable
 include(CTest)
 list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")
@@ -198,7 +210,7 @@ function(build_tests)
     foreach(ARG IN LISTS ARGN)
         file(GLOB ${ARG}_sources "src/${ARG}/*.h" "src/${ARG}/*.cpp")
         add_executable(test-${ARG} ${${ARG}_sources})
-        target_link_libraries(test-${ARG} espurna unity)
+        target_link_libraries(test-${ARG} espurna unity unity-local)
         target_compile_options(test-${ARG} PRIVATE
             ${COMMON_FLAGS}
             -Wall

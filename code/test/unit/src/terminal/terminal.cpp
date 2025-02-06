@@ -6,6 +6,8 @@
 #include <espurna/libs/PrintString.h>
 #include <espurna/terminal_commands.h>
 
+#include <unity_extra.hpp>
+
 namespace espurna {
 namespace terminal {
 namespace test {
@@ -463,13 +465,11 @@ void test_line_buffer() {
 
     const auto first = buffer.next();
     TEST_ASSERT_EQUAL(0, buffer.size());
-    TEST_ASSERT_EQUAL(__builtin_strlen(input), first.value.length());
-    TEST_ASSERT_EQUAL_CHAR_ARRAY(
-        &input[0], first.value.data(), __builtin_strlen(input));
+    TEST_ASSERT_FALSE(first.overflow);
+    TEST_ASSERT_EQUAL_STRING_VIEW(input, first.value);
 
     StreamString stream;
-    stream.write(
-        reinterpret_cast<const uint8_t*>(&input[0]), __builtin_strlen(input));
+    stream.concat(&input[0], __builtin_strlen(input));
 
     buffer.append(stream);
 
@@ -486,8 +486,8 @@ void test_line_buffer() {
     TEST_ASSERT_EQUAL(0, stream.length());
 
     const auto second = buffer.next();
-    TEST_ASSERT_EQUAL_CHAR_ARRAY(
-        &input[0], second.value.data(), __builtin_strlen(input));
+    TEST_ASSERT_FALSE(second.overflow);
+    TEST_ASSERT_EQUAL_STRING_VIEW(input, second.value);
 }
 
 // Ensure that when buffer overflows, we set 'overflow' flags
@@ -547,6 +547,74 @@ void test_line_buffer_multiple() {
     TEST_ASSERT(Second.slice(0, Second.length() - 1) == second.value);
 }
 
+void test_delimiter_view() {
+    const char input[] { "255,254,253,123" };
+    auto delim = DelimiterView{input, ","};
+
+    TEST_ASSERT_EQUAL_STRING_VIEW(input, delim.get());
+
+    const auto r = StringView(&input[0], 3);
+    const auto g = StringView(r.end() + 1, 3);
+    const auto b = StringView(g.end() + 1, 3);
+    const auto a = StringView(b.end() + 1, 3);
+
+    const auto first = delim.next();
+    TEST_ASSERT_EQUAL_STRING_VIEW(r, first);
+    TEST_ASSERT_EQUAL(g.length() + b.length() + a.length() + 2, delim.length());
+
+    const auto second = delim.next();
+    TEST_ASSERT_EQUAL_STRING_VIEW(g, second);
+    TEST_ASSERT_EQUAL(b.length() + a.length() + 1, delim.length());
+
+    const auto third = delim.next();
+    TEST_ASSERT_EQUAL_STRING_VIEW(b, third);
+    TEST_ASSERT_EQUAL(a.length(), delim.length());
+
+    const auto fourth = delim.next();
+    TEST_ASSERT_EQUAL(0, fourth.length());
+    TEST_ASSERT_EQUAL_STRING_VIEW(a, delim.get());
+}
+
+void test_split_view() {
+    const char input[] { "120,75,25" };
+
+    auto space = SplitView{input, " "};
+    TEST_ASSERT(space.next());
+
+    TEST_ASSERT_EQUAL(0, space.remaining().length());
+    TEST_ASSERT_EQUAL_STRING_VIEW(input, space.current());
+
+    TEST_ASSERT_FALSE(space.next());
+    TEST_ASSERT_EQUAL(0, space.current().length());
+    TEST_ASSERT_EQUAL(0, space.remaining().length());
+
+    auto split = SplitView{input, ","};
+
+    const auto h = StringView(&input[0], 3);
+    const auto s = StringView(h.end() + 1, 2);
+    const auto l = StringView(s.end() + 1, 2);
+
+    TEST_ASSERT_EQUAL(0, split.current().length());
+    TEST_ASSERT_EQUAL_STRING_VIEW(input, split.remaining());
+
+    TEST_ASSERT(split.next());
+    TEST_ASSERT_EQUAL_STRING_VIEW(h, split.current());
+    TEST_ASSERT_EQUAL_STRING_VIEW(StringView(s.begin(), l.end()), split.remaining());
+
+    TEST_ASSERT(split.next());
+    TEST_ASSERT_EQUAL_STRING_VIEW(s, split.current());
+    TEST_ASSERT_EQUAL_STRING_VIEW(l, split.remaining());
+
+    TEST_ASSERT(split.next());
+    TEST_ASSERT_EQUAL_STRING_VIEW(l, split.current());
+
+    TEST_ASSERT_EQUAL(0, split.remaining().length());
+
+    TEST_ASSERT_FALSE(split.next());
+    TEST_ASSERT_EQUAL(0, split.current().length());
+    TEST_ASSERT_EQUAL(0, split.remaining().length());
+}
+
 void test_error_output() {
     PrintString out(64);
     PrintString err(64);
@@ -600,8 +668,10 @@ int main(int, char**) {
     RUN_TEST(test_case_insensitive);
     RUN_TEST(test_output);
     RUN_TEST(test_new_line);
-    RUN_TEST(test_line_view);
+    RUN_TEST(test_delimiter_view);
+    RUN_TEST(test_split_view);
     RUN_TEST(test_line_buffer);
+    RUN_TEST(test_line_view);
     RUN_TEST(test_line_buffer_overflow);
     RUN_TEST(test_line_buffer_multiple);
     RUN_TEST(test_error_output);

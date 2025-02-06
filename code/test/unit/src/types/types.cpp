@@ -1,4 +1,6 @@
 #include <unity.h>
+#include <unity_extra.hpp>
+
 #include <Arduino.h>
 
 #include <espurna/types.h>
@@ -13,9 +15,7 @@ void test_view() {
     TEST_ASSERT(view.c_str() != nullptr);
 
     const char expected[] = "123456789";
-    TEST_ASSERT_EQUAL(__builtin_strlen(expected), view.length());
-    TEST_ASSERT_EQUAL_CHAR_ARRAY(
-        expected, view.begin(), view.length());
+    TEST_ASSERT_EQUAL_STRING_VIEW(expected, view);
 }
 
 void test_view_nullptr() {
@@ -41,10 +41,7 @@ void test_view_convert() {
     TEST_ASSERT(view.equals(copy));
 
     TEST_ASSERT(origin.begin() != copy.begin());
-    TEST_ASSERT_EQUAL(origin.length(), copy.length());
-    TEST_ASSERT_EQUAL_CHAR_ARRAY(
-        origin.begin(), copy.begin(), copy.length());
-
+    TEST_ASSERT_EQUAL_STRING_VIEW(origin, copy);
 
     StringView copy_view(copy);
     TEST_ASSERT_EQUAL(view.length(), copy_view.length());
