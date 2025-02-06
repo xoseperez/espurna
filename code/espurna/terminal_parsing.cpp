@@ -775,4 +775,49 @@ StringView DelimiterView::next() {
     return StringView();
 }
 
+constexpr auto Space = StringView(" ");
+
+SplitView::SplitView(StringView view) :
+    _remaining(view),
+    _delimiter(Space)
+{}
+
+SplitView::SplitView(StringView view, StringView delimiter) :
+    _remaining(view),
+    _delimiter(delimiter)
+{}
+
+void SplitView::remaining(const char* it) {
+    _current = StringView(_remaining.begin(), it);
+    _remaining = StringView(_current.end() + _delimiter.length(), _remaining.end());
+}
+
+void SplitView::reset() {
+    _current = _remaining;
+    _remaining = StringView(_remaining.end(), _remaining.end());
+}
+
+bool SplitView::next() {
+    if (_remaining.length()) {
+        if (_delimiter.length()) {
+            const auto first = find_first(_remaining, _delimiter);
+            if (first != _remaining.end()) {
+                remaining(first);
+            } else {
+                reset();
+            }
+        } else {
+            reset();
+        }
+
+        return true;
+    }
+
+    if (_current.length()) {
+        _current = _remaining;
+    }
+
+    return false;
+}
+
 } // namespace espurna

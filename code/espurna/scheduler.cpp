@@ -34,6 +34,7 @@ Copyright (C) 2019-2024 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 
 #include "libs/EphemeralPrint.h"
 #include "libs/PrintString.h"
+#include "libs/Delimiter.h"
 
 // -----------------------------------------------------------------------------
 
@@ -1566,7 +1567,7 @@ namespace terminal_stub {
 #if RELAY_SUPPORT
 namespace relay {
 
-void action(SplitStringView split) {
+void action(SplitView split) {
     if (!split.next()) {
         return;
     }
@@ -1602,7 +1603,7 @@ void action(SplitStringView split) {
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
 namespace light {
 
-void action(SplitStringView split) {
+void action(SplitView split) {
     if (!split.next()) {
         return;
     }
@@ -1627,7 +1628,7 @@ void action(SplitStringView split) {
 #if CURTAIN_SUPPORT
 namespace curtain {
 
-void action(SplitStringView split) {
+void action(SplitView split) {
     if (!split.next()) {
         return;
     }
@@ -1649,7 +1650,7 @@ void action(SplitStringView split) {
 #endif
 
 void parse_action(String action) {
-    auto split = SplitStringView{ action };
+    auto split = SplitView{ action };
     if (!split.next()) {
         return;
     }

@@ -25,6 +25,7 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include <vector>
 
 #include "libs/fs_math.h"
+#include "libs/Delimiter.h"
 
 #if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
 #include <my92xx.h>
@@ -1211,7 +1212,7 @@ void _lightFromCommaSeparatedPayload(espurna::StringView payload, decltype(_ligh
     }
 
     // every channel value is separated by a comma
-    auto split = espurna::SplitStringView(payload, ',');
+    auto split = espurna::SplitView(payload, ",");
     while (split.next()) {
         if (it == end) {
             break;
@@ -1270,7 +1271,7 @@ espurna::light::Hsv _lightHsvFromPayload(espurna::StringView payload) {
     // - V [0...100]
     const auto end = std::end(values);
 
-    auto split = espurna::SplitStringView(payload, ',');
+    auto split = espurna::SplitView(payload, ",");
     while (split.next()) {
         if (it == end) {
             break;

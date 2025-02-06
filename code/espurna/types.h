@@ -551,35 +551,6 @@ inline Span<const T> make_span(const std::vector<T>& data) {
     return Span<const T>(data.data(), data.size());
 }
 
-struct SplitStringView {
-    explicit SplitStringView(StringView view) :
-        _source(view)
-    {}
-
-    SplitStringView(StringView view, char delim) :
-        _source(view),
-        _delim(delim)
-    {}
-
-    StringView current() const {
-        return _current;
-    }
-
-    StringView remaining() const {
-        return _view;
-    }
-
-    bool next();
-
-private:
-    StringView _source;
-
-    StringView _view { _source };
-    char _delim { ' ' };
-
-    StringView _current;
-};
-
 namespace duration {
 
 struct Pair {

@@ -15,6 +15,8 @@ Copyright (C) 2019-2024 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include "types.h"
 #include "utils.h"
 
+#include "libs/Delimiter.h"
+
 #include "scheduler_common.ipp"
 
 namespace espurna {
@@ -976,7 +978,7 @@ Schedule parse_schedule(StringView view) {
         return out;
     }
 
-    auto split = SplitStringView(view);
+    auto split = SplitView(view);
 
     bool parsed_date { false };
     bool parsed_weekdays { false };
@@ -1045,7 +1047,7 @@ Relative parse_relative(StringView view) {
         return out;
     }
 
-    auto split = SplitStringView(view);
+    auto split = SplitView(view);
 
     bool parsed_offset { false };
     bool parsed_keyword { false };

@@ -171,4 +171,28 @@ struct LineView : public DelimiterView {
     StringView next();
 };
 
+struct SplitView {
+    explicit SplitView(StringView);
+    SplitView(StringView, StringView);
+
+    StringView remaining() const {
+        return _remaining;
+    }
+
+    StringView current() const {
+        return _current;
+    }
+
+    bool next();
+
+private:
+    void remaining(const char*);
+    void reset();
+
+    StringView _remaining;
+    StringView _delimiter;
+
+    StringView _current;
+};
+
 } // namespace espurna
