@@ -13,7 +13,7 @@
     "@types/node": "^20.14.2",
     "@typescript/lib-dom": "npm:@types/web@^0.0.174",
     "convert-source-map": "^2.0.0",
-    "esbuild": "^0.21.4",
+    "esbuild": "^0.25.0",
     "eslint": "^9.13.0",
     "fancy-log": "^2.0.0",
     "globals": "^15.4.0",
