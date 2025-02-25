@@ -1831,7 +1831,9 @@ void run_today(Context& ctx) {
     }
 }
 
-void run(const datetime::Context& base) {
+using Results = decltype(Context::results);
+
+auto prepare(const datetime::Context& base) -> Results {
     Context ctx{ base };
 
     run_today(ctx);
@@ -1839,12 +1841,27 @@ void run(const datetime::Context& base) {
 
     ctx.sort();
 
-    for (auto& result : ctx.results) {
+    return ctx.results;
+}
+
+void filter_last_action(Results& results) {
+    auto filtered = std::remove_if(
+        results.begin(),
+        results.end(),
+        [](const Offset& offset) {
+            return last_action(offset.index) != event::DefaultTimePoint;
+        });
+
+    results.erase(filtered, results.end());
+}
+
+void run(const datetime::Context& ctx, const Results& results) {
+    for (auto& result : results) {
         const auto action = settings::action(result.index);
         DEBUG_MSG_P(PSTR("[SCH] Restoring #%zu => %s (%sm)\n"),
             result.index, action.c_str(),
             String(result.offset.count(), 10).c_str());
-        last_action(base, result.index);
+        last_action(ctx, result.index);
         parse_action(action);
     }
 }
@@ -2236,10 +2253,11 @@ void tick(NtpTick tick) {
         return;
     }
 
+    static std::vector<Offset> restored;
+
     if (initial) {
-        initial = false;
         settings::gc(settings::count());
-        restore::run(ctx);
+        restored = restore::prepare(ctx);
 #if SCHEDULER_SUN_SUPPORT
         sun::update_before(ctx);
 #endif
@@ -2266,6 +2284,13 @@ void tick(NtpTick tick) {
         relative::handle_after(ctx, prepared);
         relative::process_valid_event_offsets(
             ctx, prepared.event_offsets, relative::Order::After);
+    }
+
+    if (initial) {
+        initial = false;
+        restore::filter_last_action(restored);
+        restore::run(ctx, restored);
+        restored = std::vector<Offset>();
     }
 }
 

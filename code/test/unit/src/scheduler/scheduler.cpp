@@ -474,6 +474,33 @@ void test_keyword_parsing() {
 void test_restore_today() {
     MAKE_RESTORE_CONTEXT(ctx, schedule);
 
+    const auto original_time = schedule.time;
+
+    schedule.time = TimeMatch{};
+    schedule.time.hour[22] = true;
+    schedule.time.minute[4] = true;
+    schedule.time.flags = FlagUtc;
+
+    TEST_ASSERT_FALSE(handle_today(ctx, 5, schedule));
+    TEST_ASSERT_EQUAL(1, ctx.pending.size());
+    TEST_ASSERT_EQUAL(5, ctx.pending[0].index);
+    TEST_ASSERT_EQUAL(0, ctx.results.size());
+
+    ctx.results.clear();
+    ctx.pending.clear();
+
+    schedule.time = original_time;
+
+    TEST_ASSERT(handle_today(ctx, 4, schedule));
+    TEST_ASSERT_EQUAL(0, ctx.pending.size());
+    TEST_ASSERT_EQUAL(1, ctx.results.size());
+
+    TEST_ASSERT_EQUAL(4, ctx.results[0].index);
+    TEST_ASSERT_EQUAL(-420, ctx.results[0].offset.count());
+
+    ctx.results.clear();
+    ctx.pending.clear();
+
     const auto original_date = schedule.date;
 
     schedule.date = DateMatch{};
@@ -481,8 +508,9 @@ void test_restore_today() {
     schedule.date.month[0] = true;
     schedule.date.year = 2006;
 
-    TEST_ASSERT_FALSE(handle_today(ctx, 0, schedule));
+    TEST_ASSERT_FALSE(handle_today(ctx, 3, schedule));
     TEST_ASSERT_EQUAL(1, ctx.pending.size());
+    TEST_ASSERT_EQUAL(3, ctx.pending[0].index);
     TEST_ASSERT_EQUAL(0, ctx.results.size());
 
     ctx.results.clear();
