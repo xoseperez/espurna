@@ -589,6 +589,16 @@ LED_STATIC_DELAY(NetworkConfig, 100, 900);
 LED_STATIC_DELAY(NetworkConfigInverse, 900, 100);
 LED_STATIC_DELAY(NetworkIdle, 500, 500);
 
+Delay network_delay() {
+    if (wifiConnected()) {
+        return NetworkConnected;
+    } else if (wifiConnectable()) {
+        return NetworkConfig;
+    }
+
+    return NetworkIdle;
+}
+
 namespace internal {
 
 std::vector<Led> leds;
@@ -755,6 +765,32 @@ Status mode_status(const Led& led) {
     return out;
 }
 
+Delay network_delay(bool status) {
+    if (wifiConnected()) {
+        if (status) {
+            return NetworkConnected;
+        } else {
+            return NetworkConnectedInverse;
+        }
+    } else if (wifiConnectable()) {
+        if (status) {
+            return NetworkConfig;
+        } else {
+            return NetworkConfigInverse;
+        }
+    }
+
+    return NetworkIdle;
+}
+
+Delay findme_delay() {
+    return network_delay(relayStatus());
+}
+
+Delay relays_delay() {
+    return network_delay(!relayStatus());
+}
+
 } // namespace relay
 #endif
 
@@ -763,15 +799,16 @@ size_t count() {
 }
 
 bool scheduled() {
-    return internal::update;
+    if (internal::update) {
+        internal::update = false;
+        return true;
+    }
+
+    return false;
 }
 
 void schedule() {
     internal::update = true;
-}
-
-void cancel() {
-    internal::update = false;
 }
 
 bool status(Led& led) {
@@ -876,59 +913,25 @@ void configure() {
     schedule();
 }
 
-void loop(Led& led) {
+void loop(Led& led, bool scheduled) {
     switch (led.mode()) {
 
     case LedMode::Manual:
         break;
 
     case LedMode::WiFi:
-        if (wifiConnected()) {
-            run(led, NetworkConnected);
-        } else if (wifiConnectable()) {
-            run(led, NetworkConfig);
-        } else {
-            run(led, NetworkIdle);
-        }
+        run(led, network_delay());
         break;
 
     case LedMode::FindMeWiFi:
 #if RELAY_SUPPORT
-        if (wifiConnected()) {
-            if (relayStatus()) {
-                run(led, NetworkConnected);
-            } else {
-                run(led, NetworkConnectedInverse);
-            }
-        } else if (wifiConnectable()) {
-            if (relayStatus()) {
-                run(led, NetworkConfig);
-            } else {
-                run(led, NetworkConfigInverse);
-            }
-        } else {
-            run(led, NetworkIdle);
-        }
+        run(led, relay::findme_delay());
 #endif
         break;
 
     case LedMode::RelaysWiFi:
 #if RELAY_SUPPORT
-        if (wifiConnected()) {
-            if (!relayStatus()) {
-                run(led, NetworkConnected);
-            } else {
-                run(led, NetworkConnectedInverse);
-            }
-        } else if (wifiConnectable()) {
-            if (!relayStatus()) {
-                run(led, NetworkConfig);
-            } else {
-                run(led, NetworkConfigInverse);
-            }
-        } else {
-            run(led, NetworkIdle);
-        }
+        run(led, relay::relays_delay());
 #endif
         break;
 
@@ -937,29 +940,31 @@ void loop(Led& led) {
     case LedMode::FindMe:
     case LedMode::Relays:
 #if RELAY_SUPPORT
-        switch (relay::mode_status(led)) {
-        case relay::Status::Unknown:
-            break;
+        if (scheduled) {
+            switch (relay::mode_status(led)) {
+            case relay::Status::Unknown:
+                break;
 
-        case relay::Status::On:
-            status(led, true);
-            break;
+            case relay::Status::On:
+                status(led, true);
+                break;
 
-        case relay::Status::Off:
-            status(led, false);
-            break;
+            case relay::Status::Off:
+                status(led, false);
+                break;
+            }
         }
 #endif
         break;
 
     case LedMode::On:
-        if (scheduled()) {
+        if (scheduled) {
             status(led, true);
         }
         break;
 
     case LedMode::Off:
-        if (scheduled()) {
+        if (scheduled) {
             status(led, false);
         }
         break;
@@ -970,10 +975,10 @@ void loop(Led& led) {
 }
 
 void loop() {
+    const auto is_scheduled = scheduled();
     for (auto& led : internal::leds) {
-        loop(led);
+        loop(led, is_scheduled);
     }
-    cancel();
 }
 
 #if MQTT_SUPPORT
