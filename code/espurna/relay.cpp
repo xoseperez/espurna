@@ -2125,6 +2125,16 @@ bool relayStatus(size_t id, bool status) {
 #endif
 }
 
+bool relayStatus() {
+    for (auto& relay : _relays) {
+        if (relay.current_status) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 bool relayStatus(size_t id) {
     if (id < _relays.size()) {
         return _relays[id].current_status;
@@ -3497,7 +3507,6 @@ RelayAddResult relayAdd(RelayProviderBasePtr&& provider) {
     if (!provider) {
         return out;
     }
-
 
     if (!provider->setup()) {
         return out;

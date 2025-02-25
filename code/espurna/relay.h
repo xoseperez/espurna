@@ -47,6 +47,7 @@ bool relayStatus(size_t id, bool status);
 // gets either current or target status, where current is the status that we are
 // actually in and target is the status we would be, eventually, unless
 // relayStatus(id, relayStatus()) is called
+bool relayStatus();
 bool relayStatus(size_t id);
 bool relayStatusTarget(size_t id);
 
