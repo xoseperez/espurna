@@ -574,14 +574,12 @@ void migrate(int version) {
 // (TODO: template params containing structs like duration need -std=c++2a)
 
 #define LED_STATIC_DELAY(NAME, ON, OFF)\
-    static constexpr auto NAME ## MillisecondsOn PROGMEM = espurna::duration::Milliseconds(ON);\
-    static constexpr auto NAME ## MillisecondsOff PROGMEM = espurna::duration::Milliseconds(OFF);\
-    static_assert(NAME ## MillisecondsOn < Delay::MillisecondsMax, "");\
-    static_assert(NAME ## MillisecondsOff < Delay::MillisecondsMax, "");\
-    static constexpr Delay NAME PROGMEM = Delay {\
-        std::chrono::duration_cast<Delay::Duration>(NAME ## MillisecondsOn),\
-        std::chrono::duration_cast<Delay::Duration>(NAME ## MillisecondsOff),\
-        Delay::RepeatsMin }
+    static constexpr auto NAME PROGMEM = Delay(\
+        std::chrono::duration_cast<Delay::Duration>(duration::Milliseconds(ON)),\
+        std::chrono::duration_cast<Delay::Duration>(duration::Milliseconds(OFF)),\
+        Delay::RepeatsMin);\
+    static_assert((NAME).on() < Delay::MillisecondsMax, "");\
+    static_assert((NAME).off() < Delay::MillisecondsMax, "")
 
 LED_STATIC_DELAY(NetworkConnected, 100, 4900);
 LED_STATIC_DELAY(NetworkConnectedInverse, 4900, 100);
