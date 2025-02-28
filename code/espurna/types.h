@@ -521,14 +521,9 @@ private:
     size_t _size;
 };
 
-template <size_t Size>
-inline Span<uint8_t> make_span(uint8_t (&data)[Size]) {
-    return Span<uint8_t>(&data[0], Size);
-}
-
-template <size_t Size>
-inline Span<const uint8_t> make_span(const uint8_t (&data)[Size]) {
-    return Span<const uint8_t>(&data[0], Size);
+template <typename T, size_t Size>
+constexpr inline Span<T> make_span(T (&data)[Size]) {
+    return Span<T>(&data[0], Size);
 }
 
 template <size_t Size>
