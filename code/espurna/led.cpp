@@ -339,6 +339,7 @@ struct Led {
 
 private:
     unsigned char _pin;
+    bool _status;
     bool _inverse;
     LedMode _mode;
     Pattern _pattern;
@@ -350,13 +351,13 @@ void Led::init() {
 }
 
 bool Led::status() {
-    bool result = digitalRead(_pin);
-    return _inverse ? !result : result;
+    return _status;
 }
 
 bool Led::status(bool new_status) {
+    _status = new_status;
     digitalWrite(_pin, _inverse ? !new_status : new_status);
-    return new_status;
+    return _status;
 }
 
 bool Led::toggle() {
@@ -858,8 +859,6 @@ void pattern(Led& led, Pattern&& other) {
 
 void payload_status(Led& led, StringView payload) {
     led.stop();
-    led.status(false);
-
     led.mode(LedMode::Manual);
 
     const auto value = rpcParsePayload(payload);
