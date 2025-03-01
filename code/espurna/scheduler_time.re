@@ -978,7 +978,7 @@ Schedule parse_schedule(StringView view) {
         return out;
     }
 
-    auto split = SplitView(view);
+    auto split = StatefulSplitView(view);
 
     bool parsed_date { false };
     bool parsed_weekdays { false };
@@ -1047,7 +1047,7 @@ Relative parse_relative(StringView view) {
         return out;
     }
 
-    auto split = SplitView(view);
+    auto split = StatefulSplitView(view);
 
     bool parsed_offset { false };
     bool parsed_keyword { false };

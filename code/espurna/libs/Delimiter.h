@@ -3,6 +3,7 @@
 #include "../types.h"
 
 #include <array>
+#include <iterator>
 
 namespace espurna {
 
@@ -172,28 +173,30 @@ struct LineView : public DelimiterView {
 };
 
 // Helper class & iterator handler for generic delimiter-based parsing
+struct StatefulSplitView;
+
+// Base use-case, wrap the view and provide iterator interface
 struct SplitView {
     struct Iterator {
-        struct BeforeBegin {
-        };
-
         struct End {
         };
+
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = StringView;
+
+        using difference_type = void;
+        using pointer_type = void;
+        using reference_type = void;
+
+        value_type operator*() const {
+            return _value;
+        }
 
         Iterator& operator++();
         Iterator operator++(int);
 
-        StringView operator*() const {
-            return _current;
-        }
-
         bool operator==(const Iterator&) const;
         bool operator!=(const Iterator& other) const {
-            return !(*this == other);
-        }
-
-        bool operator==(const BeforeBegin&) const;
-        bool operator!=(const BeforeBegin& other) const {
             return !(*this == other);
         }
 
@@ -204,58 +207,81 @@ struct SplitView {
 
     private:
         friend SplitView;
+        friend StatefulSplitView;
 
-        StringView current() const {
-            return _current;
-        }
+        StringView after_delimiter(const char*) const;
+        StringView remaining() const;
 
-        StringView remaining() const {
-            return _remaining;
-        }
-
-        void remaining(const char*);
         void reset();
+        bool init();
         bool next();
 
-        Iterator(StringView, StringView);
+        Iterator() = delete;
+        explicit Iterator(const SplitView*);
 
-        StringView _current;
-        StringView _remaining;
-
-        StringView _delimiter;
+        const SplitView* _base;
+        StringView _value;
     };
 
     explicit SplitView(StringView);
     SplitView(StringView, StringView);
 
-    Iterator begin() const {
-        if (_iterator == Iterator::BeforeBegin{}) {
-            auto out = _iterator;
-            out.next();
-            return out;
-        }
-
-        return _iterator;
-    }
+    Iterator begin() const;
 
     Iterator::End end() const {
-        return Iterator::End{};
+        return SplitView::Iterator::End{};
     }
 
-    StringView current() const {
-        return _iterator.current();
+private:
+    friend StatefulSplitView;
+
+    StringView before_begin() const {
+        return StringView(
+            _view.begin() - _delimiter.length(),
+            _view.begin() - _delimiter.length());
     }
 
-    StringView remaining() const {
-        return _iterator.remaining();
-    }
+    StringView _view;
+    StringView _delimiter;
+};
+
+// Sometimes wrapped iterator is preferred over for(...)
+struct StatefulSplitView {
+    explicit StatefulSplitView(StringView view) :
+        _base(view),
+        _iterator(&_base)
+    {}
+
+    StatefulSplitView(StringView view, StringView delimiter) :
+        _base(view, delimiter),
+        _iterator(&_base)
+    {}
 
     bool next() {
         return _iterator.next();
     }
 
+    StringView current() {
+        return *_iterator;
+    }
+
+    StringView remaining() {
+        return _iterator.remaining();
+    }
+
+    SplitView::Iterator begin() const {
+        return _base.begin();
+    }
+
+    SplitView::Iterator::End end() const {
+        return _base.end();
+    }
+
+    SplitView::Iterator find(StringView) const;
+
 private:
-    Iterator _iterator;
+    SplitView _base;
+    SplitView::Iterator _iterator;
 };
 
 } // namespace espurna

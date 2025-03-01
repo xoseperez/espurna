@@ -778,49 +778,85 @@ StringView DelimiterView::next() {
 constexpr auto Space = StringView(" ");
 
 SplitView::SplitView(StringView view) :
-    _iterator(view, Space)
+    SplitView(view, Space)
 {}
 
 SplitView::SplitView(StringView view, StringView delimiter) :
-    _iterator(view, delimiter)
-{}
-
-SplitView::SplitView::Iterator::Iterator(StringView view, StringView delimiter) :
-    _remaining(view),
+    _view(view),
     _delimiter(delimiter)
 {}
 
-void SplitView::Iterator::remaining(const char* it) {
-    _current = StringView(_remaining.begin(), it);
-    _remaining = StringView(_current.end() + _delimiter.length(), _remaining.end());
+SplitView::SplitView::Iterator::Iterator(const SplitView* base) :
+    _base(base),
+    _value(_base->before_begin())
+{}
+
+SplitView::Iterator SplitView::begin() const {
+    Iterator it(this);
+    it.next();
+    return it;
+}
+
+StringView SplitView::Iterator::remaining() const {
+    return StringView(after_delimiter(_base->_view.end()).begin(), _base->_view.end());
+}
+
+StringView SplitView::Iterator::after_delimiter(const char* end) const {
+    if (_value.begin() < _base->_view.begin()) {
+        return _base->_view;
+    }
+
+    return StringView(
+        std::min(_value.end() + _base->_delimiter.length(), end), end);
 }
 
 void SplitView::Iterator::reset() {
-    _current = _remaining;
-    _remaining = StringView(_remaining.end(), _remaining.end());
+    _value = StringView(_base->_view.end(), _base->_view.end());
 }
 
 bool SplitView::Iterator::next() {
-    if (_remaining.length()) {
-        if (_delimiter.length()) {
-            const auto first = find_first(_remaining, _delimiter);
-            if (first != _remaining.end()) {
-                remaining(first);
+    if (_value.begin() < _base->_view.end()) {
+        if (_base->_delimiter.length()) {
+            const auto end = _base->_view.end();
+
+            const auto after = after_delimiter(end);
+            const auto first = find_first(after, _base->_delimiter);
+            const auto found = first != after.end();
+
+            if (found) {
+                _value = StringView(after.begin(), first);
             } else {
-                reset();
+                _value = StringView(after.begin(), end);
             }
-        } else {
-            reset();
+
+            return found || _value.length();
         }
 
-        return true;
-    }
+        const auto base = _base->_view;
+        if (_value.begin() < base.begin()) {
+            _value = base;
+            return true;
+        }
 
-    if (_current.length()) {
-        _current = _remaining;
+        _value = base.slice(base.length());
     }
 
     return false;
+}
+
+SplitView::Iterator StatefulSplitView::find(StringView value) const {
+    auto it = _base.begin();
+    auto end = _base.end();
+
+    while (it != end) {
+        if ((*it) == value) {
+            break;
+        }
+
+        ++it;
+    }
+
+    return it;
 }
 
 SplitView::Iterator& SplitView::Iterator::operator++() {
@@ -835,17 +871,12 @@ SplitView::Iterator SplitView::Iterator::operator++(int) {
 }
 
 bool SplitView::Iterator::operator==(const SplitView::Iterator& other) const {
-    return _current == other._current
-        && _remaining == other._remaining
-        && _delimiter == other._delimiter;
-}
-
-bool SplitView::Iterator::operator==(const SplitView::Iterator::BeforeBegin&) const {
-    return !_current.length() && _remaining.length();
+    return _base == other._base
+        && _value.data() == other._value.data();
 }
 
 bool SplitView::Iterator::operator==(const SplitView::Iterator::End&) const {
-    return !_current.length() && !_remaining.length();
+    return _value.begin() == _base->_view.end();
 }
 
 } // namespace espurna

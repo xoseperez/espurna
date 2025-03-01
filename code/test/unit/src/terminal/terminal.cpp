@@ -578,24 +578,21 @@ void test_delimiter_view() {
 void test_split_view() {
     const char input[] { "120,75,25" };
 
-    auto space = SplitView{input, " "};
-    TEST_ASSERT(space.next());
+    auto split = StatefulSplitView{input, " "};
+    TEST_ASSERT(split.next());
 
-    TEST_ASSERT_EQUAL(0, space.remaining().length());
-    TEST_ASSERT_EQUAL_STRING_VIEW(input, space.current());
+    TEST_ASSERT_EQUAL_STRING_VIEW(input, split.current());
+    TEST_ASSERT_EQUAL(0, split.remaining().length());
 
-    TEST_ASSERT_FALSE(space.next());
-    TEST_ASSERT_EQUAL(0, space.current().length());
-    TEST_ASSERT_EQUAL(0, space.remaining().length());
+    TEST_ASSERT_FALSE(split.next());
+    TEST_ASSERT_EQUAL(0, split.current().length());
+    TEST_ASSERT_EQUAL(0, split.remaining().length());
 
-    auto split = SplitView{input, ","};
+    split = StatefulSplitView{input, ","};
 
     const auto h = StringView(&input[0], 3);
     const auto s = StringView(h.end() + 1, 2);
     const auto l = StringView(s.end() + 1, 2);
-
-    TEST_ASSERT_EQUAL(0, split.current().length());
-    TEST_ASSERT_EQUAL_STRING_VIEW(input, split.remaining());
 
     TEST_ASSERT(split.next());
     TEST_ASSERT_EQUAL_STRING_VIEW(h, split.current());
@@ -616,21 +613,38 @@ void test_split_view() {
 
     const char uneven[] { "111,22,," };
 
-    auto next = SplitView{uneven, ","};
+    split = StatefulSplitView{uneven, ","};
 
-    TEST_ASSERT(next.next());
-    TEST_ASSERT_EQUAL_STRING_VIEW("111", next.current());
-    TEST_ASSERT_EQUAL_STRING_VIEW("22,,", next.remaining());
+    TEST_ASSERT(split.next());
+    TEST_ASSERT_EQUAL_STRING_VIEW("111", split.current());
+    TEST_ASSERT_EQUAL_STRING_VIEW("22,,", split.remaining());
 
-    TEST_ASSERT(next.next());
-    TEST_ASSERT_EQUAL_STRING_VIEW("22", next.current());
-    TEST_ASSERT_EQUAL_STRING_VIEW(",", next.remaining());
+    TEST_ASSERT(split.next());
+    TEST_ASSERT_EQUAL_STRING_VIEW("22", split.current());
+    TEST_ASSERT_EQUAL_STRING_VIEW(",", split.remaining());
 
-    TEST_ASSERT(next.next());
-    TEST_ASSERT_EQUAL(0, next.current().length());
-    TEST_ASSERT_EQUAL(0, next.remaining().length());
+    TEST_ASSERT(split.next());
+    TEST_ASSERT_EQUAL(0, split.current().length());
+    TEST_ASSERT_EQUAL(0, split.remaining().length());
 
-    TEST_ASSERT_FALSE(next.next());
+    TEST_ASSERT_FALSE(split.next());
+
+    const char table[] { "ase3|123123|kasjd|56789" };
+    split = StatefulSplitView{table, "|"};
+
+    auto it = split.find("foobar");
+    TEST_ASSERT(it == split.end());
+
+    it = split.find("kasjd");
+    TEST_ASSERT(it != split.end());
+    TEST_ASSERT_EQUAL_STRING_VIEW("kasjd", (*it));
+
+    ++it;
+    TEST_ASSERT(it != split.end());
+    TEST_ASSERT_EQUAL_STRING_VIEW("56789", (*it));
+
+    ++it;
+    TEST_ASSERT(it == split.end());
 }
 
 void test_split_view_iterator() {
@@ -644,42 +658,42 @@ void test_split_view_iterator() {
         "61",
     };
 
-    auto split_view = SplitView(input, ",");
+    auto split = SplitView(input, ",");
 
     size_t index { 0 };
-    for (auto value : split_view) {
-        TEST_ASSERT_EQUAL_STRING_VIEW(value, expected[index++]);
+    for (auto value : split) {
+        TEST_ASSERT_EQUAL_STRING_VIEW(expected[index++], value);
     }
 
     TEST_ASSERT_EQUAL(std::size(expected), index);
     index = 0;
 
-    auto it = split_view.begin();
-    TEST_ASSERT_EQUAL_STRING_VIEW((*it), expected[index++]);
-    TEST_ASSERT(it != split_view.end());
+    auto it = split.begin();
+    TEST_ASSERT(it != split.end());
+    TEST_ASSERT_EQUAL_STRING_VIEW(expected[index++], (*it));
     ++it;
 
-    TEST_ASSERT_EQUAL_STRING_VIEW((*it), expected[index++]);
-    TEST_ASSERT(it != split_view.end());
+    TEST_ASSERT(it != split.end());
+    TEST_ASSERT_EQUAL_STRING_VIEW(expected[index++], (*it));
     ++it;
 
-    TEST_ASSERT_EQUAL_STRING_VIEW((*it), expected[index++]);
-    TEST_ASSERT(it != split_view.end());
+    TEST_ASSERT(it != split.end());
+    TEST_ASSERT_EQUAL_STRING_VIEW(expected[index++], (*it));
     ++it;
 
-    TEST_ASSERT_EQUAL_STRING_VIEW((*it), expected[index++]);
-    TEST_ASSERT(it != split_view.end());
+    TEST_ASSERT(it != split.end());
+    TEST_ASSERT_EQUAL_STRING_VIEW(expected[index++], (*it));
     ++it;
 
-    TEST_ASSERT_EQUAL_STRING_VIEW((*it), expected[index++]);
-    TEST_ASSERT(it != split_view.end());
+    TEST_ASSERT(it != split.end());
+    TEST_ASSERT_EQUAL_STRING_VIEW(expected[index++], (*it));
     ++it;
 
-    TEST_ASSERT_EQUAL_STRING_VIEW((*it), expected[index++]);
-    TEST_ASSERT(it != split_view.end());
+    TEST_ASSERT(it != split.end());
+    TEST_ASSERT_EQUAL_STRING_VIEW(expected[index++], (*it));
     ++it;
     
-    TEST_ASSERT(it == split_view.end());
+    TEST_ASSERT(it == split.end());
 }
 
 void test_error_output() {
