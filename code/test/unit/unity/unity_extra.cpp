@@ -38,8 +38,6 @@ String expected_actual(espurna::StringView expected, espurna::StringView actual)
     return out;
 }
 
-} // namespace
-
 void test_assert_equal_string_view(espurna::StringView expected, espurna::StringView actual, unsigned int line, const char* msg) {
     UNITY_TEST_ASSERT_EQUAL_INT(expected.length(), actual.length(), line, msg);
     if (msg != nullptr) {
@@ -47,15 +45,19 @@ void test_assert_equal_string_view(espurna::StringView expected, espurna::String
             expected.data(), actual.data(), actual.length(), line, msg);
     } else {
         String out;
-
-        out += "'";
-        out += expected;
-
-        out += "' vs. '";
-        out += actual;
-        out += "'";
-
-        UNITY_TEST_ASSERT_EQUAL_CHAR_ARRAY(
-            expected.data(), actual.data(), actual.length(), line, out.c_str());
     }
+}
+
+} // namespace
+
+void test_assert_equal_string_view(espurna::StringView expected, espurna::StringView actual, unsigned int line, const char* msg) {
+    String replacement;
+    if (msg == nullptr) {
+        replacement = expected_actual(expected, actual);
+    }
+
+    UNITY_TEST_ASSERT_EQUAL_INT(expected.length(), actual.length(),
+        line, ("length is different, " + (replacement.length() ? replacement : String(msg))).c_str());
+    UNITY_TEST_ASSERT_EQUAL_CHAR_ARRAY(
+        expected.data(), actual.data(), actual.length(), line, replacement.length() ? replacement.c_str() : msg);
 }
