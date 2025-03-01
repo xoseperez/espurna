@@ -171,28 +171,91 @@ struct LineView : public DelimiterView {
     StringView next();
 };
 
+// Helper class & iterator handler for generic delimiter-based parsing
 struct SplitView {
+    struct Iterator {
+        struct BeforeBegin {
+        };
+
+        struct End {
+        };
+
+        Iterator& operator++();
+        Iterator operator++(int);
+
+        StringView operator*() const {
+            return _current;
+        }
+
+        bool operator==(const Iterator&) const;
+        bool operator!=(const Iterator& other) const {
+            return !(*this == other);
+        }
+
+        bool operator==(const BeforeBegin&) const;
+        bool operator!=(const BeforeBegin& other) const {
+            return !(*this == other);
+        }
+
+        bool operator==(const End&) const;
+        bool operator!=(const End& other) const {
+            return !(*this == other);
+        }
+
+    private:
+        friend SplitView;
+
+        StringView current() const {
+            return _current;
+        }
+
+        StringView remaining() const {
+            return _remaining;
+        }
+
+        void remaining(const char*);
+        void reset();
+        bool next();
+
+        Iterator(StringView, StringView);
+
+        StringView _current;
+        StringView _remaining;
+
+        StringView _delimiter;
+    };
+
     explicit SplitView(StringView);
     SplitView(StringView, StringView);
 
-    StringView remaining() const {
-        return _remaining;
+    Iterator begin() const {
+        if (_iterator == Iterator::BeforeBegin{}) {
+            auto out = _iterator;
+            out.next();
+            return out;
+        }
+
+        return _iterator;
+    }
+
+    Iterator::End end() const {
+        return Iterator::End{};
     }
 
     StringView current() const {
-        return _current;
+        return _iterator.current();
     }
 
-    bool next();
+    StringView remaining() const {
+        return _iterator.remaining();
+    }
+
+    bool next() {
+        return _iterator.next();
+    }
 
 private:
-    void remaining(const char*);
-    void reset();
-
-    StringView _remaining;
-    StringView _delimiter;
-
-    StringView _current;
+    Iterator _iterator;
 };
 
 } // namespace espurna

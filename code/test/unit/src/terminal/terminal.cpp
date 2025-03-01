@@ -613,6 +613,73 @@ void test_split_view() {
     TEST_ASSERT_FALSE(split.next());
     TEST_ASSERT_EQUAL(0, split.current().length());
     TEST_ASSERT_EQUAL(0, split.remaining().length());
+
+    const char uneven[] { "111,22,," };
+
+    auto next = SplitView{uneven, ","};
+
+    TEST_ASSERT(next.next());
+    TEST_ASSERT_EQUAL_STRING_VIEW("111", next.current());
+    TEST_ASSERT_EQUAL_STRING_VIEW("22,,", next.remaining());
+
+    TEST_ASSERT(next.next());
+    TEST_ASSERT_EQUAL_STRING_VIEW("22", next.current());
+    TEST_ASSERT_EQUAL_STRING_VIEW(",", next.remaining());
+
+    TEST_ASSERT(next.next());
+    TEST_ASSERT_EQUAL(0, next.current().length());
+    TEST_ASSERT_EQUAL(0, next.remaining().length());
+
+    TEST_ASSERT_FALSE(next.next());
+}
+
+void test_split_view_iterator() {
+    const char input[] { "1,22,333,44,5,61" };
+    const char* expected[] {
+        "1",
+        "22",
+        "333",
+        "44",
+        "5",
+        "61",
+    };
+
+    auto split_view = SplitView(input, ",");
+
+    size_t index { 0 };
+    for (auto value : split_view) {
+        TEST_ASSERT_EQUAL_STRING_VIEW(value, expected[index++]);
+    }
+
+    TEST_ASSERT_EQUAL(std::size(expected), index);
+    index = 0;
+
+    auto it = split_view.begin();
+    TEST_ASSERT_EQUAL_STRING_VIEW((*it), expected[index++]);
+    TEST_ASSERT(it != split_view.end());
+    ++it;
+
+    TEST_ASSERT_EQUAL_STRING_VIEW((*it), expected[index++]);
+    TEST_ASSERT(it != split_view.end());
+    ++it;
+
+    TEST_ASSERT_EQUAL_STRING_VIEW((*it), expected[index++]);
+    TEST_ASSERT(it != split_view.end());
+    ++it;
+
+    TEST_ASSERT_EQUAL_STRING_VIEW((*it), expected[index++]);
+    TEST_ASSERT(it != split_view.end());
+    ++it;
+
+    TEST_ASSERT_EQUAL_STRING_VIEW((*it), expected[index++]);
+    TEST_ASSERT(it != split_view.end());
+    ++it;
+
+    TEST_ASSERT_EQUAL_STRING_VIEW((*it), expected[index++]);
+    TEST_ASSERT(it != split_view.end());
+    ++it;
+    
+    TEST_ASSERT(it == split_view.end());
 }
 
 void test_error_output() {
@@ -670,6 +737,7 @@ int main(int, char**) {
     RUN_TEST(test_new_line);
     RUN_TEST(test_delimiter_view);
     RUN_TEST(test_split_view);
+    RUN_TEST(test_split_view_iterator);
     RUN_TEST(test_line_buffer);
     RUN_TEST(test_line_view);
     RUN_TEST(test_line_buffer_overflow);

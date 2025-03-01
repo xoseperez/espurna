@@ -778,26 +778,29 @@ StringView DelimiterView::next() {
 constexpr auto Space = StringView(" ");
 
 SplitView::SplitView(StringView view) :
-    _remaining(view),
-    _delimiter(Space)
+    _iterator(view, Space)
 {}
 
 SplitView::SplitView(StringView view, StringView delimiter) :
+    _iterator(view, delimiter)
+{}
+
+SplitView::SplitView::Iterator::Iterator(StringView view, StringView delimiter) :
     _remaining(view),
     _delimiter(delimiter)
 {}
 
-void SplitView::remaining(const char* it) {
+void SplitView::Iterator::remaining(const char* it) {
     _current = StringView(_remaining.begin(), it);
     _remaining = StringView(_current.end() + _delimiter.length(), _remaining.end());
 }
 
-void SplitView::reset() {
+void SplitView::Iterator::reset() {
     _current = _remaining;
     _remaining = StringView(_remaining.end(), _remaining.end());
 }
 
-bool SplitView::next() {
+bool SplitView::Iterator::next() {
     if (_remaining.length()) {
         if (_delimiter.length()) {
             const auto first = find_first(_remaining, _delimiter);
@@ -818,6 +821,31 @@ bool SplitView::next() {
     }
 
     return false;
+}
+
+SplitView::Iterator& SplitView::Iterator::operator++() {
+    next();
+    return *this;
+}
+
+SplitView::Iterator SplitView::Iterator::operator++(int) {
+    SplitView::Iterator out(*this);
+    out.next();
+    return out;
+}
+
+bool SplitView::Iterator::operator==(const SplitView::Iterator& other) const {
+    return _current == other._current
+        && _remaining == other._remaining
+        && _delimiter == other._delimiter;
+}
+
+bool SplitView::Iterator::operator==(const SplitView::Iterator::BeforeBegin&) const {
+    return !_current.length() && _remaining.length();
+}
+
+bool SplitView::Iterator::operator==(const SplitView::Iterator::End&) const {
+    return !_current.length() && !_remaining.length();
 }
 
 } // namespace espurna
