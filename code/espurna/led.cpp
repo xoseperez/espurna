@@ -857,6 +857,19 @@ void pattern(Led& led, Pattern&& other) {
     status(led, true);
 }
 
+bool payload_mode(Led& led, StringView payload) {
+    using espurna::settings::internal::LedModeOptions;
+
+    for (auto& opt : LedModeOptions) {
+        if (payload == opt.string()) {
+            led.mode(opt.value());
+            return true;
+        }
+    }
+
+    return false;
+}
+
 void payload_status(Led& led, StringView payload) {
     led.stop();
     led.mode(LedMode::Manual);
@@ -864,14 +877,21 @@ void payload_status(Led& led, StringView payload) {
     const auto value = rpcParsePayload(payload);
     switch (value) {
     case PayloadStatus::On:
-    case PayloadStatus::Off:
-        led::status(led, (value == PayloadStatus::On));
+        led.mode(LedMode::On);
         break;
+
+    case PayloadStatus::Off:
+        led.mode(LedMode::Off);
+        break;
+
     case PayloadStatus::Toggle:
         led::status(led, !led::status(led));
         break;
+
     case PayloadStatus::Unknown:
-        pattern(led, Pattern(payload));
+        if (!payload_mode(led, payload)) {
+            pattern(led, Pattern(payload));
+        }
         break;
     }
 }
