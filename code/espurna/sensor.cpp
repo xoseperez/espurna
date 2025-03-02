@@ -3409,7 +3409,7 @@ void settings(JsonObject& root) {
         }},
         {settings::suffix::Ratio, [](JsonArray& out, size_t index) {
             const auto& magnitude = magnitude::get(index);
-            if (magnitude::traits::ratio_supported(magnitude.type)) {
+            if (isEmon(magnitude.sensor) && magnitude::traits::ratio_supported(magnitude.type)) {
                 out.add(static_cast<BaseEmonSensor*>(magnitude.sensor.get())->getRatio(magnitude.slot));
             } else {
                 out.add(NullSymbol);

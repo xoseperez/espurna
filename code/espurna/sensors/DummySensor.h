@@ -28,6 +28,7 @@ struct Sensor : public BaseEmonSensor {
         {MAGNITUDE_HUMIDITY},
         {MAGNITUDE_PRESSURE},
         {MAGNITUDE_LUX},
+        {MAGNITUDE_VOLTAGE},
         {MAGNITUDE_ENERGY_DELTA},
         {MAGNITUDE_ENERGY},
     };
@@ -82,6 +83,8 @@ struct Sensor : public BaseEmonSensor {
                 return _pressure;
             case MAGNITUDE_LUX:
                 return _lux;
+            case MAGNITUDE_VOLTAGE:
+                return _voltage;
             case MAGNITUDE_ENERGY_DELTA:
                 return _delta;
             case MAGNITUDE_ENERGY:
@@ -126,6 +129,11 @@ struct Sensor : public BaseEmonSensor {
             _delta = 0.0;
         }
 
+        ++_voltage;
+        if (_voltage >= 242.0) {
+            _voltage = 100.0;
+        }
+
         _energy[0] += Energy(WattSeconds(_delta));
     }
 
@@ -136,6 +144,7 @@ private:
     double _temperature { 25.0 };
     double _humidity { 50.0 };
     double _pressure { 1000.0 };
+    double _voltage { 100.0 };
     double _lux { 0.0 };
     double _delta { 0.0 };
 };
