@@ -460,26 +460,23 @@ void test_keyword_parsing() {
     TEST_SCHEDULER_VALID_KEYWORD("Sunset", scheduler::FlagSunset);
 }
 
+#define SET_UTC_REFERENCE(SCHEDULE)\
+    SCHEDULE.weekdays.day = (1 << datetime::Monday.c_value());\
+    SCHEDULE.date.day = (1 << 2);\
+    SCHEDULE.time.hour = (1 << 22);\
+    SCHEDULE.time.minute = (1 << 4);\
+    SCHEDULE.time.flags = FlagUtc
+
 #define MAKE_RESTORE_CONTEXT(CTX, SCHEDULE)\
     const auto __reference_ctx = datetime::make_context(ReferenceTimestamp);\
     Schedule SCHEDULE;\
-    SCHEDULE.weekdays.day[datetime::Monday.c_value()] = true;\
-    SCHEDULE.date.day[2] = true;\
-    SCHEDULE.time.hour[15] = true;\
-    SCHEDULE.time.minute[4] = true;\
-    SCHEDULE.time.flags = FlagUtc;\
+    SET_UTC_REFERENCE(SCHEDULE);\
     SCHEDULE.ok = true;\
     auto CTX = restore::Context(__reference_ctx)
 
+
 void test_restore_today() {
     MAKE_RESTORE_CONTEXT(ctx, schedule);
-
-    const auto original_time = schedule.time;
-
-    schedule.time = TimeMatch{};
-    schedule.time.hour[22] = true;
-    schedule.time.minute[4] = true;
-    schedule.time.flags = FlagUtc;
 
     TEST_ASSERT_FALSE(handle_today(ctx, 5, schedule));
     TEST_ASSERT_EQUAL(1, ctx.pending.size());
@@ -489,7 +486,9 @@ void test_restore_today() {
     ctx.results.clear();
     ctx.pending.clear();
 
-    schedule.time = original_time;
+    const auto original_time = schedule.time;
+
+    schedule.time.hour = (1 << 15);
 
     TEST_ASSERT(handle_today(ctx, 4, schedule));
     TEST_ASSERT_EQUAL(0, ctx.pending.size());
@@ -502,6 +501,8 @@ void test_restore_today() {
     ctx.pending.clear();
 
     const auto original_date = schedule.date;
+
+    schedule.time = original_time;
 
     schedule.date = DateMatch{};
     schedule.date.day[15] = true;
@@ -517,13 +518,14 @@ void test_restore_today() {
     ctx.pending.clear();
 
     schedule.date = original_date;
+    schedule.time.hour = 1;
 
     TEST_ASSERT_TRUE(handle_today(ctx, 1, schedule));
     TEST_ASSERT_EQUAL(0, ctx.pending.size());
     TEST_ASSERT_EQUAL(1, ctx.results.size());
     TEST_ASSERT_EQUAL(1, ctx.results[0].index);
     TEST_ASSERT_EQUAL(
-        datetime::Minutes(datetime::Hours(-7)).count(),
+        datetime::Minutes(datetime::Hours(-22)).count(),
         ctx.results[0].offset.count());
 
     ctx.results.clear();
@@ -585,7 +587,6 @@ void test_restore_delta_future() {
 
 void test_restore_delta_past() {
     struct Expected {
-        size_t index;
         datetime::Days delta;
         int day;
         datetime::Weekday weekday;
@@ -594,70 +595,59 @@ void test_restore_delta_past() {
 
     constexpr std::array tests{
         Expected{
-            .index = 0,
             .delta = datetime::Days{ -1 },
             .day = 1,
             .weekday = datetime::Sunday,
-            .hours = datetime::Hours{ -31 }},
+            .hours = datetime::Hours{ -24 }},
         Expected{
-            .index = 1,
             .delta = datetime::Days{ -1 },
             .day = 31,
             .weekday = datetime::Saturday,
-            .hours = datetime::Hours{ -55 }},
+            .hours = datetime::Hours{ -48 }},
         Expected{
-            .index = 2,
             .delta = datetime::Days{ -1 },
             .day = 30,
             .weekday = datetime::Friday,
-            .hours = datetime::Hours{ -79 }},
+            .hours = datetime::Hours{ -72 }},
         Expected{
-            .index = 3,
             .delta = datetime::Days{ -2 },
             .day = 28,
             .weekday = datetime::Wednesday,
-            .hours = datetime::Hours{ -127 }},
+            .hours = datetime::Hours{ -120 }},
     };
-
 
     MAKE_RESTORE_CONTEXT(ctx, schedule);
 
     auto schedule_day_weekday = [&](auto& out, const auto& test) {
         out.date = scheduler::DateMatch{};
-        out.date.day[test.day] = true;
+        out.date.day = (1 << test.day);
 
         out.weekdays = scheduler::WeekdayMatch{};
-        out.weekdays.day[test.weekday.c_value()] = true;
+        out.weekdays.day = (1 << test.weekday.c_value());
     };
 
-    for (const auto& test : tests) {
-        schedule_day_weekday(schedule, test);
+    for (size_t index = 0; index < tests.size(); ++index) {
+        schedule_day_weekday(schedule, tests[index]);
 
         TEST_ASSERT_FALSE(
-            handle_today(ctx, test.index, schedule));
+            handle_today(ctx, index, schedule));
     }
 
     TEST_ASSERT_EQUAL(0, ctx.results.size());
     TEST_ASSERT_EQUAL(tests.size(), ctx.pending.size());
 
-    for (const auto& test : tests) {
-        schedule_day_weekday(schedule, test);
-
-        ctx.next_delta(test.delta);
-
-        for (auto& pending : ctx.pending) {
-            handle_pending(ctx, pending);
-        }
+    for (size_t index = 0; index < tests.size(); ++index) {
+        ctx.next_delta(tests[index].delta);
+        TEST_ASSERT(handle_pending(ctx, ctx.pending[index]));
+        TEST_ASSERT_EQUAL(index + 1, ctx.results.size());
     }
 
     TEST_ASSERT_EQUAL(tests.size(), ctx.results.size());
-    TEST_ASSERT_EQUAL(tests.size(), ctx.pending.size());
 
-    for (auto& result : ctx.results) {
-        TEST_ASSERT_EQUAL(tests[result.index].index, result.index);
+    for (size_t index = 0; index < tests.size(); ++index) {
         TEST_ASSERT_EQUAL(
-            datetime::Minutes(tests[result.index].hours).count(),
-            result.offset.count());
+            datetime::Minutes(tests[index].hours).count(),
+            ctx.results[index].offset.count());
     }
 }
 
