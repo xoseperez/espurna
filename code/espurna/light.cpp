@@ -1205,37 +1205,78 @@ void _lightFromHexPayload(espurna::StringView payload) {
     }
 }
 
-void _lightFromCommaSeparatedPayload(espurna::StringView payload, decltype(_light_channels.end()) end) {
-    auto it = _light_channels.begin();
-    if (it == end) {
-        return;
-    }
+enum class LightMapResult {
+    Unknown,
+    Ok,
+    Underflow,
+    Overflow,
+};
 
-    // every channel value is separated by a comma
-    auto split = espurna::SplitView(payload, ",");
-    while (split.next()) {
+template <typename T>
+LightMapResult _lightMapUnsignedPayload(espurna::StringView payload, T it, T end) {
+    constexpr auto delimiter = espurna::StringView(",");
+
+    for (auto value : espurna::SplitView(payload, delimiter)) {
         if (it == end) {
-            break;
+            return LightMapResult::Overflow;
         }
 
-        const auto result = parseUnsigned(split.current(), 10);
+        const auto result = parseUnsigned(value, 10);
         if (!result.ok) {
-            break;
+            return LightMapResult::Unknown;
         }
 
         (*it) = result.value;
         ++it;
     }
 
-    // fill the rest with zeroes
-    while (it != end) {
-        (*it) = 0;
-        ++it;
+    if (it == end) {
+        return LightMapResult::Ok;
+    }
+
+    return LightMapResult::Underflow;
+}
+
+void _lightFromCommaSeparatedPayload(espurna::StringView payload, LightChannels::iterator begin, LightChannels::iterator end) {
+    if (begin == end) {
+        return;
+    }
+
+    std::vector<uint32_t> out;
+    out.resize(std::distance(begin, end));
+
+    const auto result = _lightMapUnsignedPayload(payload, out.begin(), out.end());
+    switch (result) {
+    // partial payloads are ok here
+    case LightMapResult::Ok:
+    case LightMapResult::Underflow:
+        break;
+
+    // but avoid parsing anything else
+    case LightMapResult::Overflow:
+    case LightMapResult::Unknown:
+        return;
+    }
+
+    auto lhs = begin;
+    auto rhs = out.begin();
+
+    // apply available values
+    while (lhs != end && rhs != out.end()) {
+        (*lhs) = *rhs;
+        ++lhs;
+        ++rhs;
+    }
+
+    // and fill the rest with zeroes
+    while (lhs != end) {
+        (*lhs) = 0;
+        ++lhs;
     }
 }
 
 void _lightFromCommaSeparatedPayload(espurna::StringView payload) {
-    _lightFromCommaSeparatedPayload(payload, _light_channels.end());
+    _lightFromCommaSeparatedPayload(payload, _light_channels.begin(), _light_channels.end());
 }
 
 void _lightFromRgbPayload(espurna::StringView payload) {
@@ -1252,49 +1293,33 @@ void _lightFromRgbPayload(espurna::StringView payload) {
     // Extra byte is interpreted like RGB + brightness
     // - #AABBCCDD
     if (payload[0] == '#') {
-        _lightFromHexPayload(
-            espurna::StringView(payload.begin() + 1, payload.end()));
+        _lightFromHexPayload(payload.slice(1));
         return;
     }
 
-    // Otherwise, assume comma-separated decimal values
-    _lightFromCommaSeparatedPayload(payload, _light_channels.begin() + 3);
+    // Otherwise, assume comma-separated decimal values of the first 3 channels
+    _lightFromCommaSeparatedPayload(payload,
+        _light_channels.begin(), _light_channels.begin() + 3);
 }
 
 espurna::light::Hsv _lightHsvFromPayload(espurna::StringView payload) {
-    espurna::light::Hsv::Array values;
-    auto it = std::begin(values);
-
     // HSV string is expected to be "H,S,V", where:
     // - H [0...360]
     // - S [0...100]
     // - V [0...100]
-    const auto end = std::end(values);
-
-    auto split = espurna::SplitView(payload, ",");
-    while (split.next()) {
-        if (it == end) {
-            break;
-        }
-
-        const auto result = parseUnsigned(split.current(), 10);
-        if (!result.ok) {
-            break;
-        }
-
-        (*it) = result.value;
-        ++it;
-    }
-
-    // discard partial or uneven payloads
     espurna::light::Hsv out;
-    if (split.remaining().length() || (it != end)) {
-        return out;
-    }
 
     // values are expected to be 'clamped' either in the
     // following call or in ctor of the helper object
-    out = espurna::light::Hsv(values);
+    espurna::light::Hsv::Array values;
+    const auto result = _lightMapUnsignedPayload(
+        payload, values.begin(), values.end());
+
+    // only exactly sized payloads are ok
+    if (result == LightMapResult::Ok) {
+        out = espurna::light::Hsv(values);
+    }
+
     return out;
 }
 
