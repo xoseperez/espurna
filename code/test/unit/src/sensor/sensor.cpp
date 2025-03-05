@@ -15,13 +15,19 @@
 // TODO is ..._SUPPORT wrapping necessary inside of sensor includes?
 // TODO ..._PORT should not be used in the class itself?
 
+// TODO ignore -Wunused-value that comes up here from interrupts() / noInterrupts() usage
+#undef xt_rsil
+#define xt_rsil(X)
+
 #define SENSOR_SUPPORT 1
 #define CSE7766_SUPPORT 1
 #define A02YYU_SUPPORT 1
+#define DHT_SUPPORT 1
 
 #include <espurna/config/sensors.h>
 #include <espurna/sensors/CSE7766Sensor.h>
 #include <espurna/sensors/A02YYUSensor.h>
+#include <espurna/sensors/DHTSensor.h>
 
 #include <memory>
 #include <vector>
@@ -193,6 +199,49 @@ void test_a02yyu_data() {
     TEST_ASSERT_EQUAL_DOUBLE(1.953, ptr->value(0));
 }
 
+void test_dht_data() {
+    constexpr auto a = 0b00011010;
+    constexpr auto b = 0b10000110;
+
+    TEST_ASSERT_EQUAL_FLOAT(56.8f,
+        dht_humidity(DHT_CHIP_DHT12, {0x38, 0x8}));
+    TEST_ASSERT_EQUAL_FLOAT(26.6f,
+        dht_temperature(DHT_CHIP_DHT12, {0x1a, 0x6}));
+    TEST_ASSERT_EQUAL_FLOAT(-26.6f,
+        dht_temperature(DHT_CHIP_DHT12, {0x1a, 0x86}));
+
+    TEST_ASSERT_EQUAL_FLOAT(44.9f,
+        dht_humidity(DHT_CHIP_DHT22, {0x1, 0xc1}));
+    TEST_ASSERT_EQUAL_FLOAT(0.2f,
+        dht_temperature(DHT_CHIP_DHT22, {0x0, 0x2}));
+    TEST_ASSERT_EQUAL_FLOAT(-0.2f,
+        dht_temperature(DHT_CHIP_DHT22, {0x80, 0x2}));
+
+    TEST_ASSERT_EQUAL_FLOAT(92.3f,
+        dht_humidity(DHT_CHIP_DHT22, {0x3, 0x9b}));
+    TEST_ASSERT_EQUAL_FLOAT(2.9f,
+        dht_temperature(DHT_CHIP_DHT22, {0x0, 0x1d}));
+
+    TEST_ASSERT_EQUAL_FLOAT(56.3f,
+        dht_humidity(DHT_CHIP_DHT22, {0x2, 0x33}));
+    TEST_ASSERT_EQUAL_FLOAT(-0.9f,
+        dht_temperature(DHT_CHIP_DHT22, {0xff, 0xf7}));
+
+    TEST_ASSERT_EQUAL_FLOAT(93.0f,
+        dht_humidity(DHT_CHIP_DHT22, {0x3, 0xa2}));
+    TEST_ASSERT_EQUAL_FLOAT(-4.8f,
+        dht_temperature(DHT_CHIP_DHT22, {0xff, 0xd0}));
+    TEST_ASSERT_EQUAL_FLOAT(-4.7f,
+        dht_temperature(DHT_CHIP_DHT22, {0xff, 0xd1}));
+    TEST_ASSERT_EQUAL_FLOAT(-4.6f,
+        dht_temperature(DHT_CHIP_DHT22, {0xff, 0xd2}));
+
+    TEST_ASSERT_EQUAL_FLOAT(88.9f,
+        dht_humidity(DHT_CHIP_DHT22, {0x3, 0x79}));
+    TEST_ASSERT_EQUAL_FLOAT(-2.2f,
+        dht_temperature(DHT_CHIP_DHT22, {0xf, 0xea}));
+}
+
 } // namespace
 } // namespace test
 } // namespace espurna
@@ -202,5 +251,6 @@ int main(int, char**) {
     using namespace espurna::test;
     RUN_TEST(test_cse7766_data);
     RUN_TEST(test_a02yyu_data);
+    RUN_TEST(test_dht_data);
     return UNITY_END();
 }

@@ -82,6 +82,17 @@ float dht_humidity(DHTChipType type, std::array<uint8_t, 2> pair) {
     return out;
 }
 
+float dht_raw_impl(std::array<uint8_t, 2> pair) {
+    int16_t out;
+
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+    std::swap(pair[0], pair[1]);
+#endif
+    std::memcpy(&out, pair.data(), sizeof(out));
+
+    return out;
+}
+
 float dht_temperature(DHTChipType type, std::array<uint8_t, 2> pair) {
     // binary representation varies between the original chip and its copies
     // by default, check for generic sign-magnitude
@@ -91,6 +102,11 @@ float dht_temperature(DHTChipType type, std::array<uint8_t, 2> pair) {
     // in case it is negative and looks like twos-complement, value can be c/p into memory as-is
     // it is enough to only check the sign bit neighbour; possible values are around [0...800]
     constexpr auto NegativeTwoComplementMask = uint8_t{ 0b11000000 };
+
+    // another case is 12bit value instead of full 16bit
+    // in case of negative numbers we'd have to extend it to full 16bit
+    constexpr auto ShortVoidMask = uint8_t{ 0b11111000 };
+    constexpr auto ShortSignMask = uint8_t{ 0b00001000 };
 
     float out;
 
@@ -122,15 +138,14 @@ float dht_temperature(DHTChipType type, std::array<uint8_t, 2> pair) {
     case DHT_CHIP_DHT22:
     case DHT_CHIP_AM2301:
     case DHT_CHIP_SI7021:
-        // special exception for negative numbers in twos-complement
+        // negative numbers in twos-complement
         if ((pair[0] & NegativeTwoComplementMask) == NegativeTwoComplementMask) {
-            int16_t tmp;
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-            std::swap(pair[0], pair[1]);
-#endif
-            std::memcpy(&tmp, pair.data(), sizeof(tmp));
-            out = tmp;
-        // fallback works both for the original chips and positive numbers
+            out = dht_raw_impl(pair);
+        // 12bit numbers have to be extended first
+        } else if ((pair[0] & ShortVoidMask) == ShortSignMask) {
+            pair[0] |= ShortVoidMask;
+            out = dht_raw_impl(pair);
+        // otherwise, use the standard copy
         } else {
             out = ((pair[0] & MagnitudeMask) << 8) | pair[1];
             if (pair[0] & SignMask) {
