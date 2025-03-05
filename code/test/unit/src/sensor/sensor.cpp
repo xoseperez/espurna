@@ -200,6 +200,16 @@ void test_a02yyu_data() {
 }
 
 void test_dht_data() {
+    TEST_ASSERT_EQUAL_FLOAT(43.f,
+        dht_humidity(DHT_CHIP_DHT11, {0x2b, 0x0}));
+    TEST_ASSERT_EQUAL_FLOAT(43.f,
+        dht_humidity(DHT_CHIP_DHT11, {0x2b, 0xe}));
+
+    TEST_ASSERT_EQUAL_FLOAT(23.f,
+        dht_temperature(DHT_CHIP_DHT11, {0x17, 0x0}));
+    TEST_ASSERT_EQUAL_FLOAT(23.f,
+        dht_temperature(DHT_CHIP_DHT11, {0x17, 0xf}));
+
     TEST_ASSERT_EQUAL_FLOAT(56.8f,
         dht_humidity(DHT_CHIP_DHT12, {0x38, 0x8}));
     TEST_ASSERT_EQUAL_FLOAT(26.6f,
@@ -207,8 +217,13 @@ void test_dht_data() {
     TEST_ASSERT_EQUAL_FLOAT(-26.6f,
         dht_temperature(DHT_CHIP_DHT12, {0x1a, 0x86}));
 
+    TEST_ASSERT(dht_checksum({0x1, 0xc1, 0x0, 0x2, 0xc4}));
+    TEST_ASSERT(dht_checksum({0x1, 0xc8, 0x80, 0x2, 0x4b}));
+
     TEST_ASSERT_EQUAL_FLOAT(44.9f,
         dht_humidity(DHT_CHIP_DHT22, {0x1, 0xc1}));
+    TEST_ASSERT_EQUAL_FLOAT(45.6f,
+        dht_humidity(DHT_CHIP_DHT22, {0x1, 0xc8}));
     TEST_ASSERT_EQUAL_FLOAT(0.2f,
         dht_temperature(DHT_CHIP_DHT22, {0x0, 0x2}));
     TEST_ASSERT_EQUAL_FLOAT(-0.2f,
@@ -218,6 +233,10 @@ void test_dht_data() {
         dht_humidity(DHT_CHIP_DHT22, {0x3, 0x9b}));
     TEST_ASSERT_EQUAL_FLOAT(2.9f,
         dht_temperature(DHT_CHIP_DHT22, {0x0, 0x1d}));
+
+    TEST_ASSERT(dht_checksum({0x2, 0x33, 0xff, 0xf7, 0x2b}));
+    TEST_ASSERT(dht_checksum({0x2, 0x11, 0xff, 0xf1, 0x03}));
+    TEST_ASSERT(dht_checksum({0x2, 0x10, 0xff, 0xf1, 0x02}));
 
     TEST_ASSERT_EQUAL_FLOAT(56.3f,
         dht_humidity(DHT_CHIP_DHT22, {0x2, 0x33}));
