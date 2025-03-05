@@ -35,8 +35,6 @@ import { build as esbuildBuild } from 'esbuild';
 import { minify as htmlMinify } from 'html-minifier-terser';
 import { JSDOM } from 'jsdom';
 
-import { default as rename } from 'gulp-rename';
-
 import * as convert from 'convert-source-map';
 import * as through from 'through2';
 import fancyLog from 'fancy-log';
@@ -258,6 +256,24 @@ function adjustFileStat() {
         source.stat.mtime = now;
         source.stat.ctime = now;
         callback(null, source);
+    });
+}
+
+/**
+ * updates source filename to a different one
+ * @param {string} name
+ * @returns {StreamTransform}
+ */
+function rename(name) {
+    return through.obj(function(source, _, callback) {
+        const out = source.clone({contents: false});
+
+        out.path = path.join(out.base, name);
+        if (out.sourceMap) {
+            out.sourceMap.file = out.relative;
+        }
+
+        callback(null, out);
     });
 }
 
@@ -658,8 +674,8 @@ function buildOutputs(name, stream) {
         });
 
     return stream
+        .pipe(rename(`index.${name}.html`))
         .pipe(adjustFileStat())
-        .pipe(rename({basename: `index.${name}`}))
         .pipe(destination(BUILD_DIR))
         .pipe(logSize())
         .pipe(modifyHtml([
