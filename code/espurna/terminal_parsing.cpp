@@ -791,10 +791,19 @@ SplitView::SplitView::Iterator::Iterator(const SplitView* base) :
     _value(_base->before_begin())
 {}
 
+SplitView::SplitView::Iterator::Iterator(const SplitView* base, End) :
+    _base(base),
+    _value(_base->at_end())
+{}
+
 SplitView::Iterator SplitView::begin() const {
     Iterator it(this);
     it.next();
     return it;
+}
+
+SplitView::Iterator SplitView::end() const {
+    return Iterator(this, Iterator::End{});
 }
 
 StringView SplitView::Iterator::remaining() const {

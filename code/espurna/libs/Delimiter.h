@@ -219,6 +219,8 @@ struct SplitView {
         Iterator() = delete;
         explicit Iterator(const SplitView*);
 
+        Iterator(const SplitView*, End);
+
         const SplitView* _base;
         StringView _value;
     };
@@ -227,13 +229,15 @@ struct SplitView {
     SplitView(StringView, StringView);
 
     Iterator begin() const;
-
-    Iterator::End end() const {
-        return SplitView::Iterator::End{};
-    }
+    Iterator end() const;
 
 private:
     friend StatefulSplitView;
+
+    StringView at_end() const {
+        return StringView(
+            _view.end(), _view.end());
+    }
 
     StringView before_begin() const {
         return StringView(
@@ -273,7 +277,7 @@ struct StatefulSplitView {
         return _base.begin();
     }
 
-    SplitView::Iterator::End end() const {
+    SplitView::Iterator end() const {
         return _base.end();
     }
 
