@@ -57,14 +57,18 @@ float dht_humidity(DHTChipType type, std::array<uint8_t, 2> pair) {
     // but, its never negative, so no reason to do any conversions for signed numbers
     float out;
 
+    // based on ADSONG datasheet and various other libs implementing dht12
+    // extract sign info from the decimal scale part instead of the integral
+    constexpr auto MagnitudeMask = uint8_t{ 0b1111111 };
+
     switch (type) {
     case DHT_CHIP_DHT11:
         out = pair[0];
         break;
 
     case DHT_CHIP_DHT12:
-        out = pair[0];
-        out += pair[1] * 0.1f;
+        out = (pair[0] & MagnitudeMask);
+        out += (pair[1] & MagnitudeMask) * 0.1f;
         break;
 
     case DHT_CHIP_DHT21:
@@ -85,29 +89,40 @@ float dht_temperature(DHTChipType type, std::array<uint8_t, 2> pair) {
     constexpr auto SignMask = uint8_t{ 0b10000000 };
 
     // in case it is negative and looks like twos-complement, value can be c/p into memory as-is
-    // plus, it is enough to only check the sign bit neighbour. possible values are around [0...800]
+    // it is enough to only check the sign bit neighbour; possible values are around [0...800]
     constexpr auto NegativeTwoComplementMask = uint8_t{ 0b11000000 };
 
     float out;
 
     switch (type) {
+    // []pair for dht11 & dht12 contains integral and decimal scale
+    // based on ADSONG datasheet and various other libs implementing dht12
+    // try to extract sign info from both pairs, not just the integral one
+
+    // original code prefers to drop decimal scale in favour of a integral reading due to poor precision
     case DHT_CHIP_DHT11:
         out = pair[0];
+        if ((pair[0] & SignMask) || (pair[1] & SignMask)) {
+            out = -out;
+        }
         break;
 
+    // added decimal place based on the decimal scale byte
     case DHT_CHIP_DHT12:
-        out = pair[0] & MagnitudeMask;
-        if (pair[0] & SignMask) {
+        out = (pair[0] & MagnitudeMask);
+        out += (pair[1] & MagnitudeMask) * 0.1f;
+        if ((pair[0] & SignMask) || (pair[1] & SignMask)) {
             out = -out;
         }
 
-        out = out * 0.1f;
         break;
 
+    // []pair on recent chips contains s16 data w/ sign included
     case DHT_CHIP_DHT21:
     case DHT_CHIP_DHT22:
     case DHT_CHIP_AM2301:
     case DHT_CHIP_SI7021:
+        // special exception for negative numbers in twos-complement
         if ((pair[0] & NegativeTwoComplementMask) == NegativeTwoComplementMask) {
             int16_t tmp;
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
@@ -115,8 +130,8 @@ float dht_temperature(DHTChipType type, std::array<uint8_t, 2> pair) {
 #endif
             std::memcpy(&tmp, pair.data(), sizeof(tmp));
             out = tmp;
+        // fallback works both for the original chips and positive numbers
         } else {
-            // positive numbers are the same, no conversion needed
             pair[0] &= MagnitudeMask;
             out = (pair[0] << 8) | pair[1];
             if (pair[0] & SignMask) {
