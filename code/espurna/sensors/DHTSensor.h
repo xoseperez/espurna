@@ -132,8 +132,7 @@ float dht_temperature(DHTChipType type, std::array<uint8_t, 2> pair) {
             out = tmp;
         // fallback works both for the original chips and positive numbers
         } else {
-            pair[0] &= MagnitudeMask;
-            out = (pair[0] << 8) | pair[1];
+            out = ((pair[0] & MagnitudeMask) << 8) | pair[1];
             if (pair[0] & SignMask) {
                 out = -out;
             }
