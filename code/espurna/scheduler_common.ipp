@@ -916,7 +916,7 @@ constexpr auto DefaultSeconds = datetime::Seconds{ -1 };
 using time_point = datetime::Clock::time_point;
 constexpr auto DefaultTimePoint = time_point{ DefaultSeconds };
 
-time_point make_time_point(const datetime::Context& ctx) {
+inline time_point make_time_point(const datetime::Context& ctx) {
     return time_point(to_minutes(ctx));
 }
 

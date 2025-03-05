@@ -200,9 +200,6 @@ void test_a02yyu_data() {
 }
 
 void test_dht_data() {
-    constexpr auto a = 0b00011010;
-    constexpr auto b = 0b10000110;
-
     TEST_ASSERT_EQUAL_FLOAT(56.8f,
         dht_humidity(DHT_CHIP_DHT12, {0x38, 0x8}));
     TEST_ASSERT_EQUAL_FLOAT(26.6f,

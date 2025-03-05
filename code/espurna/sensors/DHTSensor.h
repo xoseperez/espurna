@@ -77,6 +77,9 @@ float dht_humidity(DHTChipType type, std::array<uint8_t, 2> pair) {
     case DHT_CHIP_SI7021:
         out = ((pair[0] << 8) | pair[1]) * 0.1f;
         break;
+
+    default:
+        __builtin_unreachable();
     }
 
     return out;
@@ -155,6 +158,9 @@ float dht_temperature(DHTChipType type, std::array<uint8_t, 2> pair) {
 
         out *= 0.1f;
         break;
+
+    default:
+        __builtin_unreachable();
     }
 
     return out;
