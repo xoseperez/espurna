@@ -8,7 +8,9 @@
 #pragma once
 
 #include "../gpio.h"
+#include "../system_time.h"
 #include "../utils.h"
+
 #include "BaseSensor.h"
 
 enum class DHTChipType {
@@ -28,15 +30,20 @@ enum class DHTChipType {
 #define DHT_CHIP_AM2301             DHTChipType::AM2301
 #define DHT_CHIP_SI7021             DHTChipType::SI7021
 
-int dhtchip_to_number(DHTChipType chip) {
-    switch (chip) {
+namespace {
+
+int dht_chip_to_number(DHTChipType type) {
+    switch (type) {
     case DHTChipType::DHT11:
         return 11;
+
     case DHTChipType::DHT12:
         return 12;
+
     case DHTChipType::DHT21:
     case DHTChipType::AM2301:
         return 21;
+
     case DHTChipType::DHT22:
     case DHTChipType::SI7021:
         return 22;
@@ -44,6 +51,91 @@ int dhtchip_to_number(DHTChipType chip) {
 
     return -1;
 }
+
+float dht_humidity(DHTChipType type, std::array<uint8_t, 2> pair) {
+    // binary representation varies between the original chip and its copies
+    // but, its never negative, so no reason to do any conversions for signed numbers
+    float out;
+
+    switch (type) {
+    case DHT_CHIP_DHT11:
+        out = pair[0];
+        break;
+
+    case DHT_CHIP_DHT12:
+        out = pair[0];
+        out += pair[1] * 0.1f;
+        break;
+
+    case DHT_CHIP_DHT21:
+    case DHT_CHIP_DHT22:
+    case DHT_CHIP_AM2301:
+    case DHT_CHIP_SI7021:
+        out = ((pair[0] << 8) | pair[1]) * 0.1f;
+        break;
+    }
+
+    return out;
+}
+
+float dht_temperature(DHTChipType type, std::array<uint8_t, 2> pair) {
+    // binary representation varies between the original chip and its copies
+    // by default, check for generic sign-magnitude
+    constexpr auto MagnitudeMask = uint8_t{ 0b1111111 };
+    constexpr auto SignMask = uint8_t{ 0b10000000 };
+
+    // in case it is negative and looks like twos-complement, value can be c/p into memory as-is
+    // plus, it is enough to only check the sign bit neighbour. possible values are around [0...800]
+    constexpr auto NegativeTwoComplementMask = uint8_t{ 0b11000000 };
+
+    float out;
+
+    switch (type) {
+    case DHT_CHIP_DHT11:
+        out = pair[0];
+        break;
+
+    case DHT_CHIP_DHT12:
+        out = pair[0] & MagnitudeMask;
+        if (pair[0] & SignMask) {
+            out = -out;
+        }
+
+        out = out * 0.1f;
+        break;
+
+    case DHT_CHIP_DHT21:
+    case DHT_CHIP_DHT22:
+    case DHT_CHIP_AM2301:
+    case DHT_CHIP_SI7021:
+        if ((pair[0] & NegativeTwoComplementMask) == NegativeTwoComplementMask) {
+            int16_t tmp;
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+            std::swap(pair[0], pair[1]);
+#endif
+            std::memcpy(&tmp, pair.data(), sizeof(tmp));
+            out = tmp;
+        } else {
+            // positive numbers are the same, no conversion needed
+            pair[0] &= MagnitudeMask;
+            out = (pair[0] << 8) | pair[1];
+            if (pair[0] & SignMask) {
+                out = -out;
+            }
+        }
+
+        out *= 0.1f;
+        break;
+    }
+
+    return out;
+}
+
+bool dht_checksum(const std::array<uint8_t, 5>& data) {
+    return data[4] == ((data[0] + data[1] + data[2] + data[3]) & 0xFF);
+}
+
+} // namespace
 
 class DHTSensor : public BaseSensor {
 
@@ -82,7 +174,7 @@ class DHTSensor : public BaseSensor {
         }
 
         int getType() const {
-            return dhtchip_to_number(_type);
+            return dht_chip_to_number(_type);
         }
 
         DHTChipType getChipType() const {
@@ -132,7 +224,7 @@ class DHTSensor : public BaseSensor {
         String description() const override {
             char buffer[20];
             snprintf_P(buffer, sizeof(buffer),
-                "DHT%d @ GPIO%hhu", dhtchip_to_number(_type), _gpio);
+                "DHT%d @ GPIO%hhu", dht_chip_to_number(_type), _gpio);
             return String(buffer);
         }
 
@@ -244,49 +336,23 @@ class DHTSensor : public BaseSensor {
                     espurna::duration::Milliseconds(250));
             }
 
-            Data dhtData{};
+            Data data{};
 
             noInterrupts();
-            _read_critical(dhtData);
+            _read_critical(data);
             interrupts();
 
             if (_error != SENSOR_ERROR_OK) {
                 return;
             }
 
-            // Verify checksum
-            if (dhtData[4] != ((dhtData[0] + dhtData[1] + dhtData[2] + dhtData[3]) & 0xFF)) {
+            if (!dht_checksum(data)) {
                 _error = SENSOR_ERROR_CRC;
                 return;
             }
 
-            // Get humidity from Data[0] and Data[1]
-            if (_type == DHT_CHIP_DHT11) {
-                _humidity = dhtData[0];
-            } else if (_type == DHT_CHIP_DHT12) {
-                _humidity = dhtData[0];
-                _humidity += dhtData[1] * 0.1;
-            } else {
-                _humidity = dhtData[0] * 256 + dhtData[1];
-                _humidity /= 10;
-            }
-
-            // Get temp from Data[2] and Data[3]
-            if (_type == DHT_CHIP_DHT11) {
-                _temperature = dhtData[2];
-            } else if (_type == DHT_CHIP_DHT12) {
-                _temperature = (dhtData[2] & 0x7F);
-                _temperature += dhtData[3] * 0.1;
-                if (dhtData[2] & 0x80) {
-                    _temperature *= -1;
-                }
-            } else {
-                _temperature = (dhtData[2] & 0x7F) * 256 + dhtData[3];
-                _temperature /= 10;
-                if (dhtData[2] & 0x80) {
-                    _temperature *= -1;
-                }
-            }
+            _humidity = dht_humidity(_type, {data[0], data[1]});
+            _temperature = dht_temperature(_type, {data[2], data[3]});
 
             _last_ok = TimeSource::now();
 
