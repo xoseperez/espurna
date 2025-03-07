@@ -13,6 +13,8 @@
 
 #include "BaseSensor.h"
 
+#include <numeric>
+
 enum class DHTChipType {
     DHT11,
     DHT12,
@@ -63,7 +65,7 @@ float dht_humidity(DHTChipType type, std::array<uint8_t, 2> pair) {
 
     switch (type) {
     case DHT_CHIP_DHT11:
-        out = pair[0];
+        out = (pair[0] & MagnitudeMask);
         break;
 
     case DHT_CHIP_DHT12:
@@ -75,7 +77,7 @@ float dht_humidity(DHTChipType type, std::array<uint8_t, 2> pair) {
     case DHT_CHIP_DHT22:
     case DHT_CHIP_AM2301:
     case DHT_CHIP_SI7021:
-        out = ((pair[0] << 8) | pair[1]) * 0.1f;
+        out = (((pair[0] & MagnitudeMask) << 8) | pair[1]) * 0.1f;
         break;
 
     default:
@@ -120,7 +122,7 @@ float dht_temperature(DHTChipType type, std::array<uint8_t, 2> pair) {
 
     // original code prefers to drop decimal scale in favour of a integral reading due to poor precision
     case DHT_CHIP_DHT11:
-        out = pair[0];
+        out = (pair[0] & MagnitudeMask);
         if ((pair[0] & SignMask) || (pair[1] & SignMask)) {
             out = -out;
         }
@@ -167,7 +169,8 @@ float dht_temperature(DHTChipType type, std::array<uint8_t, 2> pair) {
 }
 
 bool dht_checksum(const std::array<uint8_t, 5>& data) {
-    return data[4] == ((data[0] + data[1] + data[2] + data[3]) & 0xFF);
+    return data.back() == std::accumulate(
+        data.begin(), data.end() - 1, uint8_t{ 0 });
 }
 
 } // namespace
