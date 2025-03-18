@@ -98,6 +98,11 @@ public:
     };
 
     // Address of the sensor (it could be the GPIO or I2C address)
+    unsigned char address_u8(unsigned char) const override {
+        return _sensor_address.address();
+    }
+
+    // String representation of the sensor address
     String address(unsigned char) const override {
         char buffer[5];
         snprintf_P(buffer, sizeof(buffer),

@@ -35,7 +35,9 @@ struct Sensor : public BaseEmonSensor {
 
     Sensor() :
         BaseEmonSensor(Magnitudes)
-    {}
+    {
+        ++_counter;
+    }
 
     unsigned char id() const override {
         return SENSOR_DUMMY_ID;
@@ -58,6 +60,10 @@ struct Sensor : public BaseEmonSensor {
 
     String description() const override {
         return STRING_VIEW("DummySensor").toString();
+    }
+
+    unsigned char address_u8(unsigned char) const override {
+        return _counter;
     }
 
     String address(unsigned char) const override {
@@ -138,6 +144,8 @@ struct Sensor : public BaseEmonSensor {
     }
 
 private:
+    static uint8_t _counter;
+
     bool _fail_begin { true };
     bool _fail_pre { true };
 
@@ -148,6 +156,8 @@ private:
     double _lux { 0.0 };
     double _delta { 0.0 };
 };
+
+uint8_t Sensor::_counter { 123 };
 
 #ifndef __cpp_inline_variables
 constexpr BaseSensor::Magnitude Sensor::Magnitudes[];

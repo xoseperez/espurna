@@ -371,7 +371,7 @@ using Slot = std::array<char, 16>;
 
 struct SlotValues {
     unsigned char id;
-    unsigned char index;
+    unsigned char slot_id;
     unsigned char type;
     unsigned char slot;
 };
@@ -418,7 +418,7 @@ Slot make_slot(SlotValues values) {
 
     auto it = out.begin();
     it = append_slot_number_impl(it, values.id);
-    it = append_slot_number_impl(it, values.index);
+    it = append_slot_number_impl(it, values.slot_id);
     it = append_slot_number_impl(it, values.type);
     append_slot_number_impl(it, values.slot);
 
@@ -440,11 +440,14 @@ public:
     {}
 
     BaseSensorPtr sensor; // Sensor object, *cannot be empty*
+
     unsigned char type; // Type of measurement, returned by the BaseSensor::type(slot)
     unsigned char slot; // Sensor slot # taken by the magnitude, used to access the measurement
 
     unsigned char index_global; // N'th magnitude of it's type, across all of the active sensors
-    unsigned char slot_global; // Global slot aka index of the sensor, across all of the active sensors
+    unsigned char slot_global; // Global slot aka index of the sensor, across all of the sensors with the same ID
+
+    unsigned char slot_id; // Slot ID provided by the sensor. Expected to be varying between different instances of the sensor
 
     Unit units { Unit::None }; // Current units of measurement
     unsigned char decimals { 0u }; // Number of decimals in textual representation
@@ -1350,7 +1353,9 @@ String format_slot(const Magnitude& magnitude) {
     const auto slot = make_slot(
         SlotValues{
             .id = magnitude.sensor->id(),
-            .index = static_cast<unsigned char>(magnitude.slot_global + 1),
+            .slot_id = (magnitude.slot_id != 0)
+                ? magnitude.slot_id
+                : static_cast<unsigned char>(magnitude.slot_global + 1),
             .type = magnitude.type,
             .slot = static_cast<unsigned char>(magnitude.slot + 1),
         });
@@ -1770,6 +1775,7 @@ Magnitude& add(BaseSensorPtr sensor, unsigned char type, unsigned char slot) {
     out.slot = slot;
     out.index_global = types_count_add(type);
     out.slot_global = instance_count_add(sensor->id());
+    out.slot_id = sensor->address_u8(slot);
 
     internal::magnitudes.emplace_back(std::move(out));
     return internal::magnitudes.back();

@@ -194,6 +194,11 @@ public:
     }
 
     // Address of the sensor (it could be the GPIO or I2C address)
+    virtual unsigned char address_u8(unsigned char) const {
+        return 0u;
+    }
+
+    // String representation of the sensor address
     virtual String address(unsigned char) const {
         return String();
     }
