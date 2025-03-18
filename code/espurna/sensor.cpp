@@ -387,10 +387,10 @@ constexpr
 #endif
 std::array<char, 3> format_slot_number_impl(unsigned char number) {
     return std::array<char, 3>{
-        number > 100
+        number >= 100
             ? dec_digit2char(number / 100)
             : '0',
-        number > 10
+        number >= 10
             ? dec_digit2char((number / 10) % 10)
             : '0',
         number
@@ -1304,11 +1304,11 @@ unsigned char types_count[MAGNITUDE_MAX]{};
 } // namespace internal
 
 unsigned char instance_count_add(unsigned char id) {
-    return ++internal::instance_count[id];
+    return internal::instance_count[id]++;
 }
 
 unsigned char types_count_add(unsigned char type) {
-    return ++internal::types_count[type];
+    return internal::types_count[type]++;
 }
 
 unsigned char types_count(unsigned char type) {
@@ -1350,9 +1350,9 @@ String format_slot(const Magnitude& magnitude) {
     const auto slot = make_slot(
         SlotValues{
             .id = magnitude.sensor->id(),
-            .index = magnitude.slot_global,
+            .index = static_cast<unsigned char>(magnitude.slot_global + 1),
             .type = magnitude.type,
-            .slot = magnitude.slot,
+            .slot = static_cast<unsigned char>(magnitude.slot + 1),
         });
 
     const auto out = StringView(slot.data(), slot.size());
