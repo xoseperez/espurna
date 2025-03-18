@@ -287,6 +287,7 @@
 // These should remain over time, do not modify them, only add new ones at the end
 //--------------------------------------------------------------------------------
 
+#define SENSOR_DUMMY_ID             0
 #define SENSOR_DHTXX_ID             1
 #define SENSOR_DALLAS_ID            2
 #define SENSOR_EMON_ANALOG_ID       3
@@ -333,6 +334,8 @@
 #define SENSOR_PM1006_ID            44
 #define SENSOR_INA219_ID            45
 #define SENSOR_A02YYU_ID            46
+
+#define SENSOR_ID_MAX               47
 
 //--------------------------------------------------------------------------------
 // Magnitudes

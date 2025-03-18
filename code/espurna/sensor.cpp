@@ -366,15 +366,67 @@ private:
 
 using BaseFilterPtr = std::unique_ptr<BaseFilter>;
 
+// .001.002.003.004
+using Slot = std::array<char, 16>;
+
+struct SlotValues {
+    unsigned char id;
+    unsigned char index;
+    unsigned char type;
+    unsigned char slot;
+};
+
+constexpr char dec_digit2char(char c) {
+    return ((c >= 0) && (c <= 9))
+        ? ('0' + c)
+        : '0';
+}
+
+#if __cplusplus >= 201603L
+constexpr
+#endif
+std::array<char, 3> format_slot_number_impl(unsigned char number) {
+    return std::array<char, 3>{
+        number > 100
+            ? dec_digit2char(number / 100)
+            : '0',
+        number > 10
+            ? dec_digit2char((number / 10) % 10)
+            : '0',
+        number
+            ? dec_digit2char(number % 10)
+            : '0',
+    };
+}
+
+// aka std::to_chars(it, it + 3, 10), prefixed with zeroes and a dot
+// (unchecked for bounds, always assuming `format_slot` as caller)
+template <typename T>
+T append_slot_number_impl(T it, unsigned char value) {
+    const auto raw = format_slot_number_impl(value);
+
+    *(it++) = '.';
+    *(it++) = raw[0];
+    *(it++) = raw[1];
+    *(it++) = raw[2];
+
+    return it;
+}
+
+Slot make_slot(SlotValues values) {
+    Slot out;
+
+    auto it = out.begin();
+    it = append_slot_number_impl(it, values.id);
+    it = append_slot_number_impl(it, values.index);
+    it = append_slot_number_impl(it, values.type);
+    append_slot_number_impl(it, values.slot);
+
+    return out;
+}
+
 class Magnitude {
-private:
-    static unsigned char _counts[MAGNITUDE_MAX];
-
 public:
-    static size_t counts(unsigned char type) {
-        return _counts[type];
-    }
-
     Magnitude() = delete;
 
     Magnitude(const Magnitude&) = delete;
@@ -383,13 +435,16 @@ public:
     Magnitude(Magnitude&& other) noexcept = default;
     Magnitude& operator=(Magnitude&&) noexcept = default;
 
-    Magnitude(BaseSensorPtr, unsigned char slot, unsigned char type);
+    Magnitude(BaseSensorPtr sensor) :
+        sensor(std::move(sensor))
+    {}
 
     BaseSensorPtr sensor; // Sensor object, *cannot be empty*
-    unsigned char slot; // Sensor slot # taken by the magnitude, used to access the measurement
     unsigned char type; // Type of measurement, returned by the BaseSensor::type(slot)
+    unsigned char slot; // Sensor slot # taken by the magnitude, used to access the measurement
 
     unsigned char index_global; // N'th magnitude of it's type, across all of the active sensors
+    unsigned char slot_global; // Global slot aka index of the sensor, across all of the active sensors
 
     Unit units { Unit::None }; // Current units of measurement
     unsigned char decimals { 0u }; // Number of decimals in textual representation
@@ -421,17 +476,6 @@ static_assert(
     !std::is_copy_constructible<Magnitude>::value,
     "std::vector<Magnitude> should only use move ctor"
 );
-
-Magnitude::Magnitude(BaseSensorPtr sensor, unsigned char slot, unsigned char type) :
-    sensor(std::move(sensor)),
-    slot(slot),
-    type(type),
-    index_global(_counts[type])
-{
-    ++_counts[type];
-}
-
-unsigned char Magnitude::_counts[MAGNITUDE_MAX] = {0};
 
 bool isEmon(BaseSensorPtr sensor) {
     return (sensor->kind() == BaseEmonSensor::Kind)
@@ -1252,6 +1296,25 @@ constexpr bool ratio_supported(unsigned char type) {
 
 } // namespace traits
 
+namespace internal {
+
+unsigned char instance_count[SENSOR_ID_MAX]{};
+unsigned char types_count[MAGNITUDE_MAX]{};
+
+} // namespace internal
+
+unsigned char instance_count_add(unsigned char id) {
+    return ++internal::instance_count[id];
+}
+
+unsigned char types_count_add(unsigned char type) {
+    return ++internal::types_count[type];
+}
+
+unsigned char types_count(unsigned char type) {
+    return internal::types_count[type];
+}
+
 namespace build {
 
 static constexpr double correction(unsigned char type) {
@@ -1281,6 +1344,20 @@ String format(const Magnitude& magnitude, double value) {
 
 String format(const Magnitude& magnitude, ValuePair value) {
     return format(magnitude, value.value);
+}
+
+String format_slot(const Magnitude& magnitude) {
+    const auto slot = make_slot(
+        SlotValues{
+            .id = magnitude.sensor->id(),
+            .index = magnitude.slot_global,
+            .type = magnitude.type,
+            .slot = magnitude.slot,
+        });
+
+    const auto out = StringView(slot.data(), slot.size());
+
+    return out.toString();
 }
 
 String name(unsigned char type) {
@@ -1539,7 +1616,7 @@ String topic(const Magnitude& magnitude) {
 
 String topicWithIndex(const Magnitude& magnitude) {
     auto out = topic(magnitude);
-    if (sensor::build::useIndex() || (Magnitude::counts(magnitude.type) > 1)) {
+    if (sensor::build::useIndex() || (types_count(magnitude.type) > 1)) {
         out += '/' + String(magnitude.index_global, 10);
     }
 
@@ -1682,16 +1759,19 @@ ReadHandlers report_handlers;
 
 } // namespace internal
 
-size_t count(unsigned char type) {
-    return Magnitude::counts(type);
-}
-
 size_t count() {
     return internal::magnitudes.size();
 }
 
-Magnitude& add(BaseSensorPtr sensor, unsigned char slot, unsigned char type) {
-    internal::magnitudes.emplace_back(sensor, slot, type);
+Magnitude& add(BaseSensorPtr sensor, unsigned char type, unsigned char slot) {
+    Magnitude out(sensor);
+
+    out.type = type;
+    out.slot = slot;
+    out.index_global = types_count_add(type);
+    out.slot_global = instance_count_add(sensor->id());
+
+    internal::magnitudes.emplace_back(std::move(out));
     return internal::magnitudes.back();
 }
 
@@ -1731,7 +1811,7 @@ void forEachInstance(T&& callback) {
 template <typename T>
 void forEachCounted(T&& callback) {
     for (unsigned char type = MAGNITUDE_NONE + 1; type < MAGNITUDE_MAX; ++type) {
-        if (count(type)) {
+        if (types_count(type)) {
             callback(type);
         }
     }
@@ -1741,7 +1821,7 @@ void forEachCounted(T&& callback) {
 template <typename T>
 bool forEachCountedCheck(T&& callback) {
     for (unsigned char type = MAGNITUDE_NONE + 1; type < MAGNITUDE_MAX; ++type) {
-        if (count(type) && callback(type)) {
+        if (types_count(type) && callback(type)) {
             return true;
         }
     }
@@ -1783,6 +1863,7 @@ Value value(const Magnitude& magnitude, double value, Unit units) {
     return Value{
         .type = magnitude.type,
         .index = magnitude.index_global,
+        .slot = format_slot(magnitude),
         .units = units,
         .decimals = magnitude.decimals,
         .topic = topicWithIndex(magnitude),
@@ -3057,7 +3138,7 @@ void update(const Magnitude& magnitude, bool persistent) {
 
 void reset() {
     for (auto type : magnitude::traits::ratio_types) {
-        for (size_t index = 0; index < Magnitude::counts(type); ++index) {
+        for (size_t index = 0; index < magnitude::types_count(type); ++index) {
             delSetting(settings::keys::get(settings::prefix::get(type), settings::suffix::Ratio, index));
         }
     }
@@ -3291,7 +3372,7 @@ void types(JsonObject& root) {
     espurna::web::ws::EnumerablePayload payload{root, STRING_VIEW("types")};
     payload(STRING_VIEW("values"), {MAGNITUDE_NONE + 1, MAGNITUDE_MAX},
         [](size_t type) {
-            return Magnitude::counts(type) > 0;
+            return magnitude::types_count(type) > 0;
         },
         {{STRING_VIEW("type"), [](JsonArray& out, size_t index) {
             out.add(index);
@@ -3601,7 +3682,7 @@ bool tryHandle(ApiRequest& request, unsigned char type, T&& callback) {
     size_t index = 0;
     if (request.wildcards()) {
         const auto param = request.wildcard(0);
-        if (!::tryParseId(param, magnitude::count(type), index)) {
+        if (!::tryParseId(param, magnitude::types_count(type), index)) {
             return false;
         }
     }
@@ -3632,7 +3713,7 @@ void setup() {
 
     magnitude::forEachCounted([](unsigned char type) {
         auto pattern = magnitude::topic(type);
-        if (sensor::build::useIndex() || (magnitude::count(type) > 1)) {
+        if (sensor::build::useIndex() || (magnitude::types_count(type) > 1)) {
             pattern += STRING_VIEW("/+");
         }
 
@@ -3685,7 +3766,7 @@ void report(const Value& report, const Magnitude& magnitude) {
 }
 
 void callback(unsigned int type, StringView topic, StringView payload) {
-    if (!magnitude::count(MAGNITUDE_ENERGY)) {
+    if (!magnitude::types_count(MAGNITUDE_ENERGY)) {
         return;
     }
 
@@ -3700,7 +3781,7 @@ void callback(unsigned int type, StringView topic, StringView payload) {
         }
 
         size_t index;
-        if (!tryParseIdPath(t, magnitude::count(MAGNITUDE_ENERGY), index)) {
+        if (!tryParseIdPath(t, magnitude::types_count(MAGNITUDE_ENERGY), index)) {
             break;
         }
 
@@ -3730,6 +3811,26 @@ void setup() {
 namespace terminal {
 namespace commands {
 
+PROGMEM_STRING(Sensors, "SENSORS");
+
+void sensors(::terminal::CommandContext&& ctx) {
+    if (!magnitude::count()) {
+        terminalError(ctx, F("No magnitudes"));
+        return;
+    }
+
+    size_t index = 0;
+    for (const auto& magnitude : magnitude::internal::magnitudes) {
+        ctx.output.printf_P(PSTR("%2zu * %s @ %s => %s\n"),
+            index++,
+            magnitude::topicWithIndex(magnitude).c_str(),
+            magnitude::description(magnitude).c_str(),
+            magnitude::format_slot(magnitude).c_str());
+    }
+
+    terminalOK(ctx);
+}
+
 PROGMEM_STRING(Magnitudes, "MAGNITUDES");
 
 void magnitudes(::terminal::CommandContext&& ctx) {
@@ -3741,7 +3842,8 @@ void magnitudes(::terminal::CommandContext&& ctx) {
     size_t index = 0;
     for (const auto& magnitude : magnitude::internal::magnitudes) {
         ctx.output.printf_P(PSTR("%2zu * %s @ %s read %s reported %s\n"),
-            index++, magnitude::topicWithIndex(magnitude).c_str(),
+            index++,
+            magnitude::topicWithIndex(magnitude).c_str(),
             magnitude::description(magnitude).c_str(),
             magnitude::format_with_units(magnitude, magnitude.last).c_str(),
             magnitude::format_with_units(magnitude, magnitude.reported).c_str());
@@ -3820,6 +3922,7 @@ void energy(::terminal::CommandContext&& ctx) {
 }
 
 static constexpr ::terminal::Command List[] PROGMEM {
+    {Sensors, commands::sensors},
     {Magnitudes, commands::magnitudes},
     {Expected, commands::expected},
     {ResetRatios, commands::reset_ratios},
@@ -4014,7 +4117,7 @@ bool init() {
 
         const auto slots = sensor->count();
         for (auto slot = 0; slot < slots; ++slot) {
-            auto& result = magnitude::add(sensor, slot, sensor->type(slot));
+            auto& result = magnitude::add(sensor, sensor->type(slot), slot);
             configure_magnitude(result);
 
             // Energy tracking is implemented by looking at the specific magnitude & it's index at read time

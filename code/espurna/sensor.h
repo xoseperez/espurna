@@ -230,6 +230,8 @@ struct Value {
     unsigned char type;
     unsigned char index;
 
+    String slot;
+
     Unit units;
     unsigned char decimals;
     String topic;

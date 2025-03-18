@@ -38,7 +38,7 @@ struct Sensor : public BaseEmonSensor {
     {}
 
     unsigned char id() const override {
-        return 0;
+        return SENSOR_DUMMY_ID;
     }
 
     unsigned char count() const override {
