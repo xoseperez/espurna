@@ -19,9 +19,9 @@
 
 class BaseSensor {
 public:
-    // Pin this to the resulting object (poor man's rtti) so we know what it can be static_cast'ed into
-    struct ClassKind {
-        ClassKind() :
+    // Poor man's RTTI without -frtti. Store originating class ID to infer which class methods could be accessed.
+    struct Kind {
+        Kind() :
             _value(_last)
         {
             ++_last;
@@ -31,7 +31,7 @@ public:
             return _value;
         }
 
-        bool operator==(const ClassKind& other) const {
+        bool operator==(const Kind& other) const {
             return _value == other._value;
         }
 
@@ -40,7 +40,11 @@ public:
         int _value;
     };
 
-    static const ClassKind Kind;
+    // Base class kind instance, expected to be used by default in kind().
+    static Kind SensorKind() {
+        static const Kind kind;
+        return kind;
+    }
 
     // Generic way to pass the sensor instance to the isr
     struct InterruptablePin {
@@ -171,8 +175,8 @@ public:
     }
 
     // Kind of sensor
-    virtual ClassKind kind() const {
-        return Kind;
+    virtual Kind kind() const {
+        return SensorKind();
     }
 
     // Sensor ID, must be unique
@@ -276,5 +280,4 @@ protected:
     bool _ready = false;
 };
 
-int BaseSensor::ClassKind::_last { 0 };
-const BaseSensor::ClassKind BaseSensor::Kind;
+int BaseSensor::Kind::_last { 0 };

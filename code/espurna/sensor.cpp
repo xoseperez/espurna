@@ -478,16 +478,16 @@ static_assert(
 );
 
 bool isEmon(BaseSensorPtr sensor) {
-    return (sensor->kind() == BaseEmonSensor::Kind)
-        || (sensor->kind() == BaseAnalogEmonSensor::Kind);
+    return (sensor->kind() == BaseEmonSensor::SensorKind())
+        || (sensor->kind() == BaseAnalogEmonSensor::SensorKind());
 }
 
 bool isAnalogEmon(BaseSensorPtr sensor) {
-    return sensor->kind() == BaseAnalogEmonSensor::Kind;
+    return sensor->kind() == BaseAnalogEmonSensor::SensorKind();
 }
 
 bool isAnalog(BaseSensorPtr sensor) {
-    return sensor->kind() == BaseAnalogSensor::Kind;
+    return sensor->kind() == BaseAnalogSensor::SensorKind();
 }
 
 namespace convert {

@@ -9,9 +9,13 @@
 
 class BaseEmonSensor : public BaseSensor {
 public:
-    static const BaseSensor::ClassKind Kind;
-    BaseSensor::ClassKind kind() const override {
-        return Kind;
+    static BaseSensor::Kind SensorKind() {
+        static const BaseSensor::Kind kind;
+        return kind;
+    }
+
+    BaseSensor::Kind kind() const override {
+        return BaseEmonSensor::SensorKind();
     }
 
 protected:
@@ -234,5 +238,3 @@ protected:
 
     EnergyIndex _energy{};
 };
-
-const BaseSensor::ClassKind BaseEmonSensor::Kind;

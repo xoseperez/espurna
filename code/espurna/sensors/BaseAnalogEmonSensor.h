@@ -9,14 +9,19 @@
 #pragma once
 
 #include "BaseEmonSensor.h"
+#include "../system_time.h"
 
 #include "../libs/fs_math.h"
 
 class BaseAnalogEmonSensor : public BaseEmonSensor {
 public:
-    static const BaseSensor::ClassKind Kind;
-    BaseSensor::ClassKind kind() const override {
-        return Kind;
+    static BaseSensor::Kind SensorKind() {
+        static const BaseSensor::Kind kind;
+        return kind;
+    }
+
+    BaseSensor::Kind kind() const override {
+        return BaseAnalogEmonSensor::SensorKind();
     }
 
     using TimeSource = espurna::time::CoreClock;
@@ -313,5 +318,3 @@ private:
     double _pivot { 0.0 };
     double _current { 0.0 };
 };
-
-const BaseSensor::ClassKind BaseAnalogEmonSensor::Kind;
