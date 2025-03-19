@@ -3,27 +3,47 @@ import js from "@eslint/js";
 
 export default [
     {
-        files: ["gulpfile.mjs"],
+        ignores: [
+            "libraries/**/*",
+            "espurna/**/*",
+            "hardware/**/*",
+            "scripts/**/*",
+            "test/**/*",
+            "**/*.js",
+        ],
+    },
+    {
+        ...js.configs.recommended,
         languageOptions: {
             "globals": {
                 ...globals.es2021,
-                ...globals.node,
-            }
+            },
         },
         rules: {
-            ...js.configs.recommended.rules,
-            "quotes": ["error", "single"],
-            "no-throw-literal": "error",
             "no-unused-vars": ["error", {
                 "argsIgnorePattern": "^_",
             }],
         }
     },
     {
-        files: ["html/src/**/*.mjs"],
+        files: ["gulpfile.mjs"],
         languageOptions: {
             "globals": {
-                ...globals.es2021,
+                ...globals.node,
+            }
+        },
+        rules: {
+            "quotes": ["error", "single"],
+            "no-throw-literal": "error",
+        }
+    },
+    {
+        files: [
+            "html/spec/**/*.mjs",
+            "html/src/**/*.mjs",
+        ],
+        languageOptions: {
+            "globals": {
                 ...globals.browser,
                 "MODULE_API": "readonly",
                 "MODULE_CMD": "readonly",
@@ -48,7 +68,6 @@ export default [
             }
         },
         rules: {
-            ...js.configs.recommended.rules,
             "no-invalid-this": "error",
             "eqeqeq": "error",
             "prefer-arrow-callback": "error"

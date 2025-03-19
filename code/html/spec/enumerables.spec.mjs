@@ -127,7 +127,7 @@ test('enumerables for a span', () => {
     const override = `${name.toUpperCase()}${name.toUpperCase} #${number}`;
     listenEnumerableTarget(
         container, number, name,
-        (elem, _entries) => {
+        (elem) => {
             assert(elem instanceof HTMLSpanElement);
             setSpanValue(elem, override);
         });

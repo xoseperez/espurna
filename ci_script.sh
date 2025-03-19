@@ -17,7 +17,7 @@ case "$1" in
     ;;
 ("webui")
     npm exec --no -- vitest --environment jsdom --dir html/spec --run
-    npm exec --no -- eslint
+    npm exec --no -- eslint gulpfile.mjs html/src/*.mjs html/spec/*.mjs
     npm exec --no -- html-validate html/src/*.html
     # checks whether the webui can be built
     ./build.sh -f environments
