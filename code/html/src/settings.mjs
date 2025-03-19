@@ -923,33 +923,35 @@ const Enumerable = {};
 // Notice that <select multiple> input and output format is u32 number, but the 'original' string is comma-separated <option> value=... attributes
 
 /**
- * @typedef {{value: string, text: string}} SelectOption
+ * @typedef {{value: string, text: string}} ElementOption
  *
- * @param {HTMLSelectElement} select
- * @param {SelectOption[]} options
+ * @param {HTMLSelectElement | HTMLDataListElement} elem
+ * @param {ElementOption[]} options
  */
-export function initSelect(select, options) {
+export function initElementOptions(elem, options) {
     const initial = document.createElement("option");
     initial.disabled = true;
     initial.value = "";
 
-    select.appendChild(initial);
-    select.selectedIndex = 0;
+    elem.appendChild(initial);
+    if (elem instanceof HTMLSelectElement) {
+        elem.selectedIndex = 0;
+    }
 
     for (const option of options) {
-        const elem = document.createElement("option");
-        elem.value = option.value;
-        elem.textContent = option.text;
-        select.appendChild(elem);
+        const child = document.createElement("option");
+        child.value = option.value;
+        child.textContent = option.text;
+        elem.appendChild(child);
     }
 }
 
 /**
  * @param {EnumerableNames} names
- * @returns {SelectOption[]}
+ * @returns {ElementOption[]}
  */
-function selectOptionsFromEnumerable(names) {
-    /** @type {SelectOption[]} */
+function elementOptionsFromEnumerable(names) {
+    /** @type {ElementOption[]} */
     const out = [];
 
     Object.entries(names)
@@ -964,15 +966,21 @@ function selectOptionsFromEnumerable(names) {
 }
 
 /**
+ * @param {HTMLElement} elem
+ */
+function cleanupChildElements(elem) {
+    while (elem.childElementCount && elem.firstElementChild) {
+        elem.removeChild(elem.firstElementChild);
+    }
+}
+
+/**
  * @param {HTMLSelectElement} select
  * @param {EnumerableNames} names
  */
 function onEnumerableUpdateSelect(select, names) {
-    while (select.childElementCount && select.firstElementChild) {
-        select.removeChild(select.firstElementChild);
-    }
-
-    initSelect(select, selectOptionsFromEnumerable(names));
+    cleanupChildElements(select);
+    initElementOptions(select, elementOptionsFromEnumerable(names));
 
     const original = getOriginalForElement(select);
     if (original !== null) {
@@ -999,6 +1007,15 @@ function onEnumerableUpdateSpan(span, names) {
 }
 
 /**
+ * @param {HTMLDataListElement} datalist
+ * @param {EnumerableNames} names
+ */
+function onEnumerableUpdateDataList(datalist, names) {
+    cleanupChildElements(datalist);
+    initElementOptions(datalist, elementOptionsFromEnumerable(names));
+}
+
+/**
  * @callback EnumerableElemCallback
  * @param {HTMLElement} elem
  * @param {EnumerableNames} names
@@ -1013,6 +1030,8 @@ function onEnumerableUpdateElem(elem, names) {
         onEnumerableUpdateSelect(elem, names);
     } else if (elem instanceof HTMLSpanElement) {
         onEnumerableUpdateSpan(elem, names);
+    } else if (elem instanceof HTMLDataListElement) {
+        onEnumerableUpdateDataList(elem, names);
     }
 }
 

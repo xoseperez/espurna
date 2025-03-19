@@ -6,7 +6,7 @@ import {
 
 import {
     addEnumerables,
-    initSelect,
+    initElementOptions,
     listenEnumerableName,
     listenEnumerableTarget,
     prepareEnumerableTarget,
@@ -301,7 +301,7 @@ function createMagnitudeUnitSelector(_id, magnitude) {
             'text': Magnitudes.units.get(type) ?? type.toString()
         }));
 
-    initSelect(select, options);
+    initElementOptions(select, options);
     setSelectValue(select, magnitude.units);
     setOriginalFromValue(select);
 

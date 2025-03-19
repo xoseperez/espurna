@@ -20,28 +20,22 @@ afterAll(() => {
         .toEqual(0);
 });
 
-test('enumerables for a select', () => {
-    document.body.innerHTML += `
-    <div id="enumerables-for-select">
-        <select id="select-data" data-enumerable="select-data">
-        </select>
-    </div>`;
-
-    const name = 'select-data';
-    const number = 16;
-
-    const select = document.querySelector(`select#${name}`);
-    assert(select instanceof HTMLSelectElement);
-    expect(select.children.length).toEqual(0);
-    listenEnumerable(select);
+/**
+ * @param {HTMLSelectElement | HTMLDataListElement} elem
+ * @param {string} name
+ * @param {number} number
+ */
+function testOptionsContainer(elem, name, number) {
+    expect(elem.children.length).toEqual(0);
+    listenEnumerable(elem);
 
     addSimpleEnumerables(name, name, number);
-    expect(select.children.length)
+    expect(elem.children.length)
         .toEqual(number + 1);
 
     /** @type { EnumerableNames } */
     const names =
-        Array.from(select.children)
+        Array.from(elem.children)
         .slice(1)
         .map((option) => {
             assert(option instanceof HTMLOptionElement);
@@ -55,6 +49,33 @@ test('enumerables for a select', () => {
 
     expect(names)
         .toEqual(getEnumerables(name));
+}
+
+test('enumerables for a datalist', () => {
+    document.body.innerHTML += `
+    <div id="enumerables-for-datalist">
+        <input id="datalist-input" list="list:data" required >
+        <datalist id="list:data" data-enumerable="datalist-data">
+        </select>
+    </div>`;
+
+    const datalist = document.getElementById('list:data');
+    assert(datalist instanceof HTMLDataListElement);
+
+    testOptionsContainer(datalist, 'datalist-data', 16);
+});
+
+test('enumerables for a select', () => {
+    document.body.innerHTML += `
+    <div id="enumerables-for-select">
+        <select id="select-data" data-enumerable="select-data">
+        </select>
+    </div>`;
+
+    const select = document.getElementById('select-data');
+    assert(select instanceof HTMLSelectElement);
+
+    testOptionsContainer(select, 'select-data', 16);
 });
 
 test('enumerables for a span', () => {
