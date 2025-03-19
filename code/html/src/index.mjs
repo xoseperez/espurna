@@ -41,15 +41,17 @@ import { init as initHa } from './ha.mjs';
 import { init as initLed } from './led.mjs';
 import { init as initLight } from './light.mjs';
 import { init as initLightfox } from './lightfox.mjs';
+import { init as initNtp } from './ntp.mjs';
 import { init as initOta } from './ota.mjs';
 import { init as initRelay } from './relay.mjs';
-import { init as initRfm69 } from './rfm69.mjs';
 import { init as initRfbridge } from './rfbridge.mjs';
+import { init as initRfm69 } from './rfm69.mjs';
 import { init as initRules } from './rules.mjs';
 import { init as initSchedule } from './schedule.mjs';
 import { init as initSensor } from './sensor.mjs';
 import { init as initThermostat } from './thermostat.mjs';
 import { init as initThingspeak } from './thingspeak.mjs';
+
 import { init as initLocal } from './local.mjs';
 
 /** @type {number | null} */
@@ -363,6 +365,7 @@ function init() {
     initPassword();
     initWiFi();
     initGpio();
+    initNtp();
 
     if (MODULE_OTA) {
         initOta();
