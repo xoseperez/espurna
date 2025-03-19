@@ -360,8 +360,10 @@ function initChannels(channels) {
         return;
     }
 
-    /** @type {import('./settings.mjs').EnumerableEntry[]} */
-    const enumerables = [];
+    /** @import { EnumerableNames } from './settings.mjs' */
+
+    /** @type {EnumerableNames} */
+    const names = {};
 
     channels.forEach((tag, channel) => {
         const line = loadTemplate("channel-control");
@@ -375,7 +377,7 @@ function initChannels(channels) {
         const [label] = line.querySelectorAll("label");
         label.textContent = name;
 
-        enumerables.push({"id": channel, "name": name});
+        names[channel.toString()] = name;
 
         const [span] = line.querySelectorAll("span");
         span.dataset["id"] = channel.toString();
@@ -387,7 +389,7 @@ function initChannels(channels) {
         mergeTemplate(container, line);
     });
 
-    addEnumerables("Channels", enumerables);
+    addEnumerables("Channels", names);
 }
 
 /** @param {number[]} values */

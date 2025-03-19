@@ -5,21 +5,20 @@ import { notifyMessage } from './errors.mjs';
  * @param {any} config
  */
 function updateEnumerables(config) {
-    /** @type {import('./settings.mjs').EnumerableEntry[]} */
-    const types = [];
+    /** @import { EnumerableNames } from './settings.mjs' */
+
+    /** @type {EnumerableNames} */
+    const types = {};
 
     for (const [type, id] of /** @type {[string, number][]} */(config.types)) {
-        types.push({
-            "id": id,
-            "name": type
-        });
+        types[id.toString()] = type;
 
-        /** @type {import('./settings.mjs').EnumerableEntry[]} */
-        const gpios = [{"id": 153, "name": "NONE"}];
+        /** @type {EnumerableNames} */
+        const gpios = {"153": "NONE"};
 
         /** @type {number[]} */
         (config[type]).forEach((pin) => {
-            gpios.push({"id": pin, "name": `GPIO${pin}`});
+            gpios[pin.toString()] = `GPIO${pin}`;
         });
 
         addEnumerables(`gpio-${type}`, gpios);

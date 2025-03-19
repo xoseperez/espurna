@@ -904,15 +904,17 @@ export function setOriginalsFromValuesForNode(node) {
 }
 
 /**
- * @typedef {[number, string]} EnumerableTuple
+ * @typedef {[string, string]} EnumerableTuple
  */
 
 /**
- * automatically generate <select> options for know entities
- * @typedef {{id: number, name: string}} EnumerableEntry
+ * automatically updates element contents using named entries
+ * <select> recreates <options> with value=$key and labeled with the string contents
+ * <span> inner text is updated with the all of the string contents joined together
+ * @typedef {{[k: string]: string}} EnumerableNames
  */
 
-/** @type {{[k: string]: EnumerableEntry[]}} */
+/** @type {{[k: string]: EnumerableNames}} */
 const Enumerable = {};
 
 // <select> initialization from simple {id: ..., name: ...} that map as <option> value=... and textContent
@@ -921,12 +923,12 @@ const Enumerable = {};
 // Notice that <select multiple> input and output format is u32 number, but the 'original' string is comma-separated <option> value=... attributes
 
 /**
- * @typedef {{id: number, name: string}} SelectValue
+ * @typedef {{value: string, text: string}} SelectOption
  *
  * @param {HTMLSelectElement} select
- * @param {SelectValue[]} values
+ * @param {SelectOption[]} options
  */
-export function initSelect(select, values) {
+export function initSelect(select, options) {
     const initial = document.createElement("option");
     initial.disabled = true;
     initial.value = "";
@@ -934,24 +936,43 @@ export function initSelect(select, values) {
     select.appendChild(initial);
     select.selectedIndex = 0;
 
-    for (let value of values) {
-        const option = document.createElement("option");
-        option.textContent = value.name;
-        option.value = value.id.toString();
-        select.appendChild(option);
+    for (const option of options) {
+        const elem = document.createElement("option");
+        elem.value = option.value;
+        elem.textContent = option.text;
+        select.appendChild(elem);
     }
 }
 
 /**
- * @param {HTMLSelectElement} select
- * @param {EnumerableEntry[]} enumerables
+ * @param {EnumerableNames} names
+ * @returns {SelectOption[]}
  */
-function onEnumerableUpdateSelect(select, enumerables) {
+function selectOptionsFromEnumerable(names) {
+    /** @type {SelectOption[]} */
+    const out = [];
+
+    Object.entries(names)
+        .forEach(([id, name]) => {
+            out.push({
+                "value": id,
+                "text": name,
+            });
+        });
+
+    return out;
+}
+
+/**
+ * @param {HTMLSelectElement} select
+ * @param {EnumerableNames} names
+ */
+function onEnumerableUpdateSelect(select, names) {
     while (select.childElementCount && select.firstElementChild) {
         select.removeChild(select.firstElementChild);
     }
 
-    initSelect(select, enumerables);
+    initSelect(select, selectOptionsFromEnumerable(names));
 
     const original = getOriginalForElement(select);
     if (original !== null) {
@@ -961,37 +982,37 @@ function onEnumerableUpdateSelect(select, enumerables) {
 
 /**
  * @param {HTMLSpanElement} span
- * @param {EnumerableEntry[]} enumerables
+ * @param {EnumerableNames} names
  */
-function onEnumerableUpdateSpan(span, enumerables) {
-    const id = parseInt(span.dataset["enumerableId"] ?? "");
-    if ((id < 0) || isNaN(id)) {
+function onEnumerableUpdateSpan(span, names) {
+    const id = span.dataset["enumerableId"] ?? "";
+    if (id.length === 0) {
         return;
     }
 
-    const [entry] = enumerables.filter((x) => x.id === id);
-    if (!entry) {
+    const name = names[id];
+    if (!name) {
         return;
     }
 
-    setSpanValue(span, entry.name);
+    setSpanValue(span, name);
 }
 
 /**
  * @callback EnumerableElemCallback
  * @param {HTMLElement} elem
- * @param {EnumerableEntry[]} enumerables
+ * @param {EnumerableNames} names
  * @returns {void}
  */
 
 /**
  * @type {EnumerableElemCallback}
  */
-function onEnumerableUpdateElem(elem, enumerables) {
+function onEnumerableUpdateElem(elem, names) {
     if (elem instanceof HTMLSelectElement) {
-        onEnumerableUpdateSelect(elem, enumerables);
+        onEnumerableUpdateSelect(elem, names);
     } else if (elem instanceof HTMLSpanElement) {
-        onEnumerableUpdateSpan(elem, enumerables);
+        onEnumerableUpdateSpan(elem, names);
     }
 }
 
@@ -1001,14 +1022,14 @@ function onEnumerableUpdateElem(elem, enumerables) {
  */
 function onEnumerableUpdate(event, callback) {
     const elem = /** @type {!HTMLElement} */(event.target);
-    const enumerables = /** @type {CustomEvent<{enumerables: EnumerableEntry[]}>} */
+    const enumerables = /** @type {CustomEvent<{enumerables: EnumerableNames}>} */
         (event).detail.enumerables;
     callback(elem, enumerables);
 }
 
 /**
  * @param {string} name
- * @param {EnumerableEntry[]} enumerables
+ * @param {EnumerableNames} enumerables
  */
 function notifyEnumerables(name, enumerables) {
     document.querySelectorAll(`[data-enumerable=${name}]`)
@@ -1025,11 +1046,6 @@ function notifyEnumerables(name, enumerables) {
 
 /**
  * @param {HTMLElement} elem
- * @param {EnumerableEntry[]} enumerables
- */
-
-/**
- * @param {HTMLElement} elem
  * @param {string} name
  * @param {EnumerableElemCallback?} callback
  */
@@ -1040,7 +1056,7 @@ export function listenEnumerableName(elem, name, callback = null) {
         (event) => onEnumerableUpdate(event, callback));
 
     const current = Enumerable[name];
-    if (!current || !current.length) {
+    if (!current) {
         return;
     }
 
@@ -1085,27 +1101,30 @@ export function listenEnumerable(elem, callback = null) {
 
 /**
  * @param {string} name
- * @returns {EnumerableEntry[]}
+ * @returns {EnumerableNames}
  */
 export function getEnumerables(name) {
-    return Enumerable[name] ?? [];
+    return Enumerable[name] ?? {};
 }
 
 /**
  * @param {string} name
- * @param {EnumerableEntry[] | EnumerableTuple[]} enumerables
+ * @param {EnumerableNames | EnumerableTuple[]} enumerables
  */
 export function addEnumerables(name, enumerables) {
-    enumerables = enumerables.map((x) => {
-        if (Array.isArray(x)) {
-            return {id: x[0], name: x[1]};
-        }
+    /** @type {EnumerableNames} */
+    let names = {};
 
-        return x;
-    });
+    if (Array.isArray(enumerables)) {
+        enumerables.forEach(([id, name]) => {
+            names[id] = name;
+        });
+    } else {
+        names = enumerables;
+    }
 
-    Enumerable[name] = enumerables;
-    notifyEnumerables(name, enumerables);
+    Enumerable[name] = names;
+    notifyEnumerables(name, names);
 }
 
 /**
@@ -1118,12 +1137,13 @@ export function addSimpleEnumerables(name, prettyName, count) {
         return;
     }
 
-    const enumerables = [];
+    /** @type {EnumerableNames} */
+    const names = {};
     for (let id = 0; id < count; ++id) {
-        enumerables.push({"id": id, "name": `${prettyName} #${id}`});
+        names[id.toString()] = `${prettyName} #${id}`;
     }
 
-    addEnumerables(name, enumerables);
+    addEnumerables(name, names);
 }
 
 // track <input> values, count total number of changes and their side-effects / needed actions

@@ -109,8 +109,10 @@ function updateFromConfig(configs, schema) {
         return;
     }
 
-    /** @type {import('./settings.mjs').EnumerableEntry[]} */
-    const relays = [];
+    /** @import { EnumerableNames } from './settings.mjs' */
+
+    /** @type {EnumerableNames} */
+    const names = {};
 
     configs.forEach((config, id) => {
         const relay = fromSchema(config, schema);
@@ -118,16 +120,14 @@ function updateFromConfig(configs, schema) {
             relay.relayName = `Switch #${id}`;
         }
 
-        relays.push({
-            "id": id,
-            "name": `${relay.relayName} (${relay.relayProv})`
-        });
+        names[id.toString()] =
+            `${relay.relayName} (${relay.relayProv})`;
 
         initToggle(id);
         addConfigNode(relay);
     });
 
-    addEnumerables("relay", relays);
+    addEnumerables("relay", names);
 }
 
 /**

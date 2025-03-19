@@ -123,22 +123,26 @@ export function fillTemplateFromCfg(fragment, id, cfg = {}) {
 /**
  * @param {HTMLElement} target
  * @param {DocumentFragment} template
+ * @returns {Element | null}
  */
 export function mergeTemplate(target, template) {
     for (let child of Array.from(template.children)) {
         target.appendChild(child);
     }
+
+    return target.lastElementChild;
 }
 
 /**
  * @param {HTMLElement} container
  * @param {string} name
  * @param {TemplateConfig} cfg
+ * @returns {Element | null}
  */
 export function addFromTemplate(container, name, cfg) {
     const fragment = loadConfigTemplate(name);
     fillTemplateFromCfg(fragment, container.childElementCount, cfg);
-    mergeTemplate(container, fragment);
+    return mergeTemplate(container, fragment);
 }
 
 // TODO: note that we also include kv schema as 'data-settings-schema' on the container.

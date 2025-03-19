@@ -201,10 +201,10 @@ function initMagnitudes(types, errors, units) {
  * @param {MagnitudeCallback[]} callbacks
  */
 function initMagnitudesList(values, schema, callbacks) {
-    /** @import { EnumerableEntry } from './settings.mjs' */
+    /** @import { EnumerableNames } from './settings.mjs' */
 
-    /** @type {EnumerableEntry[]} */
-    const enumerables = [];
+    /** @type {EnumerableNames} */
+    const names = {};
 
     values.forEach((value, id) => {
         const magnitude = fromSchema(value, schema);
@@ -229,10 +229,7 @@ function initMagnitudesList(values, schema, callbacks) {
             units,
         };
 
-        enumerables.push({
-            id,
-            name,
-        });
+        names[id.toString()] = name;
 
         Magnitudes.properties.set(id, result);
         callbacks.forEach((callback) => {
@@ -240,7 +237,7 @@ function initMagnitudesList(values, schema, callbacks) {
         });
     });
 
-    addEnumerables("magnitude", enumerables);
+    addEnumerables("magnitude", names);
     Magnitudes.pending = false;
 }
 
@@ -300,8 +297,8 @@ function createMagnitudeUnitSelector(_id, magnitude) {
 
     const options = (Magnitudes.supportedUnits.get(magnitude.type) ?? [])
         .map((type) => ({
-            'id': type,
-            'name': Magnitudes.units.get(type) ?? type.toString()
+            'value': type.toString(),
+            'text': Magnitudes.units.get(type) ?? type.toString()
         }));
 
     initSelect(select, options);

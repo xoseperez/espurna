@@ -8,6 +8,12 @@ import {
     setSpanValue,
 } from '../src/settings.mjs';
 
+import {
+    randomString,
+} from '../src/core.mjs';
+
+/** @import { EnumerableNames } from '../src/settings.mjs' */
+
 afterAll(() => {
     document.body.innerHTML = '';
     expect(document.body.childElementCount)
@@ -33,22 +39,22 @@ test('enumerables for a select', () => {
     expect(select.children.length)
         .toEqual(number + 1);
 
-    const results =
+    /** @type { EnumerableNames } */
+    const names =
         Array.from(select.children)
         .slice(1)
-        .map((entry) => {
-            assert(entry instanceof HTMLOptionElement);
-            return {
-                "id": parseInt(entry.value),
-                "name": entry.innerHTML,
-            };
-        });
+        .map((option) => {
+            assert(option instanceof HTMLOptionElement);
+            return [
+                option.value,
+                option.innerHTML,
+            ];
+        })
+        .reduce((prev, it) =>
+            ({...prev, [it[0]]: it[1]}), {});
 
-    const enumerables = getEnumerables(name);
-    expect(enumerables.length)
-        .toEqual(number);
-    expect(enumerables)
-        .toEqual(results);
+    expect(names)
+        .toEqual(getEnumerables(name));
 });
 
 test('enumerables for a span', () => {
@@ -69,44 +75,40 @@ test('enumerables for a span', () => {
     let spans = container.querySelectorAll('span');
     expect(spans.length).toEqual(number);
 
-    spans.forEach((span) => {
+    /** @type {EnumerableNames} */
+    const names = {};
+
+    spans.forEach((span, index) => {
         expect(span.innerHTML.length)
             .toEqual(0);
+        names[index.toString()] = randomString(16);
     });
 
-    addSimpleEnumerables(name, name, number);
+    addEnumerables(name, names);
+    expect(getEnumerables(name))
+        .toEqual(names);
+
     expect(spans.length).toEqual(number);
 
     /**
      * @param {number} number
      */
-    function expectNumberedLabels(number) {
-        const enumerables = getEnumerables(name);
-        expect(enumerables.length).toBeGreaterThanOrEqual(number);
-
+    function expectSpanInnerHTML(number) {
+        const other = getEnumerables(name);
         for (let index = 0; index < number; ++index) {
-            const found = enumerables.filter((x) => x.id == index);
-            expect(found.length).toEqual(1);
-
-            const text = spans[index].innerHTML;
-            expect(text).toEqual(found[0].name);
+            expect(spans[index].innerHTML)
+                .toEqual(other[index.toString()]);
         }
     }
 
-    /**
-     * @param {number} number
-     */
-    function extraLabelString(number) {
-        return `${name.toUpperCase()}${name.toUpperCase} #${number}`;
-    }
+    expectSpanInnerHTML(number);
 
-    expectNumberedLabels(number);
-
+    const override = `${name.toUpperCase()}${name.toUpperCase} #${number}`;
     listenEnumerableTarget(
         container, number, name,
         (elem, _entries) => {
             assert(elem instanceof HTMLSpanElement);
-            setSpanValue(elem, extraLabelString(number + 1));
+            setSpanValue(elem, override);
         });
 
     spans = container.querySelectorAll('span');
@@ -114,32 +116,20 @@ test('enumerables for a span', () => {
 
     addSimpleEnumerables(name, name, number + 1);
 
-    expectNumberedLabels(number);
+    expectSpanInnerHTML(number);
     expect(spans[number].innerHTML)
-        .toEqual(extraLabelString(number + 1));
+        .toEqual(override);
 });
 
 test('enumerables generated from a range', () => {
     const name = 'range';
-    const label = name.toUpperCase();
+    const number = 8;
 
-    const expected = [
-        {id: 0, name: `${label} #0`},
-        {id: 1, name: `${label} #1`},
-        {id: 2, name: `${label} #2`},
-        {id: 3, name: `${label} #3`},
-        {id: 4, name: `${label} #4`},
-    ];
+    const ids = Array.from({length: number}, (_, index) => index.toString());
 
-    expect(getEnumerables(name).length)
-        .toBe(0);
-    addSimpleEnumerables(
-        name, label, expected.length);
-    expect(getEnumerables(name).length)
-        .toBe(expected.length);
-
-    addEnumerables('expected', expected);
-    expect(getEnumerables('expected'))
-        .toEqual(getEnumerables(name));
+    expect(getEnumerables(name))
+        .toEqual({});
+    addSimpleEnumerables(name, name, number);
+    expect(Object.keys(getEnumerables(name)))
+        .toEqual(ids);
 });
-
