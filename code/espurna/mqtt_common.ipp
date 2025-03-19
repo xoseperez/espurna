@@ -9,6 +9,8 @@ Copyright (C) 2024 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #include "types.h"
 
+#include <algorithm>
+
 namespace espurna {
 namespace mqtt {
 
