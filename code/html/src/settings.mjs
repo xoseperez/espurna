@@ -908,14 +908,24 @@ export function setOriginalsFromValuesForNode(node) {
  */
 
 /**
- * automatically updates element contents using named entries
- * <select> recreates <options> with value=$key and labeled with the string contents
- * <span> inner text is updated with the all of the string contents joined together
+ * Automatically updates element contents using named entries.
+ *
+ * Consumer is expected to
+ * - set 'data-<NAME>' attribute on the element, either statically or dynamically
+ * - install default or custom listener for the respective <NAME>d event
+ *
+ * Element behaviour varies
+ * - <select> recreates <options> with value=$key and labeled with the string contents
+ * - <span> inner text is updated with the all of the string contents joined together
+ *
  * @typedef {{[k: string]: string}} EnumerableNames
  */
 
 /** @type {{[k: string]: EnumerableNames}} */
 const Enumerable = {};
+
+/** PREFIX + NAME propogated to every "data-enumerable='NAME'" */
+const ENUMERABLE_EVENT_PREFIX = 'enumerable-update-';
 
 // <select> initialization from simple {id: ..., name: ...} that map as <option> value=... and textContent
 // To avoid depending on order of incoming messages, always store real value inside of dataset["original"] and provide a way to re-initialize every 'enumerable' <select> element on the page
@@ -1058,7 +1068,8 @@ function notifyEnumerables(name, enumerables) {
             }
 
             elem.dispatchEvent(
-                new CustomEvent(`enumerable-update-${name}`,
+                new CustomEvent(
+                    `${ENUMERABLE_EVENT_PREFIX}${name}`,
                     {detail: {enumerables}}));
         });
 }
@@ -1071,7 +1082,7 @@ function notifyEnumerables(name, enumerables) {
 export function listenEnumerableName(elem, name, callback = null) {
     callback = callback ?? onEnumerableUpdateElem;
     elem.addEventListener(
-        `enumerable-update-${name}`,
+        `${ENUMERABLE_EVENT_PREFIX}${name}`,
         (event) => onEnumerableUpdate(event, callback));
 
     const current = Enumerable[name];
@@ -1614,6 +1625,8 @@ export function init() {
             elem.addEventListener("click", onGroupSettingsAddClick);
         });
 
+    // aka elements that already have "dataset['enumerable']" set
+    // most likely, merged static .html contains this reference
     document.querySelectorAll("[data-enumerable]")
         .forEach((elem) => {
             if (!(elem instanceof HTMLElement)) {
