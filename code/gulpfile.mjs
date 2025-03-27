@@ -26,12 +26,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import {
     dest as destination,
+    series,
     parallel,
     src as source,
 } from 'gulp';
-
-import { Transform } from 'node:stream';
-import { pipeline } from 'node:stream/promises';
 
 import { inlineSource } from 'inline-source';
 import { build as esbuildBuild } from 'esbuild';
@@ -40,6 +38,12 @@ import { JSDOM } from 'jsdom';
 
 import * as convert from 'convert-source-map';
 import fancyLog from 'fancy-log';
+
+import { ESLint } from 'eslint';
+import { formatterFactory, FileSystemConfigLoader, HtmlValidate } from 'html-validate';
+
+import { Transform } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 
 import * as fs from 'node:fs';
 import * as zlib from 'node:zlib';
@@ -747,8 +751,8 @@ function buildOutputs(name) {
 function buildWebUI(name) {
     return pipeline([
         ...buildHtml({
-            modules: makeModules(name),
             compress: true,
+            modules: makeModules(name),
         }),
         ...buildOutputs(name),
     ]);
@@ -836,6 +840,82 @@ function serveWebUI(name) {
 }
 
 // -----------------------------------------------------------------------------
+// Source code validation.
+// -----------------------------------------------------------------------------
+
+/**
+ * map input pattern to paths, do not populate source.contents
+ * @param {string | string[]} pattern
+ * @returns {BuildStream[]}
+ */
+function sourcePath(pattern) {
+    return [
+        source(pattern, {read: false, buffer: false}),
+        new Transform({
+            objectMode: true,
+            transform(source, _, callback) {
+                callback(null, source.path);
+            }}),
+    ];
+}
+
+// Generic javascript linting. *Could* happen at inline stage, but no real reason b/c of modules
+export async function eslint() {
+    const runner = new ESLint({});
+    const format = await runner.loadFormatter('stylish');
+
+    return pipeline([
+        ...sourcePath([
+            'gulpfile.mjs',
+            'html/src/*.mjs',
+            'html/spec/*.mjs',
+        ]),
+        new Transform({
+            objectMode: true,
+            async transform(path, _, callback) {
+                const results = await runner.lintFiles([path]);
+                const resultText = await format.format(results);
+
+                if (resultText.length) {
+                    fancyLog(resultText);
+                }
+
+                const errorCount =
+                    results.filter((x) => x.errorCount > 0)
+                    .length > 0;
+                if (errorCount) {
+                    callback(new Error(`eslint: ${path} failed`));
+                    return;
+                }
+
+                callback(null);
+            }}),
+    ]);
+}
+
+// Validate all HTML sources. *Cannot* happen at inline stage, since JSDOM modifications break some style rules
+export async function html_validate() {
+    const html = new HtmlValidate(new FileSystemConfigLoader());
+    const format = formatterFactory('stylish');
+
+    return pipeline([
+        ...sourcePath('html/src/*.html'),
+        new Transform({
+            objectMode: true,
+            async transform(path, _, callback) {
+                const report = await html.validateFile(path);
+                if (!report.valid) {
+                    fancyLog(format(report.results));
+                    callback(new Error(`html-validate: ${path} failed`));
+                    return;
+                }
+
+                callback(null);
+            }}),
+    ]);
+}
+
+// -----------------------------------------------------------------------------
 // Tasks
 // -----------------------------------------------------------------------------
 
@@ -884,14 +964,17 @@ export function webui_thermostat() {
 }
 
 export default
-    parallel(
-        webui_all,
-        webui_small,
-        webui_curtain,
-        webui_garland,
-        webui_light,
-        webui_lightfox,
-        webui_rfbridge,
-        webui_rfm69,
-        webui_sensor,
-        webui_thermostat);
+    series(
+        eslint,
+        html_validate,
+        parallel(
+            webui_all,
+            webui_small,
+            webui_curtain,
+            webui_garland,
+            webui_light,
+            webui_lightfox,
+            webui_rfbridge,
+            webui_rfm69,
+            webui_sensor,
+            webui_thermostat));
