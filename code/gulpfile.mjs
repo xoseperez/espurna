@@ -30,6 +30,8 @@ import {
     src as source,
 } from 'gulp';
 
+import { pipeline } from 'streamx';
+
 import { inlineSource } from 'inline-source';
 import { build as esbuildBuild } from 'esbuild';
 import { minify as htmlMinify } from 'html-minifier-terser';
@@ -109,6 +111,12 @@ const DEFAULT_MODULES = {
     'tspk': true,
 };
 
+/**
+ * special type of build when multiple single-module files are used
+ * currently, only possible way to combine both (besides modifying the targets manually)
+ * @constant
+ * @type Modules
+ */
 const MODULES_ALL = Object.fromEntries(
     Object.entries(DEFAULT_MODULES).map(
         ([key, _]) => {
@@ -119,7 +127,11 @@ const MODULES_ALL = Object.fromEntries(
             return [key, true];
         }));
 
-// webui_serve does not also start ws server, but intead runs some local-only code
+/**
+ * used for the locally served .html, that is already merged but not yet inlined
+ * @constant
+ * @type Modules
+ */
 const MODULES_LOCAL =
     Object.assign({}, MODULES_ALL, {local: true});
 
@@ -616,7 +628,7 @@ function replace(lhs, rhs) {
  * @param {string} name
  * @param {Modules} [modules]
  * @param {boolean} [compress]
- * @returns {NodeJS.ReadWriteStream}
+ * @returns {NodeJS.ReadWriteStream[]}
  */
 function buildHtml(name, modules, compress = true) {
     if (modules === undefined) {
@@ -628,23 +640,26 @@ function buildHtml(name, modules, compress = true) {
         throw new Error(`'modules' argument / NAMED_BUILD['${name}'] is missing`);
     }
 
-    const out = source(ENTRYPOINT)
-        .pipe(makeInlineSource(SRC_DIR, modules, compress))
-        .pipe(modifyHtml([
+    const out = [
+        source(ENTRYPOINT),
+        makeInlineSource(SRC_DIR, modules, compress),
+        modifyHtml([
             injectVendor(compress),
             stripModules(modules),
             externalBlank(),
-        ]));
+        ]),
+    ];
 
     if (compress) {
-        return out.pipe(
+        out.push(...[
             toMinifiedHtml({
                 collapseWhitespace: true,
                 removeComments: true,
                 minifyCSS: true,
                 minifyJS: false
-            })).pipe(
-                replace('pure-', 'p-'));
+            }),
+            replace('pure-', 'p-'),
+        ]);
     }
 
     return out;
@@ -652,10 +667,9 @@ function buildHtml(name, modules, compress = true) {
 
 /**
  * @param {string} name
- * @param {NodeJS.ReadWriteStream} stream
- * @returns {NodeJS.ReadWriteStream}
+ * @returns {NodeJS.ReadWriteStream[]}
  */
-function buildOutputs(name, stream) {
+function buildOutputs(name) {
     /** @type {{[k: string]: number}} */
     const sizes = {};
 
@@ -673,21 +687,22 @@ function buildOutputs(name, stream) {
             callback(null, source);
         });
 
-    return stream
-        .pipe(rename(`index.${name}.html`))
-        .pipe(adjustFileStat())
-        .pipe(destination(BUILD_DIR))
-        .pipe(logSize())
-        .pipe(modifyHtml([
+    return [
+        rename(`index.${name}.html`),
+        adjustFileStat(),
+        destination(BUILD_DIR),
+        logSize(),
+        modifyHtml([
             dropSourcemap(),
-        ]))
-        .pipe(toGzip())
-        .pipe(destination(BUILD_DIR))
-        .pipe(logSize())
-        .pipe(toHeader('webui_image'))
-        .pipe(destination(STATIC_DIR))
-        .pipe(logSize())
-        .pipe(dumpSize());
+        ]),
+        toGzip(),
+        destination(BUILD_DIR),
+        logSize(),
+        toHeader('webui_image'),
+        destination(STATIC_DIR),
+        logSize(),
+        dumpSize(),
+    ];
 }
 
 /**
@@ -697,7 +712,10 @@ function buildOutputs(name, stream) {
  * @returns {NodeJS.ReadWriteStream}
  */
 function buildWebUI(name, modules, compress = true) {
-    return buildOutputs(name, buildHtml(name, modules, compress));
+    return pipeline(...[
+        ...buildHtml(name, modules, compress),
+        ...buildOutputs(name)
+    ]);
 }
 
 /**
@@ -715,8 +733,8 @@ function serveWebUI(name, modules) {
         response.writeHead(200, {
             'Content-Type': 'text/javascript',
         });
-        fs.createReadStream(path)
-            .pipe(response);
+
+        pipeline(fs.createReadStream(path), response);
     }
 
     fs.access
@@ -729,7 +747,8 @@ function serveWebUI(name, modules) {
         case '/':
         case '/index.htm':
         case '/index.html':
-            buildHtml(name, modules, false).pipe(
+            pipeline(
+                buildHtml(name, modules, false),
                 through.obj(function(source, _, callback) {
                     response.writeHead(200, {
                         'Content-Type': 'text/html',
@@ -740,7 +759,7 @@ function serveWebUI(name, modules) {
                     response.end();
 
                     callback(null, source);
-            }));
+                }));
 
             return;
         }

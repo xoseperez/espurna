@@ -9,6 +9,6 @@ export function init() {
     for (let offset = -14; offset < 13; ++offset) {
         timezones[`UTC${offset}`] = "";
     }
-    
+
     addEnumerables("timezones", timezones);
 }
