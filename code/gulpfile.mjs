@@ -30,7 +30,8 @@ import {
     src as source,
 } from 'gulp';
 
-import { pipeline } from 'streamx';
+import { Transform } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 
 import { inlineSource } from 'inline-source';
 import { build as esbuildBuild } from 'esbuild';
@@ -38,7 +39,6 @@ import { minify as htmlMinify } from 'html-minifier-terser';
 import { JSDOM } from 'jsdom';
 
 import * as convert from 'convert-source-map';
-import * as through from 'through2';
 import fancyLog from 'fancy-log';
 
 import * as fs from 'node:fs';
@@ -52,11 +52,6 @@ import * as path from 'node:path';
 
 /**
  * @import { default as File } from 'vinyl'
- */
-
-/**
- * through2.obj return value, wrapper for real node type
- * @typedef {import("node:stream").Transform} StreamTransform
  */
 
 /**
@@ -77,6 +72,18 @@ import * as path from 'node:path';
 /**
  * helper functions that deal with 'module' elements
  * @typedef {function(JSDOM): boolean} HtmlModify
+ */
+
+/**
+ * build pipeline common options
+ * @typedef BuildOptions
+ * @property {boolean} compress
+ * @property {Modules} modules
+ */
+
+/**
+ * build pipeline usually works with file inputs and its transformations
+ * @typedef {Transform | NodeJS.ReadStream | NodeJS.ReadWriteStream} BuildStream
  */
 
 /**
@@ -179,21 +186,24 @@ const STATIC_DIR = path.join('espurna', 'static');
 
 /**
  * @param {import("html-minifier-terser").Options} options
- * @returns {StreamTransform}
+ * @returns {Transform}
  */
 function toMinifiedHtml(options) {
-    return through.obj(async function (/** @type {File} */source, _, callback) {
-        if (!source.contents) {
-            callback(new Error('expecting non-empty source contents'));
-            return;
-        }
+    return new Transform({
+        objectMode: true,
+        async transform(source, _, callback) {
+            if (!source.contents) {
+                callback(new Error('source contents cannot be empty'));
+                return;
+            }
 
-        const contents = source.contents.toString();
-        source.contents = Buffer.from(
-            await htmlMinify(contents, options));
+            const contents = source.contents.toString();
+            const minified = await htmlMinify(contents, options);
 
-        callback(null, source);
-    });
+            source.contents = Buffer.from(minified);
+
+            callback(null, source);
+        }});
 }
 
 /**
@@ -205,88 +215,98 @@ function safename(name) {
 }
 
 /**
- * @returns {StreamTransform}
+ * @returns {Transform}
  */
 function toGzip() {
-    return through.obj(function(/** @type {File} */source, _, callback) {
-        if (!(source.contents instanceof Buffer)) {
-            callback(new Error('expecting source contents to be a buffer!'));
-            return;
-        }
+    return new Transform({
+        objectMode: true,
+        transform(/** @type {File} */source, _, callback) {
+            if (!(source.contents instanceof Buffer)) {
+                callback(new Error('expecting source contents to be a buffer!'));
+                return;
+            }
 
-        zlib.gzip(source.contents.buffer, {level: zlib.constants.Z_BEST_COMPRESSION},
-            (error, result) => {
-                if (!error) {
-                    source.contents = result;
-                    source.path += '.gz';
-                    callback(null, source);
-                } else {
-                    callback(error);
-                }
-            });
-    });
+            zlib.gzip(source.contents.buffer, {level: zlib.constants.Z_BEST_COMPRESSION},
+                (error, result) => {
+                    if (!error) {
+                        source.contents = result;
+                        source.path += '.gz';
+                        callback(null, source);
+                    } else {
+                        callback(error);
+                    }
+                });
+        }});
 }
 
 /**
  * generates c++-friendly header output from the stream contents
  * @param {string} name
- * @returns {StreamTransform}
+ * @returns {Transform}
  */
 function toHeader(name) {
-    return through.obj(function (/** @type {File} */source, _, callback) {
-        if (!(source.contents instanceof Buffer)) {
-            callback(new Error('expecting source contents to be a buffer!'));
-            return;
-        }
+    return new Transform({
+        objectMode: true,
+        transform(/** @type {File} */source, _, callback) {
+            if (!(source.contents instanceof Buffer)) {
+                callback(new Error('expecting source contents to be a buffer!'));
+                return;
+            }
 
-        let output = `alignas(4) static constexpr uint8_t ${safename(name)}[] PROGMEM = {`;
-        for (let i = 0; i < source.contents.length; i++) {
-            if (i > 0) { output += ','; }
-            if (0 === (i % 20)) { output += '\n'; }
-            output += '0x' + ('00' + source.contents[i].toString(16)).slice(-2);
-        }
-        output += '\n};\n';
+            let output = `alignas(4) static constexpr uint8_t ${safename(name)}[] PROGMEM = {`;
+            for (let i = 0; i < source.contents.length; i++) {
+                if (i > 0) { output += ','; }
+                if (0 === (i % 20)) { output += '\n'; }
+                output += '0x' + ('00' + source.contents[i].toString(16)).slice(-2);
+            }
+            output += '\n};\n';
 
-        // replace source stream with a different one, also replacing contents
-        const dest = source.clone();
-        dest.path = `${source.path}.h`;
-        dest.contents = Buffer.from(output);
+            // replace source stream with a different one, also replacing contents
+            const dest = source.clone();
+            dest.path = `${source.path}.h`;
+            dest.contents = Buffer.from(output);
 
-        callback(null, dest);
-    });
+            callback(null, dest);
+        }});
 }
 
 /**
  * by default, destination preserves stat.*time of the source. which is obviosly bogus here as gulp
  * only knows about the entrypoint and not about every include happenning through inline-source
- * @returns {StreamTransform}
+ * @returns {Transform}
  */
 function adjustFileStat() {
-    return through.obj(function(source, _, callback) {
-        const now = new Date();
-        source.stat.atime = now;
-        source.stat.mtime = now;
-        source.stat.ctime = now;
-        callback(null, source);
-    });
+    return new Transform({
+        objectMode: true,
+        transform(source, _, callback) {
+            if (source.stat) {
+                const now = new Date();
+                source.stat.atime = now;
+                source.stat.mtime = now;
+                source.stat.ctime = now;
+            }
+            callback(null, source);
+        }});
 }
 
 /**
  * updates source filename to a different one
  * @param {string} name
- * @returns {StreamTransform}
+ * @returns {Transform}
  */
 function rename(name) {
-    return through.obj(function(source, _, callback) {
-        const out = source.clone({contents: false});
+    return new Transform({
+        objectMode: true,
+        transform(source, _, callback) {
+            const out = source.clone({contents: false});
 
-        out.path = path.join(out.base, name);
-        if (out.sourceMap) {
-            out.sourceMap.file = out.relative;
-        }
+            out.path = path.join(out.base, name);
+            if (out.sourceMap) {
+                out.sourceMap.file = out.relative;
+            }
 
-        callback(null, out);
-    });
+            callback(null, out);
+        }});
 }
 
 /**
@@ -361,11 +381,10 @@ async function inlineJavascriptBundle(sourcefile, contents, resolveDir, define, 
 
 /**
  * @param {string} srcdir
- * @param {Modules} modules
- * @param {boolean} compress
+ * @param {BuildOptions} options
  * @returns {import("inline-source").Handler}
  */
-function inlineHandler(srcdir, modules, compress) {
+function inlineHandler(srcdir, options) {
     return async function(source) {
         // TODO split handlers
         if (source.content) {
@@ -377,7 +396,7 @@ function inlineHandler(srcdir, modules, compress) {
         const source_module = source.props.module;
         if (typeof source_module === 'string') {
             for (let module of source_module.split(',')) {
-                if (!modules[module]) {
+                if (!options.modules[module]) {
                     source.content = '';
                     source.replace = '<div></div>';
                     return;
@@ -387,19 +406,19 @@ function inlineHandler(srcdir, modules, compress) {
 
         // main entrypoint of the app, usually a script bundle
         if (source.sourcepath && typeof source.sourcepath === 'string' && source.format === 'mjs') {
-            const define = makeDefine(modules);
+            const define = makeDefine(options.modules);
 
             const result = await inlineJavascriptBundle(
                 source.sourcepath,
                 source.fileContent,
-                srcdir, define, compress);
+                srcdir, define, options.compress);
             if (!result.outputFiles.length) {
                 throw new Error('js bundle cannot be empty');
             }
 
             let content = Buffer.from(result.outputFiles[0].contents);
 
-            if (!compress) {
+            if (!options.compress) {
                 let prepend = '';
                 for (const [key, value] of Object.entries(define)) {
                     prepend += `const ${key} = ${value};\n`;
@@ -431,31 +450,33 @@ function inlineHandler(srcdir, modules, compress) {
 
 /**
  * @param {HtmlModify[]} handlers
- * @returns {StreamTransform}
+ * @returns {Transform}
  */
 function modifyHtml(handlers) {
-    return through.obj(function (/** @type {File} */source, _, callback) {
-        if (!(source.contents instanceof Buffer)) {
-            callback(new Error('expecting source contents to be a buffer!'));
-            return;
-        }
-
-        const dom = new JSDOM(source.contents, {includeNodeLocations: true});
-
-        let changed = false;
-
-        for (let handler of handlers) {
-            if (handler(dom)) {
-                changed = true;
+    return new Transform({
+        objectMode: true,
+        transform(source, _, callback) {
+            if (!(source.contents instanceof Buffer)) {
+                callback(new Error('expecting source contents to be a buffer!'));
+                return;
             }
-        }
 
-        if (changed) {
-            source.contents = Buffer.from(dom.serialize());
-        }
+            const dom = new JSDOM(source.contents, {includeNodeLocations: true});
 
-        callback(null, source);
-    });
+            let changed = false;
+
+            for (let handler of handlers) {
+                if (handler(dom)) {
+                    changed = true;
+                }
+            }
+
+            if (changed) {
+                source.contents = Buffer.from(dom.serialize());
+            }
+
+            callback(null, source);
+        }});
 }
 
 /**
@@ -577,89 +598,102 @@ function stripModules(modules) {
  * inline every external resource in the entrypoint.
  * works outside of gulp context, so used sources are only known after this is actually called
  * @param {string} srcdir
- * @param {Modules} modules
- * @param {boolean} compress
- * @returns {StreamTransform}
+ * @param {BuildOptions} options
+ * @returns {Transform}
  */
-function makeInlineSource(srcdir, modules, compress) {
-    return through.obj(async function (/** @type {File} */source, _, callback) {
-        if (!source.contents) {
-            callback(new Error('expecting non-empty source contents'));
-            return;
-        }
+function makeInlineSource(srcdir, options) {
+    return new Transform({
+        objectMode: true,
+        async transform(source, _, callback) {
+            if (!source.contents) {
+                callback(new Error('expecting non-empty source contents'))
+                return;
+            }
 
-        try {
             const contents = await inlineSource(
                 source.contents.toString(),
                 {
-                    'compress': compress,
-                    'handlers': [inlineHandler(srcdir, modules, compress)],
+                    'compress': options.compress,
+                    'handlers': [inlineHandler(srcdir, options)],
                     'rootpath': srcdir,
                 });
 
             source.contents = Buffer.from(contents);
             callback(null, source);
-        } catch (e) {
-            callback(e);
-        }
-    });
+        }});
 }
 
 /**
  * @param {string} lhs
  * @param {string} rhs
- * @returns {StreamTransform}
+ * @returns {Transform}
  */
 function replace(lhs, rhs) {
-    return through.obj(function (/** @type {File} */source, _, callback) {
-        if (!(source.contents instanceof Buffer)) {
-            callback(new Error('expecting source contents to be a buffer!'));
-            return;
-        }
+    return new Transform({
+        objectMode: true,
+        transform(source, _, callback) {
+            if (!(source.contents instanceof Buffer)) {
+                callback(new Error('expecting source contents to be a buffer!'));
+                return;
+            }
 
-        const before = source.contents.toString();
-        source.contents = Buffer.from(before.replaceAll(lhs, rhs));
+            const before = source.contents.toString();
+            source.contents = Buffer.from(before.replaceAll(lhs, rhs));
 
-        callback(null, source);
-    });
+            callback(null, source);
+        }});
 }
 
 /**
  * @param {string} name
- * @param {Modules} [modules]
- * @param {boolean} [compress]
- * @returns {NodeJS.ReadWriteStream[]}
+ * @returns {Modules}
  */
-function buildHtml(name, modules, compress = true) {
-    if (modules === undefined) {
-        modules = Object.assign({}, DEFAULT_MODULES);
-        modules[NAMED_BUILD[name]] = true;
+function makeModules(name) {
+    switch (name) {
+    case 'all':
+        return MODULES_ALL;
+
+    case 'local':
+        return MODULES_LOCAL;
+
+    case 'small':
+        return DEFAULT_MODULES;
     }
 
-    if (modules === undefined) {
-        throw new Error(`'modules' argument / NAMED_BUILD['${name}'] is missing`);
+    if (NAMED_BUILD[name] === undefined) {
+        throw new Error(`NAMED_BUILD['${name}'] is missing`);
     }
 
+    const out = Object.assign({}, DEFAULT_MODULES);
+    out[NAMED_BUILD[name]] = true;
+
+    return out;
+}
+
+/**
+ * @param {BuildOptions} options
+ * @returns {BuildStream[]}
+ */
+function buildHtml(options) {
     const out = [
         source(ENTRYPOINT),
-        makeInlineSource(SRC_DIR, modules, compress),
+        makeInlineSource(SRC_DIR, options),
         modifyHtml([
-            injectVendor(compress),
-            stripModules(modules),
+            injectVendor(options.compress),
+            stripModules(options.modules),
             externalBlank(),
         ]),
     ];
 
-    if (compress) {
-        out.push(...[
+    if (options.compress) {
+        out.push(
             toMinifiedHtml({
                 collapseWhitespace: true,
                 removeComments: true,
                 minifyCSS: true,
                 minifyJS: false
             }),
-            replace('pure-', 'p-'),
-        ]);
+            replace('pure-', 'p-'));
     }
 
     return out;
@@ -667,25 +701,27 @@ function buildHtml(name, modules, compress = true) {
 
 /**
  * @param {string} name
- * @returns {NodeJS.ReadWriteStream[]}
+ * @returns {BuildStream[]}
  */
 function buildOutputs(name) {
     /** @type {{[k: string]: number}} */
     const sizes = {};
 
-    const logSize = () => through.obj(
-        (source, _, callback) => {
+    const logSize = () => new Transform({
+        objectMode: true,
+        transform(source, _, callback) {
             sizes[path.relative('.', source.path)] = source?.contents?.length ?? 0;
             callback(null, source);
-        });
+        }});
 
-    const dumpSize = () => through.obj(
-        (source, _, callback) => {
+    const dumpSize = () => new Transform({
+        objectMode: true,
+        transform(source, _, callback) {
             for (const [name, size] of Object.entries(sizes)) {
                 fancyLog(`${name}: ${size} bytes`);
             }
             callback(null, source);
-        });
+        }});
 
     return [
         rename(`index.${name}.html`),
@@ -707,39 +743,56 @@ function buildOutputs(name) {
 
 /**
  * @param {string} name
- * @param {Modules} [modules]
- * @param {boolean} [compress]
- * @returns {NodeJS.ReadWriteStream}
  */
-function buildWebUI(name, modules, compress = true) {
-    return pipeline(...[
-        ...buildHtml(name, modules, compress),
-        ...buildOutputs(name)
+function buildWebUI(name) {
+    return pipeline([
+        ...buildHtml({
+            modules: makeModules(name),
+            compress: true,
+        }),
+        ...buildOutputs(name),
     ]);
 }
 
 /**
  * @param {string} name
- * @param {Modules} modules
  */
-function serveWebUI(name, modules) {
+function serveWebUI(name) {
     const server = http.createServer();
 
     /**
      * @param {http.ServerResponse<http.IncomingMessage>} response
      * @param {string} path
      */
-    function responseJsFile(response, path) {
+    async function responseJsFile(response, path) {
         response.writeHead(200, {
             'Content-Type': 'text/javascript',
         });
 
-        pipeline(fs.createReadStream(path), response);
+        await pipeline(
+            fs.createReadStream(path), response);
     }
 
-    fs.access
+    /**
+     * @param {http.ServerResponse<http.IncomingMessage>} response
+     */
+    async function responseIndex(response) {
+        response.writeHead(200, {
+            'Content-Type': 'text/html',
+        });
 
-    server.on('request', (request, response) => {
+        await pipeline([
+            ...buildHtml({modules: makeModules(name), compress: false}),
+            new Transform({
+                objectMode: true,
+                transform(source, _, callback) {
+                    callback(null, source.contents);
+                }}),
+            response,
+        ]);
+    }
+
+    server.on('request', async (request, response) => {
         const url = new URL(`http://localhost${request.url}`);
 
         // serve bundled html as-is, do not minify
@@ -747,20 +800,7 @@ function serveWebUI(name, modules) {
         case '/':
         case '/index.htm':
         case '/index.html':
-            pipeline(
-                buildHtml(name, modules, false),
-                through.obj(function(source, _, callback) {
-                    response.writeHead(200, {
-                        'Content-Type': 'text/html',
-                        'Content-Length': source.contents.length,
-                    });
-
-                    response.write(source.contents);
-                    response.end();
-
-                    callback(null, source);
-                }));
-
+            await responseIndex(response);
             return;
         }
 
@@ -770,7 +810,7 @@ function serveWebUI(name, modules) {
         // external libs should be searched in node_modules/
         for (let value of Object.values(IMPORT_MAP)) {
             if (value === url.pathname) {
-                responseJsFile(response, path.join(NODE_DIR, value));
+                await responseJsFile(response, path.join(NODE_DIR, value));
                 return;
             }
         }
@@ -779,7 +819,7 @@ function serveWebUI(name, modules) {
         if (url.pathname.endsWith('.mjs')) {
             const tail = url.pathname.split('/').at(-1);
             if (tail !== undefined) {
-                responseJsFile(response, path.join(SRC_DIR, tail));
+                await responseJsFile(response, path.join(SRC_DIR, tail));
                 return;
             }
         }
@@ -800,15 +840,15 @@ function serveWebUI(name, modules) {
 // -----------------------------------------------------------------------------
 
 export function webui_serve() {
-    return serveWebUI('all', MODULES_LOCAL);
+    return serveWebUI('local');
 }
 
 export function webui_all() {
-    return buildWebUI('all', MODULES_ALL);
+    return buildWebUI('all');
 }
 
 export function webui_small() {
-    return buildWebUI('small', DEFAULT_MODULES);
+    return buildWebUI('small');
 }
 
 export function webui_curtain() {

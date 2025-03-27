@@ -12,19 +12,17 @@
     "@jaames/iro": "^5.5.2",
     "@types/node": "^22.13.0",
     "@typescript/lib-dom": "npm:@types/web@^0.0.213",
+    "clone-stats": "npm:clone-stats-node22@1.0.1",
     "convert-source-map": "^2.0.0",
     "esbuild": "^0.25.1",
     "eslint": "^9.22.0",
     "fancy-log": "^2.0.0",
     "globals": "^16.0.0",
     "gulp": "^5.0.0",
-    "streamx": "^2.22.0",
-    "clone-stats": "npm:clone-stats-node22@1.0.1",
     "html-minifier-terser": "^7.2.0",
     "html-validate": "^9.5.2",
     "inline-source": "^8.0.3",
     "jsdom": "^26.0.0",
-    "through2": "^4.0.2",
     "vitest": "^3.0.9"
   }
 }
