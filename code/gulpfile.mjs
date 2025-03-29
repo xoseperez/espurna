@@ -37,7 +37,7 @@ import { minify as htmlMinify } from 'html-minifier-terser';
 import { JSDOM } from 'jsdom';
 
 import * as convert from 'convert-source-map';
-import fancyLog from 'fancy-log';
+import log from 'fancy-log';
 
 import { ESLint } from 'eslint';
 import { formatterFactory, FileSystemConfigLoader, HtmlValidate } from 'html-validate';
@@ -46,9 +46,9 @@ import { Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 
 import * as fs from 'node:fs';
-import * as zlib from 'node:zlib';
 import * as http from 'node:http';
 import * as path from 'node:path';
+import * as zlib from 'node:zlib';
 
 // -----------------------------------------------------------------------------
 // Configuration
@@ -87,6 +87,11 @@ import * as path from 'node:path';
 
 /**
  * build pipeline usually works with file inputs and its transformations
+ *
+ * per Node.js Stream API at https://nodejs.org/api/stream.html#object-mode
+ * > All streams created by Node.js APIs operate exclusively on strings, <Buffer>, <TypedArray> and <DataView> objects
+ * transformations generally happen on vynil-fs objects, meaning objectMode:true should always be set
+ *
  * @typedef {Transform | NodeJS.ReadStream | NodeJS.ReadWriteStream} BuildStream
  */
 
@@ -188,6 +193,9 @@ const STATIC_DIR = path.join('espurna', 'static');
 // Build
 // -----------------------------------------------------------------------------
 
+const ERR_CONTENTS_TYPE =
+    new Error('expecting source contents to be a buffer!');
+
 /**
  * @param {import("html-minifier-terser").Options} options
  * @returns {Transform}
@@ -226,7 +234,7 @@ function toGzip() {
         objectMode: true,
         transform(/** @type {File} */source, _, callback) {
             if (!(source.contents instanceof Buffer)) {
-                callback(new Error('expecting source contents to be a buffer!'));
+                callback(ERR_CONTENTS_TYPE);
                 return;
             }
 
@@ -722,7 +730,7 @@ function buildOutputs(name) {
         objectMode: true,
         transform(source, _, callback) {
             for (const [name, size] of Object.entries(sizes)) {
-                fancyLog(`${name}: ${size} bytes`);
+                log(`${name}: ${size} bytes`);
             }
             callback(null, source);
         }});
@@ -764,36 +772,76 @@ function buildWebUI(name) {
 function serveWebUI(name) {
     const server = http.createServer();
 
+    /** @param {any} e */
+    function log_error(e) {
+        if (e instanceof Error) {
+            log.error(e.message);
+        } else {
+            log.error(e);
+        }
+    }
+
     /**
      * @param {http.ServerResponse<http.IncomingMessage>} response
      * @param {string} path
      */
     async function responseJsFile(response, path) {
-        response.writeHead(200, {
-            'Content-Type': 'text/javascript',
+        const reader = fs.createReadStream(path);
+
+        // by default, status 200 would be sent out w/ the data
+        response.setHeader('Content-Type', 'application/javascript');
+
+        // assume that 'readable' already sent status and headers, error handler only cares about 'open'
+        reader.once('error', (e) => {
+            if (('syscall' in e) && (typeof e.syscall === 'string') && e.syscall === 'open') {
+                const outer = e;
+
+                try {
+                    response.writeHead(404, {
+                        'Content-Type': 'text/plain',
+                    });
+                    response.end('not found');
+                } catch (e) {
+                    log_error(outer);
+                    log_error(e);
+                }
+            } else {
+                log_error(e);
+            }
         });
 
-        await pipeline(
-            fs.createReadStream(path), response);
+        try {
+            await pipeline(reader, response);
+        } catch (e) {
+            log_error(e);
+        }
     }
 
     /**
      * @param {http.ServerResponse<http.IncomingMessage>} response
      */
     async function responseIndex(response) {
-        response.writeHead(200, {
-            'Content-Type': 'text/html',
-        });
+        response.setHeader('Content-Type', 'text/html');
 
-        await pipeline([
-            ...buildHtml({modules: makeModules(name), compress: false}),
-            new Transform({
-                objectMode: true,
-                transform(source, _, callback) {
-                    callback(null, source.contents);
-                }}),
-            response,
-        ]);
+        try {
+            await pipeline(
+                /** @ts-ignore, types/node/stream/promises/pipeline.d.ts hates 'args' / '...args' */
+                ...buildHtml({modules: makeModules(name), compress: false}),
+                // convert the original vinyl-fs stream back into something nodejs understands
+                async function* (/** @type {Transform} */source) {
+                    for await (const chunk of source) {
+                        if (('contents' in chunk) && chunk.contents instanceof Buffer) {
+                            yield chunk.contents;
+                        } else {
+                            throw ERR_CONTENTS_TYPE;
+                        }
+                    }
+                },
+                response
+            );
+        } catch (e) {
+            log_error(e);
+        }
     }
 
     server.on('request', async (request, response) => {
@@ -859,7 +907,7 @@ function sourcePath(pattern) {
     ];
 }
 
-// Generic javascript linting. *Could* happen at inline stage, but no real reason b/c of modules
+// Generic javascript linting. *Could* happen at inline stage, but only without compression / minification
 export async function eslint() {
     const runner = new ESLint({});
     const format = await runner.loadFormatter('stylish');
@@ -877,7 +925,7 @@ export async function eslint() {
                 const resultText = await format.format(results);
 
                 if (resultText.length) {
-                    fancyLog(resultText);
+                    log(resultText);
                 }
 
                 const errorCount =
@@ -905,7 +953,7 @@ export async function html_validate() {
             async transform(path, _, callback) {
                 const report = await html.validateFile(path);
                 if (!report.valid) {
-                    fancyLog(format(report.results));
+                    log(format(report.results));
                     callback(new Error(`html-validate: ${path} failed`));
                     return;
                 }
