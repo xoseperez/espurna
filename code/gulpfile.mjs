@@ -919,8 +919,12 @@ export async function html_validate() {
 // Tasks
 // -----------------------------------------------------------------------------
 
-export function webui_serve() {
+export function dev() {
     return serveWebUI('local');
+}
+
+export function serve() {
+    return dev();
 }
 
 export function webui_all() {
