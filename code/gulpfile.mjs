@@ -196,6 +196,12 @@ const STATIC_DIR = path.join('espurna', 'static');
 const ERR_CONTENTS_TYPE =
     new Error('expecting source contents to be a buffer!');
 
+const ERR_EMPTY =
+    new Error('source contents cannot be empty');
+
+const ERR_EMPTY_BUNDLE =
+    new Error('js bundle cannot be empty');
+
 /**
  * @param {import("html-minifier-terser").Options} options
  * @returns {Transform}
@@ -205,7 +211,7 @@ function toMinifiedHtml(options) {
         objectMode: true,
         async transform(source, _, callback) {
             if (!source.contents) {
-                callback(new Error('source contents cannot be empty'));
+                callback(ERR_EMPTY);
                 return;
             }
 
@@ -261,7 +267,7 @@ function toHeader(name) {
         objectMode: true,
         transform(/** @type {File} */source, _, callback) {
             if (!(source.contents instanceof Buffer)) {
-                callback(new Error('expecting source contents to be a buffer!'));
+                callback(ERR_CONTENTS_TYPE);
                 return;
             }
 
@@ -425,7 +431,7 @@ function inlineHandler(srcdir, options) {
                 source.fileContent,
                 srcdir, define, options.compress);
             if (!result.outputFiles.length) {
-                throw new Error('js bundle cannot be empty');
+                throw ERR_EMPTY_BUNDLE;
             }
 
             let content = Buffer.from(result.outputFiles[0].contents);
@@ -469,7 +475,7 @@ function modifyHtml(handlers) {
         objectMode: true,
         transform(source, _, callback) {
             if (!(source.contents instanceof Buffer)) {
-                callback(new Error('expecting source contents to be a buffer!'));
+                callback(ERR_CONTENTS_TYPE);
                 return;
             }
 
@@ -618,7 +624,7 @@ function makeInlineSource(srcdir, options) {
         objectMode: true,
         async transform(source, _, callback) {
             if (!source.contents) {
-                callback(new Error('expecting non-empty source contents'))
+                callback(ERR_EMPTY);
                 return;
             }
 
@@ -645,7 +651,7 @@ function replace(lhs, rhs) {
         objectMode: true,
         transform(source, _, callback) {
             if (!(source.contents instanceof Buffer)) {
-                callback(new Error('expecting source contents to be a buffer!'));
+                callback(ERR_CONTENTS_TYPE);
                 return;
             }
 
