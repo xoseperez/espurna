@@ -39,10 +39,6 @@ import { JSDOM } from 'jsdom';
 import * as convert from 'convert-source-map';
 import log from 'fancy-log';
 
-import { startVitest } from 'vitest/node'
-import { ESLint } from 'eslint';
-import { formatterFactory, FileSystemConfigLoader, HtmlValidate } from 'html-validate';
-
 import { Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 
@@ -974,6 +970,7 @@ export async function vitest() {
             yield opts;
         },
         async function* (/** @type {AsyncIterable<any>} */source) {
+            const { startVitest } = await import('vitest/node');
             for await (const opts of source) {
                 const runner = await startVitest('test', opts.filter, opts.options);
                 await runner.close();
@@ -984,6 +981,8 @@ export async function vitest() {
 
 // Generic javascript linting. *Could* happen at inline stage, but only without compression / minification
 export async function eslint() {
+    const { ESLint } = await import('eslint');
+
     const runner = new ESLint({});
     const format = await runner.loadFormatter('stylish');
 
@@ -1018,6 +1017,12 @@ export async function eslint() {
 
 // Validate all HTML sources. *Cannot* happen at inline stage, since JSDOM modifications break some style rules
 async function html_validate() {
+    const {
+        FileSystemConfigLoader,
+        HtmlValidate,
+        formatterFactory,
+    } = await import('html-validate');
+
     const html = new HtmlValidate(new FileSystemConfigLoader());
     const format = formatterFactory('stylish');
 
