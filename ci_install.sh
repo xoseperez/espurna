@@ -16,7 +16,7 @@ EOF
     sudo add-apt-repository ppa:arter97/zlib-ng
     sudo apt update
 
-    sudo apt install zlib1g
+    sudo apt install --allow-downgrades zlib1g
 }
 
 npm_install() {
