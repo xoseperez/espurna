@@ -34,25 +34,25 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 namespace {
 
 #if WEBUI_IMAGE == WEBUI_IMAGE_SMALL
-    #include "static/index.small.html.gz.h"
+    #include "static/index.small.html.ipp"
 #elif WEBUI_IMAGE == WEBUI_IMAGE_LIGHT
-    #include "static/index.light.html.gz.h"
+    #include "static/index.light.html.ipp"
 #elif WEBUI_IMAGE == WEBUI_IMAGE_SENSOR
-    #include "static/index.sensor.html.gz.h"
+    #include "static/index.sensor.html.ipp"
 #elif WEBUI_IMAGE == WEBUI_IMAGE_RFBRIDGE
-    #include "static/index.rfbridge.html.gz.h"
+    #include "static/index.rfbridge.html.ipp"
 #elif WEBUI_IMAGE == WEBUI_IMAGE_RFM69
-    #include "static/index.rfm69.html.gz.h"
+    #include "static/index.rfm69.html.ipp"
 #elif WEBUI_IMAGE == WEBUI_IMAGE_LIGHTFOX
-    #include "static/index.lightfox.html.gz.h"
+    #include "static/index.lightfox.html.ipp"
 #elif WEBUI_IMAGE == WEBUI_IMAGE_GARLAND
-    #include "static/index.garland.html.gz.h"
+    #include "static/index.garland.html.ipp"
 #elif WEBUI_IMAGE == WEBUI_IMAGE_THERMOSTAT
-    #include "static/index.thermostat.html.gz.h"
+    #include "static/index.thermostat.html.ipp"
 #elif WEBUI_IMAGE == WEBUI_IMAGE_CURTAIN
-    #include "static/index.curtain.html.gz.h"
+    #include "static/index.curtain.html.ipp"
 #elif WEBUI_IMAGE == WEBUI_IMAGE_FULL
-    #include "static/index.all.html.gz.h"
+    #include "static/index.all.html.ipp"
 #endif
 
 } // namespace
@@ -483,20 +483,23 @@ void _onHome(AsyncWebServerRequest *request) {
     const size_t max = (systemFreeHeap() / 3) & 0xFFE0;
     auto* response = request->beginChunkedResponse("text/html", [max](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
         // Get the chunk based on the index and maxLen
-        size_t len = std::size(webui_image) - index;
+        size_t len = std::size(webui_data) - index;
         len = std::min({len, maxLen, max});
         if (len > 0) {
-            memcpy_P(buffer, webui_image + index, len);
+            memcpy_P(buffer, webui_data + index, len);
         }
 
         // Return the actual length of the chunk (0 for end of file)
         return len;
     });
 #else
-    auto* response = request->beginResponse_P(200, F("text/html"), webui_image, std::size(webui_image));
+    auto* response = request->beginResponse_P(200, F("text/html"), webui_data, std::size(webui_data));
 #endif
 
-    response->addHeader(F("Content-Encoding"), F("gzip"));
+    if (__builtin_strlen(webui_content_encoding) != 0) {
+        response->addHeader(F("Content-Encoding"), webui_content_encoding);
+    }
+
     response->addHeader(F("Last-Modified"), FPSTR(LastModified));
     response->addHeader(F("X-XSS-Protection"), F("1; mode=block"));
     response->addHeader(F("X-Content-Type-Options"), F("nosniff"));

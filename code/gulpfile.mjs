@@ -78,7 +78,9 @@ import * as zlib from 'node:zlib';
 /**
  * build pipeline common options
  * @typedef BuildOptions
- * @property {boolean} compress
+ * @property {string} name
+ * @property {boolean} minify
+ * @property {'br' | 'gz'} compress
  * @property {Modules} modules
  */
 
@@ -174,7 +176,7 @@ const IMPORT_MAP = {
 };
 
 // output .html w/ inline sourcemaps (for development only)
-// output .html.gz, cleaned-up for .gz.h generation
+// output .html.{gz,br}, cleaned-up for firmware use
 const BUILD_DIR = path.join('html', 'build');
 
 // input sources, making sure relative inline paths start from here
@@ -186,7 +188,7 @@ const SPEC_DIR = path.join('html', 'spec');
 // main source file used by inline-source
 const ENTRYPOINT = path.join(SRC_DIR, 'index.html')
 
-// .gz.h compiled from the .html.gz, providing a static u8[] for the firmware to use
+// .ipp compiled from the .html.{br,gz}, providing static u8[] for the firmware to use
 const STATIC_DIR = path.join('espurna', 'static');
 
 // -----------------------------------------------------------------------------
@@ -224,23 +226,24 @@ function toMinifiedHtml(options) {
         }});
 }
 
-/**
- * @param {string} name
- * @returns {string}
- */
-function safename(name) {
-    return path.basename(name).replaceAll('.', '_');
-}
+const ERR_COMPRESSION =
+    new Error('unknown compression type');
 
 /**
+ * @param {BuildOptions} options
  * @returns {Transform}
  */
-function toGzip() {
+function toCompressed(options) {
     return new Transform({
         objectMode: true,
         transform(/** @type {File} */source, _, callback) {
             if (!(source.contents instanceof Buffer)) {
                 callback(ERR_CONTENTS_TYPE);
+                return;
+            }
+
+            if (!options.compress) {
+                callback(null, source.contents);
                 return;
             }
 
@@ -262,36 +265,79 @@ function toGzip() {
              * @returns {Buffer}
              */
             function normalize(buf) {
-                // mtime
-                buf[4] = 0;
-                buf[5] = 0;
-                buf[6] = 0;
-                buf[7] = 0;
-                // os
-                buf[9] = 0xff;
+                if (options.compress === 'gz') {
+                    // mtime
+                    buf[4] = 0;
+                    buf[5] = 0;
+                    buf[6] = 0;
+                    buf[7] = 0;
+                    // os
+                    buf[9] = 0xff;
+                }
 
                 return buf;
             }
 
-            zlib.gzip(source.contents.buffer, {level: zlib.constants.Z_BEST_COMPRESSION},
-                (error, result) => {
-                    if (!error) {
-                        source.contents = normalize(result);
-                        source.path += '.gz';
-                        callback(null, source);
-                    } else {
-                        callback(error);
-                    }
-                });
+            /** @type {zlib.CompressCallback} */
+            function compress_callback(error, result) {
+                if (!error) {
+                    source.contents = normalize(result);
+                    source.extname += `.${options.compress}`;
+                    callback(null, source);
+                } else {
+                    callback(error);
+                }
+            };
+
+            switch (options.compress) {
+            case 'br':
+                zlib.brotliCompress(
+                    source.contents.buffer,
+                    {params: {
+                        [zlib.constants.BROTLI_PARAM_QUALITY]: zlib.constants.BROTLI_MAX_QUALITY}
+                    },
+                    compress_callback);
+                break;
+
+            case 'gz':
+                zlib.gzip(
+                    source.contents.buffer,
+                    {level: zlib.constants.Z_BEST_COMPRESSION},
+                    compress_callback);
+                break;
+
+            default:
+                callback(ERR_COMPRESSION);
+                break;
+            }
         }});
 }
 
 /**
- * generates c++-friendly header output from the stream contents
- * @param {string} name
+ * @param {Buffer} buffer
+ * @param {number} every
+ * @returns {string}
+ */
+function formatBufferLines(buffer, every = 20) {
+    /** @type {string[]} */
+    let lines = [];
+
+    for (let i = 0; i < buffer.length; i += every) {
+        lines.push(
+            Array.from(buffer.subarray(i, i + every))
+                .map((x) => '0x' + x.toString(16).padStart(2, '0'))
+                .join(','));
+    }
+
+    return lines.join(',\n');
+}
+
+/**
+ * generates c++-friendly output from the stream contents
+ * @param {BuildOptions} options
  * @returns {Transform}
  */
-function toHeader(name) {
+function toOutput(options) {
     return new Transform({
         objectMode: true,
         transform(/** @type {File} */source, _, callback) {
@@ -300,18 +346,33 @@ function toHeader(name) {
                 return;
             }
 
-            let output = `alignas(4) static constexpr uint8_t ${safename(name)}[] PROGMEM = {`;
-            for (let i = 0; i < source.contents.length; i++) {
-                if (i > 0) { output += ','; }
-                if (0 === (i % 20)) { output += '\n'; }
-                output += '0x' + ('00' + source.contents[i].toString(16)).slice(-2);
-            }
-            output += '\n};\n';
+            // make sure to include both type and data
+            const output = [
+                '#pragma once',
+                '#include <sys/pgmspace.h>',
+                '#include <cstdint>',
+                `alignas(4) static constexpr char webui_content_encoding[] = "${options.compress || ''}";`,
+                'alignas(4) static constexpr uint8_t webui_data[] PROGMEM = {',
+                formatBufferLines(source.contents),
+                '};\n'
+            ];
+
+            // resulting file ext hides the compression option
+            const extname = '.ipp';
 
             // replace source stream with a different one, also replacing contents
-            const dest = source.clone();
-            dest.path = `${source.path}.h`;
-            dest.contents = Buffer.from(output);
+            const dest = source.clone({contents: false});
+
+            dest.contents = Buffer.from(output.join('\n'));
+            switch (dest.extname) {
+            case `.${options.compress}`:
+                dest.extname = extname;
+                break;
+
+            default:
+                dest.extname += extname;
+                break;
+            }
 
             callback(null, dest);
         }});
@@ -458,14 +519,14 @@ function inlineHandler(srcdir, options) {
             const result = await inlineJavascriptBundle(
                 source.sourcepath,
                 source.fileContent,
-                srcdir, define, options.compress);
+                srcdir, define, options.minify);
             if (!result.outputFiles.length) {
                 throw ERR_EMPTY_BUNDLE;
             }
 
             let content = Buffer.from(result.outputFiles[0].contents);
 
-            if (!options.compress) {
+            if (!options.minify) {
                 let prepend = '';
                 for (const [key, value] of Object.entries(define)) {
                     prepend += `const ${key} = ${value};\n`;
@@ -527,19 +588,13 @@ function modifyHtml(handlers) {
 }
 
 /**
- * when compression is on, make sure sourcemaps are not written to the resulting .gz.h
+ * when minification is enabled, make sure sourcemaps are not written to the resulting file
  * @returns {HtmlModify}
  */
 function dropSourcemap() {
     return function(dom) {
-        let changed = false;
-
         const scripts = dom.window.document.getElementsByTagName('script');
         for (let script of scripts) {
-            if (changed) {
-                break;
-            }
-
             if (script.getAttribute('type') === 'importmap') {
                 continue;
             }
@@ -551,10 +606,10 @@ function dropSourcemap() {
             script.textContent =
                 convert.removeMapFileComments(script.textContent);
 
-            changed = true;
+            return true;
         }
 
-        return changed;
+        return false;
     }
 }
 
@@ -660,7 +715,7 @@ function makeInlineSource(srcdir, options) {
             const contents = await inlineSource(
                 source.contents.toString(),
                 {
-                    'compress': options.compress,
+                    'compress': options.minify,
                     'handlers': [inlineHandler(srcdir, options)],
                     'rootpath': srcdir,
                 });
@@ -726,13 +781,13 @@ function buildHtml(options) {
         source(ENTRYPOINT),
         makeInlineSource(SRC_DIR, options),
         modifyHtml([
-            injectVendor(options.compress),
+            injectVendor(options.minify),
             stripModules(options.modules),
             externalBlank(),
         ]),
     ];
 
-    if (options.compress) {
+    if (options.minify) {
         out.push(
             toMinifiedHtml({
                 collapseWhitespace: true,
@@ -747,10 +802,10 @@ function buildHtml(options) {
 }
 
 /**
- * @param {string} name
+ * @param {BuildOptions} options
  * @returns {BuildStream[]}
  */
-function buildOutputs(name) {
+function buildOutputs(options) {
     /** @type {{[k: string]: number}} */
     const sizes = {};
 
@@ -770,34 +825,47 @@ function buildOutputs(name) {
             callback(null, source);
         }});
 
-    return [
-        rename(`index.${name}.html`),
+    const out = [
+        rename(`index.${options.name}.html`),
         adjustFileStat(),
         destination(BUILD_DIR),
         logSize(),
         modifyHtml([
             dropSourcemap(),
         ]),
-        toGzip(),
-        destination(BUILD_DIR),
+    ];
+
+    if (options.compress) {
+        out.push(
+            toCompressed(options),
+            destination(BUILD_DIR));
+    }
+
+    out.push(
         logSize(),
-        toHeader('webui_image'),
+        toOutput(options),
         destination(STATIC_DIR),
         logSize(),
-        dumpSize(),
-    ];
+        dumpSize());
+
+    return out;
 }
 
 /**
  * @param {string} name
  */
 function buildWebUI(name) {
+    /** @type {BuildOptions} */
+    const opts = {
+        compress: 'br',
+        minify: true,
+        modules: makeModules(name),
+        name: name,
+    };
+
     return pipeline([
-        ...buildHtml({
-            compress: true,
-            modules: makeModules(name),
-        }),
-        ...buildOutputs(name),
+        ...buildHtml(opts),
+        ...buildOutputs(opts),
     ]);
 }
 
@@ -861,7 +929,7 @@ function serveWebUI(name) {
         try {
             await pipeline(
                 /** @ts-ignore, types/node/stream/promises/pipeline.d.ts hates 'args' / '...args' */
-                ...buildHtml({modules: makeModules(name), compress: false}),
+                ...buildHtml({modules: makeModules(name), compress: false, minify: false}),
                 // convert the original vinyl-fs stream back into something nodejs understands
                 async function* (/** @type {Transform} */source) {
                     for await (const chunk of source) {

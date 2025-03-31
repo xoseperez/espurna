@@ -1,2 +1,4 @@
-*.gz.h    -diff -merge
-*.gz.h    linguist-generated=true
+*.ipp    -diff -merge
+*.ipp    linguist-generated=true
+*.h    -diff -merge
+*.h    linguist-generated=true

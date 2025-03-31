@@ -21,7 +21,7 @@ $ ./node_modules/.bin/gulp
 
 # Files
 
-- `code/espurna/static/` - .html.gz.h, used in the firmware code
+- `code/espurna/static/` - .html.ipp, used in the firmware code
 - `code/gulpfile.mjs` - builder script entrypoint
 - `code/html/build` - intermediate build results
 - `code/html/spec` - vitest 'spec' files
@@ -43,7 +43,7 @@ $ npm install
 
 # Building
 
-Build every .html.gz.h (`default` task)
+Build every .html.ipp (`default` task)
 
 ```console
 $ gulp
