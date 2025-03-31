@@ -3,6 +3,11 @@ Builder script is using **Gulp**
 - https://gulpjs.com
 - https://www.npmjs.com/package/gulp
 
+Additional tools used
+- [eslint](https://eslint.org) to validate javascript files
+- [html-validate](https://html-validate.org) to validate html file
+- [vitest](https://vitest.dev/) testing framework
+
 All commands must be called from `code/`
 ```console
 $ pwd
@@ -17,10 +22,12 @@ $ ./node_modules/.bin/gulp
 # Files
 
 - `code/espurna/static/` - .html.gz.h, used in the firmware code
-- `code/html/build` - intermediate build results
-- `code/package{,-lock}.json` - build dependencies metadata
-- `code/node_modules` - build dependencies
 - `code/gulpfile.mjs` - builder script entrypoint
+- `code/html/build` - intermediate build results
+- `code/html/spec` - vitest 'spec' files
+- `code/html/src` - source .mjs, .html, etc.
+- `code/node_modules` - build dependencies
+- `code/package{,-lock}.json` - build dependencies metadata
 
 # Installation
 
@@ -61,12 +68,13 @@ Launches development server on port 8080 with the resulting .html bundle. No min
 $ gulp dev
 ```
 
-Only the `default` task invokes [eslint](https://eslint.org) and [html-validate](https://html-validate.org) before building, call them manually
+Only the `default` task depends on the test and lint tasks, call them manually
 
 ```console
-$ gulp eslint html_validate
+$ gulp eslint html-validate vitest
 ```
 ```console
 $ gulp eslint
-$ gulp html_validate
+$ gulp html-validate
+$ gulp vitest
 ```

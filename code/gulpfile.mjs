@@ -39,6 +39,7 @@ import { JSDOM } from 'jsdom';
 import * as convert from 'convert-source-map';
 import log from 'fancy-log';
 
+import { startVitest } from 'vitest/node'
 import { ESLint } from 'eslint';
 import { formatterFactory, FileSystemConfigLoader, HtmlValidate } from 'html-validate';
 
@@ -182,6 +183,9 @@ const BUILD_DIR = path.join('html', 'build');
 
 // input sources, making sure relative inline paths start from here
 const SRC_DIR = path.join('html', 'src');
+
+// spec aka test files, make sure only these are used when running tests
+const SPEC_DIR = path.join('html', 'spec');
 
 // main source file used by inline-source
 const ENTRYPOINT = path.join(SRC_DIR, 'index.html')
@@ -887,14 +891,14 @@ function serveWebUI(name) {
     });
 
     server.on('listening', () => {
-        console.log(`Serving ${SRC_DIR} index and *.mjs at`, server.address());
+        log.info(`Serving ${SRC_DIR} index and *.mjs at`, server.address());
     });
 
     server.listen(8080, 'localhost');
 }
 
 // -----------------------------------------------------------------------------
-// Source code validation.
+// Source code validation
 // -----------------------------------------------------------------------------
 
 /**
@@ -913,6 +917,42 @@ function sourcePath(pattern) {
     ];
 }
 
+// .spec.mjs vitest tests
+export async function vitest() {
+    return pipeline(
+        /** @ts-ignore, types/node/stream/promises/pipeline.d.ts hates 'args' / '...args' */
+        ...sourcePath([
+            `${SPEC_DIR}/*.mjs`,
+        ]),
+        async function* (/** @type {AsyncIterable<string>} */source) {
+            // ref. 'vitest/node' parseVitestCLI('vitest --environment jsdom --dir html/spec --run')
+            const opts = {
+                /** @type {string[]} */
+                filter: [],
+                options: {
+                    '--': [],
+                    color: true,
+                    environment: 'jsdom',
+                    dir: SPEC_DIR,
+                    run: true,
+                }
+            };
+
+            for await (const chunk of source) {
+                opts.filter.push(chunk);
+            }
+
+            yield opts;
+        },
+        async function* (/** @type {AsyncIterable<any>} */source) {
+            for await (const opts of source) {
+                const runner = await startVitest('test', opts.filter, opts.options);
+                await runner.close();
+            }
+        }
+    );
+}
+
 // Generic javascript linting. *Could* happen at inline stage, but only without compression / minification
 export async function eslint() {
     const runner = new ESLint({});
@@ -921,8 +961,8 @@ export async function eslint() {
     return pipeline([
         ...sourcePath([
             'gulpfile.mjs',
-            'html/src/*.mjs',
-            'html/spec/*.mjs',
+            `${SRC_DIR}/*.mjs`,
+            `${SPEC_DIR}/*.mjs`,
         ]),
         new Transform({
             objectMode: true,
@@ -948,7 +988,7 @@ export async function eslint() {
 }
 
 // Validate all HTML sources. *Cannot* happen at inline stage, since JSDOM modifications break some style rules
-export async function html_validate() {
+async function html_validate() {
     const html = new HtmlValidate(new FileSystemConfigLoader());
     const format = formatterFactory('stylish');
 
@@ -968,6 +1008,8 @@ export async function html_validate() {
             }}),
     ]);
 }
+
+export { html_validate as 'html-validate' };
 
 // -----------------------------------------------------------------------------
 // Tasks
@@ -1025,7 +1067,8 @@ export default
     series(
         parallel(
             eslint,
-            html_validate),
+            html_validate,
+            vitest),
         parallel(
             webui_all,
             webui_small,
