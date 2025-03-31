@@ -1,0 +1,35 @@
+{
+  "name": "clone-stats-node22",
+  "description": "Safely clone node's fs.Stats instances without losing their class methods which works on Node v22",
+  "version": "1.0.1",
+  "main": "index.js",
+  "browser": "index.js",
+  "dependencies": {},
+  "devDependencies": {
+    "tape": "~2.3.2"
+  },
+  "scripts": {
+    "test": "node test"
+  },
+  "author": "Jimb Esser (https://github.com/Jimbly)",
+  "contributors": [
+    "Jimb Esser (https://github.com/Jimbly)",
+    "Hugh Kennedy <hughskennedy@gmail.com> (http://hughsk.io/)"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/jimbly/clone-stats-node22"
+  },
+  "bugs": {
+    "url": "https://github.com/jimbly/clone-stats-node22/issues"
+  },
+  "homepage": "https://github.com/jimbly/clone-stats-node22",
+  "keywords": [
+    "stats",
+    "fs",
+    "clone",
+    "copy",
+    "prototype"
+  ]
+}

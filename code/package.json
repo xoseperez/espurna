@@ -12,7 +12,7 @@
     "@jaames/iro": "^5.5.2",
     "@types/node": "^22.13.0",
     "@typescript/lib-dom": "npm:@types/web@^0.0.213",
-    "clone-stats": "npm:clone-stats-node22@1.0.1",
+    "clone-stats": "file:html/vendor/clone-stats-node22",
     "convert-source-map": "^2.0.0",
     "esbuild": "^0.25.1",
     "eslint": "^9.22.0",
