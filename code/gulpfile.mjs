@@ -1023,8 +1023,9 @@ export function webui_thermostat() {
 
 export default
     series(
-        eslint,
-        html_validate,
+        parallel(
+            eslint,
+            html_validate),
         parallel(
             webui_all,
             webui_small,
