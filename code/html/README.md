@@ -78,3 +78,15 @@ $ gulp eslint
 $ gulp html-validate
 $ gulp vitest
 ```
+
+Gulp usually does not allow any task arguments, run these tools manually to select specific files or change command line arguments
+
+```console
+$ npm exec --no -- eslint gulpfile.mjs html/src/*.mjs html/spec/*.mjs
+```
+```console
+$ npm exec --no -- html-validate html/src/*.html
+```
+```console
+$ npm exec --no -- vitest --environment jsdom --dir html/spec --run
+```
