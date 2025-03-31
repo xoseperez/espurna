@@ -1042,6 +1042,7 @@ export async function vitest() {
             for await (const opts of source) {
                 const runner = await startVitest('test', opts.filter, opts.options);
                 await runner.close();
+                break;
             }
         }
     );
@@ -1165,20 +1166,24 @@ export function webui_thermostat() {
     return buildWebUI('thermostat');
 }
 
+export const webui =
+    parallel(
+        webui_all,
+        webui_small,
+        webui_curtain,
+        webui_garland,
+        webui_light,
+        webui_lightfox,
+        webui_rfbridge,
+        webui_rfm69,
+        webui_sensor,
+        webui_thermostat);
+
+export const test =
+    parallel(
+        eslint,
+        html_validate,
+        vitest);
+
 export default
-    series(
-        parallel(
-            eslint,
-            html_validate,
-            vitest),
-        parallel(
-            webui_all,
-            webui_small,
-            webui_curtain,
-            webui_garland,
-            webui_light,
-            webui_lightfox,
-            webui_rfbridge,
-            webui_rfm69,
-            webui_sensor,
-            webui_thermostat));
+    series(test, webui);

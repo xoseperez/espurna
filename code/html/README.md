@@ -43,10 +43,16 @@ $ npm install
 
 # Building
 
-Build every .html.ipp (`default` task)
+Run tests and build every .html.ipp (`default` task)
 
 ```console
 $ gulp
+```
+
+Build only (does not run tests)
+
+```console
+$ gulp webui
 ```
 
 Build specific flavour (`webui_...` tasks)
@@ -70,6 +76,9 @@ $ gulp dev
 
 Only the `default` task depends on the test and lint tasks, call them manually
 
+```console
+$ gulp test
+```
 ```console
 $ gulp eslint html-validate vitest
 ```
