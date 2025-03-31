@@ -2,6 +2,20 @@
 
 set -x -e -v
 
+zlib_test() {
+    # via https://launchpad.net/~arter97/+archive/ubuntu/zlib-ng
+    cat <<EOF > /etc/apt/preferences.d/zlib-ng
+Package: *
+Pin: release o=LP-PPA-arter97-zlib-ng
+Pin-Priority: 1000
+EOF
+    cat <<EOF > /etc/apt/apt.conf.d/51unattended-upgrades-zlibng
+Unattended-Upgrade::Origins-Pattern:: "o=LP-PPA-arter97-zlib-ng";
+EOF
+
+    apt install zlib1g
+}
+
 npm_install() {
     npm install -g npm@latest
     npm ci
@@ -24,6 +38,7 @@ case "$1" in
     host_install
     ;;
 ("webui")
+    zlib_test
     npm_install
     ;;
 ("build")

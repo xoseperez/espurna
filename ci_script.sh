@@ -18,6 +18,7 @@ case "$1" in
 ("webui")
     # checks whether the webui can be built
     ./build.sh -f environments
+    # TODO: varying compression results between zlib on ubuntu and zlib-ng on fedora
     git --no-pager diff --stat
     ;;
 ("build")
