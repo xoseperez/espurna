@@ -13,6 +13,9 @@ EOF
 Unattended-Upgrade::Origins-Pattern:: "o=LP-PPA-arter97-zlib-ng";
 EOF
 
+    sudo add-apt-repository ppa:arter97/zlib-ng
+    sudo apt update
+
     sudo apt install zlib1g
 }
 
