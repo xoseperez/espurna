@@ -18,10 +18,6 @@ case "$1" in
 ("webui")
     # checks whether the webui can be built
     ./build.sh -f environments
-    # TODO: gzip inserts an OS-dependant byte in the header, ref.
-    # - https://datatracker.ietf.org/doc/html/rfc1952
-    # - https://github.com/nodejs/node/blob/e46c680bf2b211bbd52cf959ca17ee98c7f657f5/deps/zlib/deflate.c#L901
-    # - windowBits description in the https://zlib.net/manual.html#Advanced
     git --no-pager diff --stat
     ;;
 ("build")

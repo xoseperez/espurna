@@ -248,10 +248,39 @@ function toGzip() {
                 return;
             }
 
+            /**
+             * gzip inserts an OS-dependant byte in the header, ref.
+             * - https://datatracker.ietf.org/doc/html/rfc1952
+             * - https://github.com/nodejs/node/blob/e46c680bf2b211bbd52cf959ca17ee98c7f657f5/deps/zlib/deflate.c#L901
+             * - windowBits description in the https://zlib.net/manual.html#Advanced
+             *
+             * python3.14+ sets this to 255 (0xff), so is this handler
+             * - https://github.com/python/cpython/pull/120486
+             * - https://github.com/python/cpython/commit/08d09cf5ba041c9c5c3860200b56bab66fd44a23
+             *
+             * additionally, set mtime to 0 (in case it ever comes up)
+             * - https://github.com/python/cpython/pull/125261
+             * - https://github.com/python/cpython/commit/dcd58c50844dae0d83517e88518a677914ea594b
+             *
+             * @param {Buffer} buf
+             * @returns {Buffer}
+             */
+            function normalize(buf) {
+                // mtime
+                buf[4] = 0;
+                buf[5] = 0;
+                buf[6] = 0;
+                buf[7] = 0;
+                // os
+                buf[9] = 0xff;
+
+                return buf;
+            }
+
             zlib.gzip(source.contents.buffer, {level: zlib.constants.Z_BEST_COMPRESSION},
                 (error, result) => {
                     if (!error) {
-                        source.contents = result;
+                        source.contents = normalize(result);
                         source.path += '.gz';
                         callback(null, source);
                     } else {
