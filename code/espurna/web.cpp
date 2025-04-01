@@ -209,6 +209,10 @@ size_t RequestPrint::write(const uint8_t* data, size_t size) {
 
 namespace {
 
+STRING_VIEW_INLINE(WebIfModifiedSince, "If-Modified-Since");
+
+static constexpr auto WebContentEncoding = espurna::StringView(webui_content_encoding);
+static constexpr auto WebLastModified = espurna::StringView(webui_last_modified);
 static constexpr size_t WebConfigBufferMax { 4096 };
 
 // server instance can't (yet) be static, port is the ctor argument :/
@@ -317,6 +321,20 @@ void _onDiscover(AsyncWebServerRequest *request) {
     request->send(response);
 }
 
+void _addSecurityHeaders(AsyncWebServerResponse* response) {
+    response->addHeader(F("X-XSS-Protection"), F("1; mode=block"));
+    response->addHeader(F("X-Content-Type-Options"), F("nosniff"));
+    response->addHeader(F("X-Frame-Options"), F("deny"));
+}
+
+void _addGenericHeaders(AsyncWebServerResponse* response) {
+    if (WebContentEncoding.length()) {
+        response->addHeader(F("Content-Encoding"), WebContentEncoding.toString());
+    }
+
+    response->addHeader(F("Last-Modified"), WebLastModified.toString());
+}
+
 void _onGetConfig(AsyncWebServerRequest *request) {
     if (!_authenticateRequest(request)) {
         _webRequestAuth(request);
@@ -381,10 +399,8 @@ void _onGetConfig(AsyncWebServerRequest *request) {
         systemHostname().c_str(), get_timestamp().c_str());
 
     if (written > 0) {
+        _addSecurityHeaders(response);
         response->addHeader(F("Content-Disposition"), buffer);
-        response->addHeader(F("X-XSS-Protection"), F("1; mode=block"));
-        response->addHeader(F("X-Content-Type-Options"), F("nosniff"));
-        response->addHeader(F("X-Frame-Options"), F("deny"));
         request->send(response);
         return;
     }
@@ -460,7 +476,6 @@ void _onAPCaptiveRequest(AsyncWebServerRequest* request) {
 #endif
 
 #if WEB_EMBEDDED
-PROGMEM_STRING(IfModifiedSince, "If-Modified-Since");
 
 void _onHome(AsyncWebServerRequest *request) {
     if (!_isAPModeRequest(request) && !_authenticateRequest(request)) {
@@ -468,12 +483,10 @@ void _onHome(AsyncWebServerRequest *request) {
         return;
     }
 
-    if (request->hasHeader(FPSTR(IfModifiedSince))) {
-        const auto value = request->header(FPSTR(IfModifiedSince));
-        if (strncmp_P(value.c_str(), webui_last_modified, value.length()) == 0) {
-            request->send(304);
-            return;
-        }
+    const auto* modified = request->getHeader(WebIfModifiedSince.toString());
+    if (modified && (modified->value() == WebLastModified)) {
+        request->send(304);
+        return;
     }
 
 #if WEB_SSL_ENABLED
@@ -495,17 +508,8 @@ void _onHome(AsyncWebServerRequest *request) {
     auto* response = request->beginResponse_P(200, F("text/html"), webui_data, std::size(webui_data));
 #endif
 
-    constexpr auto content_encoding = espurna::StringView(webui_content_encoding);
-    if (content_encoding.length()) {
-        response->addHeader(F("Content-Encoding"), content_encoding.toString());
-    }
-
-    constexpr auto last_modified = espurna::StringView(webui_last_modified);
-    response->addHeader(F("Last-Modified"), last_modified.toString());
-
-    response->addHeader(F("X-XSS-Protection"), F("1; mode=block"));
-    response->addHeader(F("X-Content-Type-Options"), F("nosniff"));
-    response->addHeader(F("X-Frame-Options"), F("deny"));
+    _addGenericHeaders(response);
+    _addSecurityHeaders(response);
 
     request->send(response);
 }
@@ -599,6 +603,10 @@ void _onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t i
 }
 
 } // namespace
+
+void webSecurityHeaders(AsyncWebServerResponse* response) {
+    _addSecurityHeaders(response);
+}
 
 bool webApModeRequest(AsyncWebServerRequest* request) {
     return _isAPModeRequest(request);
