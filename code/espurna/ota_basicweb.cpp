@@ -21,6 +21,7 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include <ESP8266WebServer.h>
 #include <StreamString.h>
 
+namespace espurna {
 namespace ota {
 namespace basic_web {
 namespace {
@@ -165,7 +166,7 @@ void home(Server& server) {
 } // namespace handlers
 
 template <typename Server>
-void setup(Server& server) {
+void begin(Server& server, uint16_t port) {
     server.on("/", HTTP_GET, [&]() {
         handlers::home(server);
     });
@@ -179,29 +180,60 @@ void setup(Server& server) {
         }
     );
 
-    server.begin();
+    server.begin(port);
 }
 
-} // namespace
+namespace build {
+
+constexpr auto DefaultPort = uint16_t{
+#if WEB_SSL_ENABLED
+        443
+#else
+        80
+#endif
+};
+
+constexpr uint16_t port() {
+    return (WEB_PORT == 0)
+        ? DefaultPort
+        : (WEB_PORT);
+}
+
+} // namespace build
 
 namespace settings {
+namespace keys {
+
+STRING_VIEW_INLINE(Port, "webPort");
+
+} // namespace keys
 
 uint16_t port() {
-    constexpr uint16_t defaultPort { WEB_PORT };
-    return getSetting("webPort", defaultPort);
+    return getSetting(keys::Port, build::port());
 }
 
 } // namespace settings
+
+namespace internal {
+
+ESP8266WebServer server;
+
+} // namespace internal
+
+void setup() {
+    begin(internal::server, settings::port());
+    ::espurnaRegisterLoop([]() {
+        internal::server.handleClient();
+    });
+}
+
+} // namespace
 } // namespace basic_web
 } // namespace ota
+} // namespace espurna
 
 void otaWebSetup() {
-    static ESP8266WebServer server(ota::basic_web::settings::port());
-    ota::basic_web::setup(server);
-
-    ::espurnaRegisterLoop([]() {
-        server.handleClient();
-    });
+    espurna::ota::basic_web::setup();
 }
 
 #endif

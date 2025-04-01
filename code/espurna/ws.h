@@ -41,16 +41,45 @@ using ws_on_action_callback_list_t = std::vector<ws_on_action_callback_f>;
 using ws_on_keycheck_callback_list_t = std::vector<ws_on_keycheck_callback_f>;
 
 struct ws_callbacks_t {
+    struct Prepend {
+    };
+
+    struct Append {
+    };
+
     using on_send_f = void(*)(JsonObject&);
-    ws_callbacks_t& onVisible(on_send_f);
-    ws_callbacks_t& onConnected(on_send_f);
-    ws_callbacks_t& onData(on_send_f);
+    ws_callbacks_t& onVisible(on_send_f, Append);
+    ws_callbacks_t& onVisible(on_send_f, Prepend);
+    ws_callbacks_t& onVisible(on_send_f f) {
+        return onVisible(f, Append{});
+    }
+
+    ws_callbacks_t& onConnected(on_send_f, Append);
+    ws_callbacks_t& onConnected(on_send_f, Prepend);
+    ws_callbacks_t& onConnected(on_send_f f) {
+        return onConnected(f, Append{});
+    }
+
+    ws_callbacks_t& onData(on_send_f, Append);
+    ws_callbacks_t& onData(on_send_f, Prepend);
+    ws_callbacks_t& onData(on_send_f f) {
+        return onData(f, Append{});
+    }
 
     using on_action_f = void(*)(uint32_t, const char*, JsonObject&);
-    ws_callbacks_t& onAction(on_action_f);
+    ws_callbacks_t& onAction(on_action_f, Append);
+    ws_callbacks_t& onAction(on_action_f, Prepend);
+    ws_callbacks_t& onAction(on_action_f f) {
+        return onAction(f, Append{});
+    }
 
     using on_keycheck_f = bool(*)(espurna::StringView, const JsonVariant&);
-    ws_callbacks_t& onKeyCheck(on_keycheck_f);
+    ws_callbacks_t& onKeyCheck(on_keycheck_f, Append);
+    ws_callbacks_t& onKeyCheck(on_keycheck_f, Prepend);
+
+    ws_callbacks_t& onKeyCheck(on_keycheck_f f) {
+        return onKeyCheck(f, Append{});
+    }
 
     ws_on_send_callback_list_t on_visible;
     ws_on_send_callback_list_t on_connected;

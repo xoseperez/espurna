@@ -310,27 +310,52 @@ void wsPostSequence(const ws_on_send_callback_list_t& cbs) {
 
 // -----------------------------------------------------------------------------
 
-ws_callbacks_t& ws_callbacks_t::onVisible(ws_callbacks_t::on_send_f cb) {
+ws_callbacks_t& ws_callbacks_t::onVisible(ws_callbacks_t::on_send_f cb, ws_callbacks_t::Prepend) {
+    on_visible.insert(on_visible.begin(), cb);
+    return *this;
+}
+
+ws_callbacks_t& ws_callbacks_t::onVisible(ws_callbacks_t::on_send_f cb, ws_callbacks_t::Append) {
     on_visible.push_back(cb);
     return *this;
 }
 
-ws_callbacks_t& ws_callbacks_t::onConnected(ws_callbacks_t::on_send_f cb) {
+ws_callbacks_t& ws_callbacks_t::onConnected(ws_callbacks_t::on_send_f cb, ws_callbacks_t::Prepend) {
+    on_connected.insert(on_connected.begin(), cb);
+    return *this;
+}
+
+ws_callbacks_t& ws_callbacks_t::onConnected(ws_callbacks_t::on_send_f cb, ws_callbacks_t::Append) {
     on_connected.push_back(cb);
     return *this;
 }
 
-ws_callbacks_t& ws_callbacks_t::onData(ws_callbacks_t::on_send_f cb) {
+ws_callbacks_t& ws_callbacks_t::onData(ws_callbacks_t::on_send_f cb, ws_callbacks_t::Prepend) {
+    on_data.insert(on_data.begin(), cb);
+    return *this;
+}
+
+ws_callbacks_t& ws_callbacks_t::onData(ws_callbacks_t::on_send_f cb, ws_callbacks_t::Append) {
     on_data.push_back(cb);
     return *this;
 }
 
-ws_callbacks_t& ws_callbacks_t::onAction(ws_callbacks_t::on_action_f cb) {
+ws_callbacks_t& ws_callbacks_t::onAction(ws_callbacks_t::on_action_f cb, ws_callbacks_t::Prepend) {
+    on_action.insert(on_action.begin(), cb);
+    return *this;
+}
+
+ws_callbacks_t& ws_callbacks_t::onAction(ws_callbacks_t::on_action_f cb, ws_callbacks_t::Append) {
     on_action.push_back(cb);
     return *this;
 }
 
-ws_callbacks_t& ws_callbacks_t::onKeyCheck(ws_callbacks_t::on_keycheck_f cb) {
+ws_callbacks_t& ws_callbacks_t::onKeyCheck(ws_callbacks_t::on_keycheck_f cb, ws_callbacks_t::Prepend) {
+    on_keycheck.insert(on_keycheck.begin(), cb);
+    return *this;
+}
+
+ws_callbacks_t& ws_callbacks_t::onKeyCheck(ws_callbacks_t::on_keycheck_f cb, ws_callbacks_t::Append) {
     on_keycheck.push_back(cb);
     return *this;
 }
@@ -507,18 +532,6 @@ bool _wsStore(String key, const String& value) {
 // TODO: generate "accepted" keys in the initial phase of the connection?
 // TODO: is value ever used... by anything?
 bool _wsCheckKey(const String& key, const JsonVariant& value) {
-#if NTP_SUPPORT
-    if (key == STRING_VIEW("ntpTZ")) {
-        _wsResetUpdateTimer();
-        return true;
-    }
-#endif
-
-    if (key == STRING_VIEW("adminPass")) {
-        const auto pass = systemPassword();
-        return !pass.equalsConstantTime(value.as<String>());
-    }
-
     for (auto& callback : _ws_callbacks.on_keycheck) {
         if (callback(key, value)) {
             return true;
@@ -542,6 +555,7 @@ void _wsPostParse(uint32_t client_id, bool save, bool reload) {
             root[F("message")] = F("Changes saved");
         });
 
+        _wsResetUpdateTimer();
         return;
     }
 
@@ -654,8 +668,7 @@ void _wsParse(AsyncWebSocketClient* client, uint8_t* payload, size_t length) {
 }
 
 bool _wsOnKeyCheck(espurna::StringView key, const JsonVariant&) {
-    return (key == STRING_VIEW("webPort"))
-        || key.startsWith(STRING_VIEW("ws"));
+    return key.startsWith(STRING_VIEW("ws"));
 }
 
 void _wsOnConnected(JsonObject& root) {

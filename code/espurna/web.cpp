@@ -28,6 +28,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "system.h"
 #include "utils.h"
 #include "web.h"
+#include "ws.h"
 
 #if WEB_EMBEDDED
 
@@ -66,6 +67,52 @@ namespace {
 
 namespace espurna {
 namespace web {
+namespace {
+
+namespace build {
+
+constexpr auto DefaultPort = uint16_t{
+#if WEB_SSL_ENABLED
+        443
+#else
+        80
+#endif
+};
+
+constexpr uint16_t port() {
+    return (WEB_PORT == 0)
+        ? DefaultPort
+        : (WEB_PORT);
+}
+
+constexpr bool access_log() {
+    return 1 == WEB_ACCESS_LOG;
+}
+
+} // namespace build
+
+namespace settings {
+namespace keys {
+
+STRING_VIEW_INLINE(Prefix, "web");
+
+STRING_VIEW_INLINE(Port, "webPort");
+STRING_VIEW_INLINE(AccessLog, "webAccessLog");
+
+} // namespace keys
+
+uint16_t port() {
+    return getSetting(keys::Port, build::port());
+}
+
+bool access_log() {
+    return getSetting(keys::AccessLog, build::access_log());
+}
+
+} // namespace settings
+
+} // namespace
+
 namespace print {
 
 bool RequestPrint::_addBuffer() {
@@ -215,7 +262,7 @@ static constexpr auto WebContentEncoding = espurna::StringView(webui_content_enc
 static constexpr auto WebLastModified = espurna::StringView(webui_last_modified);
 static constexpr size_t WebConfigBufferMax { 4096 };
 
-// server instance can't (yet) be static, port is the ctor argument :/
+uint16_t _port{};
 AsyncWebServer* _server;
 
 // XXX shared between requests!
@@ -602,6 +649,10 @@ void _onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t i
 
 }
 
+bool _onKeyCheck(espurna::StringView key, const JsonVariant& value) {
+    return key.startsWith(espurna::web::settings::keys::Prefix);
+}
+
 } // namespace
 
 void webSecurityHeaders(AsyncWebServerResponse* response) {
@@ -616,6 +667,10 @@ bool webAuthenticate(AsyncWebServerRequest *request) {
     return _authenticateRequest(request);
 }
 
+uint16_t webPort() {
+    return _port;
+}
+
 AsyncWebServer& webServer() {
     return *_server;
 }
@@ -626,15 +681,6 @@ void webBodyRegister(web_body_callback_f callback) {
 
 void webRequestRegister(web_request_callback_f callback) {
     _web_request_callbacks.push_back(callback);
-}
-
-uint16_t webPort() {
-    #if WEB_SSL_ENABLED
-        return 443;
-    #else
-        constexpr const uint16_t defaultValue(WEB_PORT);
-        return getSetting("webPort", defaultValue);
-    #endif
 }
 
 void webLog(AsyncWebServerRequest* request) {
@@ -659,11 +705,13 @@ class WebAccessLogHandler : public AsyncWebHandler {
 void webSetup() {
     // Create server and install global URL debug handler
     // (since we don't want to forcibly add it to each instance)
-    unsigned int port = webPort();
-    _server = new AsyncWebServer(port);
+    using namespace espurna::web;
+
+    _port = settings::port();
+    _server = new AsyncWebServer(_port);
 
 #if DEBUG_SUPPORT
-    if (getSetting("webAccessLog", (1 == WEB_ACCESS_LOG))) {
+    if (settings::access_log()) {
         static WebAccessLogHandler log;
         _server->addHandler(&log);
     }
@@ -709,8 +757,11 @@ void webSetup() {
         _server->begin();
     #endif
 
-    DEBUG_MSG_P(PSTR("[WEBSERVER] Webserver running on port %u\n"), port);
+    DEBUG_MSG_P(PSTR("[WEBSERVER] Webserver running on port %hu\n"), _port);
 
+    // Handle ws server settings updates
+    wsRegister()
+        .onKeyCheck(_onKeyCheck);
 }
 
 #endif // WEB_SUPPORT

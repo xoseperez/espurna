@@ -74,9 +74,9 @@ static constexpr Enumeration<sleep::Interrupt> SleepInterruptOptions[] PROGMEM {
 
 namespace keys {
 
-PROGMEM_STRING(Hostname, "hostname");
-PROGMEM_STRING(Description, "desc");
-PROGMEM_STRING(Password, "adminPass");
+STRING_VIEW_INLINE(Hostname, "hostname");
+STRING_VIEW_INLINE(Description, "desc");
+STRING_VIEW_INLINE(Password, "adminPass");
 
 } // namespace keys
 
@@ -433,8 +433,8 @@ namespace {
 
 namespace internal {
 
-PROGMEM_STRING(Hostname, HOSTNAME);
-PROGMEM_STRING(Password, ADMIN_PASS);
+STRING_VIEW_INLINE(Hostname, HOSTNAME);
+STRING_VIEW_INLINE(Password, ADMIN_PASS);
 
 } // namespace internal
 
@@ -518,11 +518,11 @@ String description() {
 }
 
 String hostname() {
-    if (__builtin_strlen(internal::Hostname) > 0) {
-        return getSetting(settings::keys::Hostname, internal::Hostname);
-    }
+    const auto defaultValue = (internal::Hostname.length() > 0)
+        ? internal::Hostname
+        : identifier();
 
-    return getSetting(settings::keys::Hostname, identifier());
+    return getSetting(settings::keys::Hostname, defaultValue);
 }
 
 StringView default_password() {
@@ -1465,10 +1465,14 @@ void onConnected(JsonObject& root) {
       espurna::settings::internal::serialize(heartbeat::settings::mode());
 }
 
-bool onKeyCheck(StringView key, const JsonVariant&) {
+bool onKeyCheck(StringView key, const JsonVariant& value) {
+    if (key == system::settings::keys::Password) {
+        const auto password = system::password();
+        return !password.equalsConstantTime(value.as<String>());
+    }
+
     return (key == system::settings::keys::Description)
         || (key == system::settings::keys::Hostname)
-        || (key == system::settings::keys::Password)
         || key.startsWith(STRING_VIEW("hb"))
         || key.startsWith(STRING_VIEW("sleep"))
         || key.startsWith(STRING_VIEW("sys"));
@@ -1477,7 +1481,7 @@ bool onKeyCheck(StringView key, const JsonVariant&) {
 void init() {
     wsRegister()
         .onConnected(onConnected)
-        .onKeyCheck(onKeyCheck);
+        .onKeyCheck(onKeyCheck, ws_callbacks_t::Prepend{});
 }
 
 } // namespace web
