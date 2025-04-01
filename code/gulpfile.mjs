@@ -333,6 +333,14 @@ function formatBufferLines(buffer, every = 20) {
 }
 
 /**
+ * @param {File} file
+ * @returns {string}
+ */
+function formatLastModified(file) {
+    return (file?.stat?.mtime ?? (new Date())).toUTCString()
+}
+
+/**
  * generates c++-friendly output from the stream contents
  * @param {BuildOptions} options
  * @returns {Transform}
@@ -351,7 +359,8 @@ function toOutput(options) {
                 '#pragma once',
                 '#include <sys/pgmspace.h>',
                 '#include <cstdint>',
-                `alignas(4) static constexpr char webui_content_encoding[] = "${options.compress || ''}";`,
+                `alignas(4) static constexpr char webui_last_modified[] PROGMEM = "${formatLastModified(source)}";`,
+                `alignas(4) static constexpr char webui_content_encoding[] PROGMEM = "${options.compress || ''}";`,
                 'alignas(4) static constexpr uint8_t webui_data[] PROGMEM = {',
                 formatBufferLines(source.contents),
                 '};\n'
@@ -384,15 +393,19 @@ function toOutput(options) {
  * @returns {Transform}
  */
 function adjustFileStat() {
+    const now = new Date();
+
     return new Transform({
         objectMode: true,
         transform(source, _, callback) {
-            if (source.stat) {
-                const now = new Date();
-                source.stat.atime = now;
-                source.stat.mtime = now;
-                source.stat.ctime = now;
+            if (!source.stat) {
+                source.stat = {};
             }
+
+            source.stat.atime = now;
+            source.stat.mtime = now;
+            source.stat.ctime = now;
+
             callback(null, source);
         }});
 }

@@ -209,7 +209,6 @@ size_t RequestPrint::write(const uint8_t* data, size_t size) {
 
 namespace {
 
-PROGMEM_STRING(LastModified, __DATE__ " " __TIME__ " GMT");
 static constexpr size_t WebConfigBufferMax { 4096 };
 
 // server instance can't (yet) be static, port is the ctor argument :/
@@ -471,7 +470,7 @@ void _onHome(AsyncWebServerRequest *request) {
 
     if (request->hasHeader(FPSTR(IfModifiedSince))) {
         const auto value = request->header(FPSTR(IfModifiedSince));
-        if (strncmp_P(value.c_str(), LastModified, value.length()) == 0) {
+        if (strncmp_P(value.c_str(), webui_last_modified, value.length()) == 0) {
             request->send(304);
             return;
         }
@@ -496,11 +495,14 @@ void _onHome(AsyncWebServerRequest *request) {
     auto* response = request->beginResponse_P(200, F("text/html"), webui_data, std::size(webui_data));
 #endif
 
-    if (__builtin_strlen(webui_content_encoding) != 0) {
-        response->addHeader(F("Content-Encoding"), webui_content_encoding);
+    constexpr auto content_encoding = espurna::StringView(webui_content_encoding);
+    if (content_encoding.length()) {
+        response->addHeader(F("Content-Encoding"), content_encoding.toString());
     }
 
-    response->addHeader(F("Last-Modified"), FPSTR(LastModified));
+    constexpr auto last_modified = espurna::StringView(webui_last_modified);
+    response->addHeader(F("Last-Modified"), last_modified.toString());
+
     response->addHeader(F("X-XSS-Protection"), F("1; mode=block"));
     response->addHeader(F("X-Content-Type-Options"), F("nosniff"));
     response->addHeader(F("X-Frame-Options"), F("deny"));
