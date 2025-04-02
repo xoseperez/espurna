@@ -76,11 +76,16 @@ import * as zlib from 'node:zlib';
  */
 
 /**
+ * resulting blob compression type
+ * @typedef {'br' | 'gz'} Compression
+ */
+
+/**
  * build pipeline common options
  * @typedef BuildOptions
  * @property {string} name
  * @property {boolean} minify
- * @property {'br' | 'gz'} compress
+ * @property {Compression} compress
  * @property {Modules} modules
  */
 
@@ -341,6 +346,23 @@ function formatLastModified(file) {
 }
 
 /**
+ * @param {Compression} compress
+ * @returns {string}
+ */
+function formatContentEncoding(compress) {
+    switch (compress) {
+    case 'br':
+        return 'br';
+
+    case 'gz':
+        return 'gzip';
+
+    default:
+        throw ERR_COMPRESSION;
+    }
+}
+
+/**
  * generates c++-friendly output from the stream contents
  * @param {BuildOptions} options
  * @returns {Transform}
@@ -360,7 +382,7 @@ function toOutput(options) {
                 '#include <sys/pgmspace.h>',
                 '#include <cstdint>',
                 `alignas(4) static constexpr char webui_last_modified[] PROGMEM = "${formatLastModified(source)}";`,
-                `alignas(4) static constexpr char webui_content_encoding[] PROGMEM = "${options.compress || ''}";`,
+                `alignas(4) static constexpr char webui_content_encoding[] PROGMEM = "${formatContentEncoding(options.compress)}";`,
                 'alignas(4) static constexpr uint8_t webui_data[] PROGMEM = {',
                 formatBufferLines(source.contents),
                 '};\n'
@@ -870,7 +892,7 @@ function buildOutputs(options) {
 function buildWebUI(name) {
     /** @type {BuildOptions} */
     const opts = {
-        compress: 'br',
+        compress: 'gz',
         minify: true,
         modules: makeModules(name),
         name: name,
