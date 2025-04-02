@@ -1158,15 +1158,15 @@ bool telnetConnected() {
     return espurna::telnet::connected();
 }
 
-bool telnetDebugSend(const char* prefix, const char* data) {
+bool telnetDebugSend(const DebugPrefix& prefix, espurna::StringView message) {
     size_t out = 0;
 
     if (telnetConnected()) {
-        if (prefix && (prefix[0] != '\0')) {
+        if (debugWithPrefix(prefix)) {
             out += espurna::telnet::write(prefix);
         }
 
-        out += espurna::telnet::write(data);
+        out += espurna::telnet::write(message);
     }
 
     return out > 0;

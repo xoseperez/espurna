@@ -382,16 +382,15 @@ void sendBytes(const uint8_t* bytes, size_t size) {
 
 // Longer recording of all log data. Stops when storage is filled, requires manual flushing.
 
-void add(const char (&prefix)[10], const char* data, size_t len) {
+void add(const DebugPrefix& prefix, const char* data, size_t len) {
     if (len > std::numeric_limits<uint16_t>::max()) {
         return;
     }
 
     size_t total { len };
-    bool withPrefix { prefix[0] != '\0' };
-    if (withPrefix) {
-        total += sizeof(prefix) - 1;
-    }
+
+    const auto prefixLen = debugPrefixLength(prefix);
+    total += prefixLen;
 
     if ((internal::storage.capacity() - internal::storage.size()) <= (total + 3)) {
         internal::enabled = false;
@@ -401,7 +400,7 @@ void add(const char (&prefix)[10], const char* data, size_t len) {
     internal::storage.push_back(total >> 8);
     internal::storage.push_back(total & 0xff);
 
-    if (withPrefix) {
+    if (prefixLen) {
         internal::storage.insert(internal::storage.end(), prefix, prefix + sizeof(prefix));
     }
     internal::storage.insert(internal::storage.end(), data, data + len);
@@ -435,9 +434,9 @@ void dump(Print& out) {
 #if DEBUG_SERIAL_SUPPORT
 namespace serial {
 
-using Output = void(*)(const char (&)[10], const char*, size_t);
+using Output = void(*)(const DebugPrefix&, const char*, size_t);
 
-void null_output(const char (&)[10], const char*, size_t) {
+void null_output(const DebugPrefix&, const char*, size_t) {
 }
 
 namespace internal {
@@ -447,13 +446,13 @@ Output output { null_output };
 
 } // namespace
 
-void output(const char (&prefix)[10], const char* message, size_t len) {
+void output(const DebugPrefix& prefix, const char* message, size_t len) {
     internal::output(prefix, message, len);
 }
 
-void port_output(const char (&prefix)[10], const char* message, size_t len) {
-    if (prefix[0] != '\0') {
-        internal::port->write(&prefix[0], sizeof(prefix) - 1);
+void port_output(const DebugPrefix& prefix, const char* message, size_t len) {
+    if (debugWithPrefix(prefix)) {
+        internal::port->write(&prefix[0], debugPrefixLength(prefix));
     }
     internal::port->write(message, len);
 }
@@ -570,11 +569,11 @@ void send(const char* message, size_t len, Timestamp timestamp) {
 #endif
 
 #if DEBUG_TELNET_SUPPORT
-    pause = telnetDebugSend(prefix, message) || pause;
+    pause = telnetDebugSend(prefix, StringView(message, len)) || pause;
 #endif
 
 #if DEBUG_WEB_SUPPORT
-    pause = wsDebugSend(prefix, message) || pause;
+    pause = wsDebugSend(prefix, StringView(message, len)) || pause;
 #endif
 
 #if DEBUG_LOG_BUFFER_SUPPORT

@@ -455,17 +455,20 @@ struct WsDebug {
         _count = 0;
     }
 
-    void operator()(const char* prefix, const char* message) {
+    void operator()(const DebugPrefix& prefix, espurna::StringView message) {
         if (wsConnected()) {
             if ((_count > Limit) && !send()) {
                 return;
             }
 
-            auto pre_len = strlen(prefix);
-            auto msg_len = strlen(message);
-            _buffer.reserve(_buffer.length() + pre_len + msg_len);
-            _buffer.concat(prefix, pre_len);
-            _buffer.concat(message, msg_len);
+            const auto prefixLen = debugPrefixLength(prefix);
+            _buffer.reserve(_buffer.length()
+                + prefixLen + message.length());
+
+            if (prefixLen) {
+                _buffer.concat(prefix, prefixLen);
+            }
+            _buffer.concat(message.data(), message.length());
 
             ++_count;
         }
@@ -509,7 +512,7 @@ WsDebug _ws_debug;
 
 } // namespace
 
-bool wsDebugSend(const char* prefix, const char* message) {
+bool wsDebugSend(const DebugPrefix& prefix, espurna::StringView message) {
     if ((wifiConnected() || wifiApStations()) && wsConnected()) {
         _ws_debug(prefix, message);
         return true;
