@@ -32,6 +32,56 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 namespace espurna {
 namespace web {
 namespace ws {
+
+constexpr size_t PostponedCallback::DefaultBufferHint;
+
+void PostponedCallback::Storage::Destructor::operator()(ws_on_send_callback_f& func) const {
+    func.~ws_on_send_callback_f();
+}
+
+void PostponedCallback::Storage::Destructor::operator()(PostponedCallback::Storage::Pointer& ptr) const {
+}
+
+void PostponedCallback::Storage::Destructor::operator()(PostponedCallback::Storage::Instance& obj) const {
+    obj.obj.~ws_on_send_callback_list_t();
+}
+
+PostponedCallback::Storage::Impl::Impl() :
+    empty{}
+{}
+
+PostponedCallback::Storage::Impl::~Impl() {
+}
+
+PostponedCallback::Storage::Move::Move(Storage& storage) :
+    _storage(storage)
+{}
+
+void PostponedCallback::Storage::Move::operator()(ws_on_send_callback_f& func) const {
+    ::new (&_storage._impl.callback) ws_on_send_callback_f(std::move(func));
+}
+
+void PostponedCallback::Storage::Move::operator()(PostponedCallback::Storage::Pointer& ptr) const {
+    ::new (&_storage._impl.pointer) PostponedCallback::Storage::Pointer(std::move(ptr));
+    ptr.ptr = nullptr;
+    ptr.offset = 0;
+}
+
+void PostponedCallback::Storage::Move::operator()(PostponedCallback::Storage::Instance& obj) const {
+    ::new (&_storage._impl.instance) PostponedCallback::Storage::Instance(std::move(obj));
+    obj.offset = 0;
+}
+
+PostponedCallback::Storage::~Storage() {
+    visit(Destructor());
+}
+
+PostponedCallback::Storage::Storage(Storage&& other) noexcept :
+    _type(other._type)
+{
+    other.visit(Move(*this));
+}
+
 namespace {
 
 namespace internal {
@@ -468,17 +518,17 @@ namespace {
 bool _ws_auth { espurna::web::ws::build::authentication() };
 
 AsyncWebSocket _ws("/ws");
-std::queue<WsPostponedCallbacks> _ws_queue;
+std::queue<espurna::web::ws::PostponedCallback> _ws_queue;
 ws_callbacks_t _ws_callbacks;
 
 template <typename T>
 void _wsPostCallbacks(uint32_t client_id, T&& cbs) {
-    _ws_queue.emplace(client_id, WsPostponedCallbacks::Storage(std::forward<T>(cbs)));
+    _ws_queue.emplace(client_id, espurna::web::ws::PostponedCallback::Storage(std::forward<T>(cbs)));
 }
 
 template <typename T>
-void _wsPostCallbacks(uint32_t client_id, T&& cbs, WsPostponedCallbacks::Mode mode) {
-    _ws_queue.emplace(client_id, WsPostponedCallbacks::Storage(std::forward<T>(cbs)), mode);
+void _wsPostCallbacks(uint32_t client_id, T&& cbs, espurna::web::ws::PostponedCallback::Mode mode) {
+    _ws_queue.emplace(client_id, espurna::web::ws::PostponedCallback::Storage(std::forward<T>(cbs)), mode);
 }
 
 void _wsBufferHint(size_t buffer_hint) {
@@ -486,55 +536,6 @@ void _wsBufferHint(size_t buffer_hint) {
 }
 
 } // namespace
-
-constexpr size_t WsPostponedCallbacks::DefaultBufferHint;
-
-void WsPostponedCallbacks::Storage::Destructor::operator()(ws_on_send_callback_f& func) const {
-    func.~ws_on_send_callback_f();
-}
-
-void WsPostponedCallbacks::Storage::Destructor::operator()(WsPostponedCallbacks::Storage::Pointer& ptr) const {
-}
-
-void WsPostponedCallbacks::Storage::Destructor::operator()(WsPostponedCallbacks::Storage::Instance& obj) const {
-    obj.obj.~ws_on_send_callback_list_t();
-}
-
-WsPostponedCallbacks::Storage::Impl::Impl() :
-    empty{}
-{}
-
-WsPostponedCallbacks::Storage::Impl::~Impl() {
-}
-
-WsPostponedCallbacks::Storage::Move::Move(Storage& storage) :
-    _storage(storage)
-{}
-
-void WsPostponedCallbacks::Storage::Move::operator()(ws_on_send_callback_f& func) const {
-    ::new (&_storage._impl.callback) ws_on_send_callback_f(std::move(func));
-}
-
-void WsPostponedCallbacks::Storage::Move::operator()(WsPostponedCallbacks::Storage::Pointer& ptr) const {
-    ::new (&_storage._impl.pointer) WsPostponedCallbacks::Storage::Pointer(std::move(ptr));
-    ptr.ptr = nullptr;
-    ptr.offset = 0;
-}
-
-void WsPostponedCallbacks::Storage::Move::operator()(WsPostponedCallbacks::Storage::Instance& obj) const {
-    ::new (&_storage._impl.instance) WsPostponedCallbacks::Storage::Instance(std::move(obj));
-    obj.offset = 0;
-}
-
-WsPostponedCallbacks::Storage::~Storage() {
-    visit(Destructor());
-}
-
-WsPostponedCallbacks::Storage::Storage(Storage&& other) noexcept :
-    _type(other._type)
-{
-    other.visit(Move(*this));
-}
 
 void wsPost(uint32_t client_id, ws_on_send_callback_f&& cb, size_t buffer_hint) {
     wsPost(client_id, std::move(cb));
@@ -563,7 +564,7 @@ void wsPost(const ws_on_send_callback_f& cb) {
 }
 
 void wsPostManual(uint32_t client_id, ws_on_send_callback_f&& cb) {
-    _wsPostCallbacks(client_id, std::move(cb), WsPostponedCallbacks::Mode::Manual);
+    _wsPostCallbacks(client_id, std::move(cb), espurna::web::ws::PostponedCallback::Mode::Manual);
 }
 
 void wsPostManual(ws_on_send_callback_f&& cb) {
@@ -576,7 +577,7 @@ void wsPostManual(uint32_t client_id, ws_on_send_callback_f&& cb, size_t buffer_
 }
 
 void wsPostManual(uint32_t client_id, const ws_on_send_callback_f& cb) {
-    _wsPostCallbacks(client_id, cb, WsPostponedCallbacks::Mode::Manual);
+    _wsPostCallbacks(client_id, cb, espurna::web::ws::PostponedCallback::Mode::Manual);
 }
 
 void wsPostManual(const ws_on_send_callback_f& cb) {
@@ -589,7 +590,7 @@ void wsPostManual(uint32_t client_id, const ws_on_send_callback_f& cb, size_t bu
 }
 
 void wsPostAll(uint32_t client_id, ws_on_send_callback_list_t&& cbs) {
-    _wsPostCallbacks(client_id, std::move(cbs), WsPostponedCallbacks::Mode::All);
+    _wsPostCallbacks(client_id, std::move(cbs), espurna::web::ws::PostponedCallback::Mode::All);
 }
 
 void wsPostAll(ws_on_send_callback_list_t&& cbs) {
@@ -597,7 +598,7 @@ void wsPostAll(ws_on_send_callback_list_t&& cbs) {
 }
 
 void wsPostAll(uint32_t client_id, const ws_on_send_callback_list_t& cbs) {
-    _wsPostCallbacks(client_id, cbs, WsPostponedCallbacks::Mode::All);
+    _wsPostCallbacks(client_id, cbs, espurna::web::ws::PostponedCallback::Mode::All);
 }
 
 void wsPostAll(const ws_on_send_callback_list_t& cbs) {
@@ -605,7 +606,7 @@ void wsPostAll(const ws_on_send_callback_list_t& cbs) {
 }
 
 void wsPostSequence(uint32_t client_id, ws_on_send_callback_list_t&& cbs) {
-    _wsPostCallbacks(client_id, std::move(cbs), WsPostponedCallbacks::Mode::Sequence);
+    _wsPostCallbacks(client_id, std::move(cbs), espurna::web::ws::PostponedCallback::Mode::Sequence);
 }
 
 void wsPostSequence(ws_on_send_callback_list_t&& cbs) {
@@ -613,7 +614,7 @@ void wsPostSequence(ws_on_send_callback_list_t&& cbs) {
 }
 
 void wsPostSequence(uint32_t client_id, const ws_on_send_callback_list_t& cbs) {
-    _wsPostCallbacks(client_id, cbs, WsPostponedCallbacks::Mode::Sequence);
+    _wsPostCallbacks(client_id, cbs, espurna::web::ws::PostponedCallback::Mode::Sequence);
 }
 
 void wsPostSequence(const ws_on_send_callback_list_t& cbs) {

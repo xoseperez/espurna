@@ -36,7 +36,11 @@ struct WsTicket {
 // - constant 'callbacks' list as reference, which was registered via wsRegister()
 // - in-place callback / callbacks that will be moved inside this container
 
-class WsPostponedCallbacks {
+namespace espurna {
+namespace web {
+namespace ws {
+
+class PostponedCallback {
 public:
     struct Storage {
         enum class Type {
@@ -284,22 +288,22 @@ public:
         JsonObject& _root;
     };
 
-    WsPostponedCallbacks() = delete;
+    PostponedCallback() = delete;
 
-    WsPostponedCallbacks(uint32_t client_id, Storage storage, Mode mode) :
+    PostponedCallback(uint32_t client_id, Storage storage, Mode mode) :
         _client_id(client_id),
         _storage(std::move(storage)),
         _mode(mode)
     {}
 
-    WsPostponedCallbacks(uint32_t client_id, Storage storage) :
+    PostponedCallback(uint32_t client_id, Storage storage) :
         _client_id(client_id),
         _storage(std::move(storage)),
         _mode(mode_from_storage_type(_storage))
     {}
 
-    explicit WsPostponedCallbacks(Storage storage) :
-        WsPostponedCallbacks(0, std::move(storage))
+    explicit PostponedCallback(Storage storage) :
+        PostponedCallback(0, std::move(storage))
     {}
 
     bool done() {
@@ -375,3 +379,7 @@ private:
 
     size_t _hint { DefaultBufferHint };
 };
+
+} // namespace ws
+} // namespace web
+} // namespace espurna
