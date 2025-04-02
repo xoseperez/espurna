@@ -29,8 +29,10 @@ void sendResponse(AsyncWebServerRequest *request, int code, const String& payloa
     auto *response = request->beginResponseStream(F("text/plain"), 256);
 
     webSecurityHeaders(response);
+    response->addHeader(
+        STRING_VIEW("Connection").toString(),
+        STRING_VIEW("close").toString());
 
-    response->addHeader(F("Connection"), F("close"));
     response->setCode(code);
 
     if (payload.length()) {

@@ -117,9 +117,52 @@ uint16_t port() {
 }
 
 } // namespace settings
+} // namespace
+} // namespace web
+} // namespace espurna
+
+namespace {
+
+static constexpr auto WebContentEncoding = espurna::StringView(webui_content_encoding);
+static constexpr auto WebLastModified = espurna::StringView(webui_last_modified);
+static constexpr size_t WebConfigBufferMax { 4096 };
+
+template <typename T>
+void _addHeader(T& other, espurna::StringView name, espurna::StringView value) {
+    other.addHeader(name.toString(), value.toString());
+}
+
+void _addConnectionClose(AsyncWebServerResponse* response) {
+    _addHeader(*response,
+        STRING_VIEW("Connection"), STRING_VIEW("close"));
+}
+
+void _addSecurityHeaders(AsyncWebServerResponse* response) {
+    _addHeader(*response,
+        STRING_VIEW("X-XSS-Protection"),
+        STRING_VIEW("1; mode=block"));
+    _addHeader(*response,
+        STRING_VIEW("X-Content-Type-Options"),
+        STRING_VIEW("nosniff"));
+    _addHeader(*response,
+        STRING_VIEW("X-Frame-Options"),
+        STRING_VIEW("deny"));
+}
+
+void _addGenericHeaders(AsyncWebServerResponse* response) {
+    if (WebContentEncoding.length()) {
+        _addHeader(*response,
+            STRING_VIEW("Content-Encoding"), WebContentEncoding);
+    }
+
+    _addHeader(*response,
+        STRING_VIEW("Last-Modified"), WebLastModified);
+}
 
 } // namespace
 
+namespace espurna {
+namespace web {
 namespace print {
 
 bool RequestPrint::_addBuffer() {
@@ -187,7 +230,7 @@ void RequestPrint::_prepareRequest() {
             return this->_handleRequest(data, maxLen);
         });
 
-    response->addHeader(F("Connection"), F("close"));
+    _addConnectionClose(response);
     _request->send(response);
 }
 
@@ -262,12 +305,6 @@ size_t RequestPrint::write(const uint8_t* data, size_t size) {
 // -----------------------------------------------------------------------------
 
 namespace {
-
-STRING_VIEW_INLINE(WebIfModifiedSince, "If-Modified-Since");
-
-static constexpr auto WebContentEncoding = espurna::StringView(webui_content_encoding);
-static constexpr auto WebLastModified = espurna::StringView(webui_last_modified);
-static constexpr size_t WebConfigBufferMax { 4096 };
 
 uint16_t _port{};
 AsyncWebServer* _server;
@@ -379,24 +416,11 @@ void _setupAccessControlHeaders() {
     const auto domain = espurna::web::settings::domain();
 
     auto& headers = DefaultHeaders::Instance();
-    headers.addHeader(F("Access-Control-Allow-Origin"), domain);
+    _addHeader(headers, STRING_VIEW("Access-Control-Allow-Origin"), domain);
     if (!domain.equals("*")) {
-        headers.addHeader(F("Access-Control-Allow-Credentials"), F("true"));
+        _addHeader(headers,
+            STRING_VIEW("Access-Control-Allow-Credentials"), STRING_VIEW("true"));
     }
-}
-
-void _addSecurityHeaders(AsyncWebServerResponse* response) {
-    response->addHeader(F("X-XSS-Protection"), F("1; mode=block"));
-    response->addHeader(F("X-Content-Type-Options"), F("nosniff"));
-    response->addHeader(F("X-Frame-Options"), F("deny"));
-}
-
-void _addGenericHeaders(AsyncWebServerResponse* response) {
-    if (WebContentEncoding.length()) {
-        response->addHeader(F("Content-Encoding"), WebContentEncoding.toString());
-    }
-
-    response->addHeader(F("Last-Modified"), WebLastModified.toString());
 }
 
 void _onGetConfig(AsyncWebServerRequest *request) {
@@ -464,7 +488,9 @@ void _onGetConfig(AsyncWebServerRequest *request) {
 
     if (written > 0) {
         _addSecurityHeaders(response);
-        response->addHeader(F("Content-Disposition"), buffer);
+        _addHeader(*response,
+            STRING_VIEW("Content-Disposition"),
+            espurna::StringView(&buffer[0], written));
         request->send(response);
         return;
     }
@@ -526,11 +552,19 @@ void _onPostConfigFile(AsyncWebServerRequest *request, String, size_t index, uin
 }
 
 #if WIFI_AP_CAPTIVE_SUPPORT
+String _apCaptiveLocation() {
+    STRING_VIEW_INLINE(Prefix, "http://");
+    return Prefix.toString() + wifiApIp().toString();
+}
+
 void _onAPCaptiveRequest(AsyncWebServerRequest* request) {
     if (wifiConnectable()) {
         auto* response = request->beginResponse(302);
-        response->addHeader(F("Location"), String(F("http://")) + wifiApIp().toString());
-        response->addHeader(F("Connection"), F("close"));
+
+        _addHeader(*response,
+            STRING_VIEW("Location"), _apCaptiveLocation());
+        _addConnectionClose(response);
+
         request->send(response);
         return;
     }
@@ -547,7 +581,8 @@ void _onHome(AsyncWebServerRequest *request) {
         return;
     }
 
-    const auto* modified = request->getHeader(WebIfModifiedSince.toString());
+    const auto* modified = request->getHeader(
+        STRING_VIEW("If-Modified-Since").toString());
     if (modified && (modified->value() == WebLastModified)) {
         request->send(304);
         return;
