@@ -40,6 +40,7 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 
 #include <ArduinoJson.h>
 
+#include "system_time.h"
 #include "settings.h"
 
 namespace espurna {
@@ -142,6 +143,123 @@ struct EnumerableTypes {
 
 private:
     JsonArray& _root;
+};
+
+struct PostponedDebug;
+
+struct PostponedPayload {
+    static constexpr size_t CountMax { 8 };
+
+    struct Flag {
+        explicit Flag(PostponedPayload&);
+        ~Flag();
+
+        Flag(const Flag&) = delete;
+        Flag& operator=(const Flag&) = delete;
+
+        Flag(Flag&&) = delete;
+        Flag& operator=(Flag&&) = delete;
+
+        const char* data() const {
+            return _ref._data.c_str();
+        }
+
+        bool pending() const {
+            return _ref.pending();
+        }
+
+    private:
+        PostponedPayload& _ref;
+    };
+
+    PostponedPayload();
+    explicit PostponedPayload(uint32_t id) :
+        _id(id)
+    {}
+
+    bool pending() const {
+        return _pending;
+    }
+
+    bool post(bool connected);
+    bool post();
+
+    void buffer(StringView);
+    bool connected() const;
+
+    std::shared_ptr<Flag> make_flag();
+
+private:
+    friend Flag;
+    friend PostponedDebug;
+
+    void buffer_impl(StringView);
+    void buffer_impl(const char*, size_t);
+
+    size_t _count{};
+
+    String _data;
+    bool _pending { false };
+
+    uint32_t _id{};
+};
+
+struct PostponedDebug : public PostponedPayload {
+    void buffer(const DebugPrefix&, espurna::StringView);
+};
+
+struct InplaceLog;
+
+struct InplacePayload {
+    using Clock = espurna::time::CoreClock;
+    using Send = std::function<void(JsonObject&, String&)>;
+
+    static constexpr size_t CountMax { 8 };
+
+    static constexpr auto DefaultTimeout = duration::Seconds{ 2 };
+    static constexpr auto DefaultWait = duration::Milliseconds{ 100 };
+
+    InplacePayload() = delete;
+    InplacePayload(JsonObject& root, uint32_t id);
+
+    void reset();
+
+    bool connected() const;
+    bool can_send() const;
+
+    void write(const char*, size_t);
+    bool poll_send();
+    bool send();
+
+    void timeout(Clock::duration duration) {
+        _timeout = duration;
+    }
+
+    void wait_time(Clock::duration duration) {
+        _wait = duration;
+    }
+
+private:
+    void write_impl(const char*, size_t);
+    void send_impl();
+
+    friend InplaceLog;
+
+    Clock::duration _timeout { DefaultTimeout };
+    Clock::duration _wait { DefaultWait };
+
+    String _data;
+    size_t _count{};
+
+    JsonObject& _root;
+    uint32_t _id;
+};
+
+struct InplaceLog : public InplacePayload {
+    InplaceLog(JsonObject&, uint32_t);
+
+    void write(const char* , size_t);
+    bool send();
 };
 
 } // namespace ws

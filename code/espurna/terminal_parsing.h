@@ -95,7 +95,7 @@ public:
 
 private:
     void send() {
-        _output(buffer());
+        _output.write(buffer(), length());
     }
 
     T _output;

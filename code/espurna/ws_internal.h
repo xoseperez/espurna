@@ -42,30 +42,35 @@ public:
 
     enum class Mode {
         Sequence,
-        All
+        ManualSequence,
+        All,
+        ManualAll,
     };
 
-    WsPostponedCallbacks(uint32_t client_id, ws_on_send_callback_f&& cb) :
+    WsPostponedCallbacks(uint32_t client_id, ws_on_send_callback_f&& cb, Mode mode = Mode::All) :
         _client_id(client_id),
         _timestamp(TimeSource::now()),
-        _mode(Mode::All),
+        _mode(mode),
         _storage(new ws_on_send_callback_list_t {std::move(cb)}),
         _callbacks(*_storage.get()),
         _current(_callbacks.begin())
     {}
 
-    WsPostponedCallbacks(uint32_t client_id, const ws_on_send_callback_f& cb) :
+    explicit WsPostponedCallbacks(ws_on_send_callback_f&& cb) :
+        WsPostponedCallbacks(0, std::move(cb))
+    {}
+
+    WsPostponedCallbacks(uint32_t client_id, const ws_on_send_callback_f& cb, Mode mode = Mode::All) :
         _client_id(client_id),
         _timestamp(TimeSource::now()),
-        _mode(Mode::All),
+        _mode(mode),
         _storage(new ws_on_send_callback_list_t {cb}),
         _callbacks(*_storage.get()),
         _current(_callbacks.begin())
     {}
 
-    template <typename T>
-    explicit WsPostponedCallbacks(T&& cb) :
-        WsPostponedCallbacks(0, std::forward<T>(cb))
+    explicit WsPostponedCallbacks(const ws_on_send_callback_f& cb) :
+        WsPostponedCallbacks(0, cb)
     {}
 
     WsPostponedCallbacks(uint32_t client_id, const ws_on_send_callback_list_t& cbs, Mode mode = Mode::Sequence) :
@@ -105,9 +110,11 @@ public:
     void send(JsonObject& root) {
         switch (_mode) {
         case Mode::Sequence:
+        case Mode::ManualSequence:
             sendCurrent(root);
             break;
         case Mode::All:
+        case Mode::ManualAll:
             sendAll(root);
             break;
         }
@@ -119,6 +126,10 @@ public:
 
     TimeSource::time_point timestamp() const {
         return _timestamp;
+    }
+
+    Mode mode() const {
+        return _mode;
     }
 
 private:

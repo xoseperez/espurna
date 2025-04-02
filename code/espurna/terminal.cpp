@@ -549,124 +549,44 @@ void setup() {
 #if WEB_SUPPORT
 namespace web {
 
-struct Output {
-    static constexpr auto Timeout = espurna::duration::Seconds(2);
-    static constexpr auto Wait = espurna::duration::Milliseconds(100);
-    static constexpr int Limit { 8 };
-
-    Output() = delete;
-    Output(const Output&) = default;
-    Output(Output&&) = default;
-
-    explicit Output(uint32_t id) :
-        _id(id)
-    {}
-
-    ~Output() {
-        send();
-    }
-
-    void operator()(const char* line) {
-        if (wsConnected(_id)) {
-            if ((_count > Limit) && !send()) {
-                return;
-            }
-
-            ++_count;
-            _output += line;
-        }
-    }
-
-    void clear() {
-        _output = String();
-        _count = 0;
-    }
-
-    bool send() {
-        if (!_count || !_output.length()) {
-            clear();
-            return false;
-        }
-
-        if (!wsConnected(_id)) {
-            clear();
-            return false;
-        }
-
-        using Clock = time::CoreClock;
-
-        auto start = Clock::now();
-        bool ready { false };
-
-        while (Clock::now() - start < Timeout) {
-            auto info = wsClientInfo(_id);
-            if (!info.connected) {
-                clear();
-                return false;
-            }
-
-            if (!info.stalled) {
-                ready = true;
-                break;
-            }
-
-            time::blockingDelay(Wait);
-        }
-
-        if (ready) {
-            DynamicJsonBuffer buffer((2 * JSON_OBJECT_SIZE(1)) + JSON_ARRAY_SIZE(1));
-
-            JsonObject& root = buffer.createObject();
-            JsonObject& log = root.createNestedObject("log");
-
-            JsonArray& msg = log.createNestedArray("msg");
-            msg.add(_output.c_str());
-
-            wsSend(root);
-            clear();
-
-            return true;
-        }
-
-        clear();
-        return false;
-    }
-
-private:
-    String _output;
-    uint32_t _id { 0 };
-    int _count { 0 };
-};
-
-constexpr espurna::duration::Seconds Output::Timeout;
-constexpr espurna::duration::Milliseconds Output::Wait;
-
 STRING_VIEW_INLINE(Prefix, "cmd");
+
+using Output = PrintLine<espurna::web::ws::InplaceLog>;
+
+struct Command {
+    String line;
+    uint32_t id;
+};
 
 void onVisible(JsonObject& root) {
     wsPayloadModule(root, Prefix);
 }
 
 void onAction(uint32_t client_id, const char* action, JsonObject& data) {
-    PROGMEM_STRING(Cmd, "cmd");
-    if (strncmp_P(action, &Cmd[0], __builtin_strlen(Cmd)) != 0) {
+    STRING_VIEW_INLINE(Cmd, "cmd");
+    if (Cmd != action) {
         return;
     }
 
-    PROGMEM_STRING(Line, "line");
-    if (!data.containsKey(FPSTR(Line)) || !data[FPSTR(Line)].is<String>()) {
+    STRING_VIEW_INLINE(Line, "line");
+    auto cmd = Command{
+        .line = data[Line].as<String>(),
+        .id = client_id,
+    };
+
+    if (!cmd.line.length()) {
         return;
     }
 
-    const auto cmd = std::make_shared<String>(
-        data[FPSTR(Line)].as<String>());
-    if (!cmd->length()) {
-        return;
-    }
+    const auto shared =
+        std::make_shared<Command>(std::move(cmd));
 
-    espurnaRegisterOnce([cmd, client_id]() {
-        PrintLine<Output> out(client_id);
-        api_find_and_call(*cmd, out);
+    espurnaRegisterOnce([shared]() {
+        wsPostManual(shared->id,
+            [shared](JsonObject& root) {
+                Output out(root, shared->id);
+                api_find_and_call(shared->line, out);
+            });
     });
 }
 

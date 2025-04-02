@@ -99,7 +99,11 @@ bool wsDebugSend(const DebugPrefix&, espurna::StringView);
 // There are two policies set on how to send the data:
 // - All will use the same JsonObject for each callback
 // - Sequence will use a different JsonObject for each callback
-// Default is All
+// - Manual works similarly to All & Sequence
+//   However, it is up to the user to call `wsSend()`
+//
+// `wsPost()` & `wsPostManual()` callback uses *All mode by default
+// (however, it is not currently possible to amend the created list object)
 //
 // WARNING: callback lists are taken by reference! make sure that list is ether:
 // - std::move(...)'ed to give control of the callback list to us
@@ -120,6 +124,21 @@ void wsPostSequence(uint32_t client_id, ws_on_send_callback_list_t&& cbs);
 void wsPostSequence(ws_on_send_callback_list_t&& cbs);
 void wsPostSequence(uint32_t client_id, const ws_on_send_callback_list_t& cbs);
 void wsPostSequence(const ws_on_send_callback_list_t& cbs);
+
+void wsPostManual(uint32_t client_id, ws_on_send_callback_f&& cb);
+void wsPostManual(ws_on_send_callback_f&& cb);
+void wsPostManual(uint32_t client_id, const ws_on_send_callback_f& cb);
+void wsPostManual(ws_on_send_callback_f& cb);
+
+void wsPostManualAll(uint32_t client_id, ws_on_send_callback_list_t&& cbs);
+void wsPostManualAll(ws_on_send_callback_list_t&& cbs);
+void wsPostManualAll(uint32_t client_id, const ws_on_send_callback_list_t& cbs);
+void wsPostManualAll(ws_on_send_callback_list_t& cbs);
+
+void wsPostManualSequence(uint32_t client_id, ws_on_send_callback_list_t&& cs);
+void wsPostManualSequence(ws_on_send_callback_list_t&& cs);
+void wsPostManualSequence(uint32_t client_id, const ws_on_send_callback_list_t& cs);
+void wsPostManualSequence(ws_on_send_callback_list_t& cbs);
 
 // Immmediatly try to serialize and send JsonObject&
 // May silently fail when network is busy sending previous requests, or there's not enough RAM

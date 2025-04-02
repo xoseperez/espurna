@@ -154,6 +154,220 @@ void EnumerableTypes::operator()(int value, StringView text) {
     entry.add(text);
 }
 
+PostponedPayload::PostponedPayload() = default;
+
+PostponedPayload::Flag::~Flag() {
+    if (_ref._pending) {
+        _ref._data = String();
+        _ref._count = 0;
+    }
+
+    _ref._pending = false;
+}
+
+PostponedPayload::Flag::Flag(PostponedPayload& ref) :
+    _ref(ref)
+{
+    _ref._pending = true;
+}
+
+bool PostponedPayload::connected() const {
+    return _id ? wsConnected(_id) : wsConnected();
+}
+
+std::shared_ptr<PostponedPayload::Flag> PostponedPayload::make_flag() {
+    if (!_pending) {
+        return std::make_shared<Flag>(*this);
+    }
+
+
+    return nullptr;
+}
+
+bool PostponedPayload::post(bool connected) {
+    if (!connected) {
+        if (_data.length()) {
+            _data = String();
+        }
+
+        _count = 0;
+        _pending = false;
+
+        return false;
+    }
+
+    if (connected && !_pending && _count) {
+        auto flag = make_flag();
+
+        wsPost(_id, [flag](JsonObject& root) {
+            if (flag->pending()) {
+                auto& log = root.createNestedArray("log");
+                log.add(flag->data());
+            }
+        });
+
+        return true;
+    }
+
+    return false;
+}
+
+bool PostponedPayload::post() {
+    return post(connected());
+}
+
+void PostponedPayload::buffer(StringView data) {
+    if (!connected()) {
+        return;
+    }
+
+    if (_count < CountMax) {
+        buffer_impl(data);
+        ++_count;
+    }
+
+    post();
+}
+
+void PostponedPayload::buffer_impl(StringView data) {
+    _data.concat(data.data(), data.length());
+}
+
+void PostponedPayload::buffer_impl(const char* data, size_t length) {
+    _data.concat(data, length);
+}
+
+void PostponedDebug::buffer(const DebugPrefix& prefix, StringView message) {
+    if (!connected()) {
+        return;
+    }
+
+    if (_count < CountMax) {
+        const auto prefixLen = debugPrefixLength(prefix);
+        const auto bufferLen = _data.length()
+            + prefixLen + message.length();
+
+        _data.reserve(bufferLen);
+
+        if (prefixLen) {
+            buffer_impl(prefix, prefixLen);
+        }
+
+        buffer_impl(message);
+        ++_count;
+    }
+
+    post();
+}
+
+constexpr duration::Milliseconds InplacePayload::DefaultWait;
+constexpr duration::Seconds InplacePayload::DefaultTimeout;
+
+InplacePayload::InplacePayload(JsonObject& root, uint32_t id) :
+    _root(root),
+    _id(id)
+{}
+
+void InplacePayload::reset() {
+    if (_data.length()) {
+        _data = String();
+    }
+
+    _count = 0;
+}
+
+bool InplacePayload::connected() const {
+    return wsConnected(_id);
+}
+
+void InplacePayload::write_impl(const char* data, size_t length) {
+    if (!connected()) {
+        return;
+    }
+
+    if (_count > CountMax) {
+        return;
+    }
+
+    _data.concat(data, length);
+    ++_count;
+}
+
+void InplacePayload::write(const char* data, size_t length) {
+    write_impl(data, length);
+    send();
+}
+
+bool InplacePayload::can_send() const {
+    return connected() && _count && _data.length();
+}
+
+bool InplacePayload::poll_send() {
+    if (!can_send()) {
+        reset();
+        return false;
+    }
+
+    auto start = Clock::now();
+
+    while (Clock::now() - start < _timeout) {
+        auto info = wsClientInfo(_id);
+        if (!info.connected) {
+            reset();
+            return false;
+        }
+
+        if (!info.stalled) {
+            return true;
+        }
+
+        time::blockingDelay(_wait);
+    }
+
+    return false;
+}
+
+bool InplacePayload::send() {
+    if (poll_send()) {
+        send_impl();
+        return true;
+    }
+
+    return false;
+}
+
+void InplacePayload::send_impl() {
+    wsSend(_id, _root);
+    reset();
+}
+
+InplaceLog::InplaceLog(JsonObject& root, uint32_t id) :
+    InplacePayload(root, id)
+{
+    _root.createNestedArray("log");
+}
+
+void InplaceLog::write(const char* data, size_t length) {
+    write_impl(data, length);
+    send();
+}
+
+bool InplaceLog::send() {
+    if (poll_send()) {
+        JsonArray& log = _root["log"];
+        if (log.size()) {
+            log[0] = _data.c_str();
+        } else {
+            log.add(_data.c_str());
+        }
+
+        send_impl();
+        return true;
+    }
+
+    return false;
+}
+
 } // namespace ws
 } // namespace web
 } // namespace espurna
@@ -275,6 +489,22 @@ void wsPost(const ws_on_send_callback_f& cb) {
     wsPost(0, cb);
 }
 
+void wsPostManual(uint32_t client_id, ws_on_send_callback_f&& cb) {
+    _ws_queue.emplace(client_id, std::move(cb), WsPostponedCallbacks::Mode::ManualAll);
+}
+
+void wsPostManual(ws_on_send_callback_f&& cb) {
+    wsPostManual(0, std::move(cb));
+}
+
+void wsPostManual(uint32_t client_id, const ws_on_send_callback_f& cb) {
+    _ws_queue.emplace(client_id, cb, WsPostponedCallbacks::Mode::ManualAll);
+}
+
+void wsPostManual(const ws_on_send_callback_f& cb) {
+    wsPostManual(0, cb);
+}
+
 namespace {
 
 template <typename T>
@@ -314,6 +544,38 @@ void wsPostSequence(uint32_t client_id, const ws_on_send_callback_list_t& cbs) {
 
 void wsPostSequence(const ws_on_send_callback_list_t& cbs) {
     wsPostSequence(0, cbs);
+}
+
+void wsPostManualAll(uint32_t client_id, ws_on_send_callback_list_t&& cbs) {
+    _wsPostCallbacks(client_id, std::move(cbs), WsPostponedCallbacks::Mode::ManualAll);
+}
+
+void wsPostManualAll(ws_on_send_callback_list_t&& cbs) {
+    wsPostManualAll(0, std::move(cbs));
+}
+
+void wsPostManualAll(uint32_t client_id, const ws_on_send_callback_list_t& cbs) {
+    _wsPostCallbacks(client_id, cbs, WsPostponedCallbacks::Mode::ManualAll);
+}
+
+void wsPostManualAll(const ws_on_send_callback_list_t& cbs) {
+    wsPostManualAll(0, cbs);
+}
+
+void wsPostManualSequence(uint32_t client_id, ws_on_send_callback_list_t&& cbs) {
+    _wsPostCallbacks(client_id, std::move(cbs), WsPostponedCallbacks::Mode::ManualSequence);
+}
+
+void wsPostManualSequence(ws_on_send_callback_list_t&& cbs) {
+    wsPostManualSequence(0, std::move(cbs));
+}
+
+void wsPostManualSequence(uint32_t client_id, const ws_on_send_callback_list_t& cbs) {
+    _wsPostCallbacks(client_id, cbs, WsPostponedCallbacks::Mode::ManualSequence);
+}
+
+void wsPostManualSequence(const ws_on_send_callback_list_t& cbs) {
+    wsPostManualSequence(0, cbs);
 }
 
 // -----------------------------------------------------------------------------
@@ -443,78 +705,13 @@ bool _wsAuth(AsyncWebSocketClient* client) {
 
 namespace {
 
-struct WsDebug {
-    static constexpr int Limit { 8 };
-
-    WsDebug() = default;
-    WsDebug(const WsDebug&) = delete;
-    WsDebug(WsDebug&&) = delete;
-
-    void clear() {
-        _buffer = String();
-        _count = 0;
-    }
-
-    void operator()(const DebugPrefix& prefix, espurna::StringView message) {
-        if (wsConnected()) {
-            if ((_count > Limit) && !send()) {
-                return;
-            }
-
-            const auto prefixLen = debugPrefixLength(prefix);
-            _buffer.reserve(_buffer.length()
-                + prefixLen + message.length());
-
-            if (prefixLen) {
-                _buffer.concat(prefix, prefixLen);
-            }
-            _buffer.concat(message.data(), message.length());
-
-            ++_count;
-        }
-    }
-
-    bool send(bool connected) {
-        if (!connected && (_count || _buffer.length())) {
-            clear();
-            return false;
-        }
-
-        // ref: http://arduinojson.org/v5/assistant/ for pre-allocation math
-        if (_count && connected) {
-            DynamicJsonBuffer buffer((2 * JSON_OBJECT_SIZE(1)) + JSON_ARRAY_SIZE(1));
-
-            JsonObject& root = buffer.createObject();
-            JsonObject& log = root.createNestedObject("log");
-
-            JsonArray& msg = log.createNestedArray("msg");
-            msg.add(_buffer.c_str());
-
-            wsSend(root);
-            clear();
-
-            return true;
-        }
-
-        return false;
-    }
-
-    bool send() {
-        return send(wsConnected());
-    }
-
-private:
-    String _buffer;
-    int _count { 0 };
-};
-
-WsDebug _ws_debug;
+espurna::web::ws::PostponedDebug _ws_debug;
 
 } // namespace
 
 bool wsDebugSend(const DebugPrefix& prefix, espurna::StringView message) {
     if ((wifiConnected() || wifiApStations()) && wsConnected()) {
-        _ws_debug(prefix, message);
+        _ws_debug.buffer(prefix, message);
         return true;
     }
 
@@ -797,7 +994,10 @@ void _wsHandlePostponedCallbacks(bool connected) {
         return;
     }
 
-    if (_ws_queue.empty()) return;
+    if (_ws_queue.empty()) {
+        return;
+    }
+
     auto& callbacks = _ws_queue.front();
 
     // avoid stalling forever when can't send anything
@@ -834,13 +1034,25 @@ void _wsHandlePostponedCallbacks(bool connected) {
     DynamicJsonBuffer jsonBuffer(WsQueueJsonBufferSize);
     JsonObject& root = jsonBuffer.createObject();
 
+    using Mode = decltype(callbacks.mode());
+
     callbacks.send(root);
-    if (callbacks.id()) {
-        wsSend(callbacks.id(), root);
-    } else {
-        wsSend(root);
+
+    switch (callbacks.mode()) {
+    case Mode::ManualAll:
+    case Mode::ManualSequence:
+        break;
+
+    case Mode::All:
+    case Mode::Sequence:
+        if (callbacks.id()) {
+            wsSend(callbacks.id(), root);
+        } else {
+            wsSend(root);
+        }
+        yield();
+        break;
     }
-    yield();
 
     if (callbacks.done()) {
         _ws_queue.pop();
@@ -848,12 +1060,9 @@ void _wsHandlePostponedCallbacks(bool connected) {
 }
 
 void _wsLoop() {
-    const bool connected = wsConnected();
+    const auto connected = wsConnected();
     _wsDoUpdate(connected);
     _wsHandlePostponedCallbacks(connected);
-    #if DEBUG_WEB_SUPPORT
-        _ws_debug.send(connected);
-    #endif
 }
 
 } // namespace
@@ -865,11 +1074,10 @@ void _wsLoop() {
 WsClientInfo wsClientInfo(uint32_t client_id) {
     auto* client = _ws.client(client_id);
 
-    WsClientInfo out;
-    out.connected = (client != nullptr);
-    out.stalled = out.connected && client->queueIsFull();
-
-    return out;
+    return WsClientInfo{
+        .connected = (client != nullptr),
+        .stalled = (client != nullptr) && client->queueIsFull(),
+    };
 }
 
 bool wsConnected() {

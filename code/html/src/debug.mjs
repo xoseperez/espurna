@@ -84,13 +84,8 @@ function listeners() {
         "log": (_, value) => {
             send("{}");
 
-            const messages = value["msg"];
-            if (messages === undefined) {
-                return;
-            }
-
-            for (let msg of messages) {
-                CmdOutput.push(msg);
+            for (const message of value) {
+                CmdOutput.push(message);
             }
 
             CmdOutput.follow();
