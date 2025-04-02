@@ -99,10 +99,10 @@ bool wsDebugSend(const DebugPrefix&, espurna::StringView);
 // There are two policies set on how to send the data:
 // - All will use the same JsonObject for each callback
 // - Sequence will use a different JsonObject for each callback
-// - Manual works similarly to All & Sequence
+// - Manual works only with a single callback object
 //   However, it is up to the user to call `wsSend()`
 //
-// `wsPost()` & `wsPostManual()` callback uses *All mode by default
+// `wsPost()` callback uses *All mode by default
 // (however, it is not currently possible to amend the created list object)
 //
 // WARNING: callback lists are taken by reference! make sure that list is ether:
@@ -110,35 +110,33 @@ bool wsDebugSend(const DebugPrefix&, espurna::StringView);
 // - persistent and will be available after the current block ends (global, heap-allocated, etc.)
 //   de-allocation is not expected e.g. referenced struct from `wsRegister()` is never destroyed
 
+void wsPost(uint32_t client_id, ws_on_send_callback_f&& cb, size_t buffer_hint);
 void wsPost(uint32_t client_id, ws_on_send_callback_f&& cb);
 void wsPost(ws_on_send_callback_f&& cb);
+
+void wsPost(uint32_t client_id, const ws_on_send_callback_f& cb, size_t buffer_hint);
 void wsPost(uint32_t client_id, const ws_on_send_callback_f& cb);
 void wsPost(const ws_on_send_callback_f& cb);
 
+void wsPostManual(uint32_t client_id, ws_on_send_callback_f&& cb, size_t buffer_hint);
+void wsPostManual(uint32_t client_id, ws_on_send_callback_f&& cb);
+void wsPostManual(ws_on_send_callback_f&& cb);
+
+void wsPostManual(uint32_t client_id, const ws_on_send_callback_f& cb, size_t buffer_hint);
+void wsPostManual(uint32_t client_id, const ws_on_send_callback_f& cb);
+void wsPostManual(const ws_on_send_callback_f& cb);
+
 void wsPostAll(uint32_t client_id, ws_on_send_callback_list_t&& cbs);
 void wsPostAll(ws_on_send_callback_list_t&& cbs);
+
 void wsPostAll(uint32_t client_id, const ws_on_send_callback_list_t& cbs);
 void wsPostAll(const ws_on_send_callback_list_t& cbs);
 
 void wsPostSequence(uint32_t client_id, ws_on_send_callback_list_t&& cbs);
 void wsPostSequence(ws_on_send_callback_list_t&& cbs);
+
 void wsPostSequence(uint32_t client_id, const ws_on_send_callback_list_t& cbs);
 void wsPostSequence(const ws_on_send_callback_list_t& cbs);
-
-void wsPostManual(uint32_t client_id, ws_on_send_callback_f&& cb);
-void wsPostManual(ws_on_send_callback_f&& cb);
-void wsPostManual(uint32_t client_id, const ws_on_send_callback_f& cb);
-void wsPostManual(ws_on_send_callback_f& cb);
-
-void wsPostManualAll(uint32_t client_id, ws_on_send_callback_list_t&& cbs);
-void wsPostManualAll(ws_on_send_callback_list_t&& cbs);
-void wsPostManualAll(uint32_t client_id, const ws_on_send_callback_list_t& cbs);
-void wsPostManualAll(ws_on_send_callback_list_t& cbs);
-
-void wsPostManualSequence(uint32_t client_id, ws_on_send_callback_list_t&& cs);
-void wsPostManualSequence(ws_on_send_callback_list_t&& cs);
-void wsPostManualSequence(uint32_t client_id, const ws_on_send_callback_list_t& cs);
-void wsPostManualSequence(ws_on_send_callback_list_t& cbs);
 
 // Immmediatly try to serialize and send JsonObject&
 // May silently fail when network is busy sending previous requests, or there's not enough RAM

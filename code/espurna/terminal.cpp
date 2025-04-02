@@ -551,6 +551,7 @@ namespace web {
 
 STRING_VIEW_INLINE(Prefix, "cmd");
 
+constexpr auto BufferHint = espurna::web::ws::InplaceLog::BufferHint;
 using Output = PrintLine<espurna::web::ws::InplaceLog>;
 
 struct Command {
@@ -586,7 +587,8 @@ void onAction(uint32_t client_id, const char* action, JsonObject& data) {
             [shared](JsonObject& root) {
                 Output out(root, shared->id);
                 api_find_and_call(shared->line, out);
-            });
+            },
+            BufferHint);
     });
 }
 

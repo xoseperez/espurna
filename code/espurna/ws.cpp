@@ -198,14 +198,14 @@ bool PostponedPayload::post(bool connected) {
 
     if (connected && !_pending && _count) {
         auto flag = make_flag();
-
-        wsPost(_id, [flag](JsonObject& root) {
+        auto cb = [flag](JsonObject& root) {
             if (flag->pending()) {
                 auto& log = root.createNestedArray("log");
                 log.add(flag->data());
             }
-        });
+        };
 
+        wsPost(_id, std::move(cb), BufferHint);
         return true;
     }
 
@@ -471,48 +471,122 @@ AsyncWebSocket _ws("/ws");
 std::queue<WsPostponedCallbacks> _ws_queue;
 ws_callbacks_t _ws_callbacks;
 
+template <typename T>
+void _wsPostCallbacks(uint32_t client_id, T&& cbs) {
+    _ws_queue.emplace(client_id, WsPostponedCallbacks::Storage(std::forward<T>(cbs)));
+}
+
+template <typename T>
+void _wsPostCallbacks(uint32_t client_id, T&& cbs, WsPostponedCallbacks::Mode mode) {
+    _ws_queue.emplace(client_id, WsPostponedCallbacks::Storage(std::forward<T>(cbs)), mode);
+}
+
+void _wsBufferHint(size_t buffer_hint) {
+    _ws_queue.back().buffer_hint(buffer_hint);
+}
+
 } // namespace
 
+constexpr size_t WsPostponedCallbacks::DefaultBufferHint;
+
+void WsPostponedCallbacks::Storage::Destructor::operator()(ws_on_send_callback_f& func) const {
+    func.~ws_on_send_callback_f();
+}
+
+void WsPostponedCallbacks::Storage::Destructor::operator()(WsPostponedCallbacks::Storage::Pointer& ptr) const {
+}
+
+void WsPostponedCallbacks::Storage::Destructor::operator()(WsPostponedCallbacks::Storage::Instance& obj) const {
+    obj.obj.~ws_on_send_callback_list_t();
+}
+
+WsPostponedCallbacks::Storage::Impl::Impl() :
+    empty{}
+{}
+
+WsPostponedCallbacks::Storage::Impl::~Impl() {
+}
+
+WsPostponedCallbacks::Storage::Move::Move(Storage& storage) :
+    _storage(storage)
+{}
+
+void WsPostponedCallbacks::Storage::Move::operator()(ws_on_send_callback_f& func) const {
+    ::new (&_storage._impl.callback) ws_on_send_callback_f(std::move(func));
+}
+
+void WsPostponedCallbacks::Storage::Move::operator()(WsPostponedCallbacks::Storage::Pointer& ptr) const {
+    ::new (&_storage._impl.pointer) WsPostponedCallbacks::Storage::Pointer(std::move(ptr));
+    ptr.ptr = nullptr;
+    ptr.offset = 0;
+}
+
+void WsPostponedCallbacks::Storage::Move::operator()(WsPostponedCallbacks::Storage::Instance& obj) const {
+    ::new (&_storage._impl.instance) WsPostponedCallbacks::Storage::Instance(std::move(obj));
+    obj.offset = 0;
+}
+
+WsPostponedCallbacks::Storage::~Storage() {
+    visit(Destructor());
+}
+
+WsPostponedCallbacks::Storage::Storage(Storage&& other) noexcept :
+    _type(other._type)
+{
+    other.visit(Move(*this));
+}
+
+void wsPost(uint32_t client_id, ws_on_send_callback_f&& cb, size_t buffer_hint) {
+    wsPost(client_id, std::move(cb));
+    _wsBufferHint(buffer_hint);
+}
+
 void wsPost(uint32_t client_id, ws_on_send_callback_f&& cb) {
-    _ws_queue.emplace(client_id, std::move(cb));
+    _wsPostCallbacks(client_id, std::move(cb));
 }
 
 void wsPost(ws_on_send_callback_f&& cb) {
-    wsPost(0, std::move(cb));
+    _wsPostCallbacks(0, std::move(cb));
+}
+
+void wsPost(uint32_t client_id, const ws_on_send_callback_f& cb, size_t buffer_hint) {
+    wsPost(client_id, cb);
+    _wsBufferHint(buffer_hint);
 }
 
 void wsPost(uint32_t client_id, const ws_on_send_callback_f& cb) {
-    _ws_queue.emplace(client_id, cb);
+    _wsPostCallbacks(client_id, cb);
 }
 
 void wsPost(const ws_on_send_callback_f& cb) {
-    wsPost(0, cb);
+    _wsPostCallbacks(0, cb);
 }
 
 void wsPostManual(uint32_t client_id, ws_on_send_callback_f&& cb) {
-    _ws_queue.emplace(client_id, std::move(cb), WsPostponedCallbacks::Mode::ManualAll);
+    _wsPostCallbacks(client_id, std::move(cb), WsPostponedCallbacks::Mode::Manual);
 }
 
 void wsPostManual(ws_on_send_callback_f&& cb) {
     wsPostManual(0, std::move(cb));
 }
 
+void wsPostManual(uint32_t client_id, ws_on_send_callback_f&& cb, size_t buffer_hint) {
+    wsPostManual(client_id, std::move(cb));
+    _wsBufferHint(buffer_hint);
+}
+
 void wsPostManual(uint32_t client_id, const ws_on_send_callback_f& cb) {
-    _ws_queue.emplace(client_id, cb, WsPostponedCallbacks::Mode::ManualAll);
+    _wsPostCallbacks(client_id, cb, WsPostponedCallbacks::Mode::Manual);
 }
 
 void wsPostManual(const ws_on_send_callback_f& cb) {
     wsPostManual(0, cb);
 }
 
-namespace {
-
-template <typename T>
-void _wsPostCallbacks(uint32_t client_id, T&& cbs, WsPostponedCallbacks::Mode mode) {
-    _ws_queue.emplace(client_id, std::forward<T>(cbs), mode);
+void wsPostManual(uint32_t client_id, const ws_on_send_callback_f& cb, size_t buffer_hint) {
+    wsPostManual(client_id, cb);
+    _wsBufferHint(buffer_hint);
 }
-
-} // namespace
 
 void wsPostAll(uint32_t client_id, ws_on_send_callback_list_t&& cbs) {
     _wsPostCallbacks(client_id, std::move(cbs), WsPostponedCallbacks::Mode::All);
@@ -544,38 +618,6 @@ void wsPostSequence(uint32_t client_id, const ws_on_send_callback_list_t& cbs) {
 
 void wsPostSequence(const ws_on_send_callback_list_t& cbs) {
     wsPostSequence(0, cbs);
-}
-
-void wsPostManualAll(uint32_t client_id, ws_on_send_callback_list_t&& cbs) {
-    _wsPostCallbacks(client_id, std::move(cbs), WsPostponedCallbacks::Mode::ManualAll);
-}
-
-void wsPostManualAll(ws_on_send_callback_list_t&& cbs) {
-    wsPostManualAll(0, std::move(cbs));
-}
-
-void wsPostManualAll(uint32_t client_id, const ws_on_send_callback_list_t& cbs) {
-    _wsPostCallbacks(client_id, cbs, WsPostponedCallbacks::Mode::ManualAll);
-}
-
-void wsPostManualAll(const ws_on_send_callback_list_t& cbs) {
-    wsPostManualAll(0, cbs);
-}
-
-void wsPostManualSequence(uint32_t client_id, ws_on_send_callback_list_t&& cbs) {
-    _wsPostCallbacks(client_id, std::move(cbs), WsPostponedCallbacks::Mode::ManualSequence);
-}
-
-void wsPostManualSequence(ws_on_send_callback_list_t&& cbs) {
-    wsPostManualSequence(0, std::move(cbs));
-}
-
-void wsPostManualSequence(uint32_t client_id, const ws_on_send_callback_list_t& cbs) {
-    _wsPostCallbacks(client_id, cbs, WsPostponedCallbacks::Mode::ManualSequence);
-}
-
-void wsPostManualSequence(const ws_on_send_callback_list_t& cbs) {
-    wsPostManualSequence(0, cbs);
 }
 
 // -----------------------------------------------------------------------------
@@ -880,7 +922,7 @@ bool _wsOnKeyCheck(espurna::StringView key, const JsonVariant&) {
 }
 
 void _wsOnConnected(JsonObject& root) {
-    root[F("webMode")] = WEB_MODE_NORMAL;
+    root["webMode"] = WEB_MODE_NORMAL;
 
     const auto info = buildInfo();
     root[F("sdk")] = info.sdk.base.c_str();
@@ -917,10 +959,9 @@ void _wsConnected(uint32_t client_id) {
         : false;
 
     if (changePassword) {
-        DynamicJsonBuffer jsonBuffer(32);
-        JsonObject& root = jsonBuffer.createObject();
-        root[F("webMode")] = WEB_MODE_PASSWORD;
-        wsSend(client_id, root);
+        wsPost(client_id, [](JsonObject& root) {
+            root["webMode"] = WEB_MODE_PASSWORD;
+        }, JSON_OBJECT_SIZE(1));
         return;
     }
 
@@ -1005,7 +1046,7 @@ void _wsHandlePostponedCallbacks(bool connected) {
     using CpuSeconds = std::chrono::duration<TimeSource::rep>;
 
     constexpr CpuSeconds WsQueueTimeoutClockCycles { 10 };
-    if (TimeSource::now() - callbacks.timestamp() > WsQueueTimeoutClockCycles) {
+    if (TimeSource::now() - callbacks.start() > WsQueueTimeoutClockCycles) {
         _ws_queue.pop();
         return;
     }
@@ -1030,17 +1071,15 @@ void _wsHandlePostponedCallbacks(bool connected) {
     // XXX: block allocation will try to create *2 next time,
     // likely failing and causing wsSend to reference empty objects
     // XXX: arduinojson6 will not do this, but we may need to use per-callback buffers
-    constexpr size_t WsQueueJsonBufferSize = 3192;
-    DynamicJsonBuffer jsonBuffer(WsQueueJsonBufferSize);
+    DynamicJsonBuffer jsonBuffer(callbacks.buffer_hint());
     JsonObject& root = jsonBuffer.createObject();
-
-    using Mode = decltype(callbacks.mode());
 
     callbacks.send(root);
 
+    using Mode = decltype(callbacks.mode());
+
     switch (callbacks.mode()) {
-    case Mode::ManualAll:
-    case Mode::ManualSequence:
+    case Mode::Manual:
         break;
 
     case Mode::All:
@@ -1114,9 +1153,11 @@ void wsSend(JsonObject& root) {
 
 void wsSend(uint32_t client_id, JsonObject& root) {
     AsyncWebSocketClient* client = _ws.client(client_id);
-    if (client == nullptr) return;
+    if (client == nullptr) {
+        return;
+    }
 
-    size_t len = root.measureLength();
+    const auto len = root.measureLength();
     AsyncWebSocketMessageBuffer* buffer = _ws.makeBuffer(len);
 
     if (buffer) {
@@ -1151,7 +1192,7 @@ void wsSend(uint32_t client_id, ws_on_send_callback_f callback) {
     wsSend(client_id, root);
 }
 
-void wsSend(uint32_t client_id, const char * payload) {
+void wsSend(uint32_t client_id, const char* payload) {
     _ws.text(client_id, payload);
 }
 

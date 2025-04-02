@@ -148,6 +148,7 @@ private:
 struct PostponedDebug;
 
 struct PostponedPayload {
+    static constexpr size_t BufferHint = size_t{ JSON_OBJECT_SIZE(1) + JSON_ARRAY_SIZE(1) };
     static constexpr size_t CountMax { 8 };
 
     struct Flag {
@@ -211,6 +212,8 @@ struct PostponedDebug : public PostponedPayload {
 struct InplaceLog;
 
 struct InplacePayload {
+    static constexpr size_t BufferHint = size_t{ JSON_OBJECT_SIZE(1) + JSON_ARRAY_SIZE(1) };
+
     using Clock = espurna::time::CoreClock;
     using Send = std::function<void(JsonObject&, String&)>;
 
