@@ -42,6 +42,9 @@ namespace ws {
 
 class PostponedCallback {
 public:
+    using Callback = OnSend;
+    using Container = Callbacks::OnSendContainer;
+
     struct Storage {
         enum class Type {
             Empty,
@@ -49,8 +52,6 @@ public:
             Pointer,
             Instance,
         };
-
-        using Callback = ws_on_send_callback_f;
 
         struct Pointer {
             Pointer(const Pointer&) = default;
@@ -63,16 +64,16 @@ public:
                 other.offset = 0;
             }
 
-            explicit Pointer(const ws_on_send_callback_list_t* ptr) :
+            explicit Pointer(const Container* ptr) :
                 ptr(ptr)
             {}
 
-            const ws_on_send_callback_list_t* ptr;
+            const Container* ptr;
             size_t offset{};
         };
 
         struct Instance {
-            explicit Instance(ws_on_send_callback_list_t&& obj) :
+            explicit Instance(Container&& obj) :
                 obj(std::move(obj))
             {}
 
@@ -83,7 +84,7 @@ public:
                 other.offset = 0;
             }
 
-            ws_on_send_callback_list_t obj;
+            Container obj;
             size_t offset{};
         };
 
@@ -97,12 +98,12 @@ public:
             _type(Type::Callback)
         {}
 
-        explicit Storage(const ws_on_send_callback_list_t& ref) :
+        explicit Storage(const Container& ref) :
             _impl(ref),
             _type(Type::Pointer)
         {}
 
-        explicit Storage(ws_on_send_callback_list_t&& obj) :
+        explicit Storage(Container&& obj) :
             _impl(std::move(obj)),
             _type(Type::Instance)
         {}
@@ -160,7 +161,7 @@ public:
 
     private:
         struct Destructor {
-            void operator()(ws_on_send_callback_f&) const;
+            void operator()(Callback&) const;
             void operator()(Storage::Pointer&) const;
             void operator()(Storage::Instance&) const;
         };
@@ -168,7 +169,7 @@ public:
         struct Move {
             explicit Move(Storage&);
 
-            void operator()(ws_on_send_callback_f&) const;
+            void operator()(Callback&) const;
             void operator()(Storage::Pointer&) const;
             void operator()(Storage::Instance&) const;
 
@@ -180,11 +181,11 @@ public:
             Impl();
             ~Impl();
 
-            explicit Impl(const ws_on_send_callback_f& callback) :
+            explicit Impl(const Callback& callback) :
                 callback(callback)
             {}
 
-            explicit Impl(ws_on_send_callback_f&& callback) :
+            explicit Impl(Callback&& callback) :
                 callback(std::move(callback))
             {}
 
@@ -192,11 +193,11 @@ public:
                 pointer(ptr)
             {}
 
-            explicit Impl(const ws_on_send_callback_list_t& ref) :
+            explicit Impl(const Container& ref) :
                 pointer(&ref)
             {}
 
-            explicit Impl(ws_on_send_callback_list_t&& obj) :
+            explicit Impl(Container&& obj) :
                 instance(std::move(obj))
             {}
 
@@ -219,7 +220,7 @@ public:
     };
 
     struct Done {
-        bool operator()(const ws_on_send_callback_f&) const {
+        bool operator()(const Callback&) const {
             return true;
         }
 
@@ -237,7 +238,7 @@ public:
             _root(root)
         {}
 
-        void operator()(const ws_on_send_callback_f& func) const {
+        void operator()(const Callback& func) const {
             func(_root);
         }
 
@@ -264,7 +265,7 @@ public:
             _root(root)
         {}
 
-        void operator()(const ws_on_send_callback_f& func) const {
+        void operator()(const Callback& func) const {
             func(_root);
         }
 

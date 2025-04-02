@@ -1481,7 +1481,7 @@ bool onKeyCheck(StringView key, const JsonVariant& value) {
 void init() {
     wsRegister()
         .onConnected(onConnected)
-        .onKeyCheck(onKeyCheck, ws_callbacks_t::Prepend{});
+        .onKeyCheck(onKeyCheck, ::espurna::web::ws::Callbacks::Prepend{});
 }
 
 } // namespace web

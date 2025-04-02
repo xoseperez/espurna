@@ -31,63 +31,73 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 // - on_action will be ran whenever we receive special JSON 'action' payload
 // - on_keycheck will be used to determine if we can handle specific settings keys
 
-using ws_on_send_callback_f = std::function<void(JsonObject& root)>;
-using ws_on_action_callback_f = std::function<void(uint32_t client_id, const char* action, JsonObject& data)>;
-using ws_on_keycheck_callback_f = std::function<bool(espurna::StringView key, const JsonVariant& value)>;
+namespace espurna {
+namespace web {
+namespace ws {
 
-// TODO: use iterators as inputs for Post(), avoid depending on vector / any specific container
-using ws_on_send_callback_list_t = std::vector<ws_on_send_callback_f>;
-using ws_on_action_callback_list_t = std::vector<ws_on_action_callback_f>;
-using ws_on_keycheck_callback_list_t = std::vector<ws_on_keycheck_callback_f>;
+using OnSend = std::function<void(JsonObject& root)>;
+using OnAction = std::function<void(uint32_t client_id, const char* action, JsonObject& data)>;
+using OnKeyCheck = std::function<bool(espurna::StringView key, const JsonVariant& value)>;
 
-struct ws_callbacks_t {
+struct Callbacks {
     struct Prepend {
     };
 
     struct Append {
     };
 
-    using on_send_f = void(*)(JsonObject&);
-    ws_callbacks_t& onVisible(on_send_f, Append);
-    ws_callbacks_t& onVisible(on_send_f, Prepend);
-    ws_callbacks_t& onVisible(on_send_f f) {
+    using OnSend = void(*)(JsonObject&);
+
+    Callbacks& onVisible(OnSend, Append);
+    Callbacks& onVisible(OnSend, Prepend);
+    Callbacks& onVisible(OnSend f) {
         return onVisible(f, Append{});
     }
 
-    ws_callbacks_t& onConnected(on_send_f, Append);
-    ws_callbacks_t& onConnected(on_send_f, Prepend);
-    ws_callbacks_t& onConnected(on_send_f f) {
+    Callbacks& onConnected(OnSend, Append);
+    Callbacks& onConnected(OnSend, Prepend);
+    Callbacks& onConnected(OnSend f) {
         return onConnected(f, Append{});
     }
 
-    ws_callbacks_t& onData(on_send_f, Append);
-    ws_callbacks_t& onData(on_send_f, Prepend);
-    ws_callbacks_t& onData(on_send_f f) {
+    Callbacks& onData(OnSend, Append);
+    Callbacks& onData(OnSend, Prepend);
+    Callbacks& onData(OnSend f) {
         return onData(f, Append{});
     }
 
-    using on_action_f = void(*)(uint32_t, const char*, JsonObject&);
-    ws_callbacks_t& onAction(on_action_f, Append);
-    ws_callbacks_t& onAction(on_action_f, Prepend);
-    ws_callbacks_t& onAction(on_action_f f) {
+    using OnAction = void(*)(uint32_t, const char*, JsonObject&);
+
+    Callbacks& onAction(OnAction, Append);
+    Callbacks& onAction(OnAction, Prepend);
+    Callbacks& onAction(OnAction f) {
         return onAction(f, Append{});
     }
 
-    using on_keycheck_f = bool(*)(espurna::StringView, const JsonVariant&);
-    ws_callbacks_t& onKeyCheck(on_keycheck_f, Append);
-    ws_callbacks_t& onKeyCheck(on_keycheck_f, Prepend);
+    using OnKeyCheck = bool(*)(espurna::StringView, const JsonVariant&);
 
-    ws_callbacks_t& onKeyCheck(on_keycheck_f f) {
+    Callbacks& onKeyCheck(OnKeyCheck, Append);
+    Callbacks& onKeyCheck(OnKeyCheck, Prepend);
+
+    Callbacks& onKeyCheck(OnKeyCheck f) {
         return onKeyCheck(f, Append{});
     }
 
-    ws_on_send_callback_list_t on_visible;
-    ws_on_send_callback_list_t on_connected;
-    ws_on_send_callback_list_t on_data;
+    using OnSendContainer = std::vector<OnSend>;
+    using OnActionContainer = std::vector<OnAction>;
+    using OnKeyCheckContainer = std::vector<OnKeyCheck>;
 
-    ws_on_action_callback_list_t on_action;
-    ws_on_keycheck_callback_list_t on_keycheck;
+    OnSendContainer on_visible;
+    OnSendContainer on_connected;
+    OnSendContainer on_data;
+
+    OnActionContainer on_action;
+    OnKeyCheckContainer on_keycheck;
 };
+
+} // namespace ws
+} // namespace web
+} // namespace espurna
 
 // Postponed debug messages. best-effort, will not be re-scheduled when ws queue is full
 
@@ -110,33 +120,33 @@ bool wsDebugSend(const DebugPrefix&, espurna::StringView);
 // - persistent and will be available after the current block ends (global, heap-allocated, etc.)
 //   de-allocation is not expected e.g. referenced struct from `wsRegister()` is never destroyed
 
-void wsPost(uint32_t client_id, ws_on_send_callback_f&& cb, size_t buffer_hint);
-void wsPost(uint32_t client_id, ws_on_send_callback_f&& cb);
-void wsPost(ws_on_send_callback_f&& cb);
+void wsPost(uint32_t client_id, espurna::web::ws::OnSend&& cb, size_t buffer_hint);
+void wsPost(uint32_t client_id, espurna::web::ws::OnSend&& cb);
+void wsPost(espurna::web::ws::OnSend&& cb);
 
-void wsPost(uint32_t client_id, const ws_on_send_callback_f& cb, size_t buffer_hint);
-void wsPost(uint32_t client_id, const ws_on_send_callback_f& cb);
-void wsPost(const ws_on_send_callback_f& cb);
+void wsPost(uint32_t client_id, const espurna::web::ws::OnSend& cb, size_t buffer_hint);
+void wsPost(uint32_t client_id, const espurna::web::ws::OnSend& cb);
+void wsPost(const espurna::web::ws::OnSend& cb);
 
-void wsPostManual(uint32_t client_id, ws_on_send_callback_f&& cb, size_t buffer_hint);
-void wsPostManual(uint32_t client_id, ws_on_send_callback_f&& cb);
-void wsPostManual(ws_on_send_callback_f&& cb);
+void wsPostManual(uint32_t client_id, espurna::web::ws::OnSend&& cb, size_t buffer_hint);
+void wsPostManual(uint32_t client_id, espurna::web::ws::OnSend&& cb);
+void wsPostManual(espurna::web::ws::OnSend&& cb);
 
-void wsPostManual(uint32_t client_id, const ws_on_send_callback_f& cb, size_t buffer_hint);
-void wsPostManual(uint32_t client_id, const ws_on_send_callback_f& cb);
-void wsPostManual(const ws_on_send_callback_f& cb);
+void wsPostManual(uint32_t client_id, const espurna::web::ws::OnSend& cb, size_t buffer_hint);
+void wsPostManual(uint32_t client_id, const espurna::web::ws::OnSend& cb);
+void wsPostManual(const espurna::web::ws::OnSend& cb);
 
-void wsPostAll(uint32_t client_id, ws_on_send_callback_list_t&& cbs);
-void wsPostAll(ws_on_send_callback_list_t&& cbs);
+void wsPostAll(uint32_t client_id, espurna::web::ws::Callbacks::OnSendContainer&& cbs);
+void wsPostAll(espurna::web::ws::Callbacks::OnSendContainer&& cbs);
 
-void wsPostAll(uint32_t client_id, const ws_on_send_callback_list_t& cbs);
-void wsPostAll(const ws_on_send_callback_list_t& cbs);
+void wsPostAll(uint32_t client_id, const espurna::web::ws::Callbacks::OnSendContainer& cbs);
+void wsPostAll(const espurna::web::ws::Callbacks::OnSendContainer& cbs);
 
-void wsPostSequence(uint32_t client_id, ws_on_send_callback_list_t&& cbs);
-void wsPostSequence(ws_on_send_callback_list_t&& cbs);
+void wsPostSequence(uint32_t client_id, espurna::web::ws::Callbacks::OnSendContainer&& cbs);
+void wsPostSequence(espurna::web::ws::Callbacks::OnSendContainer&& cbs);
 
-void wsPostSequence(uint32_t client_id, const ws_on_send_callback_list_t& cbs);
-void wsPostSequence(const ws_on_send_callback_list_t& cbs);
+void wsPostSequence(uint32_t client_id, const espurna::web::ws::Callbacks::OnSendContainer& cbs);
+void wsPostSequence(const espurna::web::ws::Callbacks::OnSendContainer& cbs);
 
 // Immmediatly try to serialize and send JsonObject&
 // May silently fail when network is busy sending previous requests, or there's not enough RAM
@@ -145,7 +155,7 @@ void wsSend(JsonObject& root);
 void wsSend(uint32_t client_id, JsonObject& root);
 
 void wsSend(JsonObject& root);
-void wsSend(ws_on_send_callback_f callback);
+void wsSend(espurna::web::ws::OnSend callback);
 void wsSend(const char* data);
 
 // Check if any or specific client_id is connected
@@ -168,5 +178,5 @@ void wsPayloadModule(JsonObject&, espurna::StringView);
 // Access to our module-specific lifetime callbacks.
 // Expected usage is through the on() methods
 
-ws_callbacks_t& wsRegister();
+espurna::web::ws::Callbacks& wsRegister();
 void wsSetup();
