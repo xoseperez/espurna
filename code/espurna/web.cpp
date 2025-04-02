@@ -71,6 +71,8 @@ namespace {
 
 namespace build {
 
+STRING_VIEW_INLINE(WebRemoteDomain, WEB_REMOTE_DOMAIN);
+
 constexpr auto DefaultPort = uint16_t{
 #if WEB_SSL_ENABLED
         443
@@ -96,17 +98,22 @@ namespace keys {
 
 STRING_VIEW_INLINE(Prefix, "web");
 
-STRING_VIEW_INLINE(Port, "webPort");
 STRING_VIEW_INLINE(AccessLog, "webAccessLog");
+STRING_VIEW_INLINE(Domain, "webDomain");
+STRING_VIEW_INLINE(Port, "webPort");
 
 } // namespace keys
 
-uint16_t port() {
-    return getSetting(keys::Port, build::port());
-}
-
 bool access_log() {
     return getSetting(keys::AccessLog, build::access_log());
+}
+
+String domain() {
+    return getSetting(keys::Domain, build::WebRemoteDomain);
+}
+
+uint16_t port() {
+    return getSetting(keys::Port, build::port());
 }
 
 } // namespace settings
@@ -366,6 +373,16 @@ void _onDiscover(AsyncWebServerRequest *request) {
     root.printTo(*response);
 
     request->send(response);
+}
+
+void _setupAccessControlHeaders() {
+    const auto domain = espurna::web::settings::domain();
+
+    auto& headers = DefaultHeaders::Instance();
+    headers.addHeader(F("Access-Control-Allow-Origin"), domain);
+    if (!domain.equals("*")) {
+        headers.addHeader(F("Access-Control-Allow-Credentials"), F("true"));
+    }
 }
 
 void _addSecurityHeaders(AsyncWebServerResponse* response) {
@@ -649,6 +666,10 @@ void _onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t i
 
 }
 
+void _onVisible(JsonObject& root) {
+    root[espurna::web::settings::keys::Port] = _port;
+}
+
 bool _onKeyCheck(espurna::StringView key, const JsonVariant& value) {
     return key.startsWith(espurna::web::settings::keys::Prefix);
 }
@@ -759,8 +780,12 @@ void webSetup() {
 
     DEBUG_MSG_P(PSTR("[WEBSERVER] Webserver running on port %hu\n"), _port);
 
+    // CORS setup
+    _setupAccessControlHeaders();
+
     // Handle ws server settings updates
     wsRegister()
+        .onVisible(_onVisible)
         .onKeyCheck(_onKeyCheck);
 }
 

@@ -42,15 +42,25 @@ STRING_VIEW_INLINE(SchemaKey, "schema");
 
 namespace build {
 
-constexpr uint16_t port() {
-    return WEB_PORT;
-}
-
 constexpr bool authentication() {
     return 1 == WS_AUTHENTICATION;
 }
 
 } // namespace build
+
+namespace settings {
+namespace keys {
+
+STRING_VIEW_INLINE(Prefix, "ws");
+STRING_VIEW_INLINE(Auth, "wsAuth");
+
+} // namespace keys
+
+bool authentication() {
+    return getSetting(keys::Auth, build::authentication());
+}
+
+} // namespace settings
 
 } // namespace
 
@@ -107,7 +117,7 @@ EnumerablePayload::EnumerablePayload(JsonObject& root, StringView name) :
     _root(root.createNestedObject(name))
 {}
 
-void EnumerablePayload::operator()(StringView name, settings::Iota iota, Check check, Pairs&& pairs) {
+void EnumerablePayload::operator()(StringView name, espurna::settings::Iota iota, Check check, Pairs&& pairs) {
     JsonArray& entries = _root.createNestedArray(name);
 
     if (_root.containsKey(internal::SchemaKey)) {
@@ -153,10 +163,6 @@ void EnumerableTypes::operator()(int value, StringView text) {
 // -----------------------------------------------------------------------------
 
 namespace {
-
-template <typename T>
-struct BaseTimeFormat {
-};
 
 void _wsUpdateAp(JsonObject& root) {
     IPAddress ip{};
@@ -244,6 +250,8 @@ void _wsDoUpdate(const bool connected) {
 // -----------------------------------------------------------------------------
 
 namespace {
+
+bool _ws_auth { espurna::web::ws::build::authentication() };
 
 AsyncWebSocket _ws("/ws");
 std::queue<WsPostponedCallbacks> _ws_queue;
@@ -668,7 +676,7 @@ void _wsParse(AsyncWebSocketClient* client, uint8_t* payload, size_t length) {
 }
 
 bool _wsOnKeyCheck(espurna::StringView key, const JsonVariant&) {
-    return key.startsWith(STRING_VIEW("ws"));
+    return key.startsWith(espurna::web::ws::settings::keys::Prefix);
 }
 
 void _wsOnConnected(JsonObject& root) {
@@ -696,9 +704,10 @@ void _wsOnConnected(JsonObject& root) {
 
     root[F("sketch_size")] = ESP.getSketchSize();
     root[F("free_size")] = ESP.getFreeSketchSpace();
+}
 
-    root[F("webPort")] = getSetting(F("webPort"), espurna::web::ws::build::port());
-    root[F("wsAuth")] = getSetting(F("wsAuth"), espurna::web::ws::build::authentication());
+void _wsOnVisible(JsonObject& root) {
+    root[espurna::web::ws::settings::keys::Auth] = _ws_auth ? 1 : 0;
 }
 
 void _wsConnected(uint32_t client_id) {
@@ -726,7 +735,7 @@ void _wsEvent(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType
     {
         const auto ip = client->remoteIP().toString();
 #ifndef NOWSAUTH
-        if (!_wsAuth(client)) {
+        if (_ws_auth && !_wsAuth(client)) {
             DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u session expired for %s\n"),
                 client->id(), ip.c_str());
             client->close();
@@ -936,21 +945,15 @@ void wsSend(uint32_t client_id, const char * payload) {
 }
 
 void wsSetup() {
-
     _ws.onEvent(_wsEvent);
     webServer().addHandler(&_ws);
 
-    // CORS
-    const String webDomain = getSetting(F("webDomain"), F(WEB_REMOTE_DOMAIN));
-    DefaultHeaders::Instance().addHeader(F("Access-Control-Allow-Origin"), webDomain);
-    if (!webDomain.equals("*")) {
-        DefaultHeaders::Instance().addHeader(F("Access-Control-Allow-Credentials"), F("true"));
-    }
-
+    _ws_auth = espurna::web::ws::settings::authentication();
     webServer().on("/auth", HTTP_GET, _onAuth);
 
     wsRegister()
         .onConnected(_wsOnConnected)
+        .onVisible(_wsOnVisible)
         .onKeyCheck(_wsOnKeyCheck);
 
     espurnaRegisterLoop(_wsLoop);
