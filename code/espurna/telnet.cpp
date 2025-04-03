@@ -783,8 +783,12 @@ struct Clients {
         return out > 0;
     }
 
+    bool write(const char* data, size_t len) {
+        return write(reinterpret_cast<const uint8_t*>(data), len);
+    }
+
     bool write(StringView data) {
-        return write(reinterpret_cast<const uint8_t*>(data.c_str()), data.length());
+        return write(data.data(), data.length());
     }
 
     void process() {
@@ -839,9 +843,12 @@ struct Clients<1> {
         return false;
     }
 
+    bool write(const char* data, size_t len) {
+        return write(reinterpret_cast<const uint8_t*>(data), len);
+    }
+
     bool write(StringView data) {
-        // TODO: `span`, convert type in-place for {ptr, len}
-        return write(reinterpret_cast<const uint8_t*>(data.c_str()), data.length());
+        return write(data.data(), data.length());
     }
 
     void process() {
@@ -893,8 +900,8 @@ bool connected() {
     return internal::clients.connected();
 }
 
-bool write(StringView data) {
-    return internal::clients.write(data);
+bool write(const char* data, size_t len) {
+    return internal::clients.write(data, len);
 }
 
 void flush() {
@@ -1158,15 +1165,15 @@ bool telnetConnected() {
     return espurna::telnet::connected();
 }
 
-bool telnetDebugSend(const DebugPrefix& prefix, espurna::StringView message) {
+bool telnetDebugSend(const DebugPrefix& prefix, const char* message, size_t length) {
     size_t out = 0;
 
     if (telnetConnected()) {
         if (debugWithPrefix(prefix)) {
-            out += espurna::telnet::write(prefix);
+            out += espurna::telnet::write(prefix, debugPrefixLength(prefix));
         }
 
-        out += espurna::telnet::write(message);
+        out += espurna::telnet::write(message, length);
     }
 
     return out > 0;

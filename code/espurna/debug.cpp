@@ -569,11 +569,11 @@ void send(const char* message, size_t len, Timestamp timestamp) {
 #endif
 
 #if DEBUG_TELNET_SUPPORT
-    pause = telnetDebugSend(prefix, StringView(message, len)) || pause;
+    pause = telnetDebugSend(prefix, message, len) || pause;
 #endif
 
 #if DEBUG_WEB_SUPPORT
-    pause = wsDebugSend(prefix, StringView(message, len)) || pause;
+    pause = wsDebugSend(prefix, message, len) || pause;
 #endif
 
 #if DEBUG_LOG_BUFFER_SUPPORT

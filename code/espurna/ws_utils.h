@@ -185,7 +185,7 @@ struct PostponedPayload {
     bool post(bool connected);
     bool post();
 
-    void buffer(StringView);
+    void buffer(const char*, size_t);
     bool connected() const;
 
     std::shared_ptr<Flag> make_flag();
@@ -206,7 +206,7 @@ private:
 };
 
 struct PostponedDebug : public PostponedPayload {
-    void buffer(const DebugPrefix&, espurna::StringView);
+    void buffer(const DebugPrefix&, const char*, size_t);
 };
 
 struct InplaceLog;

@@ -316,13 +316,13 @@ bool PostponedPayload::post() {
     return post(connected());
 }
 
-void PostponedPayload::buffer(StringView data) {
+void PostponedPayload::buffer(const char* data, size_t size) {
     if (!connected()) {
         return;
     }
 
     if (_count < CountMax) {
-        buffer_impl(data);
+        buffer_impl(data, size);
         ++_count;
     }
 
@@ -337,7 +337,7 @@ void PostponedPayload::buffer_impl(const char* data, size_t length) {
     _data.concat(data, length);
 }
 
-void PostponedDebug::buffer(const DebugPrefix& prefix, StringView message) {
+void PostponedDebug::buffer(const DebugPrefix& prefix, const char* message, size_t length) {
     if (!connected()) {
         return;
     }
@@ -345,7 +345,7 @@ void PostponedDebug::buffer(const DebugPrefix& prefix, StringView message) {
     if (_count < CountMax) {
         const auto prefixLen = debugPrefixLength(prefix);
         const auto bufferLen = _data.length()
-            + prefixLen + message.length();
+            + prefixLen + length;
 
         _data.reserve(bufferLen);
 
@@ -353,7 +353,7 @@ void PostponedDebug::buffer(const DebugPrefix& prefix, StringView message) {
             buffer_impl(prefix, prefixLen);
         }
 
-        buffer_impl(message);
+        buffer_impl(message, length);
         ++_count;
     }
 
@@ -750,9 +750,9 @@ espurna::web::ws::PostponedDebug _ws_debug;
 
 } // namespace
 
-bool wsDebugSend(const DebugPrefix& prefix, espurna::StringView message) {
+bool wsDebugSend(const DebugPrefix& prefix, const char* message, size_t length) {
     if ((wifiConnected() || wifiApStations()) && wsConnected()) {
-        _ws_debug.buffer(prefix, message);
+        _ws_debug.buffer(prefix, message, length);
         return true;
     }
 

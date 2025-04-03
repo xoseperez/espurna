@@ -101,7 +101,7 @@ struct Callbacks {
 
 // Postponed debug messages. best-effort, will not be re-scheduled when ws queue is full
 
-bool wsDebugSend(const DebugPrefix&, espurna::StringView);
+bool wsDebugSend(const DebugPrefix&, const char*, size_t);
 
 // Postponed json messages. schedules callback(s) to be called when resources to do so are available.
 // Queued item is removed on client disconnection *or* when internal timeout occurs
