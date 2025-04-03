@@ -47,6 +47,8 @@ import * as http from 'node:http';
 import * as path from 'node:path';
 import * as zlib from 'node:zlib';
 
+import { stat as fsStat } from 'node:fs/promises';
+
 // -----------------------------------------------------------------------------
 // Configuration
 // -----------------------------------------------------------------------------
@@ -87,6 +89,11 @@ import * as zlib from 'node:zlib';
  * @property {boolean} minify
  * @property {Compression} compress
  * @property {Modules} modules
+ */
+
+/**
+ * shared pipeline file stats, set up to figure out 'latest' mtime for the resulting file
+ * @typedef {{[k: string]: fs.Stats}} BuildStats
  */
 
 /**
@@ -410,23 +417,44 @@ function toOutput(options) {
 }
 
 /**
- * by default, destination preserves stat.*time of the source. which is obviosly bogus here as gulp
- * only knows about the entrypoint and not about every include happenning through inline-source
+ * @param {BuildStats} stats
  * @returns {Transform}
  */
-function adjustFileStat() {
-    const now = new Date();
-
+function trackFileStats(stats) {
     return new Transform({
         objectMode: true,
         transform(source, _, callback) {
-            if (!source.stat) {
-                source.stat = {};
+            if (source.stat) {
+                stats[path.relative('.', source.path)] = source.stat;
             }
 
-            source.stat.atime = now;
-            source.stat.mtime = now;
-            source.stat.ctime = now;
+            callback(null, source);
+        }});
+}
+
+/**
+ * by default, destination preserves stat.*time of the source. which is obviosly bogus here as gulp
+ * only knows about the entrypoint and not about every include happenning through inline-source
+ * @param {BuildStats} stats
+ * @returns {Transform}
+ */
+function adjustFileStats(stats) {
+    return new Transform({
+        objectMode: true,
+        transform(source, _, callback) {
+            const values = Object.values(stats);
+            if (values.length) {
+                const latest = Object.values(stats)
+                    .reduce((prev, x) => {
+                        if (prev.mtime.valueOf() > x.mtime.valueOf()) {
+                            return prev;
+                        }
+
+                        return x;
+                    });
+
+                source.stat = latest;
+            }
 
             callback(null, source);
         }});
@@ -524,14 +552,22 @@ async function inlineJavascriptBundle(sourcefile, contents, resolveDir, define, 
 
 /**
  * @param {string} srcdir
+ * @param {BuildStats} stats
  * @param {BuildOptions} options
  * @returns {import("inline-source").Handler}
  */
-function inlineHandler(srcdir, options) {
+function inlineHandler(srcdir, stats, options) {
     return async function(source) {
         // TODO split handlers
         if (source.content) {
             return;
+        }
+
+        if (typeof source.sourcepath === 'string') {
+            const srcpath = path.isAbsolute(source.sourcepath)
+                ? path.relative(srcdir, source.sourcepath)
+                : path.normalize(path.join(srcdir, source.sourcepath));
+            stats[srcpath] = await fsStat(srcpath);
         }
 
         // specific elements can be excluded at this point
@@ -735,10 +771,11 @@ function stripModules(modules) {
  * inline every external resource in the entrypoint.
  * works outside of gulp context, so used sources are only known after this is actually called
  * @param {string} srcdir
+ * @param {BuildStats} stats
  * @param {BuildOptions} options
  * @returns {Transform}
  */
-function makeInlineSource(srcdir, options) {
+function makeInlineSource(srcdir, stats, options) {
     return new Transform({
         objectMode: true,
         async transform(source, _, callback) {
@@ -751,7 +788,7 @@ function makeInlineSource(srcdir, options) {
                 source.contents.toString(),
                 {
                     'compress': options.minify,
-                    'handlers': [inlineHandler(srcdir, options)],
+                    'handlers': [inlineHandler(srcdir, stats, options)],
                     'rootpath': srcdir,
                 });
 
@@ -812,14 +849,20 @@ function makeModules(name) {
  * @returns {BuildStream[]}
  */
 function buildHtml(options) {
+    /** @type {BuildStats} */
+    const stats = {
+    };
+
     const out = [
         source(ENTRYPOINT),
-        makeInlineSource(SRC_DIR, options),
+        trackFileStats(stats),
+        makeInlineSource(SRC_DIR, stats, options),
         modifyHtml([
             injectVendor(options.minify),
             stripModules(options.modules),
             externalBlank(),
         ]),
+        adjustFileStats(stats),
     ];
 
     if (options.minify) {
@@ -862,7 +905,6 @@ function buildOutputs(options) {
 
     const out = [
         rename(`index.${options.name}.html`),
-        adjustFileStat(),
         destination(BUILD_DIR),
         logSize(),
         modifyHtml([
