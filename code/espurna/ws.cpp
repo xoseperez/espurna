@@ -33,6 +33,37 @@ namespace espurna {
 namespace web {
 namespace ws {
 
+// Non-string-based printer implementation. Write char data directly, without '\0' at the end
+class AsyncWebSocketPrint {
+public:
+    AsyncWebSocketPrint(::AsyncWebSocketMessageBuffer& out) :
+        _end(reinterpret_cast<char*>(out.get() + out.length())),
+        _ptr(reinterpret_cast<char*>(out.get()))
+    {}
+
+    size_t print(char c) {
+        if (_ptr < _end) {
+            *_ptr++ = c;
+            return 1;
+        }
+
+        return 0;
+    }
+
+    size_t print(const char *s) {
+        const auto* start = _ptr;
+        while (_ptr < _end && *s) {
+            *_ptr++ = *s++;
+        }
+
+        return size_t(_ptr - start);
+    }
+
+private:
+    char* _end;
+    char* _ptr;
+};
+
 Callbacks& Callbacks::onVisible(Callbacks::OnSend cb, Callbacks::Prepend) {
     on_visible.insert(on_visible.begin(), cb);
     return *this;
@@ -1106,6 +1137,19 @@ void _wsLoop() {
 } // namespace
 
 // -----------------------------------------------------------------------------
+// ArduinoJson <-> WS printer
+// -----------------------------------------------------------------------------
+
+namespace {
+
+void _wsPrintTo(JsonObject& root, ::AsyncWebSocketMessageBuffer* buffer) {
+    auto wrapper = espurna::web::ws::AsyncWebSocketPrint(*buffer);
+    root.printTo(wrapper);
+}
+
+} // namespace
+
+// -----------------------------------------------------------------------------
 // Public API
 // -----------------------------------------------------------------------------
 
@@ -1138,14 +1182,15 @@ espurna::web::ws::Callbacks& wsRegister() {
     return _ws_callbacks;
 }
 
+// Note: 'measurement' tries to serialize json contents byte-by-byte by using a dummy printer
+// Make sure there is no off-by-one errors, since *some* output impelementations inject '\0'
+
 void wsSend(JsonObject& root) {
-    // Note: 'measurement' tries to serialize json contents byte-by-byte,
-    //       which is somewhat costly, but likely unavoidable for us.
-    size_t len = root.measureLength();
-    AsyncWebSocketMessageBuffer* buffer = _ws.makeBuffer(len);
+    const auto len = root.measureLength();
+    auto* buffer = _ws.makeBuffer(len);
 
     if (buffer) {
-        root.printTo(reinterpret_cast<char*>(buffer->get()), len + 1);
+        _wsPrintTo(root, buffer);
         _ws.textAll(buffer);
     }
 }
@@ -1157,10 +1202,10 @@ void wsSend(uint32_t client_id, JsonObject& root) {
     }
 
     const auto len = root.measureLength();
-    AsyncWebSocketMessageBuffer* buffer = _ws.makeBuffer(len);
+    auto* buffer = _ws.makeBuffer(len);
 
     if (buffer) {
-        root.printTo(reinterpret_cast<char*>(buffer->get()), len + 1);
+        _wsPrintTo(root, buffer);
         client->text(buffer);
     }
 }
