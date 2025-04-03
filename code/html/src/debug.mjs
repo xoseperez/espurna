@@ -2,9 +2,13 @@ import { send, sendAction } from './connection.mjs';
 import { variableListeners } from './settings.mjs';
 
 class CmdOutputBase {
-    constructor() {
-        /** @type {HTMLTextAreaElement | null} */
-        this.elem = null;
+    /** @param {HTMLTextAreaElement} elem */
+    constructor(elem) {
+        /** @type {HTMLTextAreaElement} */
+        this.elem = elem;
+
+        /** @type {number} */
+        this.childrenMax = 4096;
 
         /** @type {number} */
         this.lastScrollHeight = 0;
@@ -14,14 +18,13 @@ class CmdOutputBase {
 
         /** @type {boolean} */
         this.followScroll = true;
+
+        this.attach();
     }
 
-    /** @param {HTMLTextAreaElement} elem */
-    attach(elem) {
-        this.elem = elem;
-
-        this.lastScrollHeight = elem.scrollHeight;
-        this.lastScrollTop = elem.scrollTop;
+    attach() {
+        this.lastScrollHeight = this.elem.scrollHeight;
+        this.lastScrollTop = this.elem.scrollTop;
 
         this.elem.addEventListener("scroll", () => {
             if (!this.elem) {
@@ -62,56 +65,62 @@ class CmdOutputBase {
         this.followScroll = true;
     }
 
+    clearFirst() {
+        while ((this.elem.childNodes.length > this.childrenMax) && this.elem.firstChild) {
+            this.elem.removeChild(this.elem.firstChild);
+        }
+    }
+
     /** @param {string} line */
     push(line) {
-        this?.elem?.appendChild(new Text(line));
+        this.elem.appendChild(new Text(line));
+        this.clearFirst();
     }
 
     /** @param {string} line */
     pushAndFollow(line) {
-        this?.elem?.appendChild(new Text(`${line}\n`));
-        this.followScroll = true
+        this.elem.appendChild(new Text(`${line}\n`));
+        this.followScroll = true;
+        this.clearFirst();
+        this.follow();
+    }
+
+    /** @param {string[]} lines */
+    pushLines(lines) {
+        for (const line of lines) {
+            this.push(line);
+        }
+
+        this.follow();
     }
 }
-
-const CmdOutput = new CmdOutputBase();
 
 /**
- * @returns {import('./settings.mjs').KeyValueListeners}
+ * @param {CmdOutputBase} output
  */
-function listeners() {
-    return {
-        "log": (_, value) => {
-            send("{}");
+function onFormSubmit(output) {
+    /**
+     * @param {Event} event
+     */
+    return function(event) {
+        event.preventDefault();
 
-            for (const message of value) {
-                CmdOutput.push(message);
-            }
+        if (!(event.target instanceof HTMLFormElement)) {
+            return;
+        }
 
-            CmdOutput.follow();
-        },
+        const cmd = event.target.elements
+            .namedItem("cmd");
+        if (!(cmd instanceof HTMLInputElement)) {
+            return;
+        }
+
+        const value = cmd.value;
+        cmd.value = "";
+
+        output.pushAndFollow(value);
+        sendAction("cmd", {"line": `${value}\n`});
     };
-}
-
-/** @param {Event} event */
-function onFormSubmit(event) {
-    event.preventDefault();
-
-    if (!(event.target instanceof HTMLFormElement)) {
-        return;
-    }
-
-    const cmd = event.target.elements
-        .namedItem("cmd");
-    if (!(cmd instanceof HTMLInputElement)) {
-        return;
-    }
-
-    const value = cmd.value;
-    cmd.value = "";
-
-    CmdOutput.pushAndFollow(value);
-    sendAction("cmd", {"line": `${value}\n`});
 }
 
 /**
@@ -126,23 +135,30 @@ function disableFormSubmit(event) {
 }
 
 export function init() {
-    variableListeners(listeners());
-
-    const output = document.getElementById("cmd-output");
-    if (output instanceof HTMLTextAreaElement) {
-        CmdOutput.attach(output);
+    const elem = document.getElementById("cmd-output");
+    if (!(elem instanceof HTMLTextAreaElement)) {
+        return;
     }
 
-    document.forms.namedItem("form-debug")
-        ?.addEventListener("submit", onFormSubmit);
-    document.querySelectorAll("form:not([name='form-debug'])")
-        .forEach((form) => {
-            form.addEventListener("submit", disableFormSubmit);
-        });
+    const output = new CmdOutputBase(elem);
+
+    variableListeners({
+        "log": (_, value) => {
+            send("{}");
+            output.pushLines(value);
+        },
+    });
 
     document.querySelector(".button-dbg-clear")
         ?.addEventListener("click", (event) => {
             event.preventDefault();
-            CmdOutput.clear();
+            output.clear();
+        });
+
+    document.forms.namedItem("form-debug")
+        ?.addEventListener("submit", onFormSubmit(output));
+    document.querySelectorAll("form:not([name='form-debug'])")
+        .forEach((form) => {
+            form.addEventListener("submit", disableFormSubmit);
         });
 }

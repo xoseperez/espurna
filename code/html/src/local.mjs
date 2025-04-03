@@ -414,4 +414,17 @@ export function init() {
             },
         });
     }
+
+    setInterval(() => {
+        const rnd = () =>
+            Math.ceil(Math.random() * 100000)
+            .toString()
+            .padStart(6, '0');
+
+        const msg = [...Array(10)].map(() => rnd());
+
+        updateVariables({
+            log: [`[${rnd()}] ${msg}\n`],
+        });
+    }, 1000);
 }
