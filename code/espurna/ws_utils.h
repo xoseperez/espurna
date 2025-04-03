@@ -263,6 +263,9 @@ struct InplaceLog : public InplacePayload {
 
     void write(const char* , size_t);
     bool send();
+
+private:
+    JsonArray& _log;
 };
 
 } // namespace ws

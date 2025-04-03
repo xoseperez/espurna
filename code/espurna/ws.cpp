@@ -473,10 +473,9 @@ void InplacePayload::send_impl() {
 }
 
 InplaceLog::InplaceLog(JsonObject& root, uint32_t id) :
-    InplacePayload(root, id)
-{
-    _root.createNestedArray("log");
-}
+    InplacePayload(root, id),
+    _log(root.createNestedArray("log"))
+{}
 
 void InplaceLog::write(const char* data, size_t length) {
     write_impl(data, length);
@@ -485,11 +484,10 @@ void InplaceLog::write(const char* data, size_t length) {
 
 bool InplaceLog::send() {
     if (poll_send()) {
-        JsonArray& log = _root["log"];
-        if (log.size()) {
-            log[0] = _data.c_str();
+        if (_log.size()) {
+            _log[0] = _data.c_str();
         } else {
-            log.add(_data.c_str());
+            _log.add(_data.c_str());
         }
 
         send_impl();
