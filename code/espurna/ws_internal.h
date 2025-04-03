@@ -141,7 +141,7 @@ public:
         }
 
         template <typename R, typename T>
-        R visit(T&& visitor) {
+        R visit(T&& visitor, R defaultValue) {
             switch (_type) {
             case Type::Empty:
                 break;
@@ -156,7 +156,7 @@ public:
                 return visitor(_impl.instance);
             }
 
-            return R{};
+            return defaultValue;
         }
 
     private:
@@ -308,7 +308,7 @@ public:
     {}
 
     bool done() {
-        return _storage.visit<bool>(Done{});
+        return _storage.visit(Done{}, true);
     }
 
     void sendAll(JsonObject& root) {
