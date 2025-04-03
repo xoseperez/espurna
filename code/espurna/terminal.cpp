@@ -586,6 +586,7 @@ void onAction(uint32_t client_id, const char* action, JsonObject& data) {
         wsPostManual(shared->id,
             [shared](JsonObject& root) {
                 Output out(root, shared->id);
+                out.output().wait_time(espurnaLoopDelay());
                 api_find_and_call(shared->line, out);
             },
             BufferHint);
