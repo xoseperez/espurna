@@ -116,14 +116,14 @@ Callbacks& Callbacks::onKeyCheck(Callbacks::OnKeyCheck cb, Callbacks::Append) {
 
 constexpr size_t PostponedCallback::DefaultBufferHint;
 
-void PostponedCallback::Storage::Destructor::operator()(Callback& callback) const {
+void PostponedCallback::Storage::Destructor::operator()(Callback& callback) const noexcept {
     callback.~Callback();
 }
 
-void PostponedCallback::Storage::Destructor::operator()(Storage::Pointer& ptr) const {
+void PostponedCallback::Storage::Destructor::operator()(Storage::Pointer& ptr) const noexcept {
 }
 
-void PostponedCallback::Storage::Destructor::operator()(Storage::Instance& obj) const {
+void PostponedCallback::Storage::Destructor::operator()(Storage::Instance& obj) const noexcept {
     obj.obj.~Container();
 }
 
@@ -138,17 +138,17 @@ PostponedCallback::Storage::Move::Move(Storage& storage) :
     _storage(storage)
 {}
 
-void PostponedCallback::Storage::Move::operator()(Callback& callback) const {
+void PostponedCallback::Storage::Move::operator()(Callback& callback) const noexcept {
     ::new (&_storage._impl.callback) Callback(std::move(callback));
 }
 
-void PostponedCallback::Storage::Move::operator()(Storage::Pointer& ptr) const {
+void PostponedCallback::Storage::Move::operator()(Storage::Pointer& ptr) const noexcept {
     ::new (&_storage._impl.pointer) Storage::Pointer(std::move(ptr));
     ptr.ptr = nullptr;
     ptr.offset = 0;
 }
 
-void PostponedCallback::Storage::Move::operator()(Storage::Instance& obj) const {
+void PostponedCallback::Storage::Move::operator()(Storage::Instance& obj) const noexcept {
     ::new (&_storage._impl.instance) Storage::Instance(std::move(obj));
     obj.offset = 0;
 }

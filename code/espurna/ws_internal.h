@@ -64,7 +64,7 @@ public:
                 other.offset = 0;
             }
 
-            explicit Pointer(const Container* ptr) :
+            explicit Pointer(const Container* ptr) noexcept :
                 ptr(ptr)
             {}
 
@@ -73,7 +73,7 @@ public:
         };
 
         struct Instance {
-            explicit Instance(Container&& obj) :
+            explicit Instance(Container&& obj) noexcept :
                 obj(std::move(obj))
             {}
 
@@ -93,17 +93,17 @@ public:
             _type(Type::Callback)
         {}
 
-        explicit Storage(Callback&& callback) :
+        explicit Storage(Callback&& callback) noexcept :
             _impl(std::move(callback)),
             _type(Type::Callback)
         {}
 
-        explicit Storage(const Container& ref) :
+        explicit Storage(const Container& ref) noexcept :
             _impl(ref),
             _type(Type::Pointer)
         {}
 
-        explicit Storage(Container&& obj) :
+        explicit Storage(Container&& obj) noexcept :
             _impl(std::move(obj)),
             _type(Type::Instance)
         {}
@@ -161,17 +161,17 @@ public:
 
     private:
         struct Destructor {
-            void operator()(Callback&) const;
-            void operator()(Storage::Pointer&) const;
-            void operator()(Storage::Instance&) const;
+            void operator()(Callback&) const noexcept;
+            void operator()(Storage::Pointer&) const noexcept;
+            void operator()(Storage::Instance&) const noexcept;
         };
 
         struct Move {
             explicit Move(Storage&);
 
-            void operator()(Callback&) const;
-            void operator()(Storage::Pointer&) const;
-            void operator()(Storage::Instance&) const;
+            void operator()(Callback&) const noexcept;
+            void operator()(Storage::Pointer&) const noexcept;
+            void operator()(Storage::Instance&) const noexcept;
 
         private:
             Storage& _storage;
@@ -185,19 +185,19 @@ public:
                 callback(callback)
             {}
 
-            explicit Impl(Callback&& callback) :
+            explicit Impl(Callback&& callback) noexcept :
                 callback(std::move(callback))
             {}
 
-            explicit Impl(Pointer&& ptr) :
+            explicit Impl(Pointer&& ptr) noexcept :
                 pointer(ptr)
             {}
 
-            explicit Impl(const Container& ref) :
+            explicit Impl(const Container& ref) noexcept :
                 pointer(&ref)
             {}
 
-            explicit Impl(Container&& obj) :
+            explicit Impl(Container&& obj) noexcept :
                 instance(std::move(obj))
             {}
 
@@ -291,19 +291,19 @@ public:
 
     PostponedCallback() = delete;
 
-    PostponedCallback(uint32_t client_id, Storage storage, Mode mode) :
+    PostponedCallback(uint32_t client_id, Storage storage, Mode mode) noexcept :
         _client_id(client_id),
         _storage(std::move(storage)),
         _mode(mode)
     {}
 
-    PostponedCallback(uint32_t client_id, Storage storage) :
+    PostponedCallback(uint32_t client_id, Storage storage) noexcept :
         _client_id(client_id),
         _storage(std::move(storage)),
         _mode(mode_from_storage_type(_storage))
     {}
 
-    explicit PostponedCallback(Storage storage) :
+    explicit PostponedCallback(Storage storage) noexcept :
         PostponedCallback(0, std::move(storage))
     {}
 
@@ -356,7 +356,7 @@ public:
 private:
     static constexpr auto DefaultBufferHint = size_t{ 3192 };
 
-    static Mode mode_from_storage_type(const Storage& storage) {
+    static Mode mode_from_storage_type(const Storage& storage) noexcept {
         switch (storage.type()) {
         case Storage::Type::Empty:
         case Storage::Type::Callback:
