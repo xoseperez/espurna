@@ -1,0 +1,18 @@
+input[name=thermostatMode].checkbox-toggle::before {
+    --toggle-elem-size: 4em;
+    --toggle-bg-size: 3em;
+}
+
+input[name=thermostatMode].checkbox-toggle {
+    --toggle-color-off: hsl(0, 100%, 50%);
+    --toggle-color-on: hsl(180, 100%, 50%);
+}
+
+input[name=thermostatMode].checkbox-toggle::before {
+    content: "HEATER";
+}
+
+input[name=thermostatMode].checkbox-toggle:checked::before {
+    --toggle-text-color: black;
+    content: "COOLER";
+}

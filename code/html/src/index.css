@@ -95,6 +95,12 @@ h2 {
     margin-top: 10px;
 }
 
+.pure-form-aligned
+.pure-control-group
+label {
+    text-align: left;
+}
+
 .pure-form-message,
 .pure-form-message-inline {
     color: #9e9e9e;
@@ -126,6 +132,10 @@ select {
 select[multiple] {
     overflow-y: auto;
     resize: vertical;
+}
+
+summary {
+    font-weight: bold;
 }
 
 input.center {
@@ -173,72 +183,9 @@ span.visible {
     text-align: right;
 }
 
-.terminal {
-    font-family: 'Courier New', monospace;
-    font-size: 80%;
-    background-color: #121212;
-    margin-top: 10px;
-    margin-bottom: 10px;
-}
-
-#cmd-input,
-#cmd-output {
-    border-style: none;
-    border-color: #121212;
-    color: #0f0;
-    background-color: rgba(0, 0, 0, 0);
-    line-height: 100%;
-}
-
-#cmd-output {
-    -webkit-box-shadow: none;
-    box-shadow: none;
-}
-
-#cmd-input {
-    -webkit-box-shadow: inset 0 1px 1px #555;
-    box-shadow: inset 0 1px 1px #555;
-}
-
-/* -----------------------------------------------------------------------------
-    Sensors
-   -------------------------------------------------------------------------- */
-
-.pure-form-aligned
-.pure-control-group
-label {
-    text-align: left;
-}
-
-.emon-expected {
-    border-bottom: 1px solid #e5e5e5;
-    margin-bottom: 1.6em;
-}
-
-/* -----------------------------------------------------------------------------
-    Curtains
-   -------------------------------------------------------------------------- */
-
-/* removeIf(!curtain) */
-
-.curtain-roller {
-    width: 300px;
-    height: 200px;
-    display: inline-block;
-}
-
-.curtain-button {
-    margin-left: 10px;
-    margin-right: 10px;
+.center {
     text-align: center;
-
 }
-
-.reverse-range {
-    direction: rtl;
-}
-
-/* endRemoveIf(!curtain) */
 
 /* -----------------------------------------------------------------------------
     Buttons
@@ -411,79 +358,8 @@ input.checkbox-toggle + .pure-form-message {
     margin-top: .625em;
 }
 
-/* module-light */
-input[name=light-state-value].checkbox-toggle {
-    --toggle-color-off: black;
-    --toggle-color-on: #fdfd3e;
-}
-
-input[name=light-state-value].checkbox-toggle:checked::before {
-    --toggle-text-color: black;
-}
-
-/* module-relay */
-input[name=relay].checkbox-toggle::before,
-input[name=light-state-value].checkbox-toggle::before {
-    content: "OFF";
-}
-
-input[name=relay].checkbox-toggle:checked::before,
-input[name=light-state-value].checkbox-toggle:checked::before {
-    content: "ON";
-}
-
-/* module-thermostat */
-input[name=thermostatMode].checkbox-toggle::before {
-    --toggle-elem-size: 4em;
-    --toggle-bg-size: 3em;
-}
-
-input[name=thermostatMode].checkbox-toggle {
-    --toggle-color-off: hsl(0, 100%, 50%);
-    --toggle-color-on: hsl(180, 100%, 50%);
-}
-
-input[name=thermostatMode].checkbox-toggle::before {
-    content: "HEATER";
-}
-
-input[name=thermostatMode].checkbox-toggle:checked::before {
-    --toggle-text-color: black;
-    content: "COOLER";
-}
-
 input[disabled].checkbox-toggle {
     filter: grayscale(0.8);
-}
-
-/* -----------------------------------------------------------------------------
-    RF Bridge panel
-   -------------------------------------------------------------------------- */
-
-#rfbNodes label {
-    width: 2em;
-    margin: 0 0 0 0;
-}
-
-@media (min-width: 48em) {
-    #rfbNodes input {
-        width: 70%;
-        margin: 0 1em 10px 1em;
-    }
-
-    #rfbNodes .pure-button-group {
-        letter-spacing: 0.15em;
-    }
-}
-
-@media (max-width: 48em) {
-    #rfbNodes input {
-        width: 100%;
-    }
-
-    #rfbNodes button {
-        width: 50%;
-    }
 }
 
 /* -----------------------------------------------------------------------------
@@ -579,44 +455,6 @@ input[disabled].checkbox-toggle {
 }
 
 /* -----------------------------------------------------------------------------
-    Table
-   -------------------------------------------------------------------------- */
-
-#rfm69-messages {
-    margin-bottom: 1em;
-}
-
-summary {
-    font-weight: bold;
-}
-
-.right {
-    text-align: right;
-}
-
-.center {
-    text-align: center;
-}
-
-.filtered {
-    color: rgb(202, 60, 60);
-    font-weight: bold;
-}
-
-/* -----------------------------------------------------------------------------
-    Logs
-   -------------------------------------------------------------------------- */
-
-#cmd-output {
-    height: 400px;
-    margin-bottom: 10px;
-}
-
-#cmd-input {
-    display: inline-block;
-}
-
-/* -----------------------------------------------------------------------------
     Password input controls
    -------------------------------------------------------------------------- */
 .password-reveal {
@@ -674,37 +512,4 @@ input::placeholder {
 #error-notification {
     width: 100%;
     box-shadow: 0 1px 2px 1px rgb(192 0 0 / 25%)
-}
-
-/* -----------------------------------------------------------------------------
-    Lights
-   -------------------------------------------------------------------------- */
-
-#light-brightness,
-#light-cct,
-#light-channels,
-#light-picker,
-#light-state {
-    padding-top: 1em;
-}
-
-#light.light-cct #light-channel-c,
-#light.light-cct #light-channel-w,
-#light.light-color #light-channel-b,
-#light.light-color #light-channel-g,
-#light.light-color #light-channel-r,
-#light.light-color.light-white #light-channel-w {
-    display: none;
-}
-
-#light-cct,
-#light-picker {
-    display: none;
-}
-
-#light.light-cct #light-cct,
-#light.light-cct:not(.light-white) #light-channel-c,
-#light.light-cct:not(.light-white) #light-channel-w,
-#light.light-color.light-on:not(.light-cct) #light-picker {
-    display: block;
 }

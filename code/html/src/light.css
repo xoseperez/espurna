@@ -1,0 +1,37 @@
+input[name=light-state-value].checkbox-toggle {
+    --toggle-color-off: black;
+    --toggle-color-on: #fdfd3e;
+}
+
+input[name=light-state-value].checkbox-toggle:checked::before {
+    --toggle-text-color: black;
+}
+
+#light-brightness,
+#light-cct,
+#light-channels,
+#light-picker,
+#light-state {
+    padding-top: 1em;
+}
+
+#light.light-cct #light-channel-c,
+#light.light-cct #light-channel-w,
+#light.light-color #light-channel-b,
+#light.light-color #light-channel-g,
+#light.light-color #light-channel-r,
+#light.light-color.light-white #light-channel-w {
+    display: none;
+}
+
+#light-cct,
+#light-picker {
+    display: none;
+}
+
+#light.light-cct #light-cct,
+#light.light-cct:not(.light-white) #light-channel-c,
+#light.light-cct:not(.light-white) #light-channel-w,
+#light.light-color.light-on:not(.light-cct) #light-picker {
+    display: block;
+}

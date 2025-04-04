@@ -1,0 +1,25 @@
+#rfbNodes label {
+    width: 2em;
+    margin: 0 0 0 0;
+}
+
+@media (min-width: 48em) {
+    #rfbNodes input {
+        width: 70%;
+        margin: 0 1em 10px 1em;
+    }
+
+    #rfbNodes .pure-button-group {
+        letter-spacing: 0.15em;
+    }
+}
+
+@media (max-width: 48em) {
+    #rfbNodes input {
+        width: 100%;
+    }
+
+    #rfbNodes button {
+        width: 50%;
+    }
+}

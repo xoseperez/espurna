@@ -1,0 +1,27 @@
+.terminal {
+    font-family: 'Courier New', monospace;
+    font-size: 80%;
+    background-color: #121212;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+#cmd-input,
+#cmd-output {
+    border-style: none;
+    border-color: #121212;
+    color: #0f0;
+    background-color: rgba(0, 0, 0, 0);
+    line-height: 100%;
+}
+
+#cmd-output {
+    height: 400px;
+    margin-bottom: 10px;
+    box-shadow: none;
+}
+
+#cmd-input {
+    display: inline-block;
+    box-shadow: inset 0 1px 1px #555;
+}

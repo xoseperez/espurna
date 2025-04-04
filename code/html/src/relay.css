@@ -1,0 +1,9 @@
+input[name=relay].checkbox-toggle::before,
+input[name=light-state-value].checkbox-toggle::before {
+    content: "OFF";
+}
+
+input[name=relay].checkbox-toggle:checked::before,
+input[name=light-state-value].checkbox-toggle:checked::before {
+    content: "ON";
+}
