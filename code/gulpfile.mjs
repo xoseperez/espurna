@@ -97,15 +97,6 @@ import { stat as fsStat } from 'node:fs/promises';
  */
 
 /**
- * build pipeline usually works with file inputs and its transformations
- *
- * per Node.js Stream API at https://nodejs.org/api/stream.html#object-mode
- * > All streams created by Node.js APIs operate exclusively on strings, <Buffer>, <TypedArray> and <DataView> objects
- * transformations generally happen on vynil-fs objects, meaning objectMode:true should always be set
- *
- */
-
-/**
  * declare some modules as optional, only to be included for specific builds
  * @constant
  * @type Modules
@@ -206,6 +197,26 @@ const STATIC_DIR = path.join('espurna', 'static');
 // Build
 // -----------------------------------------------------------------------------
 
+/**
+ * build pipeline usually works with file inputs and its transformations
+ * main function to compose all these separate tasks is `stream.pipeline`
+ * - https://nodejs.org/api/stream.html#streampipelinesource-transforms-destination-options
+ *
+ * transformations most commonly happen on vynil-fs `File` objects, which means `{objectMode: true}`
+ * should always be set for any new stream; per https://nodejs.org/api/stream.html#object-mode
+ * > All streams created by Node.js APIs operate exclusively on strings, <Buffer>, <TypedArray> and <DataView> objects
+ * (nb. async generator functions do not seem to care, though, only stream Writable/Transform classes)
+ *
+ * while gulp documentation recommends using `src.pipe(dst)` as a general pattern, and error handling
+ * *may* just work correctly for 'streamx'-originated readers / writers... it breaks for 'node:stream'
+ * - https://github.com/gulpjs/gulp/issues/359
+ * - https://github.com/gulpjs/gulp/issues/2812
+ * - https://github.com/gulpjs/gulp/issues/2812#issuecomment-2445451930
+ *
+ * also note that any `Error` in the writer / transformer function has to pass through the 'callback(...)'
+ * otherwise, exception would be raised from the pipeline internal task and its origin may not be obvious
+ */
+
 const ERR_CONTENTS_TYPE =
     new Error('expecting source contents to be a buffer!');
 
@@ -222,15 +233,21 @@ const ERR_EMPTY_BUNDLE =
 function dest(dstdir) {
     const out = orig_dest(dstdir);
 
+    out.on('data', data);
+    out.on('finish', finish);
+
     let name = '';
     let size = 0;
 
-    out.on('data', (source) => {
+    /** @param {File} source */
+    function data(source) {
         name = path.relative('.', source.path);
-        size = source?.contents?.length ?? 0;
-    });
+        if (source.isBuffer()) {
+            size = source.contents.length;
+        }
+    };
 
-    out.on('finish', () => {
+    function finish() {
         if (!name || !size) {
             return;
         }
@@ -240,7 +257,7 @@ function dest(dstdir) {
         } else {
             log(`written ${name}`);
         }
-    });
+    }
 
     return out;
 }
