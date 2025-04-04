@@ -25,10 +25,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // -----------------------------------------------------------------------------
 
 import {
-    dest as destination,
+    dest as orig_dest,
     series,
     parallel,
-    src as source,
+    src,
 } from 'gulp';
 
 import { inlineSource } from 'inline-source';
@@ -103,7 +103,6 @@ import { stat as fsStat } from 'node:fs/promises';
  * > All streams created by Node.js APIs operate exclusively on strings, <Buffer>, <TypedArray> and <DataView> objects
  * transformations generally happen on vynil-fs objects, meaning objectMode:true should always be set
  *
- * @typedef {Transform | NodeJS.ReadStream | NodeJS.ReadWriteStream} BuildStream
  */
 
 /**
@@ -215,6 +214,36 @@ const ERR_EMPTY =
 
 const ERR_EMPTY_BUNDLE =
     new Error('js bundle cannot be empty');
+
+/**
+ * after destination finishes, log everything written so far
+ * @param {string} dstdir)
+ */
+function dest(dstdir) {
+    const out = orig_dest(dstdir);
+
+    let name = '';
+    let size = 0;
+
+    out.on('data', (source) => {
+        name = path.relative('.', source.path);
+        size = source?.contents?.length ?? 0;
+    });
+
+    out.on('finish', () => {
+        if (!name || !size) {
+            return;
+        }
+
+        if (name.startsWith(BUILD_DIR)) {
+            log(`${name}: ${size} bytes`);
+        } else {
+            log(`written ${name}`);
+        }
+    });
+
+    return out;
+}
 
 /**
  * @param {import("html-minifier-terser").Options} options
@@ -846,15 +875,13 @@ function makeModules(name) {
 
 /**
  * @param {BuildOptions} options
- * @returns {BuildStream[]}
  */
 function buildHtml(options) {
     /** @type {BuildStats} */
-    const stats = {
-    };
+    const stats = {};
 
     const out = [
-        source(ENTRYPOINT),
+        src(ENTRYPOINT),
         trackFileStats(stats),
         makeInlineSource(SRC_DIR, stats, options),
         modifyHtml([
@@ -881,32 +908,11 @@ function buildHtml(options) {
 
 /**
  * @param {BuildOptions} options
- * @returns {BuildStream[]}
  */
 function buildOutputs(options) {
-    /** @type {{[k: string]: number}} */
-    const sizes = {};
-
-    const logSize = () => new Transform({
-        objectMode: true,
-        transform(source, _, callback) {
-            sizes[path.relative('.', source.path)] = source?.contents?.length ?? 0;
-            callback(null, source);
-        }});
-
-    const dumpSize = () => new Transform({
-        objectMode: true,
-        transform(source, _, callback) {
-            for (const [name, size] of Object.entries(sizes)) {
-                log(`${name}: ${size} bytes`);
-            }
-            callback(null, source);
-        }});
-
     const out = [
         rename(`index.${options.name}.html`),
-        destination(BUILD_DIR),
-        logSize(),
+        dest(BUILD_DIR),
         modifyHtml([
             dropSourcemap(),
         ]),
@@ -915,15 +921,12 @@ function buildOutputs(options) {
     if (options.compress) {
         out.push(
             toCompressed(options),
-            destination(BUILD_DIR));
+            dest(BUILD_DIR));
     }
 
     out.push(
-        logSize(),
         toOutput(options),
-        destination(STATIC_DIR),
-        logSize(),
-        dumpSize());
+        dest(STATIC_DIR));
 
     return out;
 }
@@ -1074,11 +1077,10 @@ function serveWebUI(name) {
 /**
  * map input pattern to paths, do not populate source.contents
  * @param {string | string[]} pattern
- * @returns {BuildStream[]}
  */
 function sourcePath(pattern) {
     return [
-        source(pattern, {read: false, buffer: false}),
+        src(pattern, {read: false, buffer: false}),
         new Transform({
             objectMode: true,
             transform(source, _, callback) {
