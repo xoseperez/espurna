@@ -139,13 +139,20 @@ function onPasswordRevealClick(event) {
     }
 }
 
+/**
+ * @param {Element | DocumentFragment} container
+ */
+export function passwordReveal(container) {
+    container.querySelectorAll(".password-reveal")
+        .forEach((elem) => {
+            elem.addEventListener("click", onPasswordRevealClick);
+        });
+}
+
 export function init() {
     withForm((form) => {
         initSetupPassword(form);
     });
 
-    document.querySelectorAll(".password-reveal")
-        .forEach((elem) => {
-            elem.addEventListener("click", onPasswordRevealClick);
-        });
+    passwordReveal(document.body);
 }

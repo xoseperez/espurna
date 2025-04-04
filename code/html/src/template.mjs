@@ -12,25 +12,8 @@ import {
     setSpanValue,
 } from './settings.mjs';
 
-import { moreElem } from './core.mjs';
-
-/**
- * @param {Event} event
- */
-function moreParent(event) {
-    event.preventDefault();
-    event.stopPropagation();
-
-    const target = event.target;
-    if (!(target instanceof HTMLElement)) {
-        return;
-    }
-
-    const parent = target?.parentElement?.parentElement;
-    if (parent) {
-        moreElem(parent);
-    }
-}
+import { passwordReveal } from './password.mjs';
+import { moreParent } from './core.mjs';
 
 /**
  * @param {string} name
@@ -58,10 +41,6 @@ export function loadConfigTemplate(name) {
         elem.addEventListener("click", onGroupSettingsDel);
     }
 
-    for (let elem of template.querySelectorAll("button.button-more-parent")) {
-        elem.addEventListener("click", moreParent);
-    }
-
     for (let elem of template.querySelectorAll("[data-enumerable]")) {
         if (!(elem instanceof HTMLElement)) {
             continue;
@@ -69,6 +48,9 @@ export function loadConfigTemplate(name) {
 
         listenEnumerable(elem);
     }
+
+    moreParent(template);
+    passwordReveal(template);
 
     return template;
 }

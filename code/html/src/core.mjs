@@ -39,7 +39,7 @@ export function pageReloadIn(timeout) {
 /**
  * @param {HTMLElement} container
  */
-export function moreElem(container) {
+function moreElem(container) {
     container.querySelectorAll(".more")
         .forEach((elem) => {
             if (!(elem instanceof HTMLElement)) {
@@ -49,6 +49,33 @@ export function moreElem(container) {
             elem.style.display = (elem.style.display === "")
                 ? "inherit" : "";
         });
+}
+
+/**
+ * @param {Event} event
+ */
+export function onMoreParent(event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) {
+        return;
+    }
+
+    const parent = target?.parentElement?.parentElement;
+    if (parent) {
+        moreElem(parent);
+    }
+}
+
+/**
+ * @param {Element | DocumentFragment} container
+ */
+export function moreParent(container) {
+    for (let elem of container.querySelectorAll("button.button-more-parent")) {
+        elem.addEventListener("click", onMoreParent);
+    }
 }
 
 /**
