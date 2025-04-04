@@ -360,7 +360,10 @@ function init() {
 
     variableListeners(listeners());
 
-    initConnection();
+    if (!MODULE_LOCAL) {
+        initConnection();
+    }
+
     initSettings();
     initPassword();
     initWiFi();
