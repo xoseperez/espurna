@@ -31,8 +31,11 @@ import {
     src,
 } from 'gulp';
 
-import { inlineSource } from 'inline-source';
-import { build as esbuildBuild } from 'esbuild';
+import { rollup } from 'rollup';
+import { default as rollupEsbuild } from 'rollup-plugin-esbuild';
+import { default as rollupVirtual } from '@rollup/plugin-virtual';
+import { default as rollupAlias } from '@rollup/plugin-alias';
+
 import { minify as htmlMinify } from 'html-minifier-terser';
 import { JSDOM } from 'jsdom';
 
@@ -40,14 +43,28 @@ import * as convert from 'convert-source-map';
 import log from 'fancy-log';
 
 import { Transform } from 'node:stream';
+import { escape as queryEscape } from 'node:querystring';
+import { parseArgs } from 'node:util';
 import { pipeline } from 'node:stream/promises';
 
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as path from 'node:path';
+import * as url from 'node:url';
 import * as zlib from 'node:zlib';
 
-import { stat as fsStat } from 'node:fs/promises';
+import {
+    maybeInline,
+    needElement,
+    stripModules as stripModulesImpl,
+} from './html/inline.mjs';
+
+import {
+    MODULE_PRESETS,
+    MODULE_DEV,
+    build as buildPresets,
+    makeModules,
+} from './html/preset.mjs';
 
 // -----------------------------------------------------------------------------
 // Configuration
@@ -68,13 +85,8 @@ import { stat as fsStat } from 'node:fs/promises';
  */
 
 /**
- * declare `MODULE_${NAME}` boolean consts in the source, allowing esbuild to strip unused code
- * @typedef {{[k: string]: string}} Defines
- */
-
-/**
  * helper functions that deal with 'module' elements
- * @typedef {function(JSDOM): boolean} HtmlModify
+ * @typedef {function(JSDOM): (boolean | Promise<boolean>)} HtmlModify
  */
 
 /**
@@ -96,102 +108,52 @@ import { stat as fsStat } from 'node:fs/promises';
  * @typedef {{[k: string]: fs.Stats}} BuildStats
  */
 
-/**
- * declare some modules as optional, only to be included for specific builds
- * @constant
- * @type Modules
- */
-const DEFAULT_MODULES = {
-    'api': true,
-    'cmd': true,
-    'curtain': false,
-    'dbg': true,
-    'dcz': true,
-    'garland': false,
-    'ha': true,
-    'idb': true,
-    'led': true,
-    'light': false,
-    'lightfox': false,
-    'local': false,
-    'mqtt': true,
-    'nofuss': true,
-    'ntp': true,
-    'ota': true,
-    'relay': true,
-    'rfb': false,
-    'rfm69': false,
-    'rpn': true,
-    'sch': true,
-    'sns': false,
-    'thermostat': false,
-    'tspk': true,
-};
-
-/**
- * special type of build when multiple single-module files are used
- * currently, only possible way to combine both (besides modifying the targets manually)
- * @constant
- * @type Modules
- */
-const MODULES_ALL = Object.fromEntries(
-    Object.entries(DEFAULT_MODULES).map(
-        ([key, _]) => {
-            if ('local' === key) {
-                return [key, false];
-            }
-
-            return [key, true];
-        }));
-
-/**
- * used for the locally served .html, that is already merged but not yet inlined
- * @constant
- * @type Modules
- */
-const MODULES_LOCAL =
-    Object.assign({}, MODULES_ALL, {local: true});
-
-/**
- * generic output, usually this includes a single module
- * @constant
- * @type {NamedBuild}
- */
-const NAMED_BUILD = {
-    'curtain': 'curtain',
-    'garland': 'garland',
-    'light': 'light',
-    'lightfox': 'lightfox',
-    'rfbridge': 'rfb',
-    'rfm69': 'rfm69',
-    'sensor': 'sns',
-    'thermostat': 'thermostat',
-};
+// directory where this file is located
+const ROOT = path.dirname(url.fileURLToPath(import.meta.url));
 
 // vendored sources from node_modules/ need explicit paths
-const NODE_DIR = path.join('node_modules');
+const NODE_DIR = path.join(ROOT, 'node_modules');
 
-// importmap manifest for dev server. atm, explicit list
-// TODO import.meta.resolve wants umd output for some reason
-const IMPORT_MAP = {
-    '@jaames/iro': '/@jaames/iro/dist/iro.es.js',
-};
+// ui sources root
+const HTML_DIR = path.join(ROOT, 'html');
+
+// build preset environment files
+const PRESET_DIR = path.join(HTML_DIR, 'preset');
 
 // output .html w/ inline sourcemaps (for development only)
 // output .html.{gz,br}, cleaned-up for firmware use
-const BUILD_DIR = path.join('html', 'build');
+const BUILD_DIR = path.join(HTML_DIR, 'build');
+
+// vendored sources, usually injected as-is without any minification or compression
+const VENDOR_DIR = path.join(HTML_DIR, 'vendor');
 
 // input sources, making sure relative inline paths start from here
-const SRC_DIR = path.join('html', 'src');
+const SRC_DIR = path.join(HTML_DIR, 'src');
 
 // spec aka test files, make sure only these are used when running tests
-const SPEC_DIR = path.join('html', 'spec');
+const SPEC_DIR = path.join(HTML_DIR, 'spec');
 
 // main source file used by inline-source
-const ENTRYPOINT = path.join(SRC_DIR, 'index.html')
+const ENTRYPOINT = path.join(HTML_DIR, 'index.html')
 
 // .ipp compiled from the .html.{br,gz}, providing static u8[] for the firmware to use
-const STATIC_DIR = path.join('espurna', 'static');
+const STATIC_DIR = path.join(ROOT, 'espurna', 'static');
+
+// importmap manifest for dev server. atm, explicit overrides list
+// based on known locations for the MODULE_DEV preset
+const IMPORT_MAP = {
+    '@jaames/iro': path.join(NODE_DIR, '/@jaames/iro/dist/iro.es.js'),
+    '@build-preset/constants.mjs': path.join(PRESET_DIR, MODULE_DEV, 'constants.mjs'),
+};
+
+// dev server lives on localhost by default; note that it accepts one-of 127.0.0.1 or ::1
+const DEV_HOST = 'localhost';
+const DEV_PORT = 8080;
+
+// MODULE_DEV is a special case, not intended for the writtable output
+const MODULE_BUILD_PRESETS = new Set(
+    Array.from(MODULE_PRESETS)
+        .filter((x) => x !== MODULE_DEV));
 
 // -----------------------------------------------------------------------------
 // Build
@@ -223,8 +185,8 @@ const ERR_CONTENTS_TYPE =
 const ERR_EMPTY =
     new Error('source contents cannot be empty');
 
-const ERR_EMPTY_BUNDLE =
-    new Error('js bundle cannot be empty');
+const ERR_SINGLE_BUNDLE =
+    new Error('js bundle only supports a single output');
 
 /**
  * after destination finishes, log everything written so far
@@ -236,23 +198,24 @@ function dest(dstdir) {
     out.on('data', data);
     out.on('finish', finish);
 
-    let name = '';
+    let srcpath = '';
     let size = 0;
 
     /** @param {File} source */
     function data(source) {
-        name = path.relative('.', source.path);
+        srcpath = source.path;
         if (source.isBuffer()) {
             size = source.contents.length;
         }
     };
 
     function finish() {
-        if (!name || !size) {
+        if (!srcpath || !size) {
             return;
         }
 
-        if (name.startsWith(BUILD_DIR)) {
+        const name = path.relative(ROOT, srcpath);
+        if (srcpath.startsWith(BUILD_DIR)) {
             log(`${name}: ${size} bytes`);
         } else {
             log(`written ${name}`);
@@ -527,160 +490,13 @@ function rename(name) {
 }
 
 /**
- * ref. https://github.com/evanw/esbuild/issues/1895
- * from our side, html/src/*.mjs (with the exception of index.mjs) require 'init()' call to be actually set up and used
- * as the result, no code from the module should be bundled into the output when module was not initialized
- * however, since light module depends on iro.js and does not have `sideEffects: false` in package.json, it would still get bundled because of top-level import
- * (...and since module modifying something in global scope is not unheard of...)
- * @returns {import("esbuild").Plugin}
- */
-function forceNoSideEffects() {
-    return {
-        name: 'no-side-effects',
-        setup(build) {
-            build.onResolve({filter: /@jaames\/iro/, namespace: 'file'},
-                async ({path, ...options}) => {
-                    const result = await build.resolve(path, {...options, namespace: 'noRecurse'});
-                    return {...result, sideEffects: false};
-                });
-        },
-    };
-}
-
-/**
- * ref. html/src/index.mjs
- * TODO exportable values, e.g. in build.mjs? right now, false-positive of undeclared values, plus see 'forceNoSideEffects()'
- * @param {Modules} modules
- * @returns {Defines}
- */
-function makeDefine(modules) {
-    return Object.fromEntries(
-        Object.entries(modules).map(
-            ([key, value]) => {
-                return [`MODULE_${key.toUpperCase()}`, value.toString()];
-            }));
-}
-
-/**
- * @param {string} sourcefile
- * @param {string} contents
- * @param {string} resolveDir
- * @param {Defines} define
- * @param {boolean} minify
- */
-async function inlineJavascriptBundle(sourcefile, contents, resolveDir, define, minify) {
-    return await esbuildBuild({
-        stdin: {
-            contents,
-            loader: 'js',
-            resolveDir,
-            sourcefile,
-        },
-        format: 'esm',
-        bundle: true,
-        plugins: [
-            forceNoSideEffects(),
-        ],
-        define,
-        minify,
-        sourcemap: minify
-            ? 'inline'
-            : undefined,
-        platform: minify
-            ? 'browser'
-            : 'neutral',
-        external: minify
-            ? undefined
-            : ['./*.mjs'],
-        write: false,
-    });
-}
-
-/**
- * @param {string} srcdir
- * @param {BuildStats} stats
- * @param {BuildOptions} options
- * @returns {import("inline-source").Handler}
- */
-function inlineHandler(srcdir, stats, options) {
-    return async function(source) {
-        // TODO split handlers
-        if (source.content) {
-            return;
-        }
-
-        if (typeof source.sourcepath === 'string') {
-            const srcpath = path.isAbsolute(source.sourcepath)
-                ? path.relative(srcdir, source.sourcepath)
-                : path.normalize(path.join(srcdir, source.sourcepath));
-            stats[srcpath] = await fsStat(srcpath);
-        }
-
-        // specific elements can be excluded at this point
-        // (although, could be handled by jsdom afterwards; top elem does not usually have classList w/ module)
-        const source_module = source.props.module;
-        if (typeof source_module === 'string') {
-            for (let module of source_module.split(',')) {
-                if (!options.modules[module]) {
-                    source.content = '';
-                    source.replace = '<div></div>';
-                    return;
-                }
-            }
-        }
-
-        // main entrypoint of the app, usually a script bundle
-        if (source.sourcepath && typeof source.sourcepath === 'string' && source.format === 'mjs') {
-            const define = makeDefine(options.modules);
-
-            const result = await inlineJavascriptBundle(
-                source.sourcepath,
-                source.fileContent,
-                srcdir, define, options.minify);
-            if (!result.outputFiles.length) {
-                throw ERR_EMPTY_BUNDLE;
-            }
-
-            let content = Buffer.from(result.outputFiles[0].contents);
-
-            if (!options.minify) {
-                let prepend = '';
-                for (const [key, value] of Object.entries(define)) {
-                    prepend += `const ${key} = ${value};\n`;
-                }
-
-                content = Buffer.concat([
-                    Buffer.from(prepend), content]);
-            }
-
-            source.content = content.toString();
-            return;
-        }
-
-        // <object type=text/html>. not handled by inline-source directly, only image blobs are expected
-        if (source.props.raw) {
-            source.content = source.fileContent;
-            source.replace = source.content.toString();
-            source.format = 'text';
-            return;
-        }
-
-        // TODO import svg icon?
-        if (source.sourcepath === 'favicon.ico') {
-            source.format = 'x-icon';
-            return;
-        }
-    };
-}
-
-/**
  * @param {HtmlModify[]} handlers
  * @returns {Transform}
  */
 function modifyHtml(handlers) {
     return new Transform({
         objectMode: true,
-        transform(source, _, callback) {
+        async transform(source, _, callback) {
             if (!(source.contents instanceof Buffer)) {
                 callback(ERR_CONTENTS_TYPE);
                 return;
@@ -688,15 +504,8 @@ function modifyHtml(handlers) {
 
             const dom = new JSDOM(source.contents, {includeNodeLocations: true});
 
-            let changed = false;
-
-            for (let handler of handlers) {
-                if (handler(dom)) {
-                    changed = true;
-                }
-            }
-
-            if (changed) {
+            const results = await Promise.all(handlers.map((x) => x(dom)));
+            if (results.some((x) => x)) {
                 source.contents = Buffer.from(dom.serialize());
             }
 
@@ -732,12 +541,12 @@ function dropSourcemap() {
 
 /**
  * optionally inject external libs paths
- * @param {boolean} compress
+ * @param {boolean} minify
  * @returns {HtmlModify}
  */
-function injectVendor(compress) {
+function injectVendor(minify) {
     return function(dom) {
-        if (compress) {
+        if (minify) {
             return false;
         }
 
@@ -745,7 +554,10 @@ function injectVendor(compress) {
 
         const importmap = dom.window.document.createElement('script');
         importmap.setAttribute('type', 'importmap');
-        importmap.textContent = JSON.stringify({imports: IMPORT_MAP});
+
+        const imports = Object.fromEntries(
+            Object.keys(IMPORT_MAP).map((key) => [key, `./${key}`]));
+        importmap.textContent = JSON.stringify({imports});
 
         const head = dom.window.document.getElementsByTagName('head')[0];
         head.insertBefore(importmap, script[0]);
@@ -783,64 +595,175 @@ function externalBlank() {
  */
 function stripModules(modules) {
     return function(dom) {
-        let changed = false;
-
-        for (const [module, value] of Object.entries(modules)) {
-            if (value) {
-                continue;
-            }
-
-            const className = `module-${module}`;
-            for (let elem of dom.window.document.getElementsByClassName(className)) {
-                elem.classList.remove(className);
-
-                let remove = true;
-                for (let name of elem.classList) {
-                    if (name.startsWith('module-')) {
-                        remove = false;
-                        break;
-                    }
-                }
-
-                if (remove) {
-                    elem.parentElement?.removeChild(elem);
-                    changed = true;
-                }
-            }
-        }
-
-        return changed;
-    }
+        return stripModulesImpl(dom, modules);
+    };
 }
 
 /**
- * inline every external resource in the entrypoint.
- * works outside of gulp context, so used sources are only known after this is actually called
- * @param {string} srcdir
- * @param {BuildStats} stats
+ * inline and render index.html from the source template
+ * expected to be called before any other html parsing happens
+ *
  * @param {BuildOptions} options
- * @returns {Transform}
+ * @param {BuildStats} stats
+ * @returns {HtmlModify}
  */
-function makeInlineSource(srcdir, stats, options) {
-    return new Transform({
-        objectMode: true,
-        async transform(source, _, callback) {
-            if (!source.contents) {
-                callback(ERR_EMPTY);
-                return;
+function makeIndexHtml(options, stats) {
+    return async function(dom) {
+        let changed = false;
+
+        for (const elem of dom.window.document.querySelectorAll('inline-source')) {
+            let src = elem.getAttribute('src');
+            if (!src) {
+                continue;
             }
 
-            const contents = await inlineSource(
-                source.contents.toString(),
-                {
-                    'compress': options.minify,
-                    'handlers': [inlineHandler(srcdir, stats, options)],
-                    'rootpath': srcdir,
-                });
+            if (path.isAbsolute(src)) {
+                src = src.slice(1);
+            }
 
-            source.contents = Buffer.from(contents);
-            callback(null, source);
-        }});
+            src = path.join(HTML_DIR, src);
+
+            stats[src] = await fs.promises.stat(src);
+
+            if (!needElement(elem, options.modules)) {
+                elem.parentElement?.removeChild(elem);
+                changed = true;
+                continue;
+            }
+
+            const data = await fs.promises.readFile(src);
+            elem.outerHTML = data.toString();
+
+            changed = true;
+        }
+
+        return changed;
+    };
+}
+
+/**
+ * make an explicit list of all available imports, even the ones using uncommon names
+ * @param {string} preset
+ */
+function makeImportAlias(preset) {
+    return [
+        {find: '/vendor', replacement: VENDOR_DIR},
+        {find: '@build-preset', replacement: path.join(PRESET_DIR, preset)},
+        {find: '@jaames/iro', replacement: IMPORT_MAP['@jaames/iro']},
+    ];
+}
+
+/**
+ * Inline every external resource into the entrypoint html.
+ * Works outside of gulp context, track everything that passes through manually.
+ *
+ * nb. '@build-preset' consts module does not work properly w/ esbuild --bundle
+ * Instead of creating noop statements when module is disabled, unused import
+ * would still be injected into the resulting bundle.
+ *
+ * Rollup bundling prevents this from happening, allowing external consts file.
+ * Previous implementation used 'globals' / 'define' as a workaround.
+ *
+ * ref. https://github.com/evanw/esbuild/issues/1420
+ * ref. https://github.com/evanw/esbuild/issues/1895
+ * ref. html/inline.mjs`forceNoSideEffects()`
+ *
+ * @param {BuildStats} stats
+ * @param {BuildOptions} options
+ * @returns {HtmlModify}
+ */
+function makeInlineSource(options, stats) {
+
+    /**
+     * dispatch raw fs path and return the 'code' to-be injected into the resulting element
+     * @param {string} src
+     */
+    async function load(src) {
+        let code = await fs.promises.readFile(src);
+        let extname = path.extname(src);
+
+        switch (extname) {
+        case '.svg':
+            return `data:image/svg+xml,${queryEscape(code.toString())}`;
+
+        case '.js':
+        case '.mjs':
+            if (!options.minify) {
+                return code.toString();
+            }
+
+            const result = await rollup({
+                input: src,
+                treeshake: {
+                    moduleSideEffects: () => false,
+                },
+                plugins: [
+                    rollupAlias({
+                        entries: makeImportAlias(options.name),
+                    }),
+                    rollupVirtual({
+                        src: code.toString(),
+                    }),
+                    rollupEsbuild({
+                        platform: 'browser',
+                        target: 'es2022',
+                        minify: true,
+                        format: 'esm',
+                    }),
+                ],
+            });
+
+            const bundle = await result.generate({
+                sourcemap: 'inline',
+            });
+
+            if (bundle.output.length !== 1) {
+                throw ERR_SINGLE_BUNDLE;
+            }
+
+            return bundle.output[0].code;
+        }
+
+        return code.toString();
+    }
+
+    /**
+     * based on raw input src=..., generate a valid path for the load(...)
+     * for vite compatibility, prevent '?...' query params from appearing
+     *
+     * @param {string} src
+     */
+    function resolve(src) {
+        if (src.startsWith('/')) {
+            src = src.slice(1);
+        }
+
+        src = path.join(HTML_DIR, src);
+
+        const asUrl = new URL(`file:///${src}`);
+        for (const [param] of asUrl.searchParams) {
+            asUrl.searchParams.delete(param);
+        }
+
+        return url.fileURLToPath(asUrl.href);
+    }
+
+    return async function(dom) {
+        let changed = false;
+
+        for (const elem of dom.window.document.querySelectorAll('link,script')) {
+            await maybeInline(dom, elem, {
+                load,
+                resolve,
+                async post(src) {
+                    stats[src] = await fs.promises.stat(src);
+                    changed = true;
+                }
+            });
+        }
+
+        return changed;
+    };
 }
 
 /**
@@ -865,32 +788,6 @@ function replace(lhs, rhs) {
 }
 
 /**
- * @param {string} name
- * @returns {Modules}
- */
-function makeModules(name) {
-    switch (name) {
-    case 'all':
-        return MODULES_ALL;
-
-    case 'local':
-        return MODULES_LOCAL;
-
-    case 'small':
-        return DEFAULT_MODULES;
-    }
-
-    if (NAMED_BUILD[name] === undefined) {
-        throw new Error(`NAMED_BUILD['${name}'] is missing`);
-    }
-
-    const out = Object.assign({}, DEFAULT_MODULES);
-    out[NAMED_BUILD[name]] = true;
-
-    return out;
-}
-
-/**
  * @param {BuildOptions} options
  */
 function buildHtml(options) {
@@ -900,8 +797,9 @@ function buildHtml(options) {
     const out = [
         src(ENTRYPOINT),
         trackFileStats(stats),
-        makeInlineSource(SRC_DIR, stats, options),
         modifyHtml([
+            makeIndexHtml(options, stats),
+            makeInlineSource(options, stats),
             injectVendor(options.minify),
             stripModules(options.modules),
             externalBlank(),
@@ -966,10 +864,14 @@ function buildWebUI(name) {
     ]);
 }
 
-/**
- * @param {string} name
+/** @typedef ServeOptions
+ * @property {string} name
+ * @property {string} host
+ * @property {number} port
+ *
+ * @param {ServeOptions} options
  */
-function serveWebUI(name) {
+function serveWebUI({name, host, port}) {
     const server = http.createServer();
 
     /** @param {any} e */
@@ -1026,7 +928,7 @@ function serveWebUI(name) {
         try {
             await pipeline(
                 /** @ts-ignore, types/node/stream/promises/pipeline.d.ts hates 'args' / '...args' */
-                ...buildHtml({modules: makeModules(name), compress: false, minify: false}),
+                ...buildHtml({name, modules: makeModules(name), compress: false, minify: false}),
                 // convert the original vinyl-fs stream back into something nodejs understands
                 async function* (/** @type {Transform} */source) {
                     for await (const chunk of source) {
@@ -1059,12 +961,11 @@ function serveWebUI(name) {
         // when module files need browser repl. note the bundling scope,
         // only this way modules are actually modules and not inlined
 
-        // external libs should be searched in node_modules/
-        for (let value of Object.values(IMPORT_MAP)) {
-            if (value === url.pathname) {
-                await responseJsFile(response, path.join(NODE_DIR, value));
-                return;
-            }
+        // in case importmap script was injected into the html
+        const imported = IMPORT_MAP[/** @type {keyof IMPORT_MAP} */(url.pathname.slice(1))];
+        if (imported) {
+            await responseJsFile(response, imported);
+            return;
         }
 
         // everything else is attempted as html/src/${module}.mjs
@@ -1084,7 +985,7 @@ function serveWebUI(name) {
         log.info(`Serving ${SRC_DIR} index and *.mjs at`, server.address());
     });
 
-    server.listen(8080, 'localhost');
+    server.listen(port, host);
 }
 
 // -----------------------------------------------------------------------------
@@ -1154,6 +1055,10 @@ export async function eslint() {
     return pipeline([
         ...sourcePath([
             'gulpfile.mjs',
+            'vite.config.mjs',
+            `${HTML_DIR}/inline.mjs`,
+            `${HTML_DIR}/preset.mjs`,
+            `${PRESET_DIR}/*.mjs`,
             `${SRC_DIR}/*.mjs`,
             `${SPEC_DIR}/*.mjs`,
         ]),
@@ -1192,7 +1097,7 @@ async function html_validate() {
     const format = formatterFactory('stylish');
 
     return pipeline([
-        ...sourcePath('html/src/*.html'),
+        ...sourcePath(`${SRC_DIR}/*.html`),
         new Transform({
             objectMode: true,
             async transform(path, _, callback) {
@@ -1214,66 +1119,145 @@ export { html_validate as 'html-validate' };
 // Tasks
 // -----------------------------------------------------------------------------
 
+export async function presets() {
+    /** @type {Error?} */
+    let rethrow = null;
+
+    let results = ['No presets generated'];
+    try {
+        results = await buildPresets();
+    } catch (e) {
+        if (e instanceof Error) {
+            rethrow = e;
+        } else {
+            rethrow = new Error(e?.toString() ?? 'unknown error');
+        }
+    } finally {
+        for (const result of results) {
+            log(result);
+        }
+    }
+
+    if (rethrow) {
+        throw rethrow;
+    }
+}
+
+presets.description = 'generate all of the required preset files, based on the html/preset.mjs configuration';
+
+/** @import { ParseArgsOptionsConfig } from 'node:util' */
+
+const ERR_PRESET_EMPTY = new Error('preset flag cannot be empty');
+const ERR_PRESET_UNHANDLED = new Error('preset flag not handled');
+
+const ERR_PARSE_STRING = new Error('flag type !== string');
+const ERR_PARSE_NUMBER = new Error('flag type !== number');
+
+export function build() {
+    const PRESET = 'preset';
+
+    /** @type {ParseArgsOptionsConfig} */
+    const options = {
+        [PRESET]: {
+            type: 'string',
+            multiple: true,
+            default: Array.from(MODULE_BUILD_PRESETS),
+        },
+    };
+
+    // note that this only expects 'build' ...
+    // any extra tasks launched in parallel *may* break
+    // either parsing or the resulting task promise
+    const { values } = parseArgs({
+        allowPositionals: false,
+        args: process.argv.slice(3),
+        options,
+    });
+
+    const { preset } = values;
+    if ((preset == null) || !preset) {
+        throw ERR_PRESET_EMPTY;
+    }
+
+    if (typeof preset === 'boolean') {
+        throw ERR_PARSE_STRING;
+    } else if (typeof preset === 'string') {
+        return buildWebUI(preset);
+    } else if (Array.isArray(preset)) {
+        return Promise.all(preset.map((x) => {
+            if (typeof x === 'string') {
+                return buildWebUI(x);
+            }
+
+            throw ERR_PARSE_STRING;
+        }));
+    }
+
+    throw ERR_PRESET_UNHANDLED;
+}
+
+build.description = `builds one of the available presets: ${Array.from(MODULE_BUILD_PRESETS).join(', ')}`;
+build.flags = {
+    '--preset NAME': 'NAME of the build preset; can be specified multiple times',
+};
+
 export function dev() {
-    return serveWebUI('local');
+    const PRESET = 'preset';
+
+    const HOST = 'host';
+    const PORT = 'port';
+
+    /** @type {ParseArgsOptionsConfig} */
+    const options = {
+        [PRESET]: {
+            type: 'string',
+            multiple: false,
+            default: MODULE_DEV,
+        },
+        [HOST]: {
+            type: 'string',
+            multiple: false,
+            default: DEV_HOST,
+        },
+        [PORT]: {
+            type: 'string',
+            multiple: false,
+            default: DEV_PORT.toString(),
+        },
+    };
+
+    const { values } = parseArgs({
+        allowPositionals: false,
+        args: process.argv.slice(3),
+        options,
+    });
+
+    const { preset, port, host } = values;
+    if (typeof preset !== 'string') {
+        throw ERR_PARSE_STRING;
+    }
+
+    if (typeof port !== 'string') {
+        throw ERR_PARSE_STRING;
+    }
+
+    if (typeof host !== 'string') {
+        throw ERR_PARSE_STRING;
+    }
+
+    const parsed = parseInt(port, 10);
+    if (!parsed) {
+        throw ERR_PARSE_NUMBER;
+    }
+
+    return serveWebUI({name: preset, port: parsed, host});
 }
 
-export function serve() {
-    return dev();
-}
-
-export function webui_all() {
-    return buildWebUI('all');
-}
-
-export function webui_small() {
-    return buildWebUI('small');
-}
-
-export function webui_curtain() {
-    return buildWebUI('curtain');
-}
-
-export function webui_garland() {
-    return buildWebUI('garland');
-}
-
-export function webui_light() {
-    return buildWebUI('light');
-}
-
-export function webui_lightfox() {
-    return buildWebUI('lightfox');
-}
-
-export function webui_rfbridge() {
-    return buildWebUI('rfbridge');
-}
-
-export function webui_rfm69() {
-    return buildWebUI('rfm69');
-}
-
-export function webui_sensor() {
-    return buildWebUI('sensor');
-}
-
-export function webui_thermostat() {
-    return buildWebUI('thermostat');
-}
-
-export const webui =
-    parallel(
-        webui_all,
-        webui_small,
-        webui_curtain,
-        webui_garland,
-        webui_light,
-        webui_lightfox,
-        webui_rfbridge,
-        webui_rfm69,
-        webui_sensor,
-        webui_thermostat);
+dev.flags = {
+    '--host HOST': `"${DEV_HOST}" by default`,
+    '--port PORT': `${DEV_PORT} by default`,
+    '--preset PRESET': `"${MODULE_DEV}" by default`,
+};
 
 export const test =
     parallel(
@@ -1282,4 +1266,4 @@ export const test =
         vitest);
 
 export default
-    series(test, webui);
+    series(test, build);

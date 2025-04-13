@@ -7,9 +7,12 @@
     "Maxim Prokhorov <prokhorov.max@outlook.com>"
   ],
   "license": "GPL-3.0",
+  "sideEffects": false,
   "devDependencies": {
     "@eslint/js": "^9.22.0",
     "@jaames/iro": "^5.5.2",
+    "@rollup/plugin-alias": "^5.1.1",
+    "@rollup/plugin-virtual": "^3.0.2",
     "@types/node": "^22.13.0",
     "@typescript/lib-dom": "npm:@types/web@^0.0.213",
     "clone-stats": "file:html/vendor/clone-stats-node22",
@@ -21,8 +24,10 @@
     "gulp": "^5.0.0",
     "html-minifier-terser": "^7.2.0",
     "html-validate": "^9.5.2",
-    "inline-source": "^8.0.3",
     "jsdom": "^26.0.0",
+    "rollup": "^4.40.0",
+    "rollup-plugin-esbuild": "^6.2.1",
+    "vite": "^6.2.6",
     "vitest": "^3.0.9"
   }
 }

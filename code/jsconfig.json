@@ -1,5 +1,10 @@
 {
-  "include": ["./gulpfile.mjs"],
+  "include": [
+      "./html/inline.mjs",
+      "./html/preset.mjs",
+      "./gulpfile.mjs",
+      "./vite.config.mjs"
+  ],
   "compilerOptions": {
     "allowJs": true,
     "checkJs": true,

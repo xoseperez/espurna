@@ -1,5 +1,9 @@
 {
-  "include": ["src/*"],
+  "include": [
+      "./preset.mjs",
+      "./inline.mjs",
+      "src/*"
+  ],
   "compilerOptions": {
     "allowJs": true,
     "checkJs": true,
@@ -12,7 +16,10 @@
     "noUnusedParameters": true,
     "strict": true,
     "target": "es2022",
-    "types": ["dom"]
+    "types": ["dom"],
+    "paths": {
+      "@build-preset/*": ["./preset/dev/*"]
+    }
   },
   "exclude": [
     "node_modules"

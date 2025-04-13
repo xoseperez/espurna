@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="">
+    <head>
+        <title>ESPurna 0.0.0</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <link rel="icon" href="favicon.ico?inline">
+
+        <link rel="stylesheet" href="vendor/pure-3.0.0.min.css">
+        <link rel="stylesheet" href="vendor/pure-grids-responsive-3.0.0.min.css">
+        <link rel="stylesheet" href="vendor/side-menu-layout.css">
+
+        <link rel="stylesheet" href="src/index.css">
+
+        <link rel="stylesheet" href="src/curtain.css" class="module-curtain">
+        <link rel="stylesheet" href="src/debug.css" class="module-cmd module-dbg">
+        <link rel="stylesheet" href="src/light.css" class="module-light">
+        <link rel="stylesheet" href="src/relay.css" class="module-relay">
+        <link rel="stylesheet" href="src/rfbridge.css" class="module-rfb">
+        <link rel="stylesheet" href="src/rfm69.css" class="module-rfm69">
+        <link rel="stylesheet" href="src/sensor.css" class="module-sns">
+        <link rel="stylesheet" href="src/thermostat.css" class="module-thermostat">
+
+        <script src="src/index.mjs" type="module"></script>
+    </head>
+
+    <body>
+        <div id="error-notification" class="pure-g content">
+        </div>
+
+        <div id="layout" class="webmode">
+            <div class="menu-link">
+                <span></span>
+            </div>
+
+            <div id="menu">
+                <div class="pure-menu">
+                    <inline-source src="src/menu-list.html"></inline-source>
+
+                    <div class="main-buttons">
+                        <button type="button" class="pure-button button-save">Save</button>
+                        <button type="button" class="pure-button button-reconnect">Reconnect</button>
+                        <button type="button" class="pure-button button-reboot">Reboot</button>
+                    </div>
+
+                    <inline-source src="src/footer.html"></inline-source>
+                </div>
+            </div>
+
+            <div class="content">
+                <div class="panel block" id="panel-status">
+                    <div class="header">
+                        <h1><span data-key="hostname">?</span></h1>
+                        <h2><span data-key="app_name">?</span> <span data-key="app_version">?</span></h2>
+                        <h2><span data-key="desc">?</span></h2>
+                    </div>
+
+                    <div class="page">
+                        <form class="pure-form pure-form-aligned">
+                            <inline-source
+                                src="src/status-relay.html"
+                                class="module-relay"></inline-source>
+                            <inline-source
+                                src="src/status-light.html"
+                                class="module-light"></inline-source>
+                            <inline-source
+                                src="src/status-sns.html"
+                                class="module-sns"></inline-source>
+                            <inline-source
+                                src="src/status-curtain.html"
+                                class="module-curtain"></inline-source>
+                            <inline-source
+                                src="src/status-rfm69.html"
+                                class="module-rfm69"></inline-source>
+                            <inline-source src="src/status.html"></inline-source>
+                        </form>
+                    </div>
+                </div>
+
+                <inline-source src="src/panel-password.html"></inline-source>
+
+                <inline-source src="src/panel-admin.html"></inline-source>
+                <inline-source src="src/panel-general.html"></inline-source>
+                <inline-source src="src/panel-wifi.html"></inline-source>
+
+                <inline-source
+                    src="src/panel-api.html"
+                    class="module-api"></inline-source>
+                <inline-source
+                    src="src/panel-debug.html"
+                    class="module-cmd module-dbg"></inline-source>
+                <inline-source
+                    src="src/panel-curtain.html"
+                    class="module-curtain"></inline-source>
+                <inline-source
+                    src="src/panel-dcz.html"
+                    class="module-dcz"></inline-source>
+                <inline-source
+                    src="src/panel-garland.html"
+                    class="module-garland"></inline-source>
+                <inline-source
+                    src="src/panel-ha.html"
+                    class="module-ha"></inline-source>
+                <inline-source
+                    src="src/panel-idb.html"
+                    class="module-idb"></inline-source>
+                <inline-source
+                    src="src/panel-led.html"
+                    class="module-led"></inline-source>
+                <inline-source
+                    src="src/panel-lightfox.html"
+                    class="module-lightfox"></inline-source>
+                <inline-source
+                    src="src/panel-light.html"
+                    class="module-light"></inline-source>
+                <inline-source
+                    src="src/panel-mqtt.html"
+                    class="module-mqtt"></inline-source>
+                <inline-source
+                    src="src/panel-nofuss.html"
+                    class="module-nofuss"></inline-source>
+                <inline-source
+                    src="src/panel-ntp.html"
+                    class="module-ntp"></inline-source>
+                <inline-source
+                    src="src/panel-relay.html"
+                    class="module-relay"></inline-source>
+                <inline-source
+                    src="src/panel-rfb.html"
+                    class="module-rfb"></inline-source>
+                <inline-source
+                    src="src/panel-rfm69-mapping.html"
+                    class="module-rfm69"></inline-source>
+                <inline-source
+                    src="src/panel-rfm69-messages.html"
+                    class="module-rfm69"></inline-source>
+                <inline-source
+                    src="src/panel-rpn.html"
+                    class="module-rpn"></inline-source>
+                <inline-source
+                    src="src/panel-sch.html"
+                    class="module-sch"></inline-source>
+                <inline-source
+                    src="src/panel-sns.html"
+                    class="module-sns"></inline-source>
+                <inline-source
+                    src="src/panel-thermostat.html"
+                    class="module-thermostat"></inline-source>
+                <inline-source
+                    src="src/panel-tspk.html"
+                    class="module-tspk"></inline-source>
+
+            </div>
+        </div>
+
+        <inline-source src="src/template-base.html"></inline-source>
+        <inline-source src="src/template-wifi.html"></inline-source>
+
+        <inline-source
+            src="src/template-curtain.html"
+            class="module-curtain"></inline-source>
+        <inline-source
+            src="src/template-led.html"
+            class="module-led"></inline-source>
+        <inline-source
+            src="src/template-light.html"
+            class="module-light"></inline-source>
+        <inline-source
+            src="src/template-relay.html"
+            class="module-relay"></inline-source>
+        <inline-source
+            src="src/template-rfb.html"
+            class="module-rfb"></inline-source>
+        <inline-source
+            src="src/template-rfm69.html"
+            class="module-rfm69"></inline-source>
+        <inline-source
+            src="src/template-rpn.html"
+            class="module-rpn"></inline-source>
+        <inline-source
+            src="src/template-sch.html"
+            class="module-sch"></inline-source>
+        <inline-source
+            src="src/template-sns.html"
+            class="module-sns"></inline-source>
+
+        <a href="" target="_blank" rel="noopener" id="downloader">
+            Download backup .json
+        </a>
+        <input id="uploader" type="file">
+    </body>
+</html>

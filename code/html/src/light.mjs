@@ -1,4 +1,5 @@
-import { default as iro } from '@jaames/iro';
+import iro from '@jaames/iro';
+
 import { styleInject, styleVisible } from './core.mjs';
 import { sendAction } from './connection.mjs';
 import { mergeTemplate, loadTemplate } from './template.mjs';

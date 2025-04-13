@@ -22,11 +22,17 @@ export default [
         rules: {
             "no-unused-vars": ["error", {
                 "argsIgnorePattern": "^_",
+                "caughtErrorsIgnorePattern": "^_",
             }],
         }
     },
     {
-        files: ["gulpfile.mjs"],
+        files: [
+            "gulpfile.mjs",
+            "vite.config.mjs",
+            "html/*.mjs",
+            "html/preset/**/*.mjs",
+        ],
         languageOptions: {
             "globals": {
                 ...globals.node,

@@ -1,4 +1,25 @@
-/// <reference path="index.build.d.mts" />
+import {
+    MODULE_API,
+    MODULE_CMD,
+    MODULE_CURTAIN,
+    MODULE_DBG,
+    MODULE_DCZ,
+    MODULE_DEV,
+    MODULE_GARLAND,
+    MODULE_HA,
+    MODULE_LED,
+    MODULE_LIGHT,
+    MODULE_LIGHTFOX,
+    MODULE_OTA,
+    MODULE_RELAY,
+    MODULE_RFB,
+    MODULE_RFM69,
+    MODULE_RPN,
+    MODULE_SCH,
+    MODULE_SNS,
+    MODULE_THERMOSTAT,
+    MODULE_TSPK,
+} from '@build-preset/constants.mjs';
 
 import { notifyError, notifyErrorEvent } from './errors.mjs';
 window.addEventListener("error", (event) => {
@@ -52,7 +73,7 @@ import { init as initSensor } from './sensor.mjs';
 import { init as initThermostat } from './thermostat.mjs';
 import { init as initThingspeak } from './thingspeak.mjs';
 
-import { init as initLocal } from './local.mjs';
+import { init as initDev } from './dev.mjs';
 
 /** @type {number | null} */
 let KeepTime = null;
@@ -336,7 +357,7 @@ function onJsonPayload(event) {
     }
 }
 
-function init() {
+async function init() {
     // Sidebar menu & buttons
     document.querySelector(".menu-link")
         ?.addEventListener("click", onMenuLinkClick);
@@ -360,7 +381,7 @@ function init() {
 
     variableListeners(listeners());
 
-    if (!MODULE_LOCAL) {
+    if (!MODULE_DEV) {
         initConnection();
     }
 
@@ -442,8 +463,8 @@ function init() {
         initCurtain();
     }
 
-    if (MODULE_LOCAL) {
-        initLocal();
+    if (MODULE_DEV) {
+        initDev();
         KeepTime = window.setInterval(keepTime, 1000);
         modulesVisibleAll();
         return;
