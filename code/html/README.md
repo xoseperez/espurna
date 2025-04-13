@@ -23,7 +23,10 @@ $ ./node_modules/.bin/gulp
 
 - `code/espurna/static/` - .html.ipp, used in the firmware code
 - `code/gulpfile.mjs` - builder script entrypoint
+- `code/vite.config.mjs` - (experimental) vite dev server configuration
+- `code/html/index.html` - main entrypoint, index.html template
 - `code/html/build` - intermediate build results
+- `code/html/preset` - build configurations
 - `code/html/spec` - vitest 'spec' files
 - `code/html/src` - source .mjs, .html, etc.
 - `code/node_modules` - build dependencies
@@ -52,13 +55,13 @@ $ gulp
 Build only (does not run tests)
 
 ```console
-$ gulp webui
+$ gulp build
 ```
 
-Build specific flavour (`webui_...` tasks)
+Build specific flavour (preset tasks)
 
 ```console
-$ gulp webui_small
+$ gulp build --preset small
 ```
 
 List all available tasks
@@ -68,7 +71,7 @@ $ gulp --tasks
 
 # Development
 
-Launches development server on port 8080 with the resulting .html bundle. No minification or compression, using `webui_all` as base
+Launches development server on port 8080 with the resulting .html bundle. No minification or compression, using `dev` preset as base
 
 ```console
 $ gulp dev
@@ -98,4 +101,10 @@ $ npm exec --no -- html-validate html/src/*.html
 ```
 ```console
 $ npm exec --no -- vitest --environment jsdom --dir html/spec --run
+```
+
+Experimental support of [Vite](https://vitejs.dev/) dev server is also included. Every preset is supported, but only `--mode dev` is expected to work locally
+
+```console
+$ vite --mode dev
 ```
