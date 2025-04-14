@@ -9,13 +9,12 @@ import { maybeInline, needElement } from './html/inline.mjs';
 import { defineConfig } from 'vite';
 import { JSDOM } from 'jsdom';
 
-const ROOT = path.dirname(url.fileURLToPath(import.meta.url));
-
-const HTML_DIR = path.join(ROOT, 'html');
-
-const VENDOR_DIR = path.join(HTML_DIR, 'vendor');
-const PRESETS_DIR = path.join(HTML_DIR, 'preset');
-const BUILD_DIR = path.join(HTML_DIR, 'build');
+import {
+    HTML_DIR,
+    VENDOR_DIR,
+    PRESET_DIR,
+    BUILD_DIR,
+} from './gulpfile.mjs';
 
 // vite build pipeline is simplified compared to the gulp one
 // assets are mostly handled through the rollup <-> vite
@@ -184,7 +183,7 @@ export default defineConfig(async ({ mode }) => {
         throw new Error(`'mode' has to be one of: ${Array.from(MODULE_PRESETS).join(', ')}`);
     }
 
-    const preset = path.join(PRESETS_DIR, mode);
+    const preset = path.join(PRESET_DIR, mode);
     const constants = url.pathToFileURL(
         path.join(preset, 'constants.mjs'));
 

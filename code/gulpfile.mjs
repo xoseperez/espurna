@@ -109,39 +109,39 @@ import {
  */
 
 // directory where this file is located
-const ROOT = path.dirname(url.fileURLToPath(import.meta.url));
+export const ROOT = path.dirname(url.fileURLToPath(import.meta.url));
 
 // vendored sources from node_modules/ need explicit paths
-const NODE_DIR = path.join(ROOT, 'node_modules');
+export const NODE_DIR = path.join(ROOT, 'node_modules');
 
 // ui sources root
-const HTML_DIR = path.join(ROOT, 'html');
+export const HTML_DIR = path.join(ROOT, 'html');
 
 // build preset environment files
-const PRESET_DIR = path.join(HTML_DIR, 'preset');
+export const PRESET_DIR = path.join(HTML_DIR, 'preset');
 
 // output .html w/ inline sourcemaps (for development only)
 // output .html.{gz,br}, cleaned-up for firmware use
-const BUILD_DIR = path.join(HTML_DIR, 'build');
+export const BUILD_DIR = path.join(HTML_DIR, 'build');
 
 // vendored sources, usually injected as-is without any minification or compression
-const VENDOR_DIR = path.join(HTML_DIR, 'vendor');
+export const VENDOR_DIR = path.join(HTML_DIR, 'vendor');
 
 // input sources, making sure relative inline paths start from here
-const SRC_DIR = path.join(HTML_DIR, 'src');
+export const SRC_DIR = path.join(HTML_DIR, 'src');
 
 // spec aka test files, make sure only these are used when running tests
-const SPEC_DIR = path.join(HTML_DIR, 'spec');
+export const SPEC_DIR = path.join(HTML_DIR, 'spec');
 
 // main source file used by inline-source
-const ENTRYPOINT = path.join(HTML_DIR, 'index.html')
+export const ENTRYPOINT = path.join(HTML_DIR, 'index.html')
 
 // .ipp compiled from the .html.{br,gz}, providing static u8[] for the firmware to use
-const STATIC_DIR = path.join(ROOT, 'espurna', 'static');
+export const STATIC_DIR = path.join(ROOT, 'espurna', 'static');
 
 // importmap manifest for dev server. atm, explicit overrides list
 // based on known locations for the MODULE_DEV preset
-const IMPORT_MAP = {
+export const IMPORT_MAP = {
     '@jaames/iro': path.join(NODE_DIR, '/@jaames/iro/dist/iro.es.js'),
     '@build-preset/constants.mjs': path.join(PRESET_DIR, MODULE_DEV, 'constants.mjs'),
 };
@@ -969,7 +969,7 @@ function serveWebUI({name, host, port}) {
             return;
         }
 
-        // everything else is attempted as html/src/${module}.mjs
+        // everything else is attempted as html/src/${path}
         if (url.pathname.endsWith('.mjs')) {
             await responseJsFile(response, path.join(SRC_DIR, relpath));
             return;
