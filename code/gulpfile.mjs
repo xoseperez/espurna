@@ -962,7 +962,8 @@ function serveWebUI({name, host, port}) {
         // only this way modules are actually modules and not inlined
 
         // in case importmap script was injected into the html
-        const imported = IMPORT_MAP[/** @type {keyof IMPORT_MAP} */(url.pathname.slice(1))];
+        const relpath = url.pathname.slice(1);
+        const imported = IMPORT_MAP[/** @type {keyof IMPORT_MAP} */(relpath)];
         if (imported) {
             await responseJsFile(response, imported);
             return;
@@ -970,11 +971,8 @@ function serveWebUI({name, host, port}) {
 
         // everything else is attempted as html/src/${module}.mjs
         if (url.pathname.endsWith('.mjs')) {
-            const tail = url.pathname.split('/').at(-1);
-            if (tail !== undefined) {
-                await responseJsFile(response, path.join(SRC_DIR, tail));
-                return;
-            }
+            await responseJsFile(response, path.join(SRC_DIR, relpath));
+            return;
         }
 
         response.writeHead(500, {'content-type': 'text/plain'});

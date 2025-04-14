@@ -1,51 +1,22 @@
-import {
-    randomString,
-} from './core.mjs';
-
-import { validatePassword, validateFormsPasswords } from './validate.mjs';
+import { randomString } from './core.mjs';
 
 import {
     applySettingsFromForms,
-    resetChangedElement,
     listenVariables,
 } from './settings.mjs';
+import { resetChangedElement } from './settings/utils.mjs';
 
-const FORM_SETUP_PASSWORD = "form-setup-password";
+import {
+    formPassPair,
+    validatePassword,
+    withForm,
+} from './password/utils.mjs';
 
-/** @param {function(HTMLFormElement): void} callback */
-export function withForm(callback) {
-    callback(/** @type {!HTMLFormElement} */
-        (document.forms.namedItem(FORM_SETUP_PASSWORD)));
-}
-
-/**
- * @param {HTMLFormElement[]} forms
- * @returns {HTMLFormElement[]}
- */
-export function filterForm(forms) {
-    return forms.filter(
-        (x) => x.id === FORM_SETUP_PASSWORD);
-}
+import { validateFormsPasswords } from './validate.mjs';
 
 /**
  * @typedef {[HTMLInputElement, HTMLInputElement]} PasswordInputPair
  */
-
-/**
- * @param {HTMLFormElement} form
- * @returns {PasswordInputPair | []}
- */
-export function formPassPair(form) {
-    const out = ["adminPass0", "adminPass1"]
-        .map((x) => form.elements.namedItem(x))
-        .filter((x) => x instanceof HTMLInputElement);
-
-    if (out.length === 2) {
-        return [out[0], out[1]];
-    }
-
-    return [];
-}
 
 /**
  * @returns {string}

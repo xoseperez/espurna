@@ -2,8 +2,8 @@ import iro from '@jaames/iro';
 
 import { styleInject, styleVisible } from './core.mjs';
 import { sendAction } from './connection.mjs';
-import { mergeTemplate, loadTemplate } from './template.mjs';
 import { addEnumerables, variableListeners } from './settings.mjs';
+import { mergeTemplate, loadTemplate } from './settings/template.mjs';
 
 /**
  * @param {iro.Color} color

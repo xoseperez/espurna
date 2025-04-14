@@ -149,6 +149,19 @@ export function showPanel(elem) {
 }
 
 /**
+ * @param {HTMLElement} elem
+ * @param {function(HTMLElement): void} callback
+ */
+export function findPanel(elem, callback) {
+    const panel = elem.closest(".panel");
+    if (!(panel instanceof HTMLElement)) {
+        return;
+    }
+
+    callback(panel);
+}
+
+/**
  * @param {string} name
  */
 export function showPanelByName(name) {
@@ -262,4 +275,18 @@ export function capitalize(value) {
     return value === ""
         ? value
         : `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
+}
+
+/**
+ * @param {string} value
+ * @returns {boolean}
+ */
+export function stringToBoolean(value) {
+    return [
+        "1",
+        "y",
+        "yes",
+        "true",
+        "on",
+    ].includes(value.toLowerCase());
 }

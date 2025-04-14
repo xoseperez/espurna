@@ -1,58 +1,23 @@
-import { isChangedElement, isIgnoredElement, getElements } from './settings.mjs';
-import { showPanel } from './core.mjs';
-import {
-    formPassPair,
-    filterForm as filterPasswordForm,
-} from './password.mjs';
+import { findPanel, showPanel } from './core.mjs';
 
-const DIFFERENT_PASSWORD = "Passwords are different!";
-const EMPTY_PASSWORD = "Password cannot be empty!";
-const INVALID_PASSWORD = "Invalid password!";
+import {
+    isChangedElement,
+    isIgnoredElement,
+    getElements,
+} from './settings/utils.mjs';
+
+import {
+    filterForm,
+    formPassPair,
+    validatePassword,
+} from './password/utils.mjs';
+
+/** @import { InputOrSelect } from './settings.mjs' */
 
 const CUSTOM_VALIDITY = "customValidity";
 
 /**
- * @param {string} value
- * @returns {boolean}
- */
-export function validatePassword(value) {
-    // http://www.the-art-of-web.com/javascript/validate-password/
-    // at least one lowercase and one uppercase letter or number
-    // at least eight characters (letters, numbers or special characters)
-
-    // MUST be 8..63 printable ASCII characters. See:
-    // https://en.wikipedia.org/wiki/Wi-Fi_Protected_Access#Target_users_(authentication_key_distribution)
-    // https://github.com/xoseperez/espurna/issues/1151
-
-    const Pattern = /^(?=.*[A-Z\d])(?=.*[a-z])[\w~!@#$%^&*()<>,.?;:{}[\]\\|]{8,63}/;
-    return ((typeof value === "string")
-        && (value.length >= 8)
-        && Pattern.test(value));
-}
-
-/**
- * @typedef {{strict?: boolean, assumeChanged?: boolean}} ValidationOptions
- */
-
-/**
- * @typedef {[HTMLInputElement, HTMLInputElement]} PasswordInputPair
- */
-
-/**
- * @param {import('./settings.mjs').InputOrSelect} elem
- * @param {function(HTMLElement): void} callback
- */
-function findPanel(elem, callback) {
-    const panel = elem.closest(".panel");
-    if (!(panel instanceof HTMLElement)) {
-        return;
-    }
-
-    callback(panel);
-}
-
-/**
- * @param {import('./settings.mjs').InputOrSelect} elem
+ * @param {InputOrSelect} elem
  * @param {string} message
  */
 export function reportValidityForInputOrSelect(elem, message = "") {
@@ -70,7 +35,7 @@ export function reportValidityForInputOrSelect(elem, message = "") {
 }
 
 /**
- * @param {import('./settings.mjs').InputOrSelect} elem
+ * @param {InputOrSelect} elem
  */
 export function resetCustomValidity(elem) {
     delete elem.dataset[CUSTOM_VALIDITY];
@@ -78,7 +43,7 @@ export function resetCustomValidity(elem) {
 }
 
 /**
- * @param {import('./settings.mjs').InputOrSelect} elem
+ * @param {InputOrSelect} elem
  * @returns {boolean}
  */
 function validateInputOrSelect(elem) {
@@ -91,6 +56,30 @@ function validateInputOrSelect(elem) {
 }
 
 /**
+ * @param {HTMLFormElement[]} forms
+ * @returns {boolean}
+ */
+export function validateFormsReportValidity(forms) {
+    const elems = forms
+        .flatMap((form) => getElements(form))
+        .filter((x) => isChangedElement(x) && !isIgnoredElement(x))
+
+    if (!elems.length) {
+        return false;
+    }
+
+    return elems.every(validateInputOrSelect);
+}
+
+/**
+ * @typedef {{strict?: boolean, assumeChanged?: boolean}} ValidationOptions
+ */
+
+const DIFFERENT_PASSWORD = "Passwords are different!";
+const EMPTY_PASSWORD = "Password cannot be empty!";
+const INVALID_PASSWORD = "Invalid password!";
+
+/**
  * Try to validate password pair in the given list of forms. Alerts when validation fails.
  * With initial setup, this usually happens to be the only validation func w/ optional strict mode.
  * With normal panel, strict is expected to be false.
@@ -100,7 +89,7 @@ function validateInputOrSelect(elem) {
  * @returns {boolean}
  */
 export function validateFormsPasswords(forms, {strict = true, assumeChanged = false} = {}) {
-    const [form] = filterPasswordForm(forms);
+    const [form] = filterForm(forms);
     if (!form) {
         return true;
     }
@@ -136,27 +125,4 @@ export function validateFormsPasswords(forms, {strict = true, assumeChanged = fa
     return false;
 }
 
-/**
- * @param {HTMLFormElement[]} forms
- * @returns {boolean}
- */
-export function validateFormsReportValidity(forms) {
-    const elems = forms
-        .flatMap((form) => getElements(form))
-        .filter((x) => isChangedElement(x) && !isIgnoredElement(x))
 
-    if (!elems.length) {
-        return false;
-    }
-
-    return elems.every(validateInputOrSelect);
-}
-
-/**
- * @param {HTMLFormElement[]} forms
- * @returns {boolean}
- */
-export function validateForms(forms) {
-    return validateFormsReportValidity(forms)
-        && validateFormsPasswords(forms, {strict: false});
-}

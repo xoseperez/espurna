@@ -1,6 +1,7 @@
 import { assert, expect, test, beforeAll } from 'vitest';
-import { loadTemplate, mergeTemplate, addFromTemplate } from '../src/template.mjs';
-import { countChangedElements } from '../src/settings.mjs';
+import { addFromTemplate } from '../src/template.mjs';
+import { loadTemplate, mergeTemplate } from '../src/settings/template.mjs';
+import { countChangedElements } from '../src/settings/utils.mjs';
 
 beforeAll(async () => {
     document.body.innerHTML += `

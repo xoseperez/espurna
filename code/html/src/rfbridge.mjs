@@ -8,9 +8,12 @@ import {
 } from './settings.mjs';
 
 import {
-    mergeTemplate,
     loadConfigTemplate,
 } from './template.mjs';
+
+import {
+    mergeTemplate,
+} from './settings/template.mjs';
 
 /** @param {Event} event */
 function onButtonPress(event) {

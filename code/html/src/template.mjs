@@ -5,27 +5,27 @@
 import {
     listenEnumerable,
     onGroupSettingsDel,
-    setGroupElement,
     setInputValue,
     setOriginalsFromValuesForNode,
     setSelectValue,
     setSpanValue,
 } from './settings.mjs';
 
+import {
+    setGroupElement,
+} from './settings/utils.mjs';
+
+import {
+    loadTemplate,
+    mergeTemplate,
+} from './settings/template.mjs';
+
 import { passwordReveal } from './password.mjs';
 import { moreParent } from './core.mjs';
 
 /**
- * @param {string} name
- * @returns {DocumentFragment}
+ * @import { InputOrSelect } from './settings.mjs'
  */
-export function loadTemplate(name) {
-    const template = /** @type {HTMLTemplateElement} */
-        (document.getElementById(`template-${name}`));
-    return document.importNode(template.content, true);
-}
-
-/** @import { InputOrSelect } from './settings.mjs' */
 
 /**
  * @param {string} name
@@ -100,19 +100,6 @@ export function fillTemplateFromCfg(fragment, id, cfg = {}) {
     }
 
     setOriginalsFromValuesForNode(fragment);
-}
-
-/**
- * @param {HTMLElement} target
- * @param {DocumentFragment} template
- * @returns {Element | null}
- */
-export function mergeTemplate(target, template) {
-    for (let child of Array.from(template.children)) {
-        target.appendChild(child);
-    }
-
-    return target.lastElementChild;
 }
 
 /**

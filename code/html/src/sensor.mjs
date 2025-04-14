@@ -10,20 +10,26 @@ import {
     listenEnumerableName,
     listenEnumerableTarget,
     prepareEnumerableTarget,
-    resetGroupElement,
-    setChangedElement,
-    setIgnoredElement,
     setOriginalFromValue,
     setSelectValue,
     variableListeners,
 } from './settings.mjs';
 
 import {
+    resetGroupElement,
+    setChangedElement,
+    setIgnoredElement,
+} from './settings/utils.mjs';
+
+import {
     fromSchema,
-    loadTemplate,
-    mergeTemplate,
     NumberInput,
 } from './template.mjs';
+
+import {
+    loadTemplate,
+    mergeTemplate,
+} from './settings/template.mjs';
 
 /**
  * @typedef Magnitude

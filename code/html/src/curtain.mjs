@@ -1,5 +1,6 @@
 import { sendAction } from './connection.mjs';
-import { loadConfigTemplate, mergeTemplate } from './template.mjs';
+import { loadConfigTemplate } from './template.mjs';
+import { mergeTemplate } from './settings/template.mjs';
 import { addSimpleEnumerables, variableListeners } from './settings.mjs';
 
 const BACKGROUND_MOVING = "rgb(192, 0, 0)";

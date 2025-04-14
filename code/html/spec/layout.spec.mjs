@@ -1,8 +1,22 @@
 import { assert, test, expect, beforeAll } from 'vitest';
-import { onElementChange, setInputValue, isChangedElement } from '../src/settings.mjs';
-import { validateForms, validateFormsPasswords } from '../src/validate.mjs';
-import { formPassPair, filterForm } from '../src/password.mjs';
-import { open } from 'node:fs/promises';
+
+import {
+    onElementChange,
+    setInputValue,
+} from '../src/settings.mjs';
+import { isChangedElement } from '../src/settings/utils.mjs';
+
+import {
+    validateFormsReportValidity,
+    validateFormsPasswords,
+} from '../src/validate.mjs';
+
+import {
+    formPassPair,
+    filterForm,
+} from '../src/password/utils.mjs';
+
+import { readFile } from 'node:fs/promises';
 
 /**
  * @import { PasswordInputPair } from '../src/password.mjs'
@@ -21,9 +35,8 @@ function getFormPassPair() {
 
 beforeAll(async () => {
     for (let panel of ['password', 'general']) {
-        const html = await open(`${import.meta.dirname}/../src/panel-${panel}.html`, 'r');
-        document.body.innerHTML += (await html.read()).buffer.toString();
-        await html.close();
+        const html = await readFile(`${import.meta.dirname}/../src/panel-${panel}.html`);
+        document.body.innerHTML += Buffer.from(html.buffer).toString();
     }
 
     document.body.querySelectorAll('input').forEach((elem) => {
@@ -85,8 +98,13 @@ test('password can be empty when other forms change', () => {
         .elements.namedItem('hostname');
     assert(hostname instanceof HTMLInputElement);
 
-    changeInput(hostname, 'espurna-test');
-    assert(validateForms([...document.forms]));
+    changeInput(hostname, 'espurna-test1');
+    assert(validateFormsReportValidity([...document.forms]));
+    assert(validateFormsPasswords([...document.forms], {strict: false}));
+
+    changeInput(hostname, 'espurna-test2');
+    assert(validateFormsReportValidity([...document.forms]));
+    assert(validateFormsPasswords([...document.forms], {strict: false}));
 });
 
 test('password cannot be empty when validator requires it', () => {
@@ -101,7 +119,8 @@ test('password equality check in lenient mode', () => {
     const inputs = getFormPassPair();
 
     changePasswordPair(inputs, '11111111', '11111111');
-    assert(validateForms([...document.forms]));
+    assert(validateFormsReportValidity([...document.forms]));
+    assert(validateFormsPasswords([...document.forms], {strict: false}));
 });
 
 test('password equality check in strict mode', () => {

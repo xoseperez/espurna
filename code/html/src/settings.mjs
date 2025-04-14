@@ -1,9 +1,8 @@
-import { notifyError } from './errors.mjs';
 import {
-    count,
     capitalize,
     pageReloadIn,
     showPanelByName,
+    stringToBoolean,
 } from './core.mjs';
 
 import {
@@ -12,51 +11,36 @@ import {
     listenAppConnected,
 } from './connection.mjs';
 
-import { validateForms, resetCustomValidity } from './validate.mjs';
+import { validateFormsReportValidity, validateFormsPasswords, resetCustomValidity } from './validate.mjs';
+import { notifyError } from './notify.mjs';
+
+import {
+    countChangedElements,
+    isChangedElement,
+    isGroupElement,
+    isIgnoredElement,
+    setChangedElement,
+    resetChangedElement,
+    resetSettingsGroup,
+} from './settings/utils.mjs';
 
 /**
- * @param {HTMLElement} elem
+ * generic value type to set to or get from an element. usually an editable type, like input or select
+ * @typedef { string | number | boolean | null } ElementValue
  */
-export function isChangedElement(elem) {
-    return stringToBoolean(elem.dataset["changed"] ?? "");
-}
 
 /**
- * @param {Element} node
+ * generic value to be set to an element. usually cannot be edited after setting, expected to be updated from the device side
+ * @typedef { ElementValue | ElementValue[] } DisplayValue
  */
-export function getElements(node) {
-    return /** @type {Array<InputOrSelect>} */(
-        Array.from(node.querySelectorAll(
-            "input[data-changed],select[data-changed]")));
-}
 
 /**
- * @param {Element} node
+ * @typedef { HTMLInputElement | HTMLSelectElement } InputOrSelect
  */
-export function countChangedElements(node) {
-    return count(getElements(node), isChangedElement);
-}
 
 /**
- * @param {HTMLElement} elem
+ * @typedef {{element: InputOrSelect, key: string, value: ElementValue}} GroupElementInfo
  */
-export function setChangedElement(elem) {
-    elem.dataset["changed"] = "true";
-}
-
-/**
- * @param {HTMLElement} elem
- */
-export function resetChangedElement(elem) {
-    elem.dataset["changed"] = "false";
-}
-
-/**
- * @param {HTMLElement} elem
- */
-function resetGroupPending(elem) {
-    delete elem.dataset["settingsGroupPending"];
-}
 
 // Right now, group additions happen from:
 // - WebSocket, likely to happen exactly once per connection through processData handler(s). Specific keys trigger functions that append into the container element.
@@ -67,9 +51,6 @@ function resetGroupPending(elem) {
 // TODO: previous implementation relied on defaultValue and / or jquery $(...).val(), but this does not really work where 'line' only has <select>
 
 /**
- * @typedef {HTMLInputElement | HTMLSelectElement} InputOrSelect
- * @typedef {{element: InputOrSelect, key: string, value: ElementValue}} GroupElementInfo
- *
  * @param {Element} target
  * @returns {GroupElementInfo[]}
  */
@@ -118,54 +99,6 @@ function getGroupPending(elem) {
     }
 
     return raw.split(" ");
-}
-
-const SETTINGS_GROUP_ELEMENT = "settingsGroupElement";
-
-/**
- * @param {HTMLElement} elem
- */
-export function setGroupElement(elem) {
-    elem.dataset[SETTINGS_GROUP_ELEMENT] = "true";
-}
-
-/**
- * @param {HTMLElement} elem
- */
-export function resetGroupElement(elem) {
-    delete elem.dataset[SETTINGS_GROUP_ELEMENT];
-}
-
-/**
- * @param {HTMLElement} elem
- * @returns {boolean}
- */
-export function isGroupElement(elem) {
-    return elem.dataset[SETTINGS_GROUP_ELEMENT] !== undefined;
-}
-
-const SETTINGS_IGNORED_ELEMENT = "settingsIgnore";
-
-/**
- * @param {HTMLElement} elem
- */
-export function setIgnoredElement(elem) {
-    elem.dataset[SETTINGS_IGNORED_ELEMENT] = "true";
-}
-
-/**
- * @param {HTMLElement} elem
- */
-export function resetIgnoredElement(elem) {
-    delete elem.dataset[SETTINGS_IGNORED_ELEMENT];
-}
-
-/**
- * @param {HTMLElement} elem
- * @returns {boolean}
- */
-export function isIgnoredElement(elem) {
-    return elem.dataset[SETTINGS_IGNORED_ELEMENT] !== undefined;
 }
 
 /**
@@ -439,19 +372,6 @@ function groupSettingsCleanup(container, keys) {
 }
 
 /**
- * besides gathering the data, func is expected to also provide
- * - del: 'cleanup' keys, usually from setting groups that marked certain keys for deletion
- * - set: kvs only for 'changed' keys, or everything available
- * @typedef {{cleanup?: boolean, assumeChanged?: boolean}} GetDataOptions
- */
-
-/**
- * kvs for the device settings storage
- * @typedef {string | number} DataValue
- * @typedef {{[k: string]: DataValue}} SetRequest
- */
-
-/**
  * @param {string | number |boolean} value
  * @returns {DataValue}
  */
@@ -475,13 +395,21 @@ function maybeAdjustDataValue(value) {
 }
 
 /**
- * specific 'key' string to remove from the device settings storage
- * @typedef {string} DelRequest
+ * besides gathering the data, func is expected to also provide
+ * - del: 'cleanup' keys, usually from setting groups that marked certain keys for deletion
+ * - set: kvs only for 'changed' keys, or everything available
+ * @typedef {{cleanup?: boolean, assumeChanged?: boolean}} GetDataOptions
+ */
+
+/**
+ * kvs for the device settings storage
+ * @typedef {string | number} DataValue
+ * @typedef {{[k: string]: DataValue}} SetRequest
  */
 
 /**
  * usually, settings request is sent as a single object
- * @typedef {{set: SetRequest, del: DelRequest[]}} DataRequest
+ * @typedef {{set: SetRequest, del: string[]}} DataRequest
  */
 
 /**
@@ -584,16 +512,6 @@ export function getData(forms, {cleanup = true, assumeChanged = false} = {}) {
 // - initial setup. it is shown programatically, but is still available from the global list of forms
 
 /**
- * generic value type to set to or get from an element. usually an editable type, like input or select
- * @typedef {boolean | number | string | null} ElementValue
- */
-
-/**
- * generic value to be set to an element. usually cannot be edited after setting, expected to be updated from the device side
- * @typedef {ElementValue | ElementValue[]} DisplayValue
- */
-
-/**
  * @param {InputOrSelect} elem
  * @returns {ElementValue}
  */
@@ -673,32 +591,6 @@ export function getOriginalForElement(elem) {
     }
 
     return null;
-}
-
-function resetSettingsGroup() {
-    const elems = document.getElementsByClassName("settings-group");
-    for (let elem of elems) {
-        if (!(elem instanceof HTMLElement)) {
-            continue;
-        }
-
-        resetChangedElement(elem);
-        resetGroupPending(elem);
-    }
-}
-
-/**
- * @param {string} value
- * @returns {boolean}
- */
-function stringToBoolean(value) {
-    return [
-        "1",
-        "y",
-        "yes",
-        "true",
-        "on",
-    ].includes(value.toLowerCase());
 }
 
 /**
@@ -904,10 +796,6 @@ export function setOriginalsFromValuesForNode(node) {
 }
 
 /**
- * @typedef {[string, string]} EnumerableTuple
- */
-
-/**
  * Automatically updates element contents using named entries.
  *
  * Consumer is expected to
@@ -918,8 +806,10 @@ export function setOriginalsFromValuesForNode(node) {
  * - <select> recreates <options> with value=$key and labeled with the string contents
  * - <span> inner text is updated with the all of the string contents joined together
  *
+ * @typedef {[string, string]} EnumerableTuple
  * @typedef {{[k: string]: string}} EnumerableNames
  */
+
 
 /** @type {{[k: string]: EnumerableNames}} */
 const Enumerable = {};
@@ -934,7 +824,9 @@ const ENUMERABLE_EVENT_PREFIX = 'enumerable-update-';
 
 /**
  * @typedef {{value: string, text: string}} ElementOption
- *
+ */
+
+/**
  * @param {HTMLSelectElement | HTMLDataListElement} elem
  * @param {ElementOption[]} options
  */
@@ -1480,6 +1372,15 @@ export function applySettingsFromForms(forms) {
     applySettings(getData(forms));
     Settings.resetChanged();
     waitForSaved();
+}
+
+/**
+ * @param {HTMLFormElement[]} forms
+ * @returns {boolean}
+ */
+function validateForms(forms) {
+    return validateFormsReportValidity(forms)
+        && validateFormsPasswords(forms, {strict: false});
 }
 
 /** @param {Event} event */

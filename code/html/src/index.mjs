@@ -21,7 +21,7 @@ import {
     MODULE_TSPK,
 } from '@build-preset/constants.mjs';
 
-import { notifyError, notifyErrorEvent } from './errors.mjs';
+import { notifyError, notifyErrorEvent } from './notify.mjs';
 window.addEventListener("error", (event) => {
     notifyErrorEvent(event);
     console.error(event.error);

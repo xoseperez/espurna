@@ -1,5 +1,5 @@
 import { addEnumerables, variableListeners } from './settings.mjs';
-import { notifyMessage } from './errors.mjs';
+import { notifyMessage } from './notify.mjs';
 
 /**
  * @param {any} config

@@ -1,5 +1,5 @@
 import { randomString } from './core.mjs';
-import { setChangedElement } from './settings.mjs';
+import { setChangedElement } from './settings/utils.mjs';
 
 function randomApiKey() {
     const form = document.forms.namedItem("form-admin");

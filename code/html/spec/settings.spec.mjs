@@ -3,13 +3,14 @@ import {
     checkAndSetElementChanged,
     getDataForElement,
     getOriginalForElement,
-    isChangedElement,
     setOriginalsFromValues,
     setOriginalsFromValuesForNode,
     setSpanValue,
     setInputValue,
     setSelectValue,
 } from '../src/settings.mjs';
+
+import { isChangedElement } from '../src/settings/utils.mjs';
 
 test('select unchanged with empty value when original is missing', () => {
     const node = document.createElement('select');

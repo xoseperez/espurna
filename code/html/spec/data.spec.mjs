@@ -4,17 +4,20 @@ import { randomString } from '../src/core.mjs';
 import { addFromTemplate } from '../src/template.mjs';
 import {
     checkAndSetElementChanged,
-    setChangedElement,
     getData,
     groupSettingsAdd,
     groupSettingsDel,
     setInputOrSelectValueByKey,
-    setSpanValueByKey,
-    isChangedElement,
     setInputValue,
-    setGroupElement,
-    countChangedElements,
+    setSpanValueByKey,
 } from '../src/settings.mjs';
+
+import {
+    countChangedElements,
+    isChangedElement,
+    setChangedElement,
+    setGroupElement,
+} from '../src/settings/utils.mjs';
 
 afterAll(() => {
   document.body.innerHTML = '';

@@ -3,8 +3,6 @@ import { sendAction } from './connection.mjs';
 import {
     addFromTemplate,
     fromSchema,
-    loadTemplate,
-    mergeTemplate,
     NumberInput,
 } from './template.mjs';
 
@@ -14,6 +12,11 @@ import {
     variableListeners,
     listenEnumerableTarget,
 } from './settings.mjs';
+
+import {
+    loadTemplate,
+    mergeTemplate,
+} from './settings/template.mjs';
 
 /** @param {Event} event */
 function onToggle(event) {

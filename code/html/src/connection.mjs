@@ -1,4 +1,4 @@
-import { notifyError, notifyMessage } from './errors.mjs';
+import { notifyError, notifyMessage } from './notify.mjs';
 import { pageReloadIn } from './core.mjs';
 
 /** @typedef {{auth: URL, config: URL, upgrade: URL, ws: URL}} ConnectionUrls */
@@ -45,7 +45,7 @@ class ConnectionBase {
         /** @type {WebSocket | null} */
         this._socket = null;
 
-        /** @type {number | null} */
+        /** @type {NodeJS.Timeout | number | null} */
         this._ping_pong = null;
 
         /** @type {ConnectionUrls | null} */
@@ -97,8 +97,9 @@ class ConnectionBase {
 ConnectionBase.prototype.open = function(urls, {onopen = null, onclose = null, onmessage = null} = {}) {
     this._socket = new WebSocket(urls.ws.href);
     this._socket.onopen = (event) => {
-        this._ping_pong = setInterval(
+        const id = setInterval(
             () => { sendAction("ping"); }, 5000);
+        this._ping_pong = id;
         if (onopen) {
             onopen(event, this);
         }

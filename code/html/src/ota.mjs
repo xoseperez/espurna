@@ -1,4 +1,4 @@
-import { notifyMessage } from './errors.mjs';
+import { notifyMessage } from './notify.mjs';
 import { listenAppConnected } from './connection.mjs';
 import { variableListeners } from './settings.mjs';
 
