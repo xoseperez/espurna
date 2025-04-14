@@ -146,6 +146,30 @@ export const IMPORT_MAP = {
     '@build-preset/constants.mjs': path.join(PRESET_DIR, MODULE_DEV, 'constants.mjs'),
 };
 
+// files relevant to the build
+export const BUILD_SCRIPTS = [
+    'eslint.config.mjs',
+    'gulpfile.mjs',
+    'vite.config.mjs',
+    'vitest.config.mjs',
+    `${HTML_DIR}/*.mjs`,
+    `${PRESET_DIR}/**/*.mjs`,
+];
+
+// files relevant to the vitest
+export const TEST_SCRIPTS = [
+    `${SPEC_DIR}/**/*.mjs`,
+];
+
+// files relevant to the webui
+export const SOURCE_SCRIPTS = [
+    `${SRC_DIR}/**/*.mjs`,
+];
+
+export const SOURCE_HTML = [
+    `${SRC_DIR}/**/*.html`,
+];
+
 // dev server lives on localhost by default; note that it accepts one-of 127.0.0.1 or ::1
 const DEV_HOST = 'localhost';
 const DEV_PORT = 8080;
@@ -1001,11 +1025,11 @@ function serveWebUI({name, host, port}) {
 function sourcePath(pattern) {
     return [
         src(pattern, {read: false, buffer: false}),
-        new Transform({
-            objectMode: true,
-            transform(source, _, callback) {
-                callback(null, source.path);
-            }}),
+        async function* (/** @type {AsyncIterable<File>} */source) {
+            for await (const chunk of source) {
+                yield chunk.path;
+            }
+        },
     ];
 }
 
@@ -1013,36 +1037,20 @@ function sourcePath(pattern) {
 export async function vitest() {
     return pipeline(
         /** @ts-ignore, types/node/stream/promises/pipeline.d.ts hates 'args' / '...args' */
-        ...sourcePath([
-            `${SPEC_DIR}/*.mjs`,
-        ]),
-        async function* (/** @type {AsyncIterable<string>} */source) {
-            // ref. 'vitest/node' parseVitestCLI('vitest --environment jsdom --dir html/spec --run')
-            const opts = {
-                /** @type {string[]} */
-                filter: [],
-                options: {
-                    '--': [],
-                    color: true,
-                    environment: 'jsdom',
-                    dir: SPEC_DIR,
-                    run: true,
-                }
-            };
-
-            for await (const chunk of source) {
-                opts.filter.push(chunk);
-            }
-
-            yield opts;
-        },
+        ...sourcePath(TEST_SCRIPTS),
         async function* (/** @type {AsyncIterable<any>} */source) {
-            const { startVitest } = await import('vitest/node');
-            for await (const opts of source) {
-                const runner = await startVitest('test', opts.filter, opts.options);
-                await runner.close();
-                break;
+            // ref. 'vitest/node' parseVitestCLI('vitest --environment jsdom --dir html/spec --run')
+            let filter = [];
+            for await (const chunk of source) {
+                filter.push(chunk);
             }
+
+            const { startVitest } = await import('vitest/node');
+            const runner = await startVitest('test', filter, {
+                config: path.join(ROOT, 'vitest.config.mjs'),
+                run: true,
+            });
+            await runner.close();
         }
     );
 }
@@ -1054,65 +1062,60 @@ export async function eslint() {
     const runner = new ESLint({});
     const format = await runner.loadFormatter('stylish');
 
-    return pipeline([
-        ...sourcePath([
-            'gulpfile.mjs',
-            'vite.config.mjs',
-            `${HTML_DIR}/inline.mjs`,
-            `${HTML_DIR}/preset.mjs`,
-            `${PRESET_DIR}/*.mjs`,
-            `${SRC_DIR}/*.mjs`,
-            `${SPEC_DIR}/*.mjs`,
-        ]),
-        new Transform({
-            objectMode: true,
-            async transform(path, _, callback) {
-                const results = await runner.lintFiles([path]);
-                const resultText = await format.format(results);
+    const files = [
+        ...BUILD_SCRIPTS,
+        ...TEST_SCRIPTS,
+        ...SOURCE_SCRIPTS,
+    ];
 
-                if (resultText.length) {
-                    log(resultText);
-                }
+    return pipeline(
+        /** @ts-ignore, types/node/stream/promises/pipeline.d.ts hates 'args' / '...args' */
+        ...sourcePath(files),
+        async function* (/** @type {AsyncIterable<string>} */source) {
+            let paths = [];
+            for await (const chunk of source) {
+                paths.push(chunk);
+            }
 
-                const errorCount =
-                    results.filter((x) => x.errorCount > 0)
-                    .length > 0;
-                if (errorCount) {
-                    callback(new Error(`eslint: ${path} failed`));
-                    return;
-                }
+            const results = await runner.lintFiles(paths);
 
-                callback(null);
-            }}),
-    ]);
+            const formatted = await format.format(results);
+            if (formatted.length) {
+                log(formatted);
+            }
+
+            const fatal = results.some((x) => x.errorCount > 0);
+            if (fatal) {
+                throw new Error(`eslint: ${path} failed`);
+            }
+        },
+    );
 }
 
 // Validate all HTML sources. *Cannot* happen at inline stage, since JSDOM modifications break some style rules
 async function html_validate() {
-    const {
-        FileSystemConfigLoader,
-        HtmlValidate,
-        formatterFactory,
-    } = await import('html-validate');
+    return pipeline(
+        /** @ts-ignore, types/node/stream/promises/pipeline.d.ts hates 'args' / '...args' */
+        ...sourcePath(SOURCE_HTML),
+        async function* (/** @type {AsyncIterable<string>} */source) {
+            const {
+                FileSystemConfigLoader,
+                HtmlValidate,
+                formatterFactory,
+            } = await import('html-validate');
 
-    const html = new HtmlValidate(new FileSystemConfigLoader());
-    const format = formatterFactory('stylish');
+            const html = new HtmlValidate(new FileSystemConfigLoader());
+            const format = formatterFactory('stylish');
 
-    return pipeline([
-        ...sourcePath(`${SRC_DIR}/*.html`),
-        new Transform({
-            objectMode: true,
-            async transform(path, _, callback) {
-                const report = await html.validateFile(path);
+            for await (const chunk of source) {
+                const report = await html.validateFile(chunk);
                 if (!report.valid) {
                     log(format(report.results));
-                    callback(new Error(`html-validate: ${path} failed`));
-                    return;
+                    throw new Error(`html-validate: ${path} failed`);
                 }
-
-                callback(null);
-            }}),
-    ]);
+            }
+        },
+    );
 }
 
 export { html_validate as 'html-validate' };
