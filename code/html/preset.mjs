@@ -249,10 +249,6 @@ async function builder(name, outdir = PRESETS_DIR) {
             path.join(target_dir, 'constants.mjs'),
             [asConstants(modules), asDictionary(modules)].join('\n'),
         ],
-        [
-            path.join(target_dir, '.env'),
-            `PRESET_NAME=${name}\n`,
-        ],
     ];
 
     let out = `Written: ${target_dir}`;
