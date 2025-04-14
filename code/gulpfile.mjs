@@ -1153,7 +1153,6 @@ presets.description = 'generate all of the required preset files, based on the h
 /** @import { ParseArgsOptionsConfig } from 'node:util' */
 
 const ERR_PRESET_EMPTY = new Error('preset flag cannot be empty');
-const ERR_PRESET_UNHANDLED = new Error('preset flag not handled');
 
 const ERR_PARSE_STRING = new Error('flag type !== string');
 const ERR_PARSE_NUMBER = new Error('flag type !== number');
@@ -1184,24 +1183,23 @@ export function build() {
         throw ERR_PRESET_EMPTY;
     }
 
-    if (typeof preset === 'boolean') {
-        throw ERR_PARSE_STRING;
-    } else if (typeof preset === 'string') {
-        return buildWebUI(preset);
-    } else if (Array.isArray(preset)) {
-        return Promise.all(preset.map((x) => {
-            if (typeof x === 'string') {
-                return buildWebUI(x);
-            }
+    /** @param {any} name */
+    async function run(name) {
+        if (typeof name === 'string') {
+            return buildWebUI(name);
+        }
 
-            throw ERR_PARSE_STRING;
-        }));
+        throw ERR_PARSE_STRING;
     }
 
-    throw ERR_PRESET_UNHANDLED;
+    if (Array.isArray(preset)) {
+        return Promise.all(preset.map(run));
+    }
+
+    return run(preset);
 }
 
-build.description = `builds one of the available presets: ${Array.from(MODULE_BUILD_PRESETS).join(', ')}`;
+build.description = `builds one or more of the available presets: ${Array.from(MODULE_BUILD_PRESETS).join(', ')}`;
 build.flags = {
     '--preset NAME': 'NAME of the build preset; can be specified multiple times',
 };
