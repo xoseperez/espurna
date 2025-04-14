@@ -504,7 +504,11 @@ function modifyHtml(handlers) {
 
             const dom = new JSDOM(source.contents, {includeNodeLocations: true});
 
-            const results = await Promise.all(handlers.map((x) => x(dom)));
+            let results = [];
+            for (const handler of handlers) {
+                results.push(await Promise.resolve(handler(dom)));
+            }
+
             if (results.some((x) => x)) {
                 source.contents = Buffer.from(dom.serialize());
             }

@@ -1,4 +1,3 @@
-/** @import { Plugin as EsbuildPlugin } from 'esbuild' */
 /** @import { Modules } from './preset.mjs' */
 /** @import { JSDOM } from 'jsdom' */
 
@@ -162,7 +161,7 @@ export async function maybeInline(dom, elem, {resolve, load, post} = {}) {
  * as the result, no code from the module should be bundled into the output when module was not initialized
  * however, since light module depends on iro.js and does not have `sideEffects: false` in package.json, it would still get bundled because of top-level import
  * (...and since module modifying something in global scope is not unheard of...)
- * @returns {EsbuildPlugin}
+ * @returns {import('esbuild').Plugin}
  */
 export function forceNoSideEffects() {
     return {
