@@ -1057,11 +1057,6 @@ export async function vitest() {
 
 // Generic javascript linting. *Could* happen at inline stage, but only without compression / minification
 export async function eslint() {
-    const { ESLint } = await import('eslint');
-
-    const runner = new ESLint({});
-    const format = await runner.loadFormatter('stylish');
-
     const files = [
         ...BUILD_SCRIPTS,
         ...TEST_SCRIPTS,
@@ -1076,6 +1071,11 @@ export async function eslint() {
             for await (const chunk of source) {
                 paths.push(chunk);
             }
+
+            const { ESLint } = await import('eslint');
+
+            const runner = new ESLint({});
+            const format = await runner.loadFormatter('stylish');
 
             const results = await runner.lintFiles(paths);
 
