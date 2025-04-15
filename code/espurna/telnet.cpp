@@ -240,7 +240,7 @@ struct ClientWriter {
         }
     }
 
-    size_t writeable(tcp_pcb* pcb) const {
+    size_t writable(tcp_pcb* pcb) const {
         return _list.empty() && (tcp_sndbuf(pcb) > 0);
     }
 
@@ -308,7 +308,7 @@ struct ExhaustingPrint : public Print {
 
         while (!flag.wait(duration::Seconds(3))
             && _client->connected()
-            && !_client->writeable())
+            && !_client->writable())
         {
             _client->flush();
             time::blockingDelay(
@@ -510,9 +510,9 @@ public:
     }
 
     // our network & internal buffers are free
-    bool writeable() {
+    bool writable() {
         if (_pcb) {
-            return _writer.writeable(_pcb);
+            return _writer.writable(_pcb);
         }
 
         return false;

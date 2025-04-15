@@ -116,8 +116,8 @@ function inlineAssetsPost() {
             }
 
             /**
-             * assuming, everything left inlineable is in the generated bundle(s)
              * vite is expected to clean-up src=..., so no need to resolve(src)
+             * bundle at this point should contain every remaining asset on the page
              * @param {string} src
              */
             function load(src) {
