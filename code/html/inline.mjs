@@ -65,9 +65,12 @@ export function needElement(elem, modules) {
 }
 
 /** @typedef InlineOptions
- * @property {function(string): (Promise<string> | string)} [resolve]
- * @property {function(string): (Promise<string> | string)} [load]
+ * @property {function(string, string, string): (Promise<string> | string)} [resolve]
+ * process raw input src=..., generate a valid path for the load(...)
+ * @property {function(string, string, string): (Promise<string> | string)} [load]
+ * process fs path from src=... or load(...) and return the 'code' to-be injected into the resulting element
  * @property {function(string): (void | Promise<void>)} [post]
+ * execute some action when code was successfuly loaded into the dom
  */
 
 /** 
@@ -77,8 +80,11 @@ export function needElement(elem, modules) {
  */
 export async function maybeInline(dom, elem, {resolve, load, post} = {}) {
     let attr = '';
+
     let src = '';
     let tag = '';
+
+    let type = elem.getAttribute('type') ?? '';
 
     switch (elem.tagName) {
     case 'LINK':
@@ -113,10 +119,10 @@ export async function maybeInline(dom, elem, {resolve, load, post} = {}) {
 
         let resolved = src;
         if (resolve) {
-            resolved = await Promise.resolve(resolve(src));
+            resolved = await Promise.resolve(resolve(src, tag, type));
         }
 
-        const code = await Promise.resolve(load(resolved));
+        const code = await Promise.resolve(load(resolved, tag, type));
         if (!code) {
             return;
         }

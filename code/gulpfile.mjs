@@ -701,21 +701,35 @@ function makeImportAlias(preset) {
  * @returns {HtmlModify}
  */
 function makeInlineSource(options, stats) {
+    /**
+     * @param {Buffer<ArrayBufferLike>} code
+     * @param {string} type
+     */
+    function encode(code, type) {
+        const encoded = type.includes('base64')
+            ? code.toString('base64')
+            : queryEscape(code.toString());
+        return `data:${type},${encoded}`;
+    }
 
     /**
-     * dispatch raw fs path and return the 'code' to-be injected into the resulting element
      * @param {string} src
+     * @param {string} tag
+     * @param {string} type
      */
-    async function load(src) {
-        let code = await fs.promises.readFile(src);
-        let extname = path.extname(src);
+    async function load(src, tag, type) {
+        const code = await fs.promises.readFile(src);
+        if (tag !== 'SCRIPT' && type) {
+            return encode(code, type);
+        }
 
-        switch (extname) {
-        case '.svg':
-            return `data:image/svg+xml,${queryEscape(code.toString())}`;
+        switch (tag) {
+        // by default, expect urlquotable svg. override type=... when it is not
+        case 'LINK':
+            return encode(code, 'image/svg+xml');
 
-        case '.js':
-        case '.mjs':
+        // current build always produces a single entrypoint, minify asap
+        case 'SCRIPT':
             if (!options.minify) {
                 return code.toString();
             }
@@ -756,9 +770,6 @@ function makeInlineSource(options, stats) {
     }
 
     /**
-     * based on raw input src=..., generate a valid path for the load(...)
-     * for vite compatibility, prevent '?...' query params from appearing
-     *
      * @param {string} src
      */
     function resolve(src) {
@@ -768,6 +779,8 @@ function makeInlineSource(options, stats) {
 
         src = path.join(HTML_DIR, src);
 
+        // prevent '?...' query params from appearing,
+        // vite assets would sometimes use '?inline'
         const asUrl = new URL(`file:///${src}`);
         for (const [param] of asUrl.searchParams) {
             asUrl.searchParams.delete(param);
