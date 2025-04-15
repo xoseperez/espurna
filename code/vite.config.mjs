@@ -178,6 +178,21 @@ function htmlMinify() {
     };
 }
 
+/**
+ * @param {string} name
+ * @returns {PluginOption}
+ */
+function rename(name) {
+    return {
+        name: rename.name,
+        apply: 'build',
+        enforce: 'post',
+        generateBundle(_, bundle) {
+            bundle['index.html'].fileName = `index.${name}.html`;
+        },
+    };
+}
+
 export default defineConfig(async ({ mode }) => {
     if (!MODULE_PRESETS.has(mode)) {
         throw new Error(`'mode' has to be one of: ${Array.from(MODULE_PRESETS).join(', ')}`);
@@ -198,6 +213,7 @@ export default defineConfig(async ({ mode }) => {
             stripModules(modules),
             inlineAssetsPost(),
             htmlMinify(),
+            rename(mode),
         ],
         // vite-specific overrides, both for the build and importmap helper script
         resolve: {
