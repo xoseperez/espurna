@@ -1,5 +1,4 @@
 {
-  "name": "clone-stats-node22",
   "description": "Safely clone node's fs.Stats instances without losing their class methods which works on Node v22",
   "version": "1.0.1",
   "main": "index.js",
