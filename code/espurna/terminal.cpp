@@ -622,9 +622,10 @@ void setup() {
         [](ApiRequest& api) {
             api.handle([](AsyncWebServerRequest* request) {
                 auto* response = request->beginResponseStream(F("text/plain"));
-                for (auto name : names()) {
+                for (const auto view : names()) {
+                    const auto name = view.toString();
                     response->write(name.c_str(), name.length());
-                    response->print("\r\n");
+                    response->write("\r\n", 2);
                 }
 
                 request->send(response);
