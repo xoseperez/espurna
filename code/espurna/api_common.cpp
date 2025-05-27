@@ -19,8 +19,18 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 namespace espurna {
 namespace api {
-
 namespace {
+
+namespace param {
+
+STRING_VIEW_INLINE(Key, "apikey");
+
+} // namespace param
+
+bool reserved_param(StringView value) {
+    return value == param::Key;
+}
+
 namespace build {
 
 constexpr bool enabled() {
@@ -101,28 +111,16 @@ bool authenticate_header(AsyncWebServerRequest* request, const String& key) {
 }
 
 bool authenticate_param(AsyncWebServerRequest* request, const String& key) {
-    STRING_VIEW_INLINE(Param, "apikey");
-
-    auto* param = request->getParam(Param.toString(), (request->method() == HTTP_PUT));
-    if (param && (key == param->value())) {
-        return true;
-    }
-
-    return false;
+    const auto name = espurna::api::param::Key.toString();
+    const auto* param = request->getParam(name, (request->method() == HTTP_PUT));
+    return param && (key == param->value());
 }
 
 bool authenticate(AsyncWebServerRequest* request) {
     const auto key = apiKey();
-    if (!key.length()) {
-        return false;
-    }
-
-    if (authenticate_header(request, key)) {
-        return true;
-    }
-
-    if (authenticate_param(request, key)) {
-        return true;
+    if (key.length()) {
+        return authenticate_header(request, key)
+            || authenticate_param(request, key);
     }
 
     return false;
@@ -130,6 +128,7 @@ bool authenticate(AsyncWebServerRequest* request) {
 
 #endif
 } // namespace web
+
 } // namespace
 } // namespace api
 } // namespace espurna
@@ -147,6 +146,10 @@ bool apiAuthenticate(AsyncWebServerRequest* request) {
     return espurna::api::web::authenticate(request);
 }
 #endif
+
+bool apiReservedParam(espurna::StringView value) {
+    return espurna::api::reserved_param(value);
+}
 
 String apiKey() {
     return espurna::api::settings::key();

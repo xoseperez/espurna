@@ -627,11 +627,10 @@ public:
             return;
         }
 
-        auto method = request->method();
-        const bool is_put = (
-            (!apiRestFul()|| (HTTP_PUT == method))
-            && request->hasParam("value", HTTP_PUT == method)
-        );
+        const auto method = request->method();
+        const auto is_put =
+            (!apiRestFul() || (HTTP_PUT == method))
+            && _check_unhandled_params(request);
 
         switch (method) {
         case HTTP_HEAD:
@@ -685,6 +684,18 @@ public:
     using BaseWebHandler::parts;
 
 private:
+    bool _check_unhandled_params(AsyncWebServerRequest* request) {
+        const auto params = request->params();
+        for (size_t param = 0; param < params; ++param) {
+            const auto* value = request->getParam(param);
+            if (!apiReservedParam(value->name())) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     BasicHandler _get;
     BasicHandler _put;
 };

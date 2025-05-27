@@ -40,6 +40,7 @@ void apiRegister(String path,
 bool apiError(espurna::api::Request&);
 bool apiOk(espurna::api::Request&);
 
+bool apiReservedParam(espurna::StringView);
 String apiKey();
 bool apiEnabled();
 bool apiRestFul();

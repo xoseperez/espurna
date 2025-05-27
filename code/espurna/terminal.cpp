@@ -609,11 +609,33 @@ void setup() {
 #if TERMINAL_WEB_API_SUPPORT
 namespace api {
 
+STRING_VIEW_INLINE(Value, "line");
+
 STRING_VIEW_INLINE(Path, TERMINAL_WEB_API_PATH);
 STRING_VIEW_INLINE(Key, "termWebApiPath");
 
 // XXX: new `apiRegister()` depends that `webServer()` is available, meaning we can't call this setup func
 // before the `webSetup()` is called. ATM, just make sure it is in order.
+
+using Commands = std::shared_ptr<std::vector<String>>;
+
+#define API_UPDATE_COMMANDS(OUT, NAME, VALUE) \
+    if (!OUT) {\
+        OUT = std::make_shared<Commands::element_type>();\
+    }\
+\
+    if (NAME == Value) {\
+        (OUT)->push_back(VALUE);\
+    }\
+
+#define API_SCHEDULE_COMMANDS(REQUEST, COMMANDS) \
+    espurna::web::print::scheduleFromRequest(\
+        REQUEST,\
+        [COMMANDS](Print& out) {\
+            for (const auto& cmd : *COMMANDS) {\
+                api_find_and_call(cmd, out);\
+            }\
+        });\
 
 void setup() {
 #if API_SUPPORT
@@ -634,21 +656,19 @@ void setup() {
             return true;
         },
         [](ApiRequest& api) {
-            // TODO: since HTTP spec allows query string to contain repeating keys, allow iteration
-            // over every received 'line' to provide a way to call multiple commands at once
-            auto line = api.param(F("line"));
-            if (!line.length()) {
+            Commands cmds;
+
+            api.param_foreach(
+                [&](const String& name, const String& value) {
+                    API_UPDATE_COMMANDS(cmds, name, value);
+                });
+
+            if (!cmds || !cmds->size()) {
                 return false;
             }
 
-            auto cmd = std::make_shared<String>(line.toString());
-
-            api.handle([cmd](AsyncWebServerRequest* request) {
-                espurna::web::print::scheduleFromRequest(
-                    request,
-                    [cmd](Print& out) {
-                        api_find_and_call(*cmd, out);
-                    });
+            api.handle([cmds](AsyncWebServerRequest* request) {
+                API_SCHEDULE_COMMANDS(request, cmds);
             });
 
             return true;
@@ -671,29 +691,31 @@ void setup() {
             return true;
         }
 
-        auto* line_param = request->getParam("line", (request->method() == HTTP_PUT));
-        if (!line_param) {
+        Commands cmds;
+
+        for (size_t n = 0; n < request->params(); ++n) {
+            const auto* param = request->getParam(n);
+            const auto& name = param->name();
+            const auto& value = param->value();
+            if (!apiReservedParam(name)) {
+                API_UPDATE_COMMANDS(cmds, name, value);
+            }
+        }
+
+        if (!cmds || !cmds->size()) {
             request->send(500);
             return true;
         }
 
-        auto line = line_param->value();
-        if (!line.length()) {
-            request->send(500);
-            return true;
-        }
-
-        auto cmd = std::make_shared<String>(std::move(line));
-        espurna::web::print::scheduleFromRequest(
-            request,
-            [cmd](Print& out) {
-                api_find_and_call(*cmd, out);
-            });
+        API_SCHEDULE_COMMANDS(request, cmds);
 
         return true;
     });
 #endif // API_SUPPORT
 }
+
+#undef API_SCHEDULE_COMMANDS
+#undef API_UPDATE_COMMANDS
 
 } // namespace api
 #endif // TERMINAL_WEB_API_SUPPORT
