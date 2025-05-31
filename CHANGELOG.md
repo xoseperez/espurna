@@ -3,9 +3,39 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [1.20.0] (dev)
+## [1.20.0] (Snapshot build 2025-06-01)
 
-- ...
+### Fixed
+
+- API PUT for `/api/cmd/` uses `line` instead of `value` as input parameter [4af7e18a](https://github.com/xoseperez/espurna/commit/4af7e18a2fc0b7f0ca302eeac9063d5b4b6f3693)
+- API GET for `/api/cmd` should not crash [b23851ab](https://github.com/xoseperez/espurna/commit/b23851ab77d43d101826dd40d61d3b605771db41)
+- Properly working 'password reveal' button in configuration inputs [5152dc99](https://github.com/xoseperez/espurna/commit/5152dc995840ab89c6cafc0f4d6e45db7d15d9c4)
+- Simplify logic for WebUI console output scroll follow [70b98432](https://github.com/xoseperez/espurna/commit/70b9843288d95b9c4703d059bc56d7bef9a607ca)
+- Invalid JSON size calculation when sending `/ws` messages [7ced7ebb](https://github.com/xoseperez/espurna/commit/7ced7ebb26ebc77b2897d3daafdf96ee6038a5f0)
+- Consistent delivery of debug messages when queueing for multiple clients [7efb72c8](https://github.com/xoseperez/espurna/commit/7efb72c86ef9af8c6788f682375b506bd10e7485)
+- Consistent delivery of debug messages when reloading the homepage [e9c4118e](https://github.com/xoseperez/espurna/commit/e9c4118e650a09d16d2753a75d19e00225b7be09), [db84cdda](https://github.com/xoseperez/espurna/commit/db84cdda5e6b47572dc48f360b810f93d70131e2)
+- Add missing `/ws` authentication setting [a7d08420](https://github.com/xoseperez/espurna/commit/a7d084206bc11124a008bb5fb87e63a8f5ac9870)
+- Correctly parse `/ws` config payload containing already set `adminPass` [6622c6d3](https://github.com/xoseperez/espurna/commit/6622c6d3ab975a3506d0ec1eb1080525b27d4c36)
+- Web server `Last-Modified` based on .html & resources timestamps, not the binary blob containing it [a1891335](https://github.com/xoseperez/espurna/commit/a18913358c2d61a9df803fe90a02a5ec9b80d8bb), [f08f8660](https://github.com/xoseperez/espurna/commit/f08f86608fe0f177cfd49ab9992e067508dd4c4d)
+- Consistent WebUI gzip compression output for Windows and Linux / macOS [e4b5dcb2](https://github.com/xoseperez/espurna/commit/e4b5dcb2325c15b4240733bdf8a4b5954ffcaf50)
+- Configuration crashes w/ AnalogEmon kinds of sensors [58181d21](https://github.com/xoseperez/espurna/commit/58181d21a346ca3e1349b122cff057170eda6af1)
+- LED status change `ON` / `OFF` / `TOGGLE` in API no longer leaves it in `manual` mode [56061ec0](https://github.com/xoseperez/espurna/commit/56061ec0546b39482012de5a9ed224595ae2084e)
+- LED status only applies when linked relay is configured and working [0033735c](https://github.com/xoseperez/espurna/commit/0033735caa2bd5350fdf7eb8c57631746949b6ea)
+- Deprecate `color_mode` flag in Home Assistant JSON discovery [#2634](https://github.com/xoseperez/espurna/issues/2634), thanks to **[@luebbe](https://github.com/luebbe)**
+
+### Changed
+
+- LED `mode` string as payload to status API endpoints [6cc364e0](https://github.com/xoseperez/espurna/commit/6cc364e04da7e0dfa608f98f9b65a45fb012e3d3), [56061ec0](https://github.com/xoseperez/espurna/commit/56061ec0546b39482012de5a9ed224595ae2084e)
+- Scheduler action no longer runs twice on boot when 'restore' flag is set and current time matches the schedule [4a4dcaea](https://github.com/xoseperez/espurna/commit/4a4dcaeab543f50c5d57af1e74f0e07c06760c9b)
+- Build WebUI using Rollup [9dc57878](https://github.com/xoseperez/espurna/commit/9dc57878c13d057d11d8d4dbf8f35e181555a473)
+
+### Added
+
+- Support DHT22 variants with 12bit values [40500b48](https://github.com/xoseperez/espurna/commit/40500b489f2637e851c7a1c5f209f55e93b655eb)
+- Support DHT22 variants with different sign representations [305918d5](https://github.com/xoseperez/espurna/commit/305918d5d8629f82fa5711e89c93bf29108f1443)
+- Accept `;` as line separator for Terminal input [356fcc65](https://github.com/xoseperez/espurna/commit/356fcc65558cfddcb1c5d2cc387c0e5e22053398), [27cf0afc](https://github.com/xoseperez/espurna/commit/27cf0afc1152d881ef68f603acd8b4f09fdf0670)
+- Allow terminal input without new-line characters (`\r\n`, `\n`) in all cases [c9e13d40](https://github.com/xoseperez/espurna/commit/c9e13d40254ce99b224c28509e1b15543aa12781)
+- Vite local development server support for WebUI [9dc57878](https://github.com/xoseperez/espurna/commit/9dc57878c13d057d11d8d4dbf8f35e181555a473)
 
 ## [1.19.0] Snapshot build 2025-01-14
 
