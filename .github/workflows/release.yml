@@ -83,20 +83,29 @@ jobs:
 
       - name: Build
         run: |
+          # pio libs sometimes use raw hash instead of version, avoid useless warnings
           git config --global advice.detachedHead false
           pushd espurna/code
+
+          # rebuild existing webui blobs once more
           npm ci
           node node_modules/gulp/bin/gulp.js
+
+          # github actions allow empty / non-existent output names. check manually
+          build_date=${{ needs.variables.outputs.build_date }}
+          test -n "$build_date" || exit 2
+
           # each 'id' in matrix only builds every Nth environment
-          # numbers are hard-coded above (...until there's a better idea for doing this)
           ./scripts/generate_release_sh.py \
               --ignore secure-client \
               --destination ${GITHUB_WORKSPACE}/build \
-              --builder-id ${{ matrix.id }} \
-              --builder-total 4 \
-              --suffix github${{ needs.variables.outputs.date }} \
+              --builder-id ${{ strategy.job-index }} \
+              --builder-total ${{ strategy.job-total }} \
+              --suffix github${build_date} \
               > release.sh
+          cat release.sh
           bash release.sh
+
           popd
 
       - name: Archive

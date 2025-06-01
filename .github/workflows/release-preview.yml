@@ -35,9 +35,6 @@ jobs:
           tag="github${date}"
           echo "build_tag=${tag}" >> "$GITHUB_OUTPUT"
 
-          date=$(date +'%y-%m-%d')
-          echo "changelog_date=${date}" >> "$GITHUB_OUTPUT"
-
           dev=$(remote_revision dev)
           echo "last_rev=${dev}" >> "$GITHUB_OUTPUT"
 
@@ -65,15 +62,18 @@ jobs:
           echo "build_tag=" ${{ needs.variables.outputs.build_tag }}
           echo "last_rev=" ${{ needs.variables.outputs.last_rev }}
           echo "last_tag=" ${{ needs.variables.outputs.last_tag }}
+
           pushd espurna/code
+          # github actions allow empty / non-existent output names. check manually
+          build_date=${{ needs.variables.outputs.build_date }}
+          test -n "$build_date" || exit 2
           # each 'id' in matrix only builds every Nth environment
-          # numbers are hard-coded above (...until there's a better idea for doing this)
           ./scripts/generate_release_sh.py \
               --ignore secure-client \
               --destination ${GITHUB_WORKSPACE}/build \
               --builder-id ${{ strategy.job-index }} \
               --builder-total ${{ strategy.job-total }} \
-              --suffix github${{ needs.variables.outputs.date }}
+              --suffix github${build_date}
           popd
 
   release:
