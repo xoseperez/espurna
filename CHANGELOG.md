@@ -3,11 +3,22 @@
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [1.21.0] (dev)
+## [1.22.0] (dev)
 
 - ...
 
+## [1.21.0] (Snapshot build 2025-06-01)
+
+### Fixed
+
+- Missing build date in CI release .bin version string [6b4031a6](https://github.com/xoseperez/espurna/commit/6b4031a618f35c80df104607d5d91feb7016cdb4)
+
+### Changed
+- Update WebUI package-lock.json dependencies [b2fa614c](https://github.com/xoseperez/espurna/commit/b2fa614c39a2429388c17d1548a999309931262f)
+
 ## [1.20.0] (Snapshot build 2025-06-01)
+
+(note: re-uploaded as 1.21.0)
 
 ### Fixed
 
