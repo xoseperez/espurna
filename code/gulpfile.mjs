@@ -39,7 +39,7 @@ import { default as rollupAlias } from '@rollup/plugin-alias';
 import { minify as htmlMinify } from 'html-minifier-terser';
 import { JSDOM } from 'jsdom';
 
-import * as convert from 'convert-source-map';
+import { removeMapFileComments } from 'convert-source-map';
 import log from 'fancy-log';
 
 import { Transform } from 'node:stream';
@@ -558,7 +558,7 @@ function dropSourcemap() {
             }
 
             script.textContent =
-                convert.removeMapFileComments(script.textContent);
+                removeMapFileComments(script.textContent);
 
             return true;
         }
