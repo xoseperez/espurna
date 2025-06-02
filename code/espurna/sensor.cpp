@@ -4390,7 +4390,7 @@ void loop() {
             // Absolute value correction. *Unconditional*, value is always offset by this amount
             state.processed.value += magnitude.correction;
 
-            // In case units change occured, make sure filter receives the same unit type
+            // In case units change occurred, make sure filter receives the same unit type
             if (magnitude.last.units != state.processed.units) {
                 magnitude.filter->reset();
             }

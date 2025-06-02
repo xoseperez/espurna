@@ -1702,7 +1702,7 @@ bool scanning() {
 //
 // TODO: instead of bool, do a state object that is 'armed' before use and it is possible to make sure there's an expected value swap between `true` and `false`
 // (i.e. 'disarmed', 'armed-for', 'received-success', 'received-failure'. where 'armed-for' only reacts on a specific assignment, and the consumer
-// checks whether 'received-success' had happend, and also handles 'received-failure'. when 'disarmed', value status does not change)
+// checks whether 'received-success' had happened, and also handles 'received-failure'. when 'disarmed', value status does not change)
 // TODO: ...and a timeout? most of the time, these happen right after switch into the system task. but, since the sdk funcs don't block until success
 // (or at all, for anything), it might be nice to have some safeguards.
 

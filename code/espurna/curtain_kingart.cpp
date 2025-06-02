@@ -262,7 +262,7 @@ void _KACurtainResult() {
             _KASetMoving();
             /*
                 (*1) ATTENTION THERE :
-                Send immediatly a AT+START - we need to purge the first response.
+                Send an AT+START immediately - we need to purge the first response.
                 It will return us the right direction of the switch but the position
                 we set instead of the real on. We take care of the switch response but
                 we ignore the position.

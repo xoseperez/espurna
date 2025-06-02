@@ -135,7 +135,7 @@ def parse_commandline_args():
         description=DESCRIPTION, formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument(
-        "-e", "--environment", help="platformio envrionment to use", default=DEFAULT_ENV
+        "-e", "--environment", help="platformio environment to use", default=DEFAULT_ENV
     )
     parser.add_argument(
         "--toolchain-prefix",

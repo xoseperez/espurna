@@ -148,7 +148,7 @@ void nofussSetup() {
             // Disabling EEPROM rotation to prevent writing to EEPROM after the upgrade
             eepromRotate(false);
 
-            // Force backup right now, because NoFUSS library will immediatly reset on success
+            // Force backup right now, because NoFUSS library will immediately reset on success
             eepromBackup(0);
         }
 

@@ -186,7 +186,7 @@ bool RequestPrint::_addBuffer() {
 // This API expects a **very** careful approach to context switching between SYS and CONT:
 // - Returning RESPONSE_TRY_AGAIN before buffers are filled will result in invalid size marker being sent on the wire.
 //   HTTP client (curl, python requests etc., as discovered in testing) will then drop the connection
-// - Returning 0 will immediatly close the connection from our side
+// - Returning 0 will immediately close the connection from our side
 // - Calling _prepareRequest() **before** _buffers are filled will result in returning 0
 // - Calling yield() / delay() while request handler is active **may** trigger this callback out of sequence
 //   (e.g. Stream.write(...), Stream.read(...), DEBUG_MSG(...), or any other API trying to switch contexts)
@@ -679,7 +679,7 @@ void _onRequest(AsyncWebServerRequest *request){
     // No subscriber handled the request, return a 404 with implicit "Connection: close"
     request->send(404);
 
-    // And immediatly close the connection, ref: https://github.com/xoseperez/espurna/issues/1660
+    // And immediately close the connection, ref: https://github.com/xoseperez/espurna/issues/1660
     // Not doing so will cause memory exhaustion, because the connection will linger
     request->client()->close();
 

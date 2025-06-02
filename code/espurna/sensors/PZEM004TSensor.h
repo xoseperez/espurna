@@ -551,7 +551,7 @@ public:
             return;
         }
 
-        // Current approach is to spread our reads of mutliple instances,
+        // Current approach is to spread our reads of multiple instances,
         // instead of doing them in the same time slot.
         if (TimeSource::now() - _last_read < ReadInterval) {
             return;

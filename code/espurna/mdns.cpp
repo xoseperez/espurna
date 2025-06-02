@@ -118,7 +118,7 @@ void mdnsServerSetup() {
 //       which will completely reset the MDNS object and require a setup once again.
 //       this does not seem to work reliably :/ only support STA for the time being
 // 3.0.0 and newer only need to do MDNS.begin() once at setup()
-//       however, note that without begin() call it will immediatly crash b/c
+//       however, note that without begin() call it will immediately crash b/c
 //       there are no sanity checks if it was actually called
 #if defined(ARDUINO_ESP8266_RELEASE_2_7_2) \
     || defined(ARDUINO_ESP8266_RELEASE_2_7_3) \

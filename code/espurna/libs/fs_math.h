@@ -54,8 +54,8 @@ long double fs_fmodl(long double x, long double y);
 > > compliant as I am running on a Z/OS mainframe.
 > >
 > > I would love to use the standard library but
-> > unfortunatly I'm using a
-> > stripped down version of C that looses the the runtime library
+> > unfortunately I'm using a
+> > stripped down version of C that loses the runtime library
 > > (we have to write our own).
 >
 > long double Ssqrt(long double x)

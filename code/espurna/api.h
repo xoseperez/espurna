@@ -20,7 +20,7 @@ namespace espurna {
 namespace api {
 
 using BasicHandler = std::function<bool(Request&)>;
-using JsonHandler = std::function<bool(Request&, JsonObject& reponse)>;
+using JsonHandler = std::function<bool(Request&, JsonObject& response)>;
 
 } // namespace api
 } // namespace espurna

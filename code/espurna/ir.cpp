@@ -456,7 +456,7 @@ unsigned long sized(StringView value) {
 //                (ref. IRremoteESP8266.h and it's protocol descriptions)
 //
 //   Optional payload parameters:
-//     REPEATS  - how many times the message will be sent immediatly
+//     REPEATS  - how many times the message will be sent immediately
 //                (defaults to 0 or the value set by the PROTOCOL type)
 //     SERIES   - how many times the message will be scheduled for sending
 //                (defaults to 1 aka once, [1...120))
@@ -469,11 +469,11 @@ unsigned long sized(StringView value) {
 // TODO: type is numeric based on the previous implementation. note that there are
 // `::typeToString(decode_type_t)` and `::strToDecodeType(const char*)` (IRutils.h)
 // And also see `const char kAllProtocolNames*`, which is a global from the IRtext header with
-// \0-terminated chunks of stringivied decode_type_t (counting 'index' will deduce the type)
+// \0-terminated chunks of stringified decode_type_t (counting 'index' will deduce the type)
 //
 // (but, notice that str->type only works with C strings and *will* do a permissive
 // `strToDecodeType(typeToString(static_cast<decode_type_t>(atoi(str))))` when the
-// intial attempt fails)
+// initial attempt fails)
 
 namespace simple {
 
@@ -1947,7 +1947,7 @@ private:
 //       (also, extending the current set of tests and / or having some helper macro that can fill the boilerplate)
 
 // As a (temporary?) solution for right now, have these 4 macros that setup a Context object and a list of test runners.
-// Each runner may call `IR_TEST(<something resolving to bool>)` to immediatly exit current block on failure and save report to the Context object.
+// Each runner may call `IR_TEST(<something resolving to bool>)` to immediately exit current block on failure and save report to the Context object.
 // On destruction of the Context object, every report is printed to the debug output.
 
 #define IR_TEST_SETUP_BEGIN() Context runner ## __FILE__ ## __LINE__ {
