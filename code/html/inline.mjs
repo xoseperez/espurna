@@ -70,7 +70,7 @@ export function needElement(elem, modules) {
  * @property {function(string, string, string): (Promise<string> | string)} [load]
  * process fs path from src=... or load(...) and return the 'code' to-be injected into the resulting element
  * @property {function(string): (void | Promise<void>)} [post]
- * execute some action when code was successfuly loaded into the dom
+ * execute some action when code was successfully loaded into the dom
  */
 
 /** 

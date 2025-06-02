@@ -88,7 +88,7 @@ private:
     // XXX:  It does not matter right now, but we **will** overflow position when using sizes >= (2^16) - 1
     // Note: Implementation is also in the header b/c c++ won't allow us
     //       to have a plain member (not a ptr or ref) of unknown size.
-    // Note: There was a considiration to implement this as 'stashing iterator' to be compatible with stl algorithms.
+    // Note: There was a consideration to implement this as 'stashing iterator' to be compatible with stl algorithms.
     //       In such implementation, we would store intermediate index and allow the user to receive a `value_proxy`,
     //       temporary returned by `value_proxy& operator*()' that is bound to Cursor instance.
     //       This **will** cause problems with 'reverse_iterator' or anything like it, as it expects reference to

@@ -1,6 +1,6 @@
 /*
 
-WebSocketIncommingBuffer
+WebSocketIncomingBuffer
 
 Code by Hermann Kraus (https://bitbucket.org/hermr2d2/)
 and slightly modified.

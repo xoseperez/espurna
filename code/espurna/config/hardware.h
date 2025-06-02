@@ -4005,7 +4005,7 @@
     #define I2C_SCL_PIN         14
 
 // -----------------------------------------------------------------------------
-// This device has teh same behaviour as the GOSUND WP3, but with different GPIO pin values
+// This device has the same behaviour as the GOSUND WP3, but with different GPIO pin values
 // GPIO equivalents extracted from https://templates.blakadder.com/aoycocr_X5P.html
 
 #elif defined(AOYCOCR_X5P)

@@ -47,7 +47,7 @@ import {
 // - User input. Same functions are triggered, but with an additional event for the container element that causes most recent element to be marked as changed.
 // Removal only happens from user input by triggering 'settings-group-del' from the target element.
 //
-// TODO: distinguish 'current' state to avoid sending keys when adding and immediatly removing the latest node?
+// TODO: distinguish 'current' state to avoid sending keys when adding and immediately removing the latest node?
 // TODO: previous implementation relied on defaultValue and / or jquery $(...).val(), but this does not really work where 'line' only has <select>
 
 /**
