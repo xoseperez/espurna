@@ -64,7 +64,7 @@ void mqttHeartbeat(espurna::heartbeat::Callback);
 using MqttCallback = void(*)(unsigned int type, espurna::StringView topic, espurna::StringView payload);
 void mqttRegister(MqttCallback);
 
-// stateful callback for ACK'ed messages; should be used when waiting for certain messsage to be PUBlished
+// stateful callback for ACK'ed messages; should be used when waiting for certain message to be PUBlished
 using MqttPidCallback = std::function<void()>;
 void mqttOnPublish(uint16_t pid, MqttPidCallback);
 void mqttOnSubscribe(uint16_t pid, MqttPidCallback);

@@ -85,14 +85,8 @@ private:
 
     // Pointer to the region of data that we are using
     //
-    // XXX:  It does not matter right now, but we **will** overflow position when using sizes >= (2^16) - 1
-    // Note: Implementation is also in the header b/c c++ won't allow us
-    //       to have a plain member (not a ptr or ref) of unknown size.
-    // Note: There was a considiration to implement this as 'stashing iterator' to be compatible with stl algorithms.
-    //       In such implementation, we would store intermediate index and allow the user to receive a `value_proxy`,
-    //       temporary returned by `value_proxy& operator*()' that is bound to Cursor instance.
-    //       This **will** cause problems with 'reverse_iterator' or anything like it, as it expects reference to
-    //       outlive the iterator object (specifically, result of `return *--tmp`, where `tmp` is created inside of a function block)
+    // It does not matter right now, but we **will** overflow position when using sizes >= (2^16) - 1
+    // Note that neither writing nor iterating advances the position, it must be done manually
     struct Cursor {
         Cursor(RawStorageBase& storage, uint16_t begin, uint16_t end, uint16_t position) :
             _storage(storage),

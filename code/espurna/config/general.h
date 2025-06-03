@@ -1613,50 +1613,47 @@
 #endif
 
 #ifndef IR_RX_SIMPLE_MQTT_TOPIC
-#define IR_RX_SIMPLE_MQTT_TOPIC     "irin"          // (string) MQTT topics are composed as {root}/{topic},
-                                                    // this one will be used to publish simple protocol messages
-                                                    // (or, automatically calculated FNV1 hash values when the protocol type is unknown)
+#define IR_RX_SIMPLE_MQTT_TOPIC     "irin"          // (string) Publish topic for simple protocol messages
 #endif
 
 #ifndef IR_TX_SIMPLE_MQTT_TOPIC
-#define IR_TX_SIMPLE_MQTT_TOPIC     "irout"         // (string) MQTT topic subscription to transmit the received message
-                                                    // (in a simple format)
+#define IR_TX_SIMPLE_MQTT_TOPIC     "irout"         // (string) Receive topic for simple protocol messages
 #endif
 
 #ifndef IR_RX_RAW_MQTT_TOPIC
-#define IR_RX_RAW_MQTT_TOPIC        "irraw"         // (string) MQTT topic to publish the received messages in RAW format
+#define IR_RX_RAW_MQTT_TOPIC        "irraw"         // (string) Publish topic for RAW messages that contain timings
 #endif
 
 #ifndef IR_TX_RAW_MQTT_TOPIC
-#define IR_TX_RAW_MQTT_TOPIC        "irraw"         // (string) MQTT topic subscription to transmit the RAW timings
+#define IR_TX_RAW_MQTT_TOPIC        "irraw"         // (string) Receive topic for RAW messages that contain timings
 #endif
 
 #ifndef IR_RX_STATE_MQTT_TOPIC
-#define IR_RX_STATE_MQTT_TOPIC      "irstate"       // (string) MQTT topic to publish messages with 'state'
-                                                    // (commonly, HVAC with payload size >=64bit, but this depends on the protocol)
+#define IR_RX_STATE_MQTT_TOPIC      "irstate"       // (string) Publish topic for protocols containing 'state'
+                                                    // e.g. HVAC with payload size >=64bit, but this depends on the protocol
 #endif
 
 #ifndef IR_TX_STATE_MQTT_TOPIC
-#define IR_TX_STATE_MQTT_TOPIC      "irstate"       // (string) MQTT topic subscription to transmit the state messages
+#define IR_TX_STATE_MQTT_TOPIC      "irstate"       // (string) Receive topic for protocols containing 'state'
 #endif
 
 #ifndef IR_TX_REPEATS
-#define IR_TX_REPEATS               0               // (number) additional number of times that the message will be sent per series
-                                                    // (currently, only for simple payloads. *may* be overriden by the protocol or the option)
+#define IR_TX_REPEATS               0               // (number) default number of repeats for outgoing messages
+                                                    // only used for simple payloads. even when set, *may* be changed by the protocol
 #endif
 
 #ifndef IR_TX_SERIES
 #define IR_TX_SERIES                1               // (number) default number of times that the message will be sent
-                                                    // (can be overriden in the MQTT payload option for the specific message)
+                                                    // *may* be changed by the payload option
 #endif
 
 #ifndef IR_TX_DELAY
 #define IR_TX_DELAY                 100             // (ms) minimum amount of time to wait before transmitting another message
-                                                    // (when using series >1, will also wait between the same message)
+                                                    // when using series >1, will also wait between the same message
 #endif
 
 #ifndef IR_RX_DELAY
-#define IR_RX_DELAY                 100             // (ms) minimum amount of time to wait before processing incomming message
+#define IR_RX_DELAY                 100             // (ms) minimum amount of time to wait before processing incoming message
 #endif
 
 #ifndef IR_RX_PRESET
@@ -1670,12 +1667,12 @@
 
 #ifndef IR_RX_UNKNOWN
 #define IR_RX_UNKNOWN               1               // (boolean) do not discard unknown (-1) protocols by default
-                                                    // (*notice* that disabling this will cause RAW output to stop working)
+                                                    // *ATTENTION* - this will cause RAW output to stop working
 #endif
 
 #ifndef IR_TEST_SUPPORT
-#define IR_TEST_SUPPORT             0               // (boolean) enables internal tests and sanity checks that will be called on boot
-                                                    // (disabled by default and should only be enabled with debug support)
+#define IR_TEST_SUPPORT             0               // (boolean) perform extra integration & sanity checks on boot
+                                                    // disabled by default, should only be enabled for development
 #endif
 
 //--------------------------------------------------------------------------------

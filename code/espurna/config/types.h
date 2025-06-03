@@ -384,8 +384,9 @@
 
 #define MAGNITUDE_MAX               39
 
-// TODO: backwards compatible sensor integer values. should probably allow custom messsages
-// (even with the increased flash arequirements)
+//--------------------------------------------------------------------------------
+// Sensor error codes
+//--------------------------------------------------------------------------------
 
 #define SENSOR_ERROR_OK             0       // No error
 #define SENSOR_ERROR_OUT_OF_RANGE   1       // Result out of sensor range

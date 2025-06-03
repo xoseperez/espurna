@@ -694,7 +694,7 @@ bool closest_offset_result(Search& search, const SearchValidate::Validate& valid
 
             reconstruct = true;
 
-        // daylight saving time shift occured, probe for duplicate hour
+        // daylight saving time shift occurred, probe for duplicate hour
         } else if (tmp.tm_isdst != search.result.tm_isdst) {
             tm test;
             test = tmp;

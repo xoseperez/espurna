@@ -359,7 +359,7 @@ String quote(String&& value) {
 // - In case the object uses the JSON makeObject() as state, make sure we don't use it (state)
 //   and the object itself after next() or ok() return false
 // - Make sure JSON state is not created on construction, but lazy-loaded as soon as it is needed.
-//   Meaning, we don't cause invalid refs immediatly when there are more than 1 discovery object present and we reset the storage.
+//   Meaning, we don't cause invalid refs immediately when there are more than 1 discovery object present and we reset the storage.
 
 class Discovery {
 public:

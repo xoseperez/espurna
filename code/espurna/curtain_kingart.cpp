@@ -258,15 +258,8 @@ void _KACurtainResult() {
             ( _curtain_last_button == CURTAIN_BUTTON_CLOSE && _curtain_last_position == 100 ) ||
             _curtain_last_button == CURTAIN_BUTTON_PAUSE) { //The curtain is max opened, closed or pause
             _KAStopMoving();
-        } else { //Else it is probably moving
+        } else { //Else it is probably moving. Ignore position, wait for switch instead
             _KASetMoving();
-            /*
-                (*1) ATTENTION THERE :
-                Send immediatly a AT+START - we need to purge the first response.
-                It will return us the right direction of the switch but the position
-                we set instead of the real on. We take care of the switch response but
-                we ignore the position.
-            */
             _KACurtainSend("AT+START");
             _curtain_ignore_next_position = true;
         }

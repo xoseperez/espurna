@@ -46,9 +46,6 @@ import {
 // - WebSocket, likely to happen exactly once per connection through processData handler(s). Specific keys trigger functions that append into the container element.
 // - User input. Same functions are triggered, but with an additional event for the container element that causes most recent element to be marked as changed.
 // Removal only happens from user input by triggering 'settings-group-del' from the target element.
-//
-// TODO: distinguish 'current' state to avoid sending keys when adding and immediatly removing the latest node?
-// TODO: previous implementation relied on defaultValue and / or jquery $(...).val(), but this does not really work where 'line' only has <select>
 
 /**
  * @param {Element} target
@@ -171,6 +168,8 @@ function delGroupPending(group) {
 
     setGroupPending(group, pending);
 }
+
+// TODO: 'current' state is maintaned through element data. track it externally?
 
 /**
  * @param {HTMLElement} group

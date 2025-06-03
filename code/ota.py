@@ -349,7 +349,7 @@ def parse_commandline_args():
 
 
 def discover_devices(args):
-    # Look for services and try to immediatly print the device when it is discovered
+    # Look for services and try to immediately print the device when it is discovered
     # (unless --sort <field> is specified, then we will wait until discovery finishes
     listener = Listener(print_when_discovered=not args.sort)
 

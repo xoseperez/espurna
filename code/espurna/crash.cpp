@@ -36,8 +36,8 @@ Copyright (C) 2019-2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com
  *  6. epc3
  *  7. excvaddr
  *  8. depc
- *  9. adress of stack start
- * 10. adress of stack end
+ *  9. stack address start
+ * 10. stack address end
  * 11. stack trace size
  * 12. stack trace bytes
  *     ...

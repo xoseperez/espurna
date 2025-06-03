@@ -357,7 +357,7 @@ bool is_json(AsyncWebServerRequest* request) {
 // - Server never checks for request closing in filter or canHandle, so if we don't want to handle large content-length, it
 //   will still flow through the lwip backend.
 // - `request->_tempObject` is used to keep API request state, but it's just a plain void pointer
-// - `request->send(..., payload)` creates a heap-allocated `reponse` object that will copy the payload and tracks it by a basic pointer.
+// - `request->send(..., payload)` creates a heap-allocated `response` object that will copy the payload and tracks it by a basic pointer.
 //   In case we call `request->send` a 2nd time (regardless of the type of the send()), it creates a 2nd object without de-allocating the 1st one.
 // - espasyncwebserver will `free(_tempObject)` when request is disconnected, but only after this callbackhandler is done.
 //   make sure it's set to nullptr via `AsyncWebServerRequest::onDisconnect`

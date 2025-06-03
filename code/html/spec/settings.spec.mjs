@@ -78,7 +78,7 @@ test('text input unchanged with empty value when original is missing', () => {
     expect(getDataForElement(node))
         .toEqual(getOriginalForElement(node));
 
-    const data = 'this never gets commited';
+    const data = 'this value does not make the element changed';
     expect(getDataForElement(node)).toBe('');
     assert(!isChangedElement(node));
 
