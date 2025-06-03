@@ -94,11 +94,17 @@ def espurna_get_version(base, version_h="code/espurna/config/version.h"):
 
 
 TEMPLATES = {
-    "![ci]": "![ci](https://github.com/{USER}/{REPO}/workflows/ESPurna%20build/badge.svg?branch={BRANCH})\n"
-    "![version]": "[![version](https://img.shields.io/badge/version-{VERSION:escape_hyphen}-brightgreen.svg)]"
-                  "(CHANGELOG.md)\n",
-    "![branch]": "[![branch](https://img.shields.io/badge/branch-{BRANCH:escape_hyphen}-orange.svg)]"
-                 "(https://github.com/{USER}/{REPO}/tree/{BRANCH}/)\n",
+    "![ci]": (
+        "![ci](https://github.com/{USER}/{REPO}/workflows/ESPurna%20build/badge.svg?branch={BRANCH})\n"
+    ),
+    "![version]": (
+        "[![version](https://img.shields.io/badge/version-{VERSION:escape_hyphen}-brightgreen.svg)]"
+        "(CHANGELOG.md)\n"
+    ),
+    "![branch]": (
+        "[![branch](https://img.shields.io/badge/branch-{BRANCH:escape_hyphen}-orange.svg)]"
+        "(https://github.com/{USER}/{REPO}/tree/{BRANCH}/)\n"
+    ),
 }
 
 README = "README.md"
