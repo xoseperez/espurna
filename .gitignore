@@ -17,11 +17,8 @@
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 _pycache_/
-code/html/build/
 code/espurna/config/custom.h
 code/libraries/
 code/node_modules
-code/test/unit/cache
-code/test/unit/build
 compile_commands.json
 firmware*

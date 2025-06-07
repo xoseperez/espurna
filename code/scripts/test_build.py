@@ -29,6 +29,16 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 log = logging.getLogger("main")
 
 
+PWD = pathlib.Path(__file__).resolve().parent
+
+ROOT_PATH = (PWD / "..").resolve()
+TEST_PATH = (ROOT_PATH / "test" / "build").resolve()
+
+CONFIG_PATH = TEST_PATH / "config"
+CACHE_PATH = TEST_PATH / "cache"
+BUILD_PATH = ROOT_PATH / ".pio" / "build"
+
+
 def bold(string):
     return clr(Color.BOLD, string)
 
@@ -46,20 +56,19 @@ def pluralize(string, length):
 
 def build_configurations(args, configurations):
     cmd = ["platformio", "run"]
-    if not args.no_silent:
+    if args.silent:
         cmd.extend(["-s"])
     cmd.extend(["-e", args.environment])
 
     build_time = datetime.timedelta(seconds=0)
 
-    while len(configurations):
+    while configurations:
         cfg = configurations.pop()
-        with open(cfg, "r") as contents:
-            log.info("%s contents\n%s", bold(cfg), contents.read())
+        log.info("%s contents\n%s", bold(cfg.name), cfg.read_text())
 
         os_env = os.environ.copy()
-        os_env["PLATFORMIO_BUILD_CACHE_DIR"] = "test/pio_cache"
-        if not args.no_single_source:
+        os_env["PLATFORMIO_BUILD_CACHE_DIR"] = args.cache_path.resolve().as_posix()
+        if args.single_source:
             os_env["ESPURNA_BUILD_SINGLE_SOURCE"] = "1"
 
         os_env["PLATFORMIO_BUILD_SRC_FLAGS"] = " ".join(
@@ -73,9 +82,8 @@ def build_configurations(args, configurations):
         build_start = time.time()
         try:
             subprocess.check_call(cmd, env=os_env)
-        except subprocess.CalledProcessError as e:
+        except subprocess.CalledProcessError:
             log.error("%s failed to build", bold(cfg))
-            log.exception(e)
             if configurations:
                 log.info(
                     "%s %s left\n%s",
@@ -87,9 +95,7 @@ def build_configurations(args, configurations):
 
         diff = datetime.timedelta(seconds=time.time() - build_start)
 
-        firmware_bin = pathlib.Path(".pio/build").joinpath(
-            args.environment, "firmware.bin"
-        )
+        firmware_bin = args.build_path / args.environment / "firmware.bin"
 
         log.info(
             "%s finished in %s, %s is %s bytes",
@@ -107,20 +113,28 @@ def main(args):
         log.error("No environment selected")
         return
 
-    log.info("Using env:%s", bold(args.environment))
+    log.info("Using [env:%s]", bold(args.environment))
 
-    configurations = []
-    if not args.no_default:
-        configurations = list(pathlib.Path(".").glob(args.default_configurations))
-        if args.start_from:
-            try:
-                offset = configurations.index(pathlib.Path(args.start_from))
-                configurations = configurations[offset:]
-            except ValueError:
-                pass
+    configurations = [pathlib.Path(x) for x in args.configurations]
+    if not configurations:
+        configurations = [x for x in args.config_path.glob("*.h")]
 
-    if args.add:
-        configurations.extend(args.add)
+    configurations = [x.resolve() for x in configurations]
+
+    if args.start_from:
+        offset = 0
+        for n, p in enumerate(configurations, start=1):
+            if args.start_from in p.name:
+                offset = n
+                break
+
+        if offset:
+            for cfg in configurations[offset:]:
+                log.info("Skipping %s", cfg)
+            configurations = configurations[:offset]
+
+    if args.filter:
+        configurations = [p for p in configurations for f in args.filter if f in p.name]
 
     if not configurations:
         log.error("No configurations selected")
@@ -133,52 +147,74 @@ def main(args):
         format_configurations(configurations),
     )
 
-    if not args.no_build:
+    if args.build:
         build_configurations(args, configurations)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-n",
-        "--no-default",
-        action="store_true",
-        help="Do not use default configurations (--default-configurations=...)",
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-
-    parser.add_argument(
-        "-a",
-        "--add",
-        type=pathlib.Path,
-        action="append",
-        help="Add path to selected configurations (can specify multiple times)",
-    )
-
     parser.add_argument("-e", "--environment", help="PIO environment")
 
     parser.add_argument(
-        "--default-configurations",
-        default="test/build/*.h",
-        help="(glob) default configuration headers",
-    )
-
-    parser.add_argument(
         "--start-from",
-        help="When using default configuration, skip everything until this name",
+        help="Skip configurations until this string is found in configuration filename",
+        default="",
     )
 
     parser.add_argument(
-        "--no-silent", action="store_true", help="Do not silence pio-run"
+        "--filter",
+        action="append",
+        help="Only build configurations with filenames containing this string",
     )
 
     parser.add_argument(
-        "--no-single-source", action="store_true", help="Disable 'unity' build"
+        "--silent",
+        default=True,
+        action=argparse.BooleanOptionalAction,
+        help="Silence PlatformIO output",
     )
 
     parser.add_argument(
-        "--no-build",
-        action="store_true",
-        help="Stop after listing the available configurations",
+        "--single-source",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Use SCons 'unity' build",
+    )
+
+    parser.add_argument(
+        "--build",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Build specified configurations",
+    )
+
+    parser.add_argument(
+        "--config-path",
+        default=CONFIG_PATH,
+        type=pathlib.Path,
+        help="Directory with build test configuration headers",
+    )
+
+    parser.add_argument(
+        "--cache-path",
+        default=CACHE_PATH,
+        type=pathlib.Path,
+        help="PlatformIO SCons cache path",
+    )
+
+    parser.add_argument(
+        "--build-path",
+        default=BUILD_PATH,
+        type=pathlib.Path,
+        help="PlatformIO build path",
+    )
+
+    parser.add_argument(
+        "configurations",
+        nargs="*",
+        default=[],
     )
 
     main(parser.parse_args())
