@@ -645,7 +645,7 @@ T indexedThenGlobal(const String& prefix, size_t index, T defaultValue) {
 
     const auto global = espurna::settings::get(prefix);
     if (global) {
-        return espurna::settings::internal::convert<T>(indexed.ref());
+        return espurna::settings::internal::convert<T>(global.ref());
     }
 
     return defaultValue;
