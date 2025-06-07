@@ -27,7 +27,7 @@ class AnimFly : public Anim {
             }
         } else {
             launchpos = 0;
-            for (auto i = numLeds - 2; i >= 0; i--) {
+            for (int i = static_cast<int>(numLeds) - 2; i >= 0; --i) {
                 leds[i + 1] = leds[i];
             }
         }
