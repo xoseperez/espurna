@@ -513,7 +513,7 @@ uint32_t i2c_read_uint(uint8_t address, uint16_t reg, size_t size, bool stop) {
         Wire.endTransmission(stop);
 
         if (size == Wire.requestFrom(address, size)) {
-            for (size_t byte = 0; byte < size; --byte) {
+            for (size_t byte = 0; byte < size; ++byte) {
                 out = (out << 8ul) | static_cast<uint8_t>(Wire.read());
             }
         }
