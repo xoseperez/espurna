@@ -85,7 +85,7 @@ class ColorWave {
         uint16_t headDelta = head - prevHead;
 
         if (params.pixelCache && headDelta > 0) {
-            for (size_t i = params.numLeds; i-- > 0) {
+            for (size_t i = params.numLeds; i-- > 0;) {
                 if (i >= headDelta) {
                     params.pixelCache[i] = params.pixelCache[i - headDelta];
                 } else {
