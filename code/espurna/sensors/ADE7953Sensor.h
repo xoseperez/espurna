@@ -14,6 +14,8 @@
 #include "BaseEmonSensor.h"
 #include "I2CSensor.h"
 
+#include "../system_time.h"
+
 #include <bitset>
 
 // Original PR based on Tasmota driver
@@ -73,16 +75,16 @@ private:
     };
 
     struct Register {
-        explicit Register(uint16_t address) :
+        explicit constexpr Register(uint16_t address) :
             _address(address),
             _size(size(address))
         {}
 
-        uint16_t address() const {
+        constexpr uint16_t address() const {
             return _address;
         }
 
-        uint8_t size() const {
+        constexpr uint8_t size() const {
             return _size;
         }
 
@@ -98,9 +100,9 @@ private:
 
     private:
         // returns size of the register in *bytes*
-        static uint8_t size(uint16_t address) {
-            constexpr uint8_t Lhs { 0b1100 };
-            constexpr uint8_t Rhs { 0b0011 };
+        static constexpr uint8_t size(uint16_t address) {
+            constexpr auto Lhs = uint8_t{ 0b1100 };
+            constexpr auto Rhs = uint8_t{ 0b0011 };
 
             const uint8_t mask = (address >> 8) & 0b1111;
             // ref. pg 57, table 11
@@ -125,14 +127,35 @@ private:
         // > option provides simplicity when coding with the long format.
         // > When accessing the 32-bit registers, only the lower 24 bits contain valid
         // > data (the upper 8 bits are sign extended)
-        static uint32_t read(uint8_t address, uint16_t reg, uint8_t size) {
-            return i2c_read_uint(address, reg, size, false);
+        static uint32_t read(uint8_t address, uint16_t reg, size_t size) {
+            uint8_t buf[4]{};
+            i2c_read_buffer(address, reg, &buf[0], size, false);
+
+            uint32_t out{};
+            for (size_t byte = 0; byte < size; ++byte) {
+                out = (out << 8ul) | (uint32_t)buf[byte];
+            }
+
+            return out;
         }
 
-        static void write(uint8_t address, uint16_t reg, uint32_t input, size_t size) {
-            // Bus-free time minimum 4.7us
-            i2c_write_uint(address, reg, input, size);
-            delayMicroseconds(5);
+        static void write(uint8_t address, uint16_t reg, uint32_t value, size_t size) {
+            // TODO validate 'Register::size()' != 0
+            uint32_t offset = size * 8;
+            if (!offset) {
+                return;
+            }
+
+            uint8_t buf[4];
+
+            uint8_t* w = &buf[0];
+            do {
+                --offset;
+                *(w++) = static_cast<uint8_t>((value >> offset) & 0xff);
+            } while (offset != 0);
+
+            i2c_write_buffer(address, (uint32_t)reg, &buf[0], size);
+            delayMicroseconds(5); // > Bus-free time minimum 4.7us
         }
 
         uint16_t _address;
@@ -246,13 +269,19 @@ private:
         Reading read() const {
             Reading out{};
 
-            const Register Voltage { 0x31c };
+            constexpr Register Voltage { 0x31c };
+            static_assert(Voltage.size() == 4, "");
+
             out.voltage_rms = Voltage.read(_address);
 
-            const Register Period { 0x10e };
+            constexpr Register Period { 0x10e };
+            static_assert(Period.size() == 2, "");
+
             out.period = Period.read(_address);
 
-            const Register AccMode { 0x301 };
+            constexpr Register AccMode { 0x301 };
+            static_assert(AccMode.size() == 4, "");
+
             const AccModeWrapper mode { AccMode.read(_address) };
             out.a = channelRead(mode, ChannelA{});
             out.b = channelRead(mode, ChannelB{});
@@ -304,16 +333,22 @@ private:
             espurna::duration::Milliseconds(100));
 
         // Locking the communication interface (Clear bit COMM_LOCK), Enable HPF
-        const Register Config { 0x102 };
+        constexpr Register Config { 0x102 };
+        static_assert(Config.size() == 2, "");
+
         Config.write(address, 0x0004);
 
         // > To modify this (Reserved) register, it must be unlocked by setting
         // > Register Address 0xFE to 0xAD immediately prior.
-        const Register Unlock { 0xfe };
+        constexpr Register Unlock { 0xfe };
+        static_assert(Unlock.size() == 1, "");
+
         Unlock.write(address, 0xad);
 
         // > This register should be set to 30h to meet the performance specified in Table 1
-        const Register Reserved { 0x120 };
+        constexpr Register Reserved { 0x120 };
+        static_assert(Reserved.size() == 2, "");
+
         Reserved.write(address, 0x30);
 
         // > The number of half line cycles written to the LINECYC register
@@ -323,7 +358,9 @@ private:
         // > For example, if a LINECYC value of 100 half line cycles is set
         // > and the frequency of the input signal is 50 Hz, the accumulation
         // > time is 1 second (0.5 × (1/50) × 100).
-        const Register HalfLineCycles { 0x101 };
+        constexpr Register HalfLineCycles { 0x101 };
+        static_assert(HalfLineCycles.size() == 2, "");
+
         _line_cycles = static_cast<float>(HalfLineCycles.read(address)) / 2.0f;
     }
 
@@ -334,22 +371,22 @@ public:
 
     static constexpr Magnitude Magnitudes[] {
         // Common
-        MAGNITUDE_VOLTAGE,
-        MAGNITUDE_FREQUENCY,
+        {MAGNITUDE_VOLTAGE},
+        {MAGNITUDE_FREQUENCY},
         // Channel A
-        MAGNITUDE_CURRENT,
-        MAGNITUDE_POWER_ACTIVE,
-        MAGNITUDE_POWER_REACTIVE,
-        MAGNITUDE_POWER_APPARENT,
-        MAGNITUDE_ENERGY_DELTA,
-        MAGNITUDE_ENERGY,
+        {MAGNITUDE_CURRENT},
+        {MAGNITUDE_POWER_ACTIVE},
+        {MAGNITUDE_POWER_REACTIVE},
+        {MAGNITUDE_POWER_APPARENT},
+        {MAGNITUDE_ENERGY_DELTA},
+        {MAGNITUDE_ENERGY},
         // Channel B
-        MAGNITUDE_CURRENT,
-        MAGNITUDE_POWER_ACTIVE,
-        MAGNITUDE_POWER_REACTIVE,
-        MAGNITUDE_POWER_APPARENT,
-        MAGNITUDE_ENERGY_DELTA,
-        MAGNITUDE_ENERGY
+        {MAGNITUDE_CURRENT},
+        {MAGNITUDE_POWER_ACTIVE},
+        {MAGNITUDE_POWER_REACTIVE},
+        {MAGNITUDE_POWER_APPARENT},
+        {MAGNITUDE_ENERGY_DELTA},
+        {MAGNITUDE_ENERGY},
     };
 
     unsigned char id() const override {
@@ -507,6 +544,27 @@ public:
         }
     }
 
+    // TODO channel a & b should be separate ADE7953 instances
+    // TODO channel ctors should be outside of the class,
+    //      cannot init while inside of ADE7953Sensor scope
+
+    template <typename T>
+    static constexpr bool static_assert_channel(T channel, size_t size) {
+        return channel.current.size() == size
+            && channel.apparent_power.size() == size
+            && channel.active_power.size() == size
+            && channel.reactive_power.size() == size
+            && channel.active_energy.size() == size;
+    }
+
+    static constexpr bool static_assert_channel_a() {
+        return static_assert_channel(ChannelA(), 4);
+    }
+
+    static constexpr bool static_assert_channel_b() {
+        return static_assert_channel(ChannelB(), 4);
+    }
+
 private:
     double _current_ratio_a { Iref };
     double _power_ratio_a { Pref };
@@ -520,6 +578,9 @@ private:
 
     Reading _last_reading;
 };
+
+static_assert(ADE7953Sensor::static_assert_channel_a(), "");
+static_assert(ADE7953Sensor::static_assert_channel_b(), "");
 
 #ifndef __cpp_inline_variables
 constexpr BaseSensor::Magnitude ADE7953Sensor::Magnitudes[];

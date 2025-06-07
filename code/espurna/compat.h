@@ -158,6 +158,13 @@ constexpr Type to_underlying(Enum value) {
 // Hijacks useful name
 #undef bit
 
+// constexpr inline not always available
+#ifdef __cpp_inline_variables
+#define CONSTEXPR_INLINE constexpr inline
+#else
+#define CONSTEXPR_INLINE static constexpr
+#endif
+
 // -----------------------------------------------------------------------------
 // Make sure all INPUT modes are available to the source
 // (even if those do nothing)

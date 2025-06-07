@@ -10,16 +10,14 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if I2C_SUPPORT
 
-#if I2C_USE_BRZO
-#include <brzo_i2c.h>
-#else
 #include <Wire.h>
-#endif
 
 #include "i2c.h"
 
+#include <array>
 #include <cstring>
 #include <bitset>
+#include <machine/endian.h>
 
 // -----------------------------------------------------------------------------
 // Private
@@ -32,9 +30,6 @@ namespace {
 struct Bus {
     unsigned char sda { GPIO_NONE };
     unsigned char scl { GPIO_NONE };
-#if I2C_USE_BRZO
-    unsigned long frequency { 0 };
-#endif
 };
 
 namespace internal {
@@ -66,12 +61,6 @@ bool set(uint8_t address) {
 
 } // namespace lock
 
-#if I2C_USE_BRZO
-void brzo_i2c_start_transaction(uint8_t address) {
-    ::brzo_i2c_start_transaction(address, internal::bus.frequency);
-}
-#endif
-
 namespace build {
 
 constexpr unsigned char sda() {
@@ -86,16 +75,6 @@ constexpr bool performScanOnBoot() {
     return I2C_PERFORM_SCAN == 1;
 }
 
-#if I2C_USE_BRZO
-constexpr unsigned long cst() {
-    return I2C_CLOCK_STRETCH_TIME;
-}
-
-constexpr unsigned long sclFrequency() {
-    return I2C_SCL_FREQUENCY;
-}
-#endif
-
 } // namespace build
 
 namespace settings {
@@ -108,39 +87,31 @@ unsigned char scl() {
     return getSetting("i2cSCL", build::scl());
 }
 
-#if I2C_USE_BRZO
-unsigned long cst() {
-    return getSetting("i2cCST", build::cst());
-}
-
-unsigned long sclFrequency() {
-    return getSetting("i2cFreq", build::sclFrequency());
-}
-#endif
-
 } // namespace settings
+
+uint8_t transmission(uint8_t address, bool stop) {
+    Wire.beginTransmission(address);
+    return Wire.endTransmission(stop);
+}
+
+uint8_t transmission(uint8_t address) {
+    return transmission(address, true);
+}
+
+template <typename T>
+uint8_t with_transmission(uint8_t address, bool stop, T&& callback) {
+    Wire.beginTransmission(address);
+    callback();    
+    return Wire.endTransmission(stop);
+}
 
 // make note that both APIs return integer status codes
 // success is 0, everything else depends on the implementation
-// for example, for our Wire it is:
-// - 4 if line is busy
-// - 2 if NACK happened when writing address
-// - 3 if NACK happened when writing data
-bool find(uint8_t address) {
-#if I2C_USE_BRZO
-    i2c::start_brzo_transaction(address);
-    brzo_i2c_ACK_polling(1000);
-    return 0 == brzo_i2c_end_transaction();
-#else
-    Wire.beginTransmission(address);
-    return 0 == Wire.endTransmission();
-#endif
-}
 
 template <typename T>
 uint8_t find(const uint8_t* begin, const uint8_t* end, T&& filter) {
     for (const auto* it = begin; it != end; ++it) {
-        if (filter(*it) && find(*it)) {
+        if (filter(*it) && (Ok == transmission(*it))) {
             return *it;
         }
     }
@@ -171,7 +142,7 @@ void scan(T&& callback) {
     static constexpr uint8_t Min { 0x8 };
     static constexpr uint8_t Max { 0x78 };
     for (auto address = Min; address < Max; ++address) {
-        if (find(address)) {
+        if (Ok == transmission(address)) {
             callback(address);
         }
     }
@@ -183,7 +154,6 @@ void bootScan() {
         if (addresses.length()) {
             addresses += F(", ");
         }
-
 
         addresses += F("0x");
         addresses += hexEncode(address);
@@ -296,13 +266,7 @@ void init() {
     internal::bus.sda = settings::sda();
     internal::bus.scl = settings::scl();
 
-#if I2C_USE_BRZO
-    internal::bus.frequency = settings::sclFrequency();
-    brzo_i2c_setup(internal::bus.sda, internal::bus.scl, settings::cst());
-#else
     Wire.begin(internal::bus.sda, internal::bus.scl);
-#endif
-
     DEBUG_MSG_P(PSTR("[I2C] Initialized SDA @ GPIO%hhu and SCL @ GPIO%hhu\n"),
             internal::bus.sda, internal::bus.scl);
 
@@ -351,10 +315,60 @@ void clear(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
+PROGMEM_STRING(Read, "I2C.READ");
+
+void read(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() < 2) {
+        terminalError(ctx, STRING_VIEW("<size> <addr> [<reg>]\n"));
+        return;
+    }
+
+    const auto convert_size = ::espurna::settings::internal::convert<size_t>;
+    size_t size = convert_size(ctx.argv[1]);
+    if (!size) {
+        terminalError(ctx, STRING_VIEW("<size> == 0"));
+        return;
+    }
+
+    const auto convert_addr = ::espurna::settings::internal::convert<uint8_t>;
+    uint8_t addr = convert_addr(ctx.argv[2]);
+
+    uint8_t result = Busy;
+
+    std::vector<uint8_t> out;
+    out.resize(size, 0);
+
+    const auto convert_regaddr = ::espurna::settings::internal::convert<uint32_t>;
+    if (ctx.argv.size() == 4) {
+        const auto regaddr = convert_regaddr(ctx.argv[3]);
+        ctx.output.printf_P("read(%02x,%u,%zu)\n", addr, regaddr, out.size());
+        result = i2c_read_buffer(addr, regaddr, out.data(), out.size());
+    } else {
+        ctx.output.printf_P("read(%02x,%zu)\n", addr, out.size());
+        result = i2c_read_buffer(addr, out.data(), out.size());
+    }
+
+    if (result != out.size()) {
+        terminalError(ctx, STRING_VIEW("unknown error")); // i2c readFrom wrapper always returns 0
+        return;
+    }
+
+    String message;
+    message.reserve(out.size() * 2);
+
+    for (auto& value : out) {
+        message += hexEncode(value);
+    }
+
+    ctx.output.printf("%s\n", message.c_str());
+    terminalOK(ctx);
+}
+
 static constexpr ::terminal::Command Commands[] PROGMEM {
     {Locked, locked},
     {Scan, scan},
     {Clear, clear},
+    {Read, read},
 };
 
 void setup() {
@@ -372,194 +386,275 @@ void setup() {
 // I2C API
 // ---------------------------------------------------------------------
 
-#if I2C_USE_BRZO
+using espurna::i2c::transmission;
+using espurna::i2c::with_transmission;
 
-void i2c_wakeup(uint8_t address) {
-    i2c::brzo_i2c_start_transaction(address);
-    brzo_i2c_end_transaction();
+uint8_t i2c_wakeup(uint8_t address) {
+    return transmission(address, true);
 }
 
-uint8_t i2c_write_buffer(uint8_t address, uint8_t * buffer, size_t len) {
-    i2c::brzo_i2c_start_transaction(address);
-    brzo_i2c_write(buffer, len, false);
-    return brzo_i2c_end_transaction();
+// api below split into two variants
+// - ..._append_... - only issues Wire.write()
+// - ..._write_... - starts with 'begin()' & ends with 'end()' of transmission
+
+// attempt to write 1..4bytes from the value
+static uint8_t i2c_append_least(uint32_t value) {
+    uint8_t out{};
+
+    if (value > 0xffffff) {
+        Wire.write(static_cast<uint8_t>((value >> 24) & 0xff));
+    }
+
+    if (value > 0xffff) {
+        Wire.write(static_cast<uint8_t>((value >> 16) & 0xff));
+    }
+
+    if (value > 0xff) {
+        Wire.write(static_cast<uint8_t>((value >> 8) & 0xff));
+    }
+
+    Wire.write(static_cast<uint8_t>(value & 0xff));
+
+    return out;
+}
+
+// attempt a transmission request of 1..4bytes of the given value
+static uint8_t i2c_write_least(uint8_t address, uint32_t value, bool stop) {
+    return with_transmission(address, stop,
+        [&]() {
+            i2c_append_least(value);
+        });
+}
+
+static std::array<uint8_t, 2> i2c_prepare_uint16(uint16_t value) {
+    std::array<uint8_t, 2> out;
+
+    out[0] = static_cast<uint8_t>((value >> 8) & 0xff);
+    out[1] = static_cast<uint8_t>(value & 0xff);
+
+    return out;
+}
+
+static std::array<uint8_t, 4> i2c_prepare_uint32(uint32_t value) {
+    std::array<uint8_t, 4> out;
+
+    out[0] = static_cast<uint8_t>((value >> 24) & 0xff);
+    out[1] = static_cast<uint8_t>((value >> 16) & 0xff);
+    out[2] = static_cast<uint8_t>((value >> 8) & 0xff);
+    out[3] = static_cast<uint8_t>(value & 0xff);
+
+    return out;
+}
+
+static uint8_t i2c_append_buffer_impl(const uint8_t* buffer, size_t len) {
+    return Wire.write(buffer, len);
+}
+
+uint8_t i2c_write_buffer(uint8_t address, const uint8_t* buffer, size_t len, bool stop) {
+    return with_transmission(address, stop,
+        [&]() {
+            i2c_append_buffer_impl(buffer, len);
+        });
+}
+
+uint8_t i2c_write_buffer(uint8_t address, const uint8_t* buffer, size_t len) {
+    return i2c_write_buffer(address, buffer, len, true);
+}
+
+uint8_t i2c_write_buffer(uint8_t address, uint32_t reg, const uint8_t* buffer, size_t len, bool stop) {
+    return with_transmission(address, stop,
+        [&]() {
+            i2c_append_least(reg);
+            i2c_append_buffer_impl(buffer, len);
+        });
+}
+
+uint8_t i2c_write_buffer(uint8_t address, uint32_t reg, const uint8_t* buffer, size_t len) {
+    return i2c_write_buffer(address, reg, buffer, len, true);
+}
+
+static uint8_t i2c_append_uint8_impl(uint8_t value) {
+    return Wire.write(value);
 }
 
 uint8_t i2c_write_uint8(uint8_t address, uint8_t value) {
-    uint8_t buffer[1] = {value};
-    return i2c_write_buffer(address, buffer, sizeof(buffer));
+    return with_transmission(address, true,
+        [&]() {
+            i2c_append_uint8_impl(value);
+        });
 }
 
-uint8_t i2c_read_uint8(uint8_t address) {
-    uint8_t buffer[1] = {0};
-    i2c::brzo_i2c_start_transaction(address);
-    brzo_i2c_read(buffer, 1, false);
-    brzo_i2c_end_transaction();
-    return buffer[0];
+uint8_t i2c_write_uint8(uint8_t address, uint32_t reg, uint8_t value) {
+    return with_transmission(address, true,
+        [&]() {
+            i2c_append_least(reg);
+            i2c_append_uint8_impl(value);
+        });
 }
 
-uint8_t i2c_read_uint8(uint8_t address, uint8_t reg) {
-    uint8_t buffer[1] = {reg};
-    i2c::brzo_i2c_start_transaction(address);
-    brzo_i2c_write(buffer, 1, true);
-    brzo_i2c_read(buffer, 1, false);
-    brzo_i2c_end_transaction();
-    return buffer[0];
+static uint8_t i2c_append_uint16_impl(uint16_t value) {
+    const auto prepared = i2c_prepare_uint16(value);
+    return Wire.write(prepared.data(), prepared.size());
 }
 
-uint16_t i2c_read_uint16(uint8_t address) {
-    uint8_t buffer[2] = {0, 0};
-    i2c::brzo_i2c_start_transaction(address);
-    brzo_i2c_read(buffer, 2, false);
-    brzo_i2c_end_transaction();
-    return (buffer[0] * 256) | buffer[1];
+uint8_t i2c_write_uint16(uint8_t address, uint16_t value) {
+    return with_transmission(address, true,
+        [&]() {
+            i2c_append_uint16_impl(value);
+        });
 }
 
-uint16_t i2c_read_uint16(uint8_t address, uint8_t reg) {
-    uint8_t buffer[2] = {reg, 0};
-    i2c::brzo_i2c_start_transaction(address);
-    brzo_i2c_write(buffer, 1, true);
-    brzo_i2c_read(buffer, 2, false);
-    brzo_i2c_end_transaction();
-    return (buffer[0] * 256) | buffer[1];
+uint8_t i2c_write_uint16(uint8_t address, uint32_t reg, uint16_t value) {
+    return with_transmission(address, true,
+        [&]() {
+            i2c_append_least(reg);
+            i2c_append_uint16_impl(value);
+        });
 }
 
-void i2c_read_buffer(uint8_t address, uint8_t * buffer, size_t len) {
-    i2c::start_brzo_transaction(address);
-    brzo_i2c_read(buffer, len, false);
-    brzo_i2c_end_transaction();
+static uint8_t i2c_append_uint32_impl(uint32_t value) {
+    const auto prepared = i2c_prepare_uint32(value);
+    return Wire.write(prepared.data(), prepared.size());
 }
 
-#else // not I2C_USE_BRZO
-
-void i2c_wakeup(uint8_t address) {
-    Wire.beginTransmission((uint8_t) address);
-    Wire.endTransmission();
+uint8_t i2c_write_uint32(uint8_t address, uint32_t value) {
+    return with_transmission(address, true,
+        [&]() {
+            i2c_append_uint32_impl(value);
+        });
 }
 
-uint8_t i2c_write_uint8(uint8_t address, uint8_t value) {
-    Wire.beginTransmission((uint8_t) address);
-    Wire.write((uint8_t) value);
-    return Wire.endTransmission();
+uint8_t i2c_write_uint32(uint8_t address, uint32_t reg, uint32_t value) {
+    return with_transmission(address, true,
+        [&]() {
+            i2c_append_least(reg);
+            i2c_append_uint32_impl(value);
+        });
 }
 
-uint8_t i2c_write_buffer(uint8_t address, uint8_t * buffer, size_t len) {
-    Wire.beginTransmission((uint8_t) address);
-    Wire.write(buffer, len);
-    return Wire.endTransmission();
-}
-
-uint8_t i2c_read_uint8(uint8_t address) {
-    uint8_t value;
-    Wire.requestFrom((uint8_t) address, (uint8_t) 1);
-    value = Wire.read();
-    return value;
-}
-
-uint8_t i2c_read_uint8(uint8_t address, uint8_t reg) {
-    uint8_t value;
-    Wire.beginTransmission((uint8_t) address);
-    Wire.write((uint8_t) reg);
-    Wire.endTransmission();
-    Wire.requestFrom((uint8_t) address, (uint8_t) 1);
-    value = Wire.read();
-    return value;
-}
-
-uint16_t i2c_read_uint16(uint8_t address) {
-    uint16_t value;
-    Wire.requestFrom((uint8_t) address, (uint8_t) 2);
-    value = (Wire.read() * 256) | Wire.read();
-    return value;
-}
-
-uint16_t i2c_read_uint16(uint8_t address, uint8_t reg) {
-    uint16_t value;
-    Wire.beginTransmission((uint8_t) address);
-    Wire.write((uint8_t) reg);
-    Wire.endTransmission();
-    Wire.requestFrom((uint8_t) address, (uint8_t) 2);
-    value = (Wire.read() * 256) | Wire.read();
-    return value;
-}
-
-void i2c_read_buffer(uint8_t address, uint8_t* buffer, size_t len) {
-    Wire.requestFrom(address, (uint8_t) len);
-    for (size_t i=0; i<len; ++i) {
+uint8_t i2c_read_buffer(uint8_t address, uint8_t* buffer, size_t len) {
+    const auto out = Wire.requestFrom(address, static_cast<uint8_t>(len));
+    for (size_t i = 0; i < out; ++i) {
         buffer[i] = Wire.read();
-    }
-}
-
-void i2c_write_uint(uint8_t address, uint16_t reg, uint32_t input, size_t size) {
-    if (size && (size <= sizeof(input))) {
-        Wire.beginTransmission(address);
-        Wire.write((reg >> 8) & 0xff);
-        Wire.write(reg & 0xff);
-
-        uint8_t buf[sizeof(input)];
-        std::memcpy(&buf[0], &input, sizeof(buf));
-
-        Wire.write(&buf[sizeof(buf) - size], size);
-        Wire.endTransmission();
-    }
-}
-
-uint32_t i2c_read_uint(uint8_t address, uint16_t reg, size_t size, bool stop) {
-    uint32_t out { 0 };
-    if (size <= sizeof(out)) {
-        Wire.beginTransmission(address);
-        Wire.write((reg >> 8) & 0xff);
-        Wire.write(reg & 0xff);
-        Wire.endTransmission(stop);
-
-        if (size == Wire.requestFrom(address, size)) {
-            for (size_t byte = 0; byte < size; ++byte) {
-                out = (out << 8ul) | static_cast<uint8_t>(Wire.read());
-            }
-        }
     }
 
     return out;
 }
 
-#endif // I2C_USE_BRZO
-
-uint8_t i2c_write_uint8(uint8_t address, uint8_t reg, uint8_t value) {
-    uint8_t buffer[2] = {reg, value};
-    return i2c_write_buffer(address, buffer, 2);
+uint8_t i2c_read_buffer(uint8_t address, uint32_t reg, uint8_t* buffer, size_t len, bool stop) {
+    i2c_write_least(address, reg, stop);
+    return i2c_read_buffer(address, buffer, len);
 }
 
-uint8_t i2c_write_uint8(uint8_t address, uint8_t reg, uint8_t value1, uint8_t value2) {
-    uint8_t buffer[3] = {reg, value1, value2};
-    return i2c_write_buffer(address, buffer, 3);
+uint8_t i2c_read_buffer(uint8_t address, uint32_t reg, uint8_t* buffer, size_t len) {
+    return i2c_read_buffer(address, reg, buffer, len, true);
 }
 
-uint8_t i2c_write_uint16(uint8_t address, uint8_t reg, uint16_t value) {
-    uint8_t buffer[3];
-    buffer[0] = reg;
-    buffer[1] = (value >> 8) & 0xFF;
-    buffer[2] = (value >> 0) & 0xFF;
-    return i2c_write_buffer(address, buffer, 3);
+uint8_t i2c_read_uint8(uint8_t address) {
+    uint8_t value[1]{};
+    i2c_read_buffer(address, &value[0], sizeof(value));
+    return value[0];
 }
 
-uint8_t i2c_write_uint16(uint8_t address, uint16_t value) {
-    uint8_t buffer[2];
-    buffer[0] = (value >> 8) & 0xFF;
-    buffer[1] = (value >> 0) & 0xFF;
-    return i2c_write_buffer(address, buffer, 2);
+uint8_t i2c_read_uint8(uint8_t address, uint32_t reg, bool stop) {
+    i2c_write_least(address, reg, stop);
+    return i2c_read_uint8(address);
 }
 
-uint16_t i2c_read_uint16_le(uint8_t address, uint8_t reg) {
-    uint16_t temp = i2c_read_uint16(address, reg);
-    return (temp / 256) | (temp * 256);
+uint8_t i2c_read_uint8(uint8_t address, uint32_t reg) {
+    return i2c_read_uint8(address, reg, true);
 }
 
-int16_t i2c_read_int16(uint8_t address, uint8_t reg) {
-    return (int16_t) i2c_read_uint16(address, reg);
+uint16_t i2c_read_uint16(uint8_t address) {
+    uint8_t buf[2]{};
+    i2c_read_buffer(address, &buf[0], sizeof(buf));
+
+    uint16_t out = static_cast<uint16_t>(buf[0]) << 8;
+    out |= static_cast<uint16_t>(buf[1]);
+
+    return out;
 }
 
-int16_t i2c_read_int16_le(uint8_t address, uint8_t reg) {
-    return (int16_t) i2c_read_uint16_le(address, reg);
+uint16_t i2c_read_uint16(uint8_t address, uint32_t reg, bool stop) {
+    i2c_write_least(address, reg, stop);
+    return i2c_read_uint16(address);
+}
+
+uint16_t i2c_read_uint16(uint8_t address, uint32_t reg) {
+    return i2c_read_uint16(address, reg, true);
+}
+
+uint16_t i2c_read_uint16_le(uint8_t address, uint32_t reg, bool stop) {
+    return __builtin_bswap16(i2c_read_uint16(address, reg, stop));
+}
+
+uint16_t i2c_read_uint16_le(uint8_t address, uint32_t reg) {
+    return i2c_read_uint16_le(address, reg, true);
+}
+
+int16_t i2c_read_int16(uint8_t address) {
+    return (int16_t) i2c_read_uint16(address);
+}
+
+int16_t i2c_read_int16(uint8_t address, uint32_t reg, bool stop) {
+    return (int16_t) i2c_read_uint16(address, reg, stop);
+}
+
+int16_t i2c_read_int16(uint8_t address, uint32_t reg) {
+    return i2c_read_int16(address, reg, true);
+}
+
+int16_t i2c_read_int16_le(uint8_t address, uint32_t reg, bool stop) {
+    return (int16_t) i2c_read_uint16_le(address, reg, stop);
+}
+
+int16_t i2c_read_int16_le(uint8_t address, uint32_t reg) {
+    return i2c_read_int16_le(address, reg, true);
+}
+
+uint32_t i2c_read_uint32(uint8_t address) {
+    uint8_t buf[4]{};
+    i2c_read_buffer(address, &buf[0], sizeof(buf));
+
+    uint32_t out = static_cast<uint32_t>(buf[0]) << 24;
+    out |= static_cast<uint32_t>(buf[1]) << 16;
+    out |= static_cast<uint32_t>(buf[2]) << 8;
+    out |= static_cast<uint32_t>(buf[3]);
+
+    return out;
+}
+
+uint32_t i2c_read_uint32(uint8_t address, uint32_t reg, bool stop) {
+    i2c_write_least(address, reg, stop);
+    return i2c_read_uint32(address);
+}
+
+uint32_t i2c_read_uint32(uint8_t address, uint32_t reg) {
+    return i2c_read_uint32(address, reg, true);
+}
+
+uint32_t i2c_read_uint32_le(uint8_t address, uint32_t reg, bool stop) {
+    return __builtin_bswap32(i2c_read_uint32(address, reg, stop));
+}
+
+uint32_t i2c_read_uint32_le(uint8_t address, uint32_t reg) {
+    return i2c_read_uint32_le(address, reg, true);
+}
+
+int32_t i2c_read_int32(uint8_t address, uint32_t reg, bool stop) {
+    return (int32_t) i2c_read_uint32(address, reg, stop);
+}
+
+int32_t i2c_read_int32(uint8_t address, uint32_t reg) {
+    return i2c_read_int32(address, reg, true);
+}
+
+int32_t i2c_read_int32_le(uint8_t address, uint32_t reg, bool stop) {
+    return (int32_t) i2c_read_uint32_le(address, reg, stop);
+}
+
+int32_t i2c_read_int32_le(uint8_t address, uint32_t reg) {
+    return i2c_read_int32_le(address, reg, true);
 }
 
 // -----------------------------------------------------------------------------
@@ -579,7 +674,7 @@ void i2cUnlock(uint8_t address) {
 }
 
 uint8_t i2cFind(uint8_t address) {
-    return espurna::i2c::find(address);
+    return espurna::i2c::Ok == espurna::i2c::transmission(address);
 }
 
 uint8_t i2cFind(const uint8_t* begin, const uint8_t* end) {
