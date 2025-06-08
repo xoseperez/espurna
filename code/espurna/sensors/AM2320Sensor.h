@@ -97,14 +97,20 @@ class AM2320Sensor : public I2CSensor<> {
             i2c_wakeup(address);
             delayMicroseconds(800);
 
-            unsigned char _buffer[11];
+            unsigned char _buffer[8]{};
 
-            // 0x08 = read address
-            //    7 = number of bytes to read
-            if (i2c_write_uint8(address, AM2320_I2C_READ_REGISTER_DATA, 0x08, 7) != I2C_TRANS_SUCCESS) {
+            uint8_t out[3] {
+                AM2320_I2C_READ_REGISTER_DATA,
+                0x08, // read address
+                7,    // number of bytes to read
+            };
+
+            if (i2c_write_buffer(address, out, sizeof(out)) != I2C_TRANS_SUCCESS) {
                 _error = SENSOR_ERROR_TIMEOUT;
                 return false;
             }
+
+            i2c_read_buffer(address, _buffer, sizeof(_buffer));
 
             uint16_t model     = (_buffer[2] << 8) | _buffer[3];
             uint8_t  version   = _buffer[4];
@@ -119,9 +125,13 @@ class AM2320Sensor : public I2CSensor<> {
             // waiting time of at least 800 μs, the maximum 3000 μs
             delayMicroseconds(800); // just to be on safe side
 
-            // 0x00 = read address
-            //    4 = number of bytes to read
-            if (i2c_write_uint8(address, AM2320_I2C_READ_REGISTER_DATA, 0x00, 4) != I2C_TRANS_SUCCESS) {
+            uint8_t out[3] {
+                AM2320_I2C_READ_REGISTER_DATA,
+                0x00, // read address
+                4     // number of bytes to read
+            };
+
+            if (i2c_write_buffer(address, out, sizeof(out)) != I2C_TRANS_SUCCESS) {
                 _error = SENSOR_ERROR_TIMEOUT;
                 return;
             }
@@ -130,7 +140,7 @@ class AM2320Sensor : public I2CSensor<> {
 
             // waiting time of at least 800 μs, the maximum 3000 μs
             delayMicroseconds(800 + ((3000-800)/2) );
-            i2c_read_buffer(address, _buffer, 8);
+            i2c_read_buffer(address, _buffer, sizeof(_buffer));
 
             // Humidity   : 01F4 = (1×256)+(F×16)+4 = 500 => humidity = 500÷10 = 50.0 %
             //              0339 = (3×256)+(3×16)+9 = 825 => humidity = 825÷10 = 82.5 %
