@@ -410,10 +410,20 @@ private:
 
 using I2CPortPtr = std::shared_ptr<I2CPort>;
 
-String description(const I2CPort& port) {
+String description(char tag, const I2CPort& port) {
     char buffer[25];
+
+    char extra[3];
+    if (tag) {
+        extra[0] = '/';
+        extra[1] = tag;
+        extra[2] = '\0';
+    } else {
+        extra[0] = '\0';
+    }
+
     snprintf_P(buffer, sizeof(buffer),
-        PSTR("ADE7953 @ I2C (0x%02X)"), port.address());
+        PSTR("ADE7953%s @ I2C (0x%02X)"), extra, port.address());
     return String(buffer);
 }
 
@@ -461,7 +471,7 @@ public:
     }
 
     String description() const override {
-        return ade7953::description(*_port);
+        return ade7953::description('\0', *_port);
     }
 
     Common(CommonValuesPtr values, I2CPortPtr port) :
@@ -639,7 +649,7 @@ public:
 
     // Descriptive name of the sensor
     String description() const override {
-        return ade7953::description(*_port);
+        return ade7953::description(_tag, *_port);
     }
 
     // Address of the sensor (it could be the GPIO or I2C address)
@@ -664,9 +674,10 @@ public:
     // Sensor has a fixed number of channels, so just use the static magnitudes list
 
     Channel() = delete;
-    Channel(const Registers& registers, CommonValuesPtr values, I2CPortPtr port) :
+    Channel(char tag, const Registers& registers, CommonValuesPtr values, I2CPortPtr port) :
         PortValuesBase(values, port),
         BaseEmonSensor(Magnitudes),
+        _tag(tag),
         _registers(registers)
     {}
 
@@ -744,6 +755,7 @@ private:
     double _current_ratio { Iref };
     double _power_ratio { Pref };
 
+    char _tag;
     const Registers& _registers;
     Values _last_values;
 };

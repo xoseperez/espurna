@@ -2582,8 +2582,8 @@ void load() {
         auto port = std::make_shared<I2CPort>(address);
 
         add(new Common(values, port));
-        add(new Channel(RegistersA, values, port));
-        add(new Channel(RegistersB, values, port));
+        add(new Channel('A', RegistersA, values, port));
+        add(new Channel('B', RegistersB, values, port));
     }
 #endif
 
