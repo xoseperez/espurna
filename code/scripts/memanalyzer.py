@@ -38,6 +38,7 @@ import subprocess
 import sys
 
 from collections import OrderedDict
+from typing import Optional
 
 __version__ = (0, 4)
 
@@ -83,7 +84,7 @@ DESCRIPTION = "ESPurna Memory Analyzer v{}".format(
 # -------------------------------------------------------------------------------
 
 
-def analyse_memory(elf_file, *, size_cmd=SIZE):
+def analyze_memory(elf_file, *, size_cmd=SIZE):
     proc = subprocess.Popen(
         [size_cmd, "-A", elf_file.as_posix()],
         stdout=subprocess.PIPE,
@@ -105,7 +106,7 @@ def analyse_memory(elf_file, *, size_cmd=SIZE):
     return values
 
 
-def make_firmware_paths(envname: str, *, build_path=BUILD_PATH, firmware="firmware"):
+def make_firmware_paths(envname: str, *, build_path=BUILD_PATH, firmware="firmware") -> tuple[pathlib.Path, pathlib.Path]:
     elf_path = build_path / envname / f"{firmware}.elf"
     bin_path = build_path / envname / f"{firmware}.bin"
 
@@ -156,7 +157,7 @@ def get_available_modules(args) -> OrderedDict[str, int]:
     return OrderedDict(modules)
 
 
-def parse_commandline_args():
+def parse_commandline_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=DESCRIPTION, formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
@@ -305,7 +306,7 @@ class Analyzer:
             "",
         )
         self.print_delimiters()
-        self.baseline = self.run({})
+        self.baseline = self.run()
         self.print_values("Baseline", self.baseline)
 
     def print_values(self, header, values):
@@ -332,7 +333,7 @@ class Analyzer:
             values["size"] - self.baseline["size"],
         )
 
-    def run(self, modules=None):
+    def run(self, modules: Optional[OrderedDict[str, int]] = None):
         run(
             self._envname,
             modules or self.modules,
@@ -344,7 +345,7 @@ class Analyzer:
         elf_path, bin_path = make_firmware_paths(
             self._envname, build_path=self._build_path
         )
-        values = analyse_memory(elf_path, size_cmd=self._size_cmd)
+        values = analyze_memory(elf_path, size_cmd=self._size_cmd)
 
         free = 80 * 1024 - values[".data"] - values[".rodata"] - values[".bss"]
         free = free + (16 - free % 16)

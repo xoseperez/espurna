@@ -39,22 +39,22 @@ CACHE_PATH = TEST_PATH / "cache"
 BUILD_PATH = ROOT_PATH / ".pio" / "build"
 
 
-def bold(string):
+def bold(string: str):
     return clr(Color.BOLD, string)
 
 
-def format_configurations(configurations):
+def format_configurations(configurations: list[pathlib.Path]):
     return "\n".join(str(cfg) for cfg in configurations)
 
 
-def pluralize(string, length):
+def pluralize(string: str, length: int):
     if length > 1:
         return f"{string}s"
 
     return string
 
 
-def build_configurations(args, configurations):
+def build_configurations(args: argparse.Namespace, configurations: list[pathlib.Path]):
     cmd = ["platformio", "run"]
     if args.silent:
         cmd.extend(["-s"])
@@ -83,11 +83,11 @@ def build_configurations(args, configurations):
         try:
             subprocess.check_call(cmd, env=os_env)
         except subprocess.CalledProcessError:
-            log.error("%s failed to build", bold(cfg))
+            log.error("%s failed to build", bold(str(cfg)))
             if configurations:
                 log.info(
                     "%s %s left\n%s",
-                    bold(len(configurations)),
+                    bold(str(len(configurations))),
                     pluralize("configuration", len(configurations)),
                     format_configurations(configurations),
                 )
@@ -99,16 +99,16 @@ def build_configurations(args, configurations):
 
         log.info(
             "%s finished in %s, %s is %s bytes",
-            *(bold(x) for x in (cfg, diff, firmware_bin, firmware_bin.stat().st_size)),
+            *(bold(str(x)) for x in (cfg, diff, firmware_bin, firmware_bin.stat().st_size)),
         )
 
         build_time += diff
 
     if build_time:
-        log.info("Done after %s", bold(build_time))
+        log.info("Done after %s", bold(str(build_time)))
 
 
-def main(args):
+def main(args: argparse.Namespace):
     if not args.environment:
         log.error("No environment selected")
         return
@@ -142,7 +142,7 @@ def main(args):
 
     log.info(
         "Found %s %s\n%s",
-        bold(len(configurations)),
+        bold(str(len(configurations))),
         pluralize("configuration", len(configurations)),
         format_configurations(configurations),
     )
