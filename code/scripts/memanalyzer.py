@@ -2,7 +2,7 @@
 # pylint: disable=C0301,C0114,C0116,W0511
 # coding=utf-8
 # -------------------------------------------------------------------------------
-# ESPurna module memory analyser
+# ESPurna module memory analyzer
 # xose.perez@gmail.com
 #
 # Rewritten for python-3 and changed to use "size" instead of "objdump"
@@ -22,31 +22,50 @@
 # When using Windows with non-default installation at the C:\.platformio,
 # you would need to specify toolchain path manually. For example:
 #
-# $ py -3 scripts\memanalyzer.py --toolchain-prefix C:\.platformio\packages\toolchain-xtensa\bin\xtensa-lx106-elf- <args>
+# $ py -3 ://path/to/memanalyzer.py --toolchain-path C:/.platformio/packages/toolchain-xtensa/bin <args>
 #
 # You could also change the path to platformio binary in a similar fashion:
-# $ py -3 scripts\memanalyzer.py --platformio-prefix C:\Users\Max\platformio-penv\Scripts\
+# $ py -3 ://path/to/memanalyzer.py --platformio-cmd C:/Users/Max/platformio-penv/Scripts/pio.exe
 #
 # -------------------------------------------------------------------------------
 
 import argparse
+import logging
 import os
+import pathlib
 import re
 import subprocess
 import sys
-from collections import OrderedDict
-from subprocess import getstatusoutput
 
-__version__ = (0, 3)
+from collections import OrderedDict
+
+__version__ = (0, 4)
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+log = logging.getLogger(__file__)
 
 # -------------------------------------------------------------------------------
 
+# TODO IRAM split is not always 32/32, sometimes it is 48/16
+# TODO codepath using these is removed to the time being
+#      and overflows are already critical build errors
 TOTAL_IRAM = 32786
 TOTAL_DRAM = 81920
 
-DEFAULT_ENV = "nodemcu-lolin"
-TOOLCHAIN_PREFIX = "~/.platformio/packages/toolchain-xtensa/bin/xtensa-lx106-elf-"
-PLATFORMIO_PREFIX = ""
+PWD = pathlib.Path(__file__).resolve().parent
+
+ROOT_PATH = (PWD / "..").resolve()
+
+CACHE_PATH = ROOT_PATH / "test" / "build" / "cache"
+BUILD_PATH = ROOT_PATH / ".pio" / "build"
+CONFIG_PATH = ROOT_PATH / "espurna" / "config" / "arduino.h"
+
+SIZE = "xtensa-lx106-elf-size"
+
+PLATFORMIO_CMD = "pio"
+
+DEFAULT_ENV = "esp8266-1m-git-base"
+
 SECTIONS = OrderedDict(
     [
         (".data", "Initialized Data (RAM)"),
@@ -64,20 +83,11 @@ DESCRIPTION = "ESPurna Memory Analyzer v{}".format(
 # -------------------------------------------------------------------------------
 
 
-def size_binary_path(prefix):
-    return "{}size".format(os.path.expanduser(prefix))
-
-
-def file_size(file):
-    try:
-        return os.stat(file).st_size
-    except OSError:
-        return 0
-
-
-def analyse_memory(size, elf_file):
+def analyse_memory(elf_file, *, size_cmd=SIZE):
     proc = subprocess.Popen(
-        [size, "-A", elf_file], stdout=subprocess.PIPE, universal_newlines=True
+        [size_cmd, "-A", elf_file.as_posix()],
+        stdout=subprocess.PIPE,
+        universal_newlines=True,
     )
     lines = proc.stdout.readlines()
 
@@ -95,35 +105,51 @@ def analyse_memory(size, elf_file):
     return values
 
 
-def run(prefix, env, modules, debug):
-    flags = " ".join("-D{}_SUPPORT={:d}".format(k, v) for k, v in modules.items())
+def make_firmware_paths(envname: str, *, build_path=BUILD_PATH, firmware="firmware"):
+    elf_path = build_path / envname / f"{firmware}.elf"
+    bin_path = build_path / envname / f"{firmware}.bin"
+
+    return (elf_path, bin_path)
+
+
+def run(envname, modules, *, piocmd=PLATFORMIO_CMD, cache_path=CACHE_PATH, silent=True):
+    flags = [
+        '-DMANUFACTURER=\\"TEST_BUILD\\"',
+        f'-DDEVICE=\\"{envname.upper()}\\"',
+    ]
+
+    for module, enabled in modules.items():
+        flags.append(f"-D{module}_SUPPORT={enabled}")
 
     os_env = os.environ.copy()
-    os_env["PLATFORMIO_BUILD_SRC_FLAGS"] = flags
-    os_env["PLATFORMIO_BUILD_CACHE_DIR"] = "test/pio_cache"
+    os_env["PLATFORMIO_BUILD_SRC_FLAGS"] = " ".join(flags)
+    os_env["PLATFORMIO_BUILD_CACHE_DIR"] = cache_path.as_posix()
 
-    command = [os.path.join(prefix, "platformio"), "run"]
-    if not debug:
+    command = [piocmd, "run"]
+    if silent:
         command.append("--silent")
-    command.extend(["--environment", env])
+    command.extend(["--environment", envname])
 
-    output = None if debug else subprocess.DEVNULL
+    output = None if not silent else subprocess.DEVNULL
 
     try:
         subprocess.check_call(
             command, shell=False, env=os_env, stdout=output, stderr=output
         )
-    except subprocess.CalledProcessError:
-        print(" - Command failed: {}".format(command))
-        print(" - Selected flags: {}".format(flags))
-        sys.exit(1)
+    except subprocess.CalledProcessError as e:
+        logging.error("unable to build command %s with flags", command, flags)
+        raise
 
 
-def get_available_modules():
+def get_available_modules(args) -> OrderedDict[str, int]:
     modules = []
-    for line in open("espurna/config/arduino.h"):
-        match = re.search(r"(\w*)_SUPPORT", line)
-        if match:
+
+    with args.config_path.open("r") as f:
+        for line in f:
+            match = re.search(r"(\w*)_SUPPORT", line)
+            if not match:
+                continue
+
             modules.append((match.group(1), 0))
     modules.sort(key=lambda item: item[0])
 
@@ -138,126 +164,118 @@ def parse_commandline_args():
         "-e", "--environment", help="platformio envrionment to use", default=DEFAULT_ENV
     )
     parser.add_argument(
-        "--toolchain-prefix",
+        "--toolchain-path",
         help="where to find the xtensa toolchain binaries",
-        default=TOOLCHAIN_PREFIX,
+        default=None,
     )
     parser.add_argument(
-        "--platformio-prefix",
-        help="where to find the platformio executable",
-        default=PLATFORMIO_PREFIX,
+        "--platformio-cmd",
+        help='"pio" command line (when outside of $PATH)',
+        default=PLATFORMIO_CMD,
     )
     parser.add_argument(
-        "-c",
-        "--core",
-        help="use core as base configuration instead of default",
-        action="store_true",
+        "--cache-path",
+        type=pathlib.Path,
+        default=CACHE_PATH,
+    )
+    parser.add_argument(
+        "--build-path",
+        type=pathlib.Path,
+        default=BUILD_PATH,
+    )
+    parser.add_argument(
+        "--config-path",
+        type=pathlib.Path,
+        default=CONFIG_PATH,
+    )
+    parser.add_argument(
+        "--build",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
+    parser.add_argument(
+        "--available",
+        help="exclude the list of command line modules instead of keeping it in",
+        action=argparse.BooleanOptionalAction,
         default=False,
     )
     parser.add_argument(
-        "-l",
-        "--list",
-        help="list available modules",
-        action="store_true",
+        "--keep-modules",
+        help="don't disable module after enabling it",
+        action=argparse.BooleanOptionalAction,
         default=False,
     )
-    parser.add_argument("-d", "--debug", action="store_true", default=False)
     parser.add_argument(
-        "modules", nargs="*", help="Modules to test (use ALL to test them all)"
+        "--silent",
+        help="Silence PlatformIO output",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
+    parser.add_argument(
+        "--enabled",
+        action="append",
+        help='Module that is always enabled',
+    )
+    parser.add_argument(
+        "modules",
+        nargs="*",
+        default=[],
+        help='Use specific modules instead of only the default ones.',
     )
 
     return parser.parse_args()
 
 
-def size_binary_exists(args):
-
-    status, _ = getstatusoutput(size_binary_path(args.toolchain_prefix))
-    if status != 1:
-        print("size not found, please check that the --toolchain-prefix is correct")
-        sys.exit(1)
-
-
-def get_modules(args):
-
-    # Load list of all modules
-    available_modules = get_available_modules()
-    if args.list:
-        print("List of available modules:\n")
-        for module in available_modules:
-            print("* " + module)
-        print()
-        sys.exit(0)
-
-    modules = []
-    if args.modules:
-        if "ALL" in args.modules:
-            modules.extend(available_modules.keys())
-        else:
-            modules.extend(args.modules)
-    modules.sort()
-
-    # Check test modules exist
-    for module in modules:
-        if module not in available_modules:
-            print("Module {} not found".format(module))
-            sys.exit(2)
-
-    # Either use all of modules or specified subset
-    if args.core:
-        modules = available_modules
-    else:
-        modules = OrderedDict((x, 0) for x in modules)
-
-    configuration = "CORE" if args.core else "DEFAULT"
-
-    return configuration, modules
-
-
 # -------------------------------------------------------------------------------
 
 
-class Analyser:
+class Analyzer:
     """Run platformio and print info about the resulting binary."""
 
     OUTPUT_FORMAT = "{:<20}|{:<15}|{:<15}|{:<15}|{:<15}|{:<15}|{:<15}|{:<15}"
     DELIMETERS = OUTPUT_FORMAT.format(
         "-" * 20, "-" * 15, "-" * 15, "-" * 15, "-" * 15, "-" * 15, "-" * 15, "-" * 15
     )
-    FIRMWARE_FORMAT = ".pio/build/{env}/firmware.{suffix}"
 
     class _Enable:
-        def __init__(self, analyser, module=None):
-            self.analyser = analyser
-            self.module = module
+        def __init__(self, analyzer, names: list[str], keep: bool):
+            self.analyzer = analyzer
+            self.names = names
+            self.keep = keep
+            self.modules = None
 
         def __enter__(self):
-            if not self.module:
-                for name in self.analyser.modules:
-                    self.analyser.modules[name] = 1
-            else:
-                self.analyser.modules[self.module] = 1
-            return self.analyser
+            self.modules = self.analyzer.modules.copy()
+            for name in self.names or self.analyzer.modules.keys():
+                self.analyzer.modules[name] = 1
+            return self.analyzer
 
         def __exit__(self, *args, **kwargs):
-            if not self.module:
-                for name in self.analyser.modules:
-                    self.analyser.modules[name] = 0
-            else:
-                self.analyser.modules[self.module] = 0
-
-        analyser = None
-        module = None
+            if not self.keep:
+                self.analyzer.modules = self.modules
+            self.modules = None
 
     def __init__(self, args, modules):
-        self._debug = args.debug
-        self._platformio_prefix = args.platformio_prefix
-        self._toolchain_prefix = args.toolchain_prefix
-        self._environment = args.environment
+        self._envname = args.environment
+
+        self._build_path = args.build_path
+        self._cache_path = args.cache_path
+        self._silent = args.silent
+        self._keep_modules = args.keep_modules
+
         self.modules = modules
         self.baseline = None
 
-    def enable(self, module=None):
-        return self._Enable(self, module)
+        self._platformio_cmd = args.platformio_cmd
+
+        if not args.toolchain_path:
+            self._size_cmd = SIZE
+        else:
+            path = pathlib.Path(args.toolchain_path).resolve()
+            self._size_cmd = (path / SIZE).as_posix()
+
+    def enable(self, names=()):
+        return self._Enable(self, names, keep=self._keep_modules)
 
     def print(self, *args):
         print(self.OUTPUT_FORMAT.format(*args))
@@ -265,7 +283,7 @@ class Analyser:
     def print_delimiters(self):
         print(self.DELIMETERS)
 
-    def begin(self, name):
+    def begin(self):
         self.print(
             "Module",
             "Cache IRAM",
@@ -287,8 +305,8 @@ class Analyser:
             "",
         )
         self.print_delimiters()
-        self.baseline = self.run()
-        self.print_values(name, self.baseline)
+        self.baseline = self.run({})
+        self.print_values("Baseline", self.baseline)
 
     def print_values(self, header, values):
         self.print(
@@ -302,8 +320,6 @@ class Analyser:
             values["size"],
         )
 
-    # TODO: sensor modules need to be print_compared with SENSOR as baseline
-    # TODO: some modules need to be print_compared with WEB as baseline
     def print_compare(self, header, values):
         self.print(
             header,
@@ -316,64 +332,83 @@ class Analyser:
             values["size"] - self.baseline["size"],
         )
 
-    def run(self):
-        run(self._platformio_prefix, self._environment, self.modules, self._debug)
+    def run(self, modules=None):
+        run(
+            self._envname,
+            modules or self.modules,
+            piocmd=self._platformio_cmd,
+            cache_path=self._cache_path,
+            silent=self._silent,
+        )
 
-        elf_path = self.FIRMWARE_FORMAT.format(env=self._environment, suffix="elf")
-        bin_path = self.FIRMWARE_FORMAT.format(env=self._environment, suffix="bin")
-
-        values = analyse_memory(size_binary_path(self._toolchain_prefix), elf_path)
+        elf_path, bin_path = make_firmware_paths(
+            self._envname, build_path=self._build_path
+        )
+        values = analyse_memory(elf_path, size_cmd=self._size_cmd)
 
         free = 80 * 1024 - values[".data"] - values[".rodata"] - values[".bss"]
         free = free + (16 - free % 16)
         values["free"] = free
 
-        values["size"] = file_size(bin_path)
+        try:
+            values["size"] = bin_path.stat().st_size
+        except:
+            values["size"] = 0
 
         return values
 
 
-def main(args):
+def main(args: argparse.Namespace):
+    available_modules = get_available_modules(args)
 
-    # Check xtensa-lx106-elf-size is in the path
-    size_binary_exists(args)
+    modules: OrderedDict[str, int] = OrderedDict()
+    if args.available:
+        modules = available_modules
 
-    # Which modules to test?
-    configuration, modules = get_modules(args)
+    for module in args.enabled:
+        if not module in available_modules:
+            raise ValueError(f'"{module}" is not a valid module name')
 
-    # print_values init message
-    print('Selected environment "{}"'.format(args.environment), end="")
-    if modules:
-        print(" with modules: {}".format(" ".join(modules.keys())))
-    else:
+        modules[module] = 1
+
+    for module in args.modules:
+        if not module in available_modules:
+            raise ValueError(f'"{module}" is not a valid module name')
+
+        if args.available:
+            del modules[module]
+        else:
+            modules[module] = 0
+
+    if not args.build:
+        print("Selected modules:")
+        for module, enabled in modules.items():
+            print(f"* {module} => {enabled}")
         print()
+        return
 
-    print()
-    print("Analyzing {} configuration".format(configuration))
-    print()
+    # Build without any modules to get base memory usage
+    analyzer = Analyzer(args, modules)
+    analyzer.begin()
 
-    # Build the core without any modules to get base memory usage
-    analyser = Analyser(args, modules)
-    analyser.begin(configuration)
-
-    # Test each module separately
+    # Then, build & compare with specified modules
     results = {}
-    for module in analyser.modules:
-        with analyser.enable(module):
-            results[module] = analyser.run()
-        analyser.print_compare(module, results[module])
+    for module, enabled in analyzer.modules.items():
+        if enabled:
+            continue
+        with analyzer.enable((module,)):
+            results[module] = analyzer.run()
+        analyzer.print_compare(module, results[module])
 
-    # Test all modules
-    if analyser.modules:
+    if analyzer.modules:
+        with analyzer.enable():
+            total = analyzer.run()
 
-        with analyser.enable():
-            total = analyser.run()
+        analyzer.print_delimiters()
+        if len(analyzer.modules) > 1:
+            analyzer.print_compare("ALL MODULES", total)
 
-        analyser.print_delimiters()
-        if len(analyser.modules) > 1:
-            analyser.print_compare("ALL MODULES", total)
-
-        analyser.print_values("TOTAL", total)
+        analyzer.print_values("TOTAL", total)
 
 
 if __name__ == "__main__":
