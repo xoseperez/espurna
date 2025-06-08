@@ -89,6 +89,9 @@ unsigned char scl() {
 
 } // namespace settings
 
+// make note that both APIs return integer status codes
+// success is 0, everything else depends on the implementation
+
 uint8_t transmission(uint8_t address, bool stop) {
     Wire.beginTransmission(address);
     return Wire.endTransmission(stop);
@@ -105,8 +108,16 @@ uint8_t with_transmission(uint8_t address, bool stop, T&& callback) {
     return Wire.endTransmission(stop);
 }
 
-// make note that both APIs return integer status codes
-// success is 0, everything else depends on the implementation
+// device address when found
+// 0 when not found
+
+uint8_t find(uint8_t address) {
+    if (Ok == transmission(address)) {
+        return address;
+    }
+
+    return 0;
+}
 
 template <typename T>
 uint8_t find(const uint8_t* begin, const uint8_t* end, T&& filter) {
@@ -674,7 +685,7 @@ void i2cUnlock(uint8_t address) {
 }
 
 uint8_t i2cFind(uint8_t address) {
-    return espurna::i2c::Ok == espurna::i2c::transmission(address);
+    return espurna::i2c::find(address);
 }
 
 uint8_t i2cFind(const uint8_t* begin, const uint8_t* end) {
