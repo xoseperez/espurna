@@ -63,8 +63,9 @@ public:
     }
 
     unsigned int analogRead() override {
-        static constexpr uint16_t Mask { 0x0fff };
-        return i2c_read_uint16(_port.address(), ADC121_REG_RESULT) & Mask;
+        static constexpr auto Mask = uint16_t{ 0x0fff };
+        static constexpr auto Reg = uint8_t{ ADC121_REG_RESULT };
+        return i2c_read_uint16(_port.address(), Reg) & Mask;
     }
 
     // ---------------------------------------------------------------------
@@ -115,7 +116,8 @@ public:
 
 private:
     void config() {
-        i2c_write_uint8(_port.address(), ADC121_REG_CONFIG, 0);
+        static constexpr auto Reg = uint8_t{ ADC121_REG_CONFIG };
+        i2c_write_uint8(_port.address(), Reg, 0);
     }
 
     uint8_t _address { 0x00 };

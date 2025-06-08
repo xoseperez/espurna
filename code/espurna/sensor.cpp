@@ -2572,9 +2572,18 @@ void load() {
 
 #if ADE7953_SUPPORT
     {
-        auto* sensor = new ADE7953Sensor();
-        sensor->setAddress(ADE7953_ADDRESS);
-        add(sensor);
+        using namespace espurna::sensor::driver::ade7953;
+
+        auto values = std::make_shared<CommonValues>();
+        values->line_cycles = driver::ade7953::settings::lineCycles();
+        values->current_threshold = driver::ade7953::settings::currentThreshold();
+
+        const auto address = driver::ade7953::settings::address();
+        auto port = std::make_shared<I2CPort>(address);
+
+        add(new Common(values, port));
+        add(new Channel(RegistersA, values, port));
+        add(new Channel(RegistersB, values, port));
     }
 #endif
 

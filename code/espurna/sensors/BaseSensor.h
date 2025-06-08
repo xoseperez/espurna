@@ -19,6 +19,9 @@
 
 class BaseSensor {
 public:
+    // Slot value default or when value(index) is unavailable
+    static constexpr double SlotDefault { 0.0 };
+
     // Poor man's RTTI without -frtti. Store originating class ID to infer which class methods could be accessed.
     struct Kind {
         Kind() :
