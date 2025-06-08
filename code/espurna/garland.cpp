@@ -337,7 +337,7 @@ bool executeCommand(const String& command) {
             bool palette_found = false;
             for (size_t i = 0; i < pals.size(); ++i) {
                 auto pal_name = pals[i].name();
-                if (palette = pal_name) {
+                if (palette == pal_name) {
                     newPalette = &pals[i];
                     palette_found = true;
                     scene_setup_required = true;
