@@ -412,19 +412,24 @@ uint8_t i2c_wakeup(uint8_t address) {
 static uint8_t i2c_append_least(uint32_t value) {
     uint8_t out{};
 
-    if (value > 0xffffff) {
-        Wire.write(static_cast<uint8_t>((value >> 24) & 0xff));
-    }
+    const uint8_t buf[] {
+        static_cast<uint8_t>((value >> 24) & 0xff),
+        static_cast<uint8_t>((value >> 16) & 0xff),
+        static_cast<uint8_t>((value >> 8) & 0xff),
+        static_cast<uint8_t>(value & 0xff),
+    };
 
-    if (value > 0xffff) {
-        Wire.write(static_cast<uint8_t>((value >> 16) & 0xff));
-    }
+    const auto begin = std::begin(buf);
 
-    if (value > 0xff) {
-        Wire.write(static_cast<uint8_t>((value >> 8) & 0xff));
-    }
+    const auto end = std::end(buf);
+    const auto before_end = end - 1;
 
-    Wire.write(static_cast<uint8_t>(value & 0xff));
+    for (auto it = begin; it != end; ++it) {
+        if (*it || (it == before_end)) {
+            out = Wire.write(it, std::distance(it, end));
+            break;
+        }
+    }
 
     return out;
 }
