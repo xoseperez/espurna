@@ -548,6 +548,24 @@ uint8_t i2c_write_uint32(uint8_t address, uint32_t reg, uint32_t value) {
         });
 }
 
+uint8_t i2c_write_most(uint8_t address, uint32_t reg, uint32_t value, size_t len, bool stop) {
+    const uint8_t buf[4] {
+        static_cast<uint8_t>((value >> 24) & 0xff),
+        static_cast<uint8_t>((value >> 16) & 0xff),
+        static_cast<uint8_t>((value >> 8) & 0xff),
+        static_cast<uint8_t>(value & 0xff),
+    };
+
+    const auto most = std::clamp(len, size_t{ 1 }, sizeof(buf));
+    const auto* it = &buf[sizeof(buf) - most];
+
+    return i2c_write_buffer(address, reg, it, most, stop);
+}
+
+uint8_t i2c_write_most(uint8_t address, uint32_t reg, uint32_t value, size_t len) {
+    return i2c_write_most(address, reg, value, len, true);
+}
+
 uint8_t i2c_read_buffer(uint8_t address, uint8_t* buffer, size_t len) {
     const auto out = Wire.requestFrom(address, static_cast<uint8_t>(len));
     for (size_t i = 0; i < out; ++i) {
@@ -671,6 +689,24 @@ int32_t i2c_read_int32_le(uint8_t address, uint32_t reg, bool stop) {
 
 int32_t i2c_read_int32_le(uint8_t address, uint32_t reg) {
     return i2c_read_int32_le(address, reg, true);
+}
+
+uint32_t i2c_read_most(uint8_t address, uint32_t reg, size_t len, bool stop) {
+    uint8_t buf[4]{};
+
+    const auto most = std::clamp(len, size_t{ 1 }, sizeof(buf));
+    i2c_read_buffer(address, reg, &buf[0], most, stop);
+
+    uint32_t out{};
+    for (size_t byte = 0; byte < most; ++byte) {
+        out = (out << 8ul) | static_cast<uint32_t>(buf[byte]);
+    }
+
+    return out;
+}
+
+uint32_t i2c_read_most(uint8_t address, uint32_t reg, size_t len) {
+    return i2c_read_most(address, reg, len, true);
 }
 
 // -----------------------------------------------------------------------------

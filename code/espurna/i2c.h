@@ -41,6 +41,9 @@ uint8_t i2c_write_uint16(uint8_t address, uint32_t reg, uint16_t value);
 uint8_t i2c_write_uint32(uint8_t address, uint32_t value);
 uint8_t i2c_write_uint32(uint8_t address, uint32_t reg, uint32_t value);
 
+uint8_t i2c_write_most(uint8_t address, uint32_t reg, uint32_t value, size_t len, bool stop);
+uint8_t i2c_write_most(uint8_t address, uint32_t reg, uint32_t value, size_t len);
+
 uint8_t i2c_read_buffer(uint8_t address, uint8_t* buffer, size_t len);
 uint8_t i2c_read_buffer(uint8_t address, uint32_t reg, uint8_t* buffer, size_t len, bool stop);
 uint8_t i2c_read_buffer(uint8_t address, uint32_t reg, uint8_t* buffer, size_t len);
@@ -71,6 +74,9 @@ int32_t i2c_read_int32(uint8_t address);
 int32_t i2c_read_int32(uint8_t address, uint32_t reg, bool stop);
 int32_t i2c_read_int32_le(uint8_t address, uint32_t reg, bool stop);
 int32_t i2c_read_int32_le(uint8_t address, uint32_t reg);
+
+uint32_t i2c_read_most(uint8_t address, uint32_t reg, size_t len, bool stop);
+uint32_t i2c_read_most(uint8_t address, uint32_t reg, size_t len);
 
 uint8_t i2cFind(uint8_t);
 

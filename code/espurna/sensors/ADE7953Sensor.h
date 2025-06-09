@@ -148,33 +148,11 @@ private:
     // > When accessing the 32-bit registers, only the lower 24 bits contain valid
     // > data (the upper 8 bits are sign extended)
     static uint32_t read(uint8_t address, uint16_t reg, size_t size) {
-        uint8_t buf[4]{};
-        i2c_read_buffer(address, reg, &buf[0], size, false);
-
-        uint32_t out{};
-        for (size_t byte = 0; byte < size; ++byte) {
-            out = (out << 8ul) | (uint32_t)buf[byte];
-        }
-
-        return out;
+        return i2c_read_most(address, reg, size, false);
     }
 
     static void write(uint8_t address, uint16_t reg, uint32_t value, size_t size) {
-        // TODO enforce 'Register::size()' != 0
-        uint32_t offset = size * 8;
-        if (!offset) {
-            return;
-        }
-
-        uint8_t buf[4];
-
-        uint8_t* w = &buf[0];
-        do {
-            --offset;
-            *(w++) = static_cast<uint8_t>((value >> offset) & 0xff);
-        } while (offset != 0);
-
-        i2c_write_buffer(address, (uint32_t)reg, &buf[0], size);
+        i2c_write_most(address, reg, value, size);
         delayMicroseconds(5); // > Bus-free time minimum 4.7us
     }
 
