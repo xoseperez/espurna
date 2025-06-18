@@ -366,7 +366,7 @@ private:
 
 using BaseFilterPtr = std::unique_ptr<BaseFilter>;
 
-// .001.002.003.004
+// unique to the current runtime, for example .001.002.003.004
 using Slot = std::array<char, 16>;
 
 struct SlotValues {
@@ -4130,8 +4130,8 @@ bool init() {
             break;
         }
 
-        const auto slots = sensor->count();
-        for (auto slot = 0; slot < slots; ++slot) {
+        const auto slots = (unsigned char){ sensor->count() };
+        for (auto slot = (unsigned char){ 0 }; slot < slots; ++slot) {
             auto& result = magnitude::add(sensor, sensor->type(slot), slot);
             configure_magnitude(result);
 
