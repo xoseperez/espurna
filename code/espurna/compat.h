@@ -73,24 +73,25 @@ extern "C" {
 long  __attribute__((deprecated("Please avoid using map() with Core 2.3.0"))) map(long x, long in_min, long in_max, long out_min, long out_max);
 #endif
 
-// -----------------------------------------------------------------------------
-// Proxy min & max same as the latest Arduino.h
-// -----------------------------------------------------------------------------
+// ------------------------------------------------------------------------------
+// Arduino.h hijacks several useful names
+// ------------------------------------------------------------------------------
 
 #undef min
 #undef max
 #undef _min
 #undef _max
+#undef bit
+#undef word
+#undef constrain
 
 #if defined(ARDUINO_ESP8266_RELEASE_2_3_0)
-
 #include <algorithm>
 
 using std::min;
 using std::max;
 using std::isinf;
 using std::isnan;
-
 #endif
 
 // -----------------------------------------------------------------------------
@@ -99,6 +100,11 @@ using std::isnan;
 
 #include <memory>
 #include <type_traits>
+#include <utility>
+
+#if __cplusplus >= 201806L
+#include <bit>
+#endif
 
 namespace std {
 
@@ -111,13 +117,6 @@ using remove_cvref = typename std::remove_cv<std::remove_reference<T>>::type;
 template<typename T, typename... Args>
 std::unique_ptr<T> make_unique(Args&&... args) {
     return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-}
-#endif
-
-#if __cplusplus < 201603L
-template <typename T>
-constexpr const T& clamp(const T& value, const T& low, const T& high) {
-    return (value < low) ? low : (high < value) ? high : value;
 }
 #endif
 
@@ -143,6 +142,42 @@ constexpr auto cend(const T& value) -> decltype(std::end(value)) {
 }
 #endif
 
+#if __cplusplus < 201603L
+template <typename T>
+constexpr const T& clamp(const T& value, const T& low, const T& high) {
+    return (value < low) ? low : (high < value) ? high : value;
+}
+#endif
+
+#if __cplusplus < 201806L
+#if not (defined(ARDUINO_ESP8266_RELEASE_2_7_2) \
+ || defined(ARDUINO_ESP8266_RELEASE_2_7_3) \
+ || defined(ARDUINO_ESP8266_RELEASE_2_7_4))
+#define BIT_CAST_CONSTEXPR constexpr
+#else
+#define BIT_CAST_CONSTEXPR
+#endif
+
+template <typename To, typename From>
+BIT_CAST_CONSTEXPR To bit_cast(const From& src) noexcept {
+    static_assert(sizeof(From) == sizeof(To), "");
+// while part of the c++11, not implemented in the gcc4.8 release
+// just assume tests catch any issues with these when used in the code
+#if not (defined(ARDUINO_ESP8266_RELEASE_2_7_2) \
+ || defined(ARDUINO_ESP8266_RELEASE_2_7_3) \
+ || defined(ARDUINO_ESP8266_RELEASE_2_7_4))
+    static_assert(std::is_trivially_copyable<From>::value, "");
+    static_assert(std::is_trivially_copyable<To>::value, "");
+#endif
+
+    To dst;
+    __builtin_memcpy(&dst, &src, sizeof(dst));
+
+    return dst;
+}
+#undef BIT_CAST_CONSTEXPR
+#endif
+
 #if __cplusplus < 202102L
 template <typename Enum, typename Type = typename std::underlying_type<Enum>::type>
 constexpr Type to_underlying(Enum value) {
@@ -151,12 +186,6 @@ constexpr Type to_underlying(Enum value) {
 #endif
 
 } // namespace std
-
-// Same as min and max, force same type arguments
-#undef constrain
-
-// Hijacks useful name
-#undef bit
 
 // constexpr inline not always available
 #ifdef __cpp_inline_variables

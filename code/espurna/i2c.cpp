@@ -12,12 +12,16 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <Wire.h>
 
+#include "compat.h"
 #include "i2c.h"
 
 #include <array>
 #include <cstring>
 #include <bitset>
-#include <machine/endian.h>
+
+#if __cplusplus >= 201806L
+#include <bit>
+#endif
 
 // -----------------------------------------------------------------------------
 // Private
@@ -389,6 +393,46 @@ void setup() {
 } // namespace terminal
 #endif // TERMINAL_SUPPORT
 
+std::array<uint8_t, 2> pack_uint16(uint16_t value) {
+    std::array<uint8_t, 2> out;
+
+    out[0] = static_cast<uint8_t>((value >> 8) & 0xff);
+    out[1] = static_cast<uint8_t>(value & 0xff);
+
+    return out;
+}
+
+uint16_t unpack_uint16(const std::array<uint8_t, 2>& value) {
+    uint16_t out;
+
+    out = static_cast<uint16_t>(value[0]) << 8;
+    out |= static_cast<uint16_t>(value[1]);
+
+    return out;
+}
+
+std::array<uint8_t, 4> pack_uint32(uint32_t value) {
+    std::array<uint8_t, 4> out;
+
+    out[0] = static_cast<uint8_t>((value >> 24) & 0xff);
+    out[1] = static_cast<uint8_t>((value >> 16) & 0xff);
+    out[2] = static_cast<uint8_t>((value >> 8) & 0xff);
+    out[3] = static_cast<uint8_t>(value & 0xff);
+
+    return out;
+}
+
+uint32_t unpack_uint32(const std::array<uint8_t, 4>& value) {
+    uint32_t out;
+
+    out = static_cast<uint32_t>(value[0]) << 24;
+    out |= static_cast<uint32_t>(value[1]) << 16;
+    out |= static_cast<uint32_t>(value[2]) << 8;
+    out |= static_cast<uint32_t>(value[3]);
+
+    return out;
+}
+
 } // namespace
 } // namespace i2c
 } // namespace espurna
@@ -399,6 +443,12 @@ void setup() {
 
 using espurna::i2c::transmission;
 using espurna::i2c::with_transmission;
+
+using espurna::i2c::pack_uint16;
+using espurna::i2c::unpack_uint16;
+
+using espurna::i2c::pack_uint32;
+using espurna::i2c::unpack_uint32;
 
 uint8_t i2c_wakeup(uint8_t address) {
     return transmission(address, true);
@@ -412,16 +462,10 @@ uint8_t i2c_wakeup(uint8_t address) {
 static uint8_t i2c_append_least(uint32_t value) {
     uint8_t out{};
 
-    const uint8_t buf[] {
-        static_cast<uint8_t>((value >> 24) & 0xff),
-        static_cast<uint8_t>((value >> 16) & 0xff),
-        static_cast<uint8_t>((value >> 8) & 0xff),
-        static_cast<uint8_t>(value & 0xff),
-    };
+    const auto buf = pack_uint32(value);
+    const auto begin = buf.cbegin();
 
-    const auto begin = std::begin(buf);
-
-    const auto end = std::end(buf);
+    const auto end = buf.cend();
     const auto before_end = end - 1;
 
     for (auto it = begin; it != end; ++it) {
@@ -440,26 +484,6 @@ static uint8_t i2c_write_least(uint8_t address, uint32_t value, bool stop) {
         [&]() {
             i2c_append_least(value);
         });
-}
-
-static std::array<uint8_t, 2> i2c_prepare_uint16(uint16_t value) {
-    std::array<uint8_t, 2> out;
-
-    out[0] = static_cast<uint8_t>((value >> 8) & 0xff);
-    out[1] = static_cast<uint8_t>(value & 0xff);
-
-    return out;
-}
-
-static std::array<uint8_t, 4> i2c_prepare_uint32(uint32_t value) {
-    std::array<uint8_t, 4> out;
-
-    out[0] = static_cast<uint8_t>((value >> 24) & 0xff);
-    out[1] = static_cast<uint8_t>((value >> 16) & 0xff);
-    out[2] = static_cast<uint8_t>((value >> 8) & 0xff);
-    out[3] = static_cast<uint8_t>(value & 0xff);
-
-    return out;
 }
 
 static uint8_t i2c_append_buffer_impl(const uint8_t* buffer, size_t len) {
@@ -509,7 +533,7 @@ uint8_t i2c_write_uint8(uint8_t address, uint32_t reg, uint8_t value) {
 }
 
 static uint8_t i2c_append_uint16_impl(uint16_t value) {
-    const auto prepared = i2c_prepare_uint16(value);
+    const auto prepared = pack_uint16(value);
     return Wire.write(prepared.data(), prepared.size());
 }
 
@@ -529,7 +553,7 @@ uint8_t i2c_write_uint16(uint8_t address, uint32_t reg, uint16_t value) {
 }
 
 static uint8_t i2c_append_uint32_impl(uint32_t value) {
-    const auto prepared = i2c_prepare_uint32(value);
+    const auto prepared = pack_uint32(value);
     return Wire.write(prepared.data(), prepared.size());
 }
 
@@ -549,15 +573,10 @@ uint8_t i2c_write_uint32(uint8_t address, uint32_t reg, uint32_t value) {
 }
 
 uint8_t i2c_write_most(uint8_t address, uint32_t reg, uint32_t value, size_t len, bool stop) {
-    const uint8_t buf[4] {
-        static_cast<uint8_t>((value >> 24) & 0xff),
-        static_cast<uint8_t>((value >> 16) & 0xff),
-        static_cast<uint8_t>((value >> 8) & 0xff),
-        static_cast<uint8_t>(value & 0xff),
-    };
+    const auto buf = pack_uint32(value);
 
-    const auto most = std::clamp(len, size_t{ 1 }, sizeof(buf));
-    const auto* it = &buf[sizeof(buf) - most];
+    const auto most = std::clamp(len, size_t{ 1 }, buf.size());
+    const auto* it = buf.data() + buf.size() - most;
 
     return i2c_write_buffer(address, reg, it, most, stop);
 }
@@ -600,13 +619,10 @@ uint8_t i2c_read_uint8(uint8_t address, uint32_t reg) {
 }
 
 uint16_t i2c_read_uint16(uint8_t address) {
-    uint8_t buf[2]{};
-    i2c_read_buffer(address, &buf[0], sizeof(buf));
+    std::array<uint8_t, 2> buf{};
+    i2c_read_buffer(address, buf.data(), buf.size());
 
-    uint16_t out = static_cast<uint16_t>(buf[0]) << 8;
-    out |= static_cast<uint16_t>(buf[1]);
-
-    return out;
+    return unpack_uint16(buf);
 }
 
 uint16_t i2c_read_uint16(uint8_t address, uint32_t reg, bool stop) {
@@ -627,11 +643,11 @@ uint16_t i2c_read_uint16_le(uint8_t address, uint32_t reg) {
 }
 
 int16_t i2c_read_int16(uint8_t address) {
-    return (int16_t) i2c_read_uint16(address);
+    return std::bit_cast<int16_t>(i2c_read_uint16(address));
 }
 
 int16_t i2c_read_int16(uint8_t address, uint32_t reg, bool stop) {
-    return (int16_t) i2c_read_uint16(address, reg, stop);
+    return std::bit_cast<int16_t>(i2c_read_uint16(address, reg, stop));
 }
 
 int16_t i2c_read_int16(uint8_t address, uint32_t reg) {
@@ -639,7 +655,7 @@ int16_t i2c_read_int16(uint8_t address, uint32_t reg) {
 }
 
 int16_t i2c_read_int16_le(uint8_t address, uint32_t reg, bool stop) {
-    return (int16_t) i2c_read_uint16_le(address, reg, stop);
+    return std::bit_cast<int16_t>(i2c_read_uint16_le(address, reg, stop));
 }
 
 int16_t i2c_read_int16_le(uint8_t address, uint32_t reg) {
@@ -647,15 +663,10 @@ int16_t i2c_read_int16_le(uint8_t address, uint32_t reg) {
 }
 
 uint32_t i2c_read_uint32(uint8_t address) {
-    uint8_t buf[4]{};
-    i2c_read_buffer(address, &buf[0], sizeof(buf));
+    std::array<uint8_t, 4> buf{};
+    i2c_read_buffer(address, buf.data(), buf.size());
 
-    uint32_t out = static_cast<uint32_t>(buf[0]) << 24;
-    out |= static_cast<uint32_t>(buf[1]) << 16;
-    out |= static_cast<uint32_t>(buf[2]) << 8;
-    out |= static_cast<uint32_t>(buf[3]);
-
-    return out;
+    return unpack_uint32(buf);
 }
 
 uint32_t i2c_read_uint32(uint8_t address, uint32_t reg, bool stop) {
@@ -676,7 +687,7 @@ uint32_t i2c_read_uint32_le(uint8_t address, uint32_t reg) {
 }
 
 int32_t i2c_read_int32(uint8_t address, uint32_t reg, bool stop) {
-    return (int32_t) i2c_read_uint32(address, reg, stop);
+    return std::bit_cast<int32_t>(i2c_read_uint32(address, reg, stop));
 }
 
 int32_t i2c_read_int32(uint8_t address, uint32_t reg) {
@@ -684,7 +695,7 @@ int32_t i2c_read_int32(uint8_t address, uint32_t reg) {
 }
 
 int32_t i2c_read_int32_le(uint8_t address, uint32_t reg, bool stop) {
-    return (int32_t) i2c_read_uint32_le(address, reg, stop);
+    return std::bit_cast<int32_t>(i2c_read_uint32_le(address, reg, stop));
 }
 
 int32_t i2c_read_int32_le(uint8_t address, uint32_t reg) {
