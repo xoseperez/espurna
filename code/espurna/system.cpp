@@ -1084,9 +1084,8 @@ void pre() {
             rtcmem[64] = rtcmem[68] = 0;
             customResetReason(CustomResetReason::Factory);
             resetSettings();
-            eraseSDKConfig();
-            __builtin_trap();
-            // can't return!
+            forceEraseSDKConfig();
+            __builtin_unreachable();
         }
 
         // TODO: also check for things throughout the flash sector, somehow?
@@ -1121,7 +1120,7 @@ void pre() {
                 customResetReason(CustomResetReason::Factory);
                 systemForceStable();
                 forceEraseSDKConfig();
-                // can't return!
+                __builtin_unreachable();
             }
         }
     }
@@ -1541,7 +1540,7 @@ bool eraseSDKConfig() {
     return ESP.eraseConfig();
 }
 
-void forceEraseSDKConfig() {
+[[noreturn]] void forceEraseSDKConfig() {
     eraseSDKConfig();
     __builtin_trap();
 }
@@ -1632,8 +1631,9 @@ bool eraseSDKConfig() {
     return espurna::eraseSDKConfig();
 }
 
-void forceEraseSDKConfig() {
+[[noreturn]] void forceEraseSDKConfig() {
     espurna::forceEraseSDKConfig();
+    __builtin_unreachable();
 }
 
 void factoryReset() {

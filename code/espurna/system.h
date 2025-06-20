@@ -308,8 +308,9 @@ HeapStats systemHeapStats();
 size_t systemFreeHeap();
 size_t systemInitialFreeHeap();
 
+[[noreturn]] void forceEraseSDKConfig();
+
 bool eraseSDKConfig();
-void forceEraseSDKConfig();
 void factoryReset();
 
 uint32_t systemResetReason();
