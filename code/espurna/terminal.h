@@ -24,6 +24,7 @@ using namespace espurna::terminal;
 } // namespace terminal
 
 void terminalOK(const espurna::terminal::CommandContext&);
+void terminalError(const espurna::terminal::CommandContext&);
 void terminalError(const espurna::terminal::CommandContext&, const String&);
 void terminalError(const espurna::terminal::CommandContext&, const __FlashStringHelper*);
 void terminalError(const espurna::terminal::CommandContext&, espurna::StringView);

@@ -131,7 +131,10 @@ void ok(const espurna::terminal::CommandContext& ctx) {
 }
 
 void error(Print& print, const String& message) {
-    print.printf_P(PSTR("-ERROR: %s\n"), message.c_str());
+    print.printf_P(PSTR("-ERROR: %s\n"),
+        message.length()
+            ? message.c_str()
+            : PSTR("UNKNOWN"));
 }
 
 void error(const espurna::terminal::CommandContext& ctx, const String& message) {

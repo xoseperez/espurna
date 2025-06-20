@@ -756,6 +756,10 @@ void terminalOK(const espurna::terminal::CommandContext& ctx) {
     espurna::terminal::ok(ctx);
 }
 
+void terminalError(const espurna::terminal::CommandContext& ctx) {
+    espurna::terminal::error(ctx, String());
+}
+
 void terminalError(const espurna::terminal::CommandContext& ctx, const String& message) {
     espurna::terminal::error(ctx, message);
 }
