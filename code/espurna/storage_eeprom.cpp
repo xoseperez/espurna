@@ -28,11 +28,18 @@ bool _eepromCommitResult(bool value) {
 
 } // namespace
 
-StorageEEPROM_Rotate EEPROMr;
+StorageEEPROM_Rotate& eepromInstance() {
+    static StorageEEPROM_Rotate instance;
+    return instance;
+}
 
 StorageEEPROM_Rotate::StorageEEPROM_Rotate() :
     EEPROM_Rotate()
 {
+#ifdef EEPROM_ROTATE_SECTORS
+    static_assert(EEPROM_ROTATE_SECTORS > 0, "");
+    _pool_size = EEPROM_ROTATE_SECTORS;
+#else
     // ESP8266 environment uses fixed addresses for globally accessible `FS` & `EEPROM`.
     // By default, last() is `(FLASH_SIZE / SECTOR_SIZE) - 5` aka base EEPROM address.
     //
@@ -54,11 +61,10 @@ StorageEEPROM_Rotate::StorageEEPROM_Rotate() :
     } else if (last > 250) { // 1Mb
         _pool_size = 2;
     }
-}
+#endif
 
-void StorageEEPROM_Rotate::begin(size_t size, uint16_t offset) {
-    _offset = offset;
-    as_base()->begin(size);
+    _offset = EepromRotateOffset;
+    as_rotate()->begin(EepromSize);
 
     // With all other things equal, make sure this sector could be written to later
     if (!_checkCRC()) {
@@ -91,28 +97,30 @@ bool eepromReady() {
 void eepromRotate(bool value) {
     // Only matters when the instance actually allows rotation.
     // Because .rotate(false) marks EEPROM as dirty, this is equivalent to the .backup(0)
-    if (EEPROMr.canRotate()) {
+    auto& instance = eepromInstance();
+    if (instance.canRotate()) {
         DEBUG_MSG_P(PSTR("[EEPROM] %s EEPROM rotation\n"),
             value ? PSTR("Enabling") : PSTR("Disabling"));
-        EEPROMr.rotate(value);
+        instance.rotate(value);
         eepromCommit();
     }
 }
 
 uint32_t eepromCurrent() {
-    return EEPROMr.current();
+    auto& instance = eepromInstance();
+    return instance.current();
 }
 
-static String _eepromAvailableSectors() {
-    const auto current_sector = EEPROMr.current();
+static String _eepromAvailableSectors(StorageEEPROM_Rotate& instance) {
+    const auto current_sector = instance.current();
 
     String out;
-    for (uint8_t i = 0; i < EEPROMr.size(); ++i) {
+    for (uint8_t i = 0; i < instance.size(); ++i) {
         if (i > 0) {
             out += STRING_VIEW(", ").toString();
         }
 
-        const auto sector = EEPROMr.getSector(i);
+        const auto sector = instance.getSector(i);
         if (sector == current_sector) {
             out += '(';
         }
@@ -126,12 +134,24 @@ static String _eepromAvailableSectors() {
     return out;
 }
 
+static String _eepromAvailableSectors() {
+    return _eepromAvailableSectors(eepromInstance());
+}
+
 String eepromSectors() {
     return _eepromAvailableSectors();
 }
 
+static bool _eepromCommit(StorageEEPROM_Rotate& instance) {
+    return _eepromCommitResult(instance.commit());
+}
+
 static bool _eepromCommit() {
-    return _eepromCommitResult(EEPROMr.commit());
+    return _eepromCommit(eepromInstance());
+}
+
+void eepromForceCommit(StorageEEPROM_Rotate& instance) {
+    _eepromCommit(instance);
 }
 
 void eepromForceCommit() {
@@ -143,7 +163,8 @@ void eepromCommit() {
 }
 
 void eepromBackup(uint32_t index){
-    EEPROMr.backup(index);
+    auto& instance = eepromInstance();
+    instance.backup(index);
 }
 
 #if TERMINAL_SUPPORT
@@ -151,9 +172,11 @@ void eepromBackup(uint32_t index){
 STRING_VIEW_INLINE(EepromCommand, "EEPROM");
 
 static void _eepromCommand(::terminal::CommandContext&& ctx) {
+    auto& instance = eepromInstance();
     ctx.output.printf_P(PSTR("Sector%s: %s\n"),
-        EEPROMr.canRotate() ? "s" : "",
-        _eepromAvailableSectors().c_str());
+        instance.canRotate() ? "s" : "",
+        _eepromAvailableSectors(instance).c_str());
+
     if (_eeprom_commit_count > 0) {
         ctx.output.printf_P(PSTR("Commits done: %lu, last: %s\n"),
             _eeprom_commit_count,
@@ -161,6 +184,7 @@ static void _eepromCommand(::terminal::CommandContext&& ctx) {
                 ? PSTR("OK")
                 : PSTR("ERROR"));
     }
+
     terminalOK(ctx);
 }
 
@@ -177,16 +201,19 @@ static void _eepromCommandCommit(::terminal::CommandContext&& ctx) {
 STRING_VIEW_INLINE(EepromDump, "EEPROM.DUMP");
 
 static void _eepromCommandDump(::terminal::CommandContext&& ctx) {
-    EEPROMr.dump(ctx.output);
+    auto& instance = eepromInstance();
+    instance.dump(ctx.output);
     terminalOK(ctx);
 }
 
 STRING_VIEW_INLINE(FlashDump, "FLASH.DUMP");
 
 static void _flashCommandDump(::terminal::CommandContext&& ctx) {
+    auto& instance = eepromInstance();
+
     static const uint32_t Sectors = ESP.getFlashChipSize() / SPI_FLASH_SEC_SIZE;
     if (ctx.argv.size() < 2) {
-        terminalError(ctx, _eepromAvailableSectors());
+        terminalError(ctx, _eepromAvailableSectors(instance));
         return;
     }
     uint32_t sector = espurna::settings::internal::convert<uint32>(ctx.argv[1]);
@@ -195,7 +222,7 @@ static void _flashCommandDump(::terminal::CommandContext&& ctx) {
         return;
     }
 
-    EEPROMr.dump(ctx.output, sector);
+    instance.dump(ctx.output, sector);
     terminalOK(ctx);
 }
 
@@ -221,12 +248,6 @@ void eepromLoop() {
 }
 
 void eepromSetup() {
-#ifdef EEPROM_ROTATE_SECTORS
-    EEPROMr.size(EEPROM_ROTATE_SECTORS);
-#endif
-
-    EEPROMr.begin(EepromSize, EepromRotateOffset);
-
 #if TERMINAL_SUPPORT
     _eepromCommandsSetup();
 #endif

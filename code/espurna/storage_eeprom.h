@@ -12,10 +12,14 @@ EEPROM MODULE
 class StorageEEPROM_Rotate : public EEPROM_Rotate {
 public:
     // override original ctor to handle autosizing specific to the app
+    // always using offset(OFFSET) -> begin(SIZE)
     StorageEEPROM_Rotate();
 
-    // always using offset() -> begin(), might as well wrap both
-    void begin(size_t, uint16_t offset);
+    StorageEEPROM_Rotate(StorageEEPROM_Rotate&) = delete;
+    StorageEEPROM_Rotate& operator=(StorageEEPROM_Rotate&) = delete;
+
+    StorageEEPROM_Rotate(StorageEEPROM_Rotate&&) = delete;
+    StorageEEPROM_Rotate& operator=(StorageEEPROM_Rotate&&) = delete;
 
     // fill all of the available storage with the 'value'
     void fill(uint8_t);
@@ -41,6 +45,8 @@ public:
     }
 
 private:
+    using EEPROM_Rotate::EEPROM_Rotate;
+
     StorageEEPROM_Rotate* as_this() const {
         return const_cast<StorageEEPROM_Rotate*>(this);
     }
@@ -100,6 +106,7 @@ unsigned long eepromSpace();
 void eepromClear();
 void eepromBackup(uint32_t index);
 
+void eepromForceCommit(StorageEEPROM_Rotate&);
 void eepromForceCommit();
 void eepromCommit();
 
@@ -111,53 +118,65 @@ void eepromSetup();
 // TODO: note that EEPROM is a `char` storage, but we have some helper methods to write up to 4 bytes at once
 // TODO: note that SPI flash is an `int32_t` storage, might want to optimize for that? write will happen in bulk anyway, perhaps does not matter much
 
-extern StorageEEPROM_Rotate EEPROMr;
+StorageEEPROM_Rotate& eepromInstance();
 
 inline unsigned long eepromSpace() {
-    return EEPROMr.size() * SPI_FLASH_SEC_SIZE;
+    auto& instance = eepromInstance();
+    return instance.size() * SPI_FLASH_SEC_SIZE;
 }
 
 inline void eepromClear() {
-    EEPROMr.fill(0xFF);
-    EEPROMr.commit();
+    auto& instance = eepromInstance();
+    instance.fill(0xFF);
+    instance.commit();
 }
 
 inline uint8_t eepromRead(int address) {
-    return EEPROMr.read(address);
+    auto& instance = eepromInstance();
+    return instance.read(address);
 }
 
 inline void eepromWrite(int address, unsigned char value) {
-    EEPROMr.write(address, value);
+    auto& instance = eepromInstance();
+    instance.write(address, value);
 }
 
 inline void eepromGet(int address, unsigned char& value) {
-    EEPROMr.get(address, value);
+    auto& instance = eepromInstance();
+    instance.get(address, value);
 }
 
 inline void eepromGet(int address, unsigned short& value) {
-    EEPROMr.get(address, value);
+    auto& instance = eepromInstance();
+    instance.get(address, value);
 }
 
 inline void eepromGet(int address, unsigned int& value) {
-    EEPROMr.get(address, value);
+    auto& instance = eepromInstance();
+    instance.get(address, value);
 }
 
 inline void eepromGet(int address, unsigned long& value) {
-    EEPROMr.get(address, value);
+    auto& instance = eepromInstance();
+    instance.get(address, value);
 }
 
 inline void eepromPut(int address, unsigned char value) {
-    EEPROMr.put(address, value);
+    auto& instance = eepromInstance();
+    instance.put(address, value);
 }
 
 inline void eepromPut(int address, unsigned short value) {
-    EEPROMr.put(address, value);
+    auto& instance = eepromInstance();
+    instance.put(address, value);
 }
 
 inline void eepromPut(int address, unsigned int value) {
-    EEPROMr.put(address, value);
+    auto& instance = eepromInstance();
+    instance.put(address, value);
 }
 
 inline void eepromPut(int address, unsigned long value) {
-    EEPROMr.put(address, value);
+    auto& instance = eepromInstance();
+    instance.put(address, value);
 }

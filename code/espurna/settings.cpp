@@ -22,22 +22,26 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 namespace espurna {
 namespace settings {
-namespace {
+
+// Allow std::move() into the actual storage instance
+EepromStorage::EepromStorage(EepromStorage&&) = default;
+EepromStorage& EepromStorage::operator=(EepromStorage&&) = default;
 
 // Depending on features enabled, we may end up with different left boundary
 // Settings are written right-to-left, so we only have issues when there are a lot of key-values
-// XXX cannot be used in any ctors, until setup() storage is not yet active and length() is 0
-static kvs_type kv_store(
-    EepromStorage{},
+kvs_type& kv_instance() {
+    static kvs_type storage(
+        EepromStorage{eepromInstance()},
 #if DEBUG_SUPPORT
-    EepromReservedSize + crashReservedSize(),
+        EepromReservedSize + crashReservedSize(),
 #else
-    EepromReservedSize,
+        EepromReservedSize,
 #endif
-    EepromSize
-);
+        EepromSize
+    );
 
-} // namespace
+    return storage;
+}
 
 namespace query {
 
@@ -166,22 +170,28 @@ bool EnumerationNumericHelper::check(const String& value) {
 } // namespace options
 
 ValueResult get(const String& key) {
+    auto& kv_store = kv_instance();
     return kv_store.get(key);
 }
 
 bool set(const String& key, const String& value) {
+    auto& kv_store = kv_instance();
     return kv_store.set(key, value);
 }
 
 bool del(const String& key) {
+    auto& kv_store = kv_instance();
     return kv_store.del(key);
 }
 
 bool has(const String& key) {
+    auto& kv_store = kv_instance();
     return kv_store.has(key);
 }
 
 Keys keys() {
+    auto& kv_store = kv_instance();
+
     Keys out;
     kv_store.foreach([&](kvs_type::KeyValueResult&& kv) {
         out.push_back(kv.key.read());
@@ -191,22 +201,27 @@ Keys keys() {
 }
 
 size_t available() {
+    auto& kv_store = kv_instance();
     return kv_store.available();
 }
 
 size_t size() {
+    auto& kv_store = kv_instance();
     return kv_store.size();
 }
 
 void foreach(KeyValueResultCallback&& callback) {
+    auto& kv_store = kv_instance();
     kv_store.foreach(callback);
 }
 
-void foreach(KeyValueResultCallbackWithToken&& callback) {
+void foreach(KeyValueResultWithTokenCallback&& callback) {
+    auto& kv_store = kv_instance();
     kv_store.foreach(callback);
 }
 
 void foreach_prefix(PrefixResultCallback&& callback, query::StringViewIterator prefixes) {
+    auto& kv_store = kv_instance();
     kv_store.foreach([&](kvs_type::KeyValueResult&& kv) {
         auto key = kv.key.read();
         for (auto it = prefixes.begin(); it != prefixes.end(); ++it) {
@@ -299,6 +314,7 @@ void gc(::terminal::CommandContext&& ctx) {
     using KeyRefs = std::vector<KeyRef>;
     KeyRefs refs;
 
+    auto& kv_store = kv_instance();
     kv_store.foreach([&](kvs_type::KeyValueResult&& result) {
         refs.push_back(
             KeyRef{

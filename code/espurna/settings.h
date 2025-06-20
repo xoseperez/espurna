@@ -37,23 +37,41 @@ namespace settings {
 // TODO: multi-byte access
 // {blob} read(size_t)
 // void write(size_t, {blob})
-
 class EepromStorage {
 public:
+    using storage_type = StorageEEPROM_Rotate;
+
+    EepromStorage() = delete;
+
+    EepromStorage(EepromStorage&) = delete;
+    EepromStorage& operator=(EepromStorage&) = delete;
+
+    EepromStorage(EepromStorage&&);
+    EepromStorage& operator=(EepromStorage&&);
+
+    explicit EepromStorage(storage_type& instance) :
+        _instance(std::addressof(instance))
+    {}
+
     uint8_t read(size_t pos) const {
-        return eepromRead(pos);
+        return _instance->read(pos);
     }
 
     void write(size_t pos, uint8_t value) const {
-        eepromWrite(pos, value);
+        _instance->write(pos, value);
     }
 
     void commit() const {
         autosaveSettings();
     }
+
+private:
+    storage_type* _instance;
 };
 
 using kvs_type = embedis::KeyValueStore<EepromStorage>;
+
+kvs_type& kv_instance();
 
 namespace traits {
 

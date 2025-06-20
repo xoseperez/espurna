@@ -115,8 +115,10 @@ void clear() {
 void dump(Print& print, bool check) {
     char buffer[256] = {0};
 
+    auto& instance = eepromInstance();
+
     uint32_t crash_time;
-    eepromGet(EepromCrashBegin + SAVE_CRASH_CRASH_TIME, crash_time);
+    instance.get(EepromCrashBegin + SAVE_CRASH_CRASH_TIME, crash_time);
 
     bool crash_time_erased = ((crash_time == 0) || (crash_time == EmptyTimestamp));
     if (check && crash_time_erased) {
@@ -138,11 +140,11 @@ void dump(Print& print, bool check) {
         print.print(buffer);
 
         uint32_t epc1, epc2, epc3, excvaddr, depc;
-        eepromGet(EepromCrashBegin + SAVE_CRASH_EPC1, epc1);
-        eepromGet(EepromCrashBegin + SAVE_CRASH_EPC2, epc2);
-        eepromGet(EepromCrashBegin + SAVE_CRASH_EPC3, epc3);
-        eepromGet(EepromCrashBegin + SAVE_CRASH_EXCVADDR, excvaddr);
-        eepromGet(EepromCrashBegin + SAVE_CRASH_DEPC, depc);
+        instance.get(EepromCrashBegin + SAVE_CRASH_EPC1, epc1);
+        instance.get(EepromCrashBegin + SAVE_CRASH_EPC2, epc2);
+        instance.get(EepromCrashBegin + SAVE_CRASH_EPC3, epc3);
+        instance.get(EepromCrashBegin + SAVE_CRASH_EXCVADDR, excvaddr);
+        instance.get(EepromCrashBegin + SAVE_CRASH_DEPC, depc);
 
         snprintf_P(buffer, sizeof(buffer), PSTR("epc1=0x%08x epc2=0x%08x epc3=0x%08x excvaddr=0x%08x depc=0x%08x\n"),
             epc1, epc2, epc3, excvaddr, depc);
@@ -167,9 +169,9 @@ void dump(Print& print, bool check) {
     uint32_t stack_start, stack_end;
     uint16_t stack_size;
 
-    eepromGet(EepromCrashBegin + SAVE_CRASH_STACK_START, stack_start);
-    eepromGet(EepromCrashBegin + SAVE_CRASH_STACK_END, stack_end);
-    eepromGet(EepromCrashBegin + SAVE_CRASH_STACK_SIZE, stack_size);
+    instance.get(EepromCrashBegin + SAVE_CRASH_STACK_START, stack_start);
+    instance.get(EepromCrashBegin + SAVE_CRASH_STACK_END, stack_end);
+    instance.get(EepromCrashBegin + SAVE_CRASH_STACK_SIZE, stack_size);
 
     if ((0 == stack_size) || (0xffff == stack_size)) {
         return;
@@ -193,10 +195,10 @@ void dump(Print& print, bool check) {
     uint32_t addr1, addr2, addr3, addr4;
 
     while ((eeprom_addr + (4 * step)) < EepromCrashEnd) {
-        eepromGet(eeprom_addr, addr1);
-        eepromGet((eeprom_addr += step), addr2);
-        eepromGet((eeprom_addr += step), addr3);
-        eepromGet((eeprom_addr += step), addr4);
+        instance.get(eeprom_addr, addr1);
+        instance.get((eeprom_addr += step), addr2);
+        instance.get((eeprom_addr += step), addr3);
+        instance.get((eeprom_addr += step), addr4);
 
         snprintf_P(buffer, sizeof(buffer),
             PSTR("%08x:  %08x %08x %08x %08x \n"),
@@ -267,9 +269,11 @@ extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack
         return;
     }
 
+    auto& instance = eepromInstance();
+
     // We will use this later as a marker that there was a crash
     uint32_t crash_time = millis();
-    eepromPut(EepromCrashBegin + SAVE_CRASH_CRASH_TIME, crash_time);
+    instance.put(EepromCrashBegin + SAVE_CRASH_CRASH_TIME, crash_time);
 
     // XXX rst_info::reason and ::exccause are uint32_t, but are holding small values
     //     make sure we are using ::write() instead of ::put(), former tries to deduce the required size based on variable type
@@ -279,11 +283,11 @@ extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack
         static_cast<uint8_t>(rst_info->exccause));
 
     // write epc1, epc2, epc3, excvaddr and depc to EEPROM as uint32_t
-    eepromPut(EepromCrashBegin + SAVE_CRASH_EPC1, rst_info->epc1);
-    eepromPut(EepromCrashBegin + SAVE_CRASH_EPC2, rst_info->epc2);
-    eepromPut(EepromCrashBegin + SAVE_CRASH_EPC3, rst_info->epc3);
-    eepromPut(EepromCrashBegin + SAVE_CRASH_EXCVADDR, rst_info->excvaddr);
-    eepromPut(EepromCrashBegin + SAVE_CRASH_DEPC, rst_info->depc);
+    instance.put(EepromCrashBegin + SAVE_CRASH_EPC1, rst_info->epc1);
+    instance.put(EepromCrashBegin + SAVE_CRASH_EPC2, rst_info->epc2);
+    instance.put(EepromCrashBegin + SAVE_CRASH_EPC3, rst_info->epc3);
+    instance.put(EepromCrashBegin + SAVE_CRASH_EXCVADDR, rst_info->excvaddr);
+    instance.put(EepromCrashBegin + SAVE_CRASH_DEPC, rst_info->depc);
 
     // EEPROM size is limited, write as little as possible.
     // we definitely want to avoid big stack traces, e.g. like when stack_end == 0x3fffffb0 and we are in SYS context.
@@ -291,9 +295,9 @@ extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack
     static constexpr uint32_t StackMin { 0 };
     static constexpr uint32_t StackMax { CrashTraceReservedSize };
     const uint16_t stack_size = std::clamp((stack_end - stack_start), StackMin, StackMax);
-    eepromPut(EepromCrashBegin + SAVE_CRASH_STACK_START, stack_start);
-    eepromPut(EepromCrashBegin + SAVE_CRASH_STACK_END, stack_end);
-    eepromPut(EepromCrashBegin + SAVE_CRASH_STACK_SIZE, stack_size);
+    instance.put(EepromCrashBegin + SAVE_CRASH_STACK_START, stack_start);
+    instance.put(EepromCrashBegin + SAVE_CRASH_STACK_END, stack_end);
+    instance.put(EepromCrashBegin + SAVE_CRASH_STACK_SIZE, stack_size);
 
     // write stack trace to EEPROM and avoid overwriting settings and reserved data
     // [EEPROM RESERVED SPACE] >>> ... CRASH DATA ... >>> [SETTINGS]
@@ -301,12 +305,12 @@ extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack
 
     auto *addr = reinterpret_cast<uint32_t*>(stack_start);
     while (EepromCrashEnd > eeprom_addr) {
-        eepromPut(eeprom_addr, *addr);
+        instance.put(eeprom_addr, *addr);
         eeprom_addr += sizeof(uint32_t);
         ++addr;
     }
 
-    eepromForceCommit();
+    eepromForceCommit(instance);
 }
 
 void crashForceDump(Print& print) {
