@@ -26,7 +26,7 @@ namespace {
 
 // Depending on features enabled, we may end up with different left boundary
 // Settings are written right-to-left, so we only have issues when there are a lot of key-values
-// XXX: slightly hacky, because we EEPROMr.length() is 0 before we enter setup() code
+// XXX cannot be used in any ctors, until setup() storage is not yet active and length() is 0
 static kvs_type kv_store(
     EepromStorage{},
 #if DEBUG_SUPPORT
