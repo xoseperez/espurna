@@ -29,7 +29,7 @@ EepromStorage& EepromStorage::operator=(EepromStorage&&) = default;
 
 // Depending on features enabled, we may end up with different left boundary
 // Settings are written right-to-left, so we only have issues when there are a lot of key-values
-kvs_type& kv_instance() {
+kvs_type& kvs_instance() {
     static kvs_type storage(
         EepromStorage{eepromInstance()},
 #if DEBUG_SUPPORT
@@ -170,30 +170,28 @@ bool EnumerationNumericHelper::check(const String& value) {
 } // namespace options
 
 ValueResult get(const String& key) {
-    auto& kv_store = kv_instance();
+    auto& kv_store = kvs_instance();
     return kv_store.get(key);
 }
 
 bool set(const String& key, const String& value) {
-    auto& kv_store = kv_instance();
+    auto& kv_store = kvs_instance();
     return kv_store.set(key, value);
 }
 
 bool del(const String& key) {
-    auto& kv_store = kv_instance();
+    auto& kv_store = kvs_instance();
     return kv_store.del(key);
 }
 
 bool has(const String& key) {
-    auto& kv_store = kv_instance();
+    auto& kv_store = kvs_instance();
     return kv_store.has(key);
 }
 
 Keys keys() {
-    auto& kv_store = kv_instance();
-
     Keys out;
-    kv_store.foreach([&](kvs_type::KeyValueResult&& kv) {
+    foreach([&](kvs_type::KeyValueResult&& kv) {
         out.push_back(kv.key.read());
     });
 
@@ -201,28 +199,27 @@ Keys keys() {
 }
 
 size_t available() {
-    auto& kv_store = kv_instance();
+    auto& kv_store = kvs_instance();
     return kv_store.available();
 }
 
 size_t size() {
-    auto& kv_store = kv_instance();
+    auto& kv_store = kvs_instance();
     return kv_store.size();
 }
 
 void foreach(KeyValueResultCallback&& callback) {
-    auto& kv_store = kv_instance();
+    auto& kv_store = kvs_instance();
     kv_store.foreach(callback);
 }
 
 void foreach(KeyValueResultWithTokenCallback&& callback) {
-    auto& kv_store = kv_instance();
+    auto& kv_store = kvs_instance();
     kv_store.foreach(callback);
 }
 
 void foreach_prefix(PrefixResultCallback&& callback, query::StringViewIterator prefixes) {
-    auto& kv_store = kv_instance();
-    kv_store.foreach([&](kvs_type::KeyValueResult&& kv) {
+    foreach([&](kvs_type::KeyValueResult&& kv) {
         auto key = kv.key.read();
         for (auto it = prefixes.begin(); it != prefixes.end(); ++it) {
             if (StringView{key}.startsWith(*it)) {
@@ -231,6 +228,59 @@ void foreach_prefix(PrefixResultCallback&& callback, query::StringViewIterator p
         }
     });
 }
+
+// key movement - basic, indexed or range-indexed
+namespace {
+
+struct KeyPair {
+    Key from;
+    Key to;
+};
+
+bool move(kvs_type& instance, KeyPair pair) {
+    const auto result = instance.get(pair.from.value());
+    if (result) {
+        instance.set(pair.to.value(), result.ref());
+        instance.del(pair.from.value());
+        return true;
+    }
+
+    return false;
+}
+
+bool move(const KeyPair& pair) {
+    return move(kvs_instance(), pair);
+}
+
+bool move_index(kvs_type& instance, const String& from, const String& to, size_t index) {
+    return move(instance,
+        KeyPair{
+            .from = {from, index},
+            .to = {to, index}
+        });
+}
+
+bool move_index(const String& from, const String& to, size_t index) {
+    return move_index(kvs_instance(), from, to, index);
+}
+
+constexpr auto MovePrefixLimit = size_t{ 100 };
+
+bool move_prefix(kvs_type& instance, const String& from, const String& to, size_t limit) {
+    for (size_t index = 0; index < limit; ++index) {
+        if (!move_index(instance, from, to, index)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool move_prefix(const String& from, const String& to) {
+    return move_prefix(kvs_instance(), from, to, MovePrefixLimit);
+}
+
+} // namespace
 
 // --------------------------------------------------------------------------
 
@@ -314,7 +364,7 @@ void gc(::terminal::CommandContext&& ctx) {
     using KeyRefs = std::vector<KeyRef>;
     KeyRefs refs;
 
-    auto& kv_store = kv_instance();
+    auto& kv_store = kvs_instance();
     kv_store.foreach([&](kvs_type::KeyValueResult&& result) {
         refs.push_back(
             KeyRef{
@@ -394,8 +444,10 @@ void get(::terminal::CommandContext&& ctx) {
         return;
     }
 
+    auto& instance = settings::kvs_instance();
+
     for (auto it = (ctx.argv.cbegin() + 1); it != ctx.argv.cend(); ++it) {
-        auto result = settings::get(*it);
+        auto result = instance.get(*it);
         if (!result) {
             const auto result = query::find(*it);
             if (result.ok()) {
@@ -471,7 +523,8 @@ void setup() {
 // -----------------------------------------------------------------------------
 
 size_t settingsSize() {
-    return espurna::settings::size() - espurna::settings::available();
+    auto& instance = espurna::settings::kvs_instance();
+    return instance.size() - instance.available();
 }
 
 espurna::settings::Keys settingsKeys() {
@@ -486,47 +539,16 @@ espurna::settings::query::Result settingsQuery(espurna::StringView key) {
     return espurna::settings::query::find(key);
 }
 
-void moveSetting(const String& from, const String& to) {
-    const auto result = espurna::settings::get(from);
-    if (result) {
-        setSetting(to, result.ref());
-        delSetting(from);
-    }
+bool moveSetting(const String& from, const String& to) {
+    return espurna::settings::move({from, to});
 }
 
-struct SettingsKeyPair {
-    espurna::settings::Key from;
-    espurna::settings::Key to;
-};
-
-void moveSetting(const String& from, const String& to, size_t index) {
-    const auto keys = SettingsKeyPair{
-        .from = {from, index},
-        .to = {to, index}
-    };
-
-    const auto result = espurna::settings::get(keys.from.value());
-    if (result) {
-        setSetting(keys.to, result.ref());
-        delSetting(keys.from);
-    }
+bool moveSetting(const String& from, const String& to, size_t index) {
+    return espurna::settings::move_index(from, to, index);
 }
 
-void moveSettings(const String& from, const String& to) {
-    for (size_t index = 0; index < 100; ++index) {
-        const auto keys = SettingsKeyPair{
-            .from = {from, index},
-            .to = {to, index},
-        };
-
-        const auto result = espurna::settings::get(keys.from.value());
-        if (!result) {
-            break;
-        }
-
-        setSetting(keys.to, result.ref());
-        delSetting(keys.from);
-    }
+bool moveSettings(const String& from, const String& to) {
+    return espurna::settings::move_prefix(from, to);
 }
 
 template

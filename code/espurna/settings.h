@@ -71,7 +71,7 @@ private:
 
 using kvs_type = embedis::KeyValueStore<EepromStorage>;
 
-kvs_type& kv_instance();
+kvs_type& kvs_instance();
 
 namespace traits {
 
@@ -131,9 +131,10 @@ espurna::settings::query::Result settingsQuery(espurna::StringView key);
 
 // --------------------------------------------------------------------------
 
-void moveSetting(const String& from, const String& to);
-void moveSetting(const String& from, const String& to, size_t index);
-void moveSettings(const String& from, const String& to);
+bool moveSetting(const String& from, const String& to, size_t index);
+bool moveSetting(const String& from, const String& to);
+
+bool moveSettings(const String& from, const String& to);
 
 String getSetting(const char* key);
 String getSetting(const String& key);

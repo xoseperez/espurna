@@ -798,10 +798,10 @@ namespace {
 
 // Check the existing setting before saving it
 // (we only care about the settings storage, don't mind the build values)
-bool _wsStore(String key, const String& value) {
-    const auto current = espurna::settings::get(key);
+bool _wsStore(espurna::settings::kvs_type& instance, String key, const String& value) {
+    const auto current = instance.get(key);
     if (!current || (current.ref() != value)) {
-        return espurna::settings::set(key, value);
+        return instance.set(key, value);
     }
 
     return false;
@@ -931,12 +931,14 @@ void _wsParse(AsyncWebSocketClient* client, uint8_t* payload, size_t length) {
         delSetting(value.as<String>());
     }
 
+    auto& instance = espurna::settings::kvs_instance();
+
     // TODO: pass key as string, we always attempt to use it as such
     JsonObject& toAssign = settings["set"];
     for (auto& kv : toAssign) {
         const String key = kv.key;
         if (_wsCheckKey(key, kv.value)) {
-            if (_wsStore(key, kv.value.as<String>())) {
+            if (_wsStore(instance, key, kv.value.as<String>())) {
                 save = true;
             }
         }

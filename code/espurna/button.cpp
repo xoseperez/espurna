@@ -638,12 +638,14 @@ template <typename T>
 T indexedThenGlobal(const String& prefix, size_t index, T defaultValue) {
     const auto key = espurna::settings::Key{prefix, index};
 
-    const auto indexed = espurna::settings::get(key.value());
+    auto& instance = espurna::settings::kvs_instance();
+
+    const auto indexed = instance.get(key.value());
     if (indexed) {
         return espurna::settings::internal::convert<T>(indexed.ref());
     }
 
-    const auto global = espurna::settings::get(prefix);
+    const auto global = instance.get(prefix);
     if (global) {
         return espurna::settings::internal::convert<T>(global.ref());
     }
