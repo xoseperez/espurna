@@ -95,6 +95,39 @@ private:
     const PathParts& _parts;
 };
 
+struct RequestBuffer {
+    RequestBuffer() = default;
+
+    size_t size() const noexcept {
+        return _data.size();
+    }
+
+    void append(uint8_t value) {
+        _data.push_back(value);
+    }
+
+    void append(const uint8_t* data, size_t size) {
+        _data.insert(_data.end(), data, data + size);
+    }
+
+    const uint8_t* data() const noexcept {
+        return _data.data();
+    }
+
+    uint8_t* data() noexcept {
+        return _data.data();
+    }
+
+    void reserve(size_t capacity) {
+        _data.reserve(capacity);
+    }
+
+private:
+    std::vector<uint8_t> _data;
+};
+
+using RequestBufferPtr = std::unique_ptr<RequestBuffer>;
+
 struct RequestHelper {
     RequestHelper() = delete;
 
@@ -112,6 +145,23 @@ struct RequestHelper {
         _match(_pattern.match(_path))
     {}
 
+    RequestBuffer& reserved_buffer(size_t capacity) {
+        if (!_buffer) {
+            _buffer = std::make_unique<RequestBuffer>();
+            _buffer->reserve(capacity);
+        }
+
+        return *_buffer;
+    }
+
+    RequestBuffer& buffer() const {
+        return *_buffer;
+    }
+
+    bool buffering() const {
+        return static_cast<bool>(_buffer);
+    }
+
     Request request() const {
         return Request(_request, _pattern, _path);
     }
@@ -126,6 +176,9 @@ struct RequestHelper {
 
 private:
     AsyncWebServerRequest& _request;
+
+    RequestBufferPtr _buffer;
+
     const PathParts& _pattern;
     PathParts _path;
     bool _match;

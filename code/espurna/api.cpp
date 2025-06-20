@@ -495,7 +495,7 @@ public:
         request->send(500);
     }
 
-    void _handlePut(AsyncWebServerRequest* request, uint8_t* data, size_t size) {
+    void _handlePut(AsyncWebServerRequest* request, const uint8_t* data, size_t size) {
         // XXX: arduinojson v5 de-serializer will happily read garbage from raw ptr, since there's no length limit
         //      this is fixed in v6 though. for now, use a wrapper, but be aware that this actually uses more mem for the jsonbuffer
         auto* ptr = reinterpret_cast<const char*>(data);
@@ -523,8 +523,23 @@ public:
         return;
     }
 
-    void handleBody(AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t, size_t total) override {
-        if (total && (len == total)) {
+    void handleBody(AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) override {
+        static constexpr auto BufferSize = size_t{ 1024 };
+        if (BufferSize > total) {
+            return;
+        }
+
+        auto& helper = *reinterpret_cast<RequestHelper*>(request->_tempObject);
+        if (total != (len + index)) {
+            auto& buffer = helper.reserved_buffer(BufferSize);
+            buffer.append(data, len);
+            return;
+        }
+
+        if (helper.buffering()) {
+            const auto& buffer = helper.buffer();
+            _handlePut(request, buffer.data(), buffer.size());
+        } else {
             _handlePut(request, data, total);
         }
     }
