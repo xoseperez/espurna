@@ -106,11 +106,6 @@ void eepromRotate(bool value) {
     }
 }
 
-uint32_t eepromCurrent() {
-    auto& instance = eepromInstance();
-    return instance.current();
-}
-
 static String _eepromAvailableSectors(StorageEEPROM_Rotate& instance) {
     const auto current_sector = instance.current();
 
@@ -160,6 +155,21 @@ void eepromForceCommit() {
 
 void eepromCommit() {
     _eeprom_commit = true;
+}
+
+size_t eepromSpace() {
+    auto& instance = eepromInstance();
+
+    constexpr auto SectorSize = size_t{ SPI_FLASH_SEC_SIZE };
+    const size_t size = instance.size();
+
+    return size * SectorSize;
+}
+
+void eepromClear() {
+    auto& instance = eepromInstance();
+    instance.fill(0xFF);
+    instance.commit();
 }
 
 void eepromBackup(uint32_t index){

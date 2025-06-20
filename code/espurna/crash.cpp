@@ -55,6 +55,11 @@ Copyright (C) 2019-2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #define SAVE_CRASH_STACK_SIZE       0x22  // 2 bytes
 #define SAVE_CRASH_STACK_TRACE      0x24  // variable, 4 bytes per value
 
+namespace espurna {
+namespace debug {
+namespace crash {
+namespace {
+
 static constexpr int EepromCrashBegin = EepromReservedSize;
 static constexpr int EepromCrashEnd = 256;
 
@@ -63,9 +68,24 @@ static constexpr size_t CrashTraceReservedSize = CrashReservedSize - SAVE_CRASH_
 
 static constexpr uint32_t EmptyTimestamp { 0xffffffff };
 
-namespace debug {
-namespace {
-namespace crash {
+// XXX save a bit on template resolution
+
+void storage_get(StorageEEPROM_Rotate& instance, int address, uint32_t& value) {
+    instance.get(address, value);
+}
+
+void storage_get(StorageEEPROM_Rotate& instance, int address, uint16_t& value) {
+    instance.get(address, value);
+}
+
+void storage_write(StorageEEPROM_Rotate& instance, int address, uint8_t value) {
+    instance.write(address, value);
+}
+
+void storage_put(StorageEEPROM_Rotate& instance, int address, uint32_t value) {
+    instance.put(address, value);
+}
+
 namespace internal {
 
 bool enabled = true;
@@ -82,8 +102,10 @@ constexpr bool enabled() {
 
 namespace settings {
 
+STRING_VIEW_INLINE(CrashSave, "sysCrashSave");
+
 bool enabled() {
-    return getSetting("sysCrashSave", build::enabled());
+    return getSetting(CrashSave, build::enabled());
 }
 
 } // namespace settings
@@ -106,7 +128,7 @@ size_t reserved() {
 
 // Simply reset the timestamp to stop dump() from printing the output more than once per crash.
 void clear() {
-    eepromPut(EepromCrashBegin + SAVE_CRASH_CRASH_TIME, EmptyTimestamp);
+    storage_put(eepromInstance(), EepromCrashBegin + SAVE_CRASH_CRASH_TIME, EmptyTimestamp);
     eepromCommit();
 }
 
@@ -118,16 +140,18 @@ void dump(Print& print, bool check) {
     auto& instance = eepromInstance();
 
     uint32_t crash_time;
-    instance.get(EepromCrashBegin + SAVE_CRASH_CRASH_TIME, crash_time);
+    storage_get(instance, EepromCrashBegin + SAVE_CRASH_CRASH_TIME, crash_time);
 
     bool crash_time_erased = ((crash_time == 0) || (crash_time == EmptyTimestamp));
     if (check && crash_time_erased) {
         return;
     }
 
-    uint8_t reason = eepromRead(EepromCrashBegin + SAVE_CRASH_RESTART_REASON);
+    uint8_t reason = instance.read(EepromCrashBegin + SAVE_CRASH_RESTART_REASON);
     if (!crash_time_erased) {
-        snprintf_P(buffer, sizeof(buffer), PSTR("\nlatest crash was at %lu ms after boot\n"), crash_time);
+        snprintf_P(buffer, sizeof(buffer),
+            PSTR("\nlatest crash was at %lu ms after boot\n"),
+            crash_time);
         print.print(buffer);
     }
 
@@ -136,17 +160,18 @@ void dump(Print& print, bool check) {
 
     if (reason == REASON_EXCEPTION_RST) {
         snprintf_P(buffer, sizeof(buffer), PSTR("\nException (%u):\n"),
-            eepromRead(EepromCrashBegin + SAVE_CRASH_EXCEPTION_CAUSE));
+            instance.read(EepromCrashBegin + SAVE_CRASH_EXCEPTION_CAUSE));
         print.print(buffer);
 
         uint32_t epc1, epc2, epc3, excvaddr, depc;
-        instance.get(EepromCrashBegin + SAVE_CRASH_EPC1, epc1);
-        instance.get(EepromCrashBegin + SAVE_CRASH_EPC2, epc2);
-        instance.get(EepromCrashBegin + SAVE_CRASH_EPC3, epc3);
-        instance.get(EepromCrashBegin + SAVE_CRASH_EXCVADDR, excvaddr);
-        instance.get(EepromCrashBegin + SAVE_CRASH_DEPC, depc);
+        storage_get(instance, EepromCrashBegin + SAVE_CRASH_EPC1, epc1);
+        storage_get(instance, EepromCrashBegin + SAVE_CRASH_EPC2, epc2);
+        storage_get(instance, EepromCrashBegin + SAVE_CRASH_EPC3, epc3);
+        storage_get(instance, EepromCrashBegin + SAVE_CRASH_EXCVADDR, excvaddr);
+        storage_get(instance, EepromCrashBegin + SAVE_CRASH_DEPC, depc);
 
-        snprintf_P(buffer, sizeof(buffer), PSTR("epc1=0x%08x epc2=0x%08x epc3=0x%08x excvaddr=0x%08x depc=0x%08x\n"),
+        snprintf_P(buffer, sizeof(buffer),
+            PSTR("epc1=0x%08x epc2=0x%08x epc3=0x%08x excvaddr=0x%08x depc=0x%08x\n"),
             epc1, epc2, epc3, excvaddr, depc);
         print.print(buffer);
     }
@@ -169,9 +194,9 @@ void dump(Print& print, bool check) {
     uint32_t stack_start, stack_end;
     uint16_t stack_size;
 
-    instance.get(EepromCrashBegin + SAVE_CRASH_STACK_START, stack_start);
-    instance.get(EepromCrashBegin + SAVE_CRASH_STACK_END, stack_end);
-    instance.get(EepromCrashBegin + SAVE_CRASH_STACK_SIZE, stack_size);
+    storage_get(instance, EepromCrashBegin + SAVE_CRASH_STACK_START, stack_start);
+    storage_get(instance, EepromCrashBegin + SAVE_CRASH_STACK_END, stack_end);
+    storage_get(instance, EepromCrashBegin + SAVE_CRASH_STACK_SIZE, stack_size);
 
     if ((0 == stack_size) || (0xffff == stack_size)) {
         return;
@@ -195,10 +220,10 @@ void dump(Print& print, bool check) {
     uint32_t addr1, addr2, addr3, addr4;
 
     while ((eeprom_addr + (4 * step)) < EepromCrashEnd) {
-        instance.get(eeprom_addr, addr1);
-        instance.get((eeprom_addr += step), addr2);
-        instance.get((eeprom_addr += step), addr3);
-        instance.get((eeprom_addr += step), addr4);
+        storage_get(instance, eeprom_addr, addr1);
+        storage_get(instance, (eeprom_addr += step), addr2);
+        storage_get(instance, (eeprom_addr += step), addr3);
+        storage_get(instance, (eeprom_addr += step), addr4);
 
         snprintf_P(buffer, sizeof(buffer),
             PSTR("%08x:  %08x %08x %08x %08x \n"),
@@ -235,12 +260,24 @@ void command(::terminal::CommandContext&& ctx) {
 static constexpr ::terminal::Command Commands[] PROGMEM {
     {Name, command},
 };
-
 #endif
 
-} // namespace crash
+void setup() {
+    if (!rtcmemStatus()) {
+        clear();
+    }
+
+#if TERMINAL_SUPPORT
+    terminal::add(Commands);
+#endif
+
+    enableFromSettings();
+}
+
 } // namespace
+} // namespace crash
 } // namespace debug
+} // namespace espurna
 
 /**
  * Save crash information in EEPROM
@@ -249,6 +286,7 @@ static constexpr ::terminal::Command Commands[] PROGMEM {
  * This method assumes EEPROM has already been initialized, which is the first thing ESPurna does
  */
 extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack_start, uint32_t stack_end ) {
+    using namespace espurna::debug::crash;
 
     // Small safeguard to protect from calling crash handler very early on boot.
     if (!eepromReady()) {
@@ -265,7 +303,7 @@ extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack
         return;
     }
 
-    if (!debug::crash::enabled()) {
+    if (!enabled()) {
         return;
     }
 
@@ -273,21 +311,21 @@ extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack
 
     // We will use this later as a marker that there was a crash
     uint32_t crash_time = millis();
-    instance.put(EepromCrashBegin + SAVE_CRASH_CRASH_TIME, crash_time);
+    storage_put(instance, EepromCrashBegin + SAVE_CRASH_CRASH_TIME, crash_time);
 
     // XXX rst_info::reason and ::exccause are uint32_t, but are holding small values
     //     make sure we are using ::write() instead of ::put(), former tries to deduce the required size based on variable type
-    eepromWrite(EepromCrashBegin + SAVE_CRASH_RESTART_REASON,
+    storage_write(instance, EepromCrashBegin + SAVE_CRASH_RESTART_REASON,
         static_cast<uint8_t>(rst_info->reason));
-    eepromWrite(EepromCrashBegin + SAVE_CRASH_EXCEPTION_CAUSE,
+    storage_write(instance, EepromCrashBegin + SAVE_CRASH_EXCEPTION_CAUSE,
         static_cast<uint8_t>(rst_info->exccause));
 
     // write epc1, epc2, epc3, excvaddr and depc to EEPROM as uint32_t
-    instance.put(EepromCrashBegin + SAVE_CRASH_EPC1, rst_info->epc1);
-    instance.put(EepromCrashBegin + SAVE_CRASH_EPC2, rst_info->epc2);
-    instance.put(EepromCrashBegin + SAVE_CRASH_EPC3, rst_info->epc3);
-    instance.put(EepromCrashBegin + SAVE_CRASH_EXCVADDR, rst_info->excvaddr);
-    instance.put(EepromCrashBegin + SAVE_CRASH_DEPC, rst_info->depc);
+    storage_put(instance, EepromCrashBegin + SAVE_CRASH_EPC1, rst_info->epc1);
+    storage_put(instance, EepromCrashBegin + SAVE_CRASH_EPC2, rst_info->epc2);
+    storage_put(instance, EepromCrashBegin + SAVE_CRASH_EPC3, rst_info->epc3);
+    storage_put(instance, EepromCrashBegin + SAVE_CRASH_EXCVADDR, rst_info->excvaddr);
+    storage_put(instance, EepromCrashBegin + SAVE_CRASH_DEPC, rst_info->depc);
 
     // EEPROM size is limited, write as little as possible.
     // we definitely want to avoid big stack traces, e.g. like when stack_end == 0x3fffffb0 and we are in SYS context.
@@ -295,9 +333,9 @@ extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack
     static constexpr uint32_t StackMin { 0 };
     static constexpr uint32_t StackMax { CrashTraceReservedSize };
     const uint16_t stack_size = std::clamp((stack_end - stack_start), StackMin, StackMax);
-    instance.put(EepromCrashBegin + SAVE_CRASH_STACK_START, stack_start);
-    instance.put(EepromCrashBegin + SAVE_CRASH_STACK_END, stack_end);
-    instance.put(EepromCrashBegin + SAVE_CRASH_STACK_SIZE, stack_size);
+    storage_put(instance, EepromCrashBegin + SAVE_CRASH_STACK_START, stack_start);
+    storage_put(instance, EepromCrashBegin + SAVE_CRASH_STACK_END, stack_end);
+    storage_put(instance, EepromCrashBegin + SAVE_CRASH_STACK_SIZE, stack_size);
 
     // write stack trace to EEPROM and avoid overwriting settings and reserved data
     // [EEPROM RESERVED SPACE] >>> ... CRASH DATA ... >>> [SETTINGS]
@@ -305,7 +343,7 @@ extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack
 
     auto *addr = reinterpret_cast<uint32_t*>(stack_start);
     while (EepromCrashEnd > eeprom_addr) {
-        instance.put(eeprom_addr, *addr);
+        storage_put(instance, eeprom_addr, *addr);
         eeprom_addr += sizeof(uint32_t);
         ++addr;
     }
@@ -314,11 +352,11 @@ extern "C" void custom_crash_callback(struct rst_info * rst_info, uint32_t stack
 }
 
 void crashForceDump(Print& print) {
-    debug::crash::forceDump(print);
+    espurna::debug::crash::forceDump(print);
 }
 
 void crashDump(Print& print) {
-    debug::crash::dump(print);
+    espurna::debug::crash::dump(print);
 }
 
 void crashResetReason(Print& print) {
@@ -336,23 +374,15 @@ void crashResetReason(Print& print) {
 }
 
 size_t crashReservedSize() {
-    return debug::crash::reserved();
+    return espurna::debug::crash::reserved();
 }
 
 void crashClear() {
-    debug::crash::clear();
+    espurna::debug::crash::clear();
 }
 
 void crashSetup() {
-    if (!rtcmemStatus()) {
-        debug::crash::clear();
-    }
-
-#if TERMINAL_SUPPORT
-    espurna::terminal::add(debug::crash::Commands);
-#endif
-
-    debug::crash::enableFromSettings();
+    espurna::debug::crash::setup();
 }
 
 #endif // DEBUG_SUPPORT

@@ -98,10 +98,8 @@ bool eepromReady();
 
 void eepromRotate(bool value);
 
-uint32_t eepromCurrent();
 String eepromSectors();
-
-unsigned long eepromSpace();
+size_t eepromSpace();
 
 void eepromClear();
 void eepromBackup(uint32_t index);
@@ -112,71 +110,4 @@ void eepromCommit();
 
 void eepromSetup();
 
-// Implementation is inline right here, since we want to avoid chaining too much functions to simply access the EEPROM object
-// (which is already hidden via the subclassing...)
-
-// TODO: note that EEPROM is a `char` storage, but we have some helper methods to write up to 4 bytes at once
-// TODO: note that SPI flash is an `int32_t` storage, might want to optimize for that? write will happen in bulk anyway, perhaps does not matter much
-
 StorageEEPROM_Rotate& eepromInstance();
-
-inline unsigned long eepromSpace() {
-    auto& instance = eepromInstance();
-    return instance.size() * SPI_FLASH_SEC_SIZE;
-}
-
-inline void eepromClear() {
-    auto& instance = eepromInstance();
-    instance.fill(0xFF);
-    instance.commit();
-}
-
-inline uint8_t eepromRead(int address) {
-    auto& instance = eepromInstance();
-    return instance.read(address);
-}
-
-inline void eepromWrite(int address, unsigned char value) {
-    auto& instance = eepromInstance();
-    instance.write(address, value);
-}
-
-inline void eepromGet(int address, unsigned char& value) {
-    auto& instance = eepromInstance();
-    instance.get(address, value);
-}
-
-inline void eepromGet(int address, unsigned short& value) {
-    auto& instance = eepromInstance();
-    instance.get(address, value);
-}
-
-inline void eepromGet(int address, unsigned int& value) {
-    auto& instance = eepromInstance();
-    instance.get(address, value);
-}
-
-inline void eepromGet(int address, unsigned long& value) {
-    auto& instance = eepromInstance();
-    instance.get(address, value);
-}
-
-inline void eepromPut(int address, unsigned char value) {
-    auto& instance = eepromInstance();
-    instance.put(address, value);
-}
-
-inline void eepromPut(int address, unsigned short value) {
-    auto& instance = eepromInstance();
-    instance.put(address, value);
-}
-
-inline void eepromPut(int address, unsigned int value) {
-    auto& instance = eepromInstance();
-    instance.put(address, value);
-}
-
-inline void eepromPut(int address, unsigned long value) {
-    auto& instance = eepromInstance();
-    instance.put(address, value);
-}
