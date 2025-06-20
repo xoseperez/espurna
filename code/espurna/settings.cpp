@@ -202,6 +202,10 @@ void foreach(KeyValueResultCallback&& callback) {
     kv_store.foreach(callback);
 }
 
+void foreach(KeyValueResultCallbackWithToken&& callback) {
+    kv_store.foreach(callback);
+}
+
 void foreach_prefix(PrefixResultCallback&& callback, query::StringViewIterator prefixes) {
     kv_store.foreach([&](kvs_type::KeyValueResult&& kv) {
         auto key = kv.key.read();

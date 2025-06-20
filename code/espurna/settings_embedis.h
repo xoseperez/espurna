@@ -71,6 +71,14 @@ private:
         "Storage class must implement read(index), write(index, byte) and commit()"
     );
 
+#ifdef __cpp_lib_result_of_sfinae
+    template <typename T, typename R, typename... Args>
+    using enable_if_args = typename std::enable_if_t<std::is_same_v<typename std::invoke_result_t<T, Args...>, R>>;
+#else
+    template <typename T, typename R, typename... Args>
+    using enable_if_args = typename std::enable_if<std::is_same<typename std::result_of<T(Args...)>::type, R>::value>::type;
+#endif
+
     // -----------------------------------------------------------------------------------
 
     // Tracking state of the parser inside of _raw_read()
@@ -296,6 +304,27 @@ public:
         ReadResult value;
     };
 
+    struct StopToken {
+        StopToken(bool& done) :
+            _done(done)
+        {}
+
+        bool is_done() const {
+            return _done;
+        }
+
+        void set_done() {
+            _done = true;
+        }
+
+        explicit operator bool() const {
+            return is_done();
+        }
+
+    private:
+        bool& _done;
+    };
+
     // one and only possible constructor, simply move the class object into the
     // member variable to avoid forcing the user of the API to keep 2 objects alive.
     KeyValueStore(RawStorageBase&& storage, uint16_t begin, uint16_t end) :
@@ -315,18 +344,39 @@ public:
         return static_cast<bool>(_get(key, false));
     }
 
-    // We going be using this pattern all the time here, because we need 2 consecutive **valid** ranges
-    // TODO: expose _read_kv() and _cursor_reset_end() so we can have 'break' here?
-    //       perhaps as a wrapper object, allow something like next() and seekBegin()
-    template <typename CallbackType>
-    void foreach(CallbackType callback) {
+    // Always using _read_kv() from now on, there **must** be a valid pair
+
+    template <typename T>
+    enable_if_args<T, void, KeyValueResult&&>
+    foreach(T&& callback) {
         _cursor_reset_end();
+
         do {
             auto kv = _read_kv();
             if (!kv) {
                 break;
             }
             callback(std::move(kv));
+        } while (_state != State::End);
+    }
+
+    template <typename T>
+    enable_if_args<T, void, KeyValueResult&&, StopToken>
+    foreach(T&& callback) {
+        _cursor_reset_end();
+
+        bool flag = false;
+        auto stop = StopToken(flag);
+
+        do {
+            auto kv = _read_kv();
+            if (!kv) {
+                break;
+            }
+            callback(std::move(kv), stop);
+            if (stop) {
+                break;
+            }
         } while (_state != State::End);
     }
 

@@ -86,6 +86,9 @@ size_t size();
 using KeyValueResultCallback = std::function<void(settings::kvs_type::KeyValueResult&&)>;
 void foreach(KeyValueResultCallback&&);
 
+using KeyValueResultWithTokenCallback = std::function<void(settings::kvs_type::KeyValueResult&&, settings::kvs_type::StopToken)>;
+void foreach(KeyValueResultWithTokenCallback&&);
+
 using PrefixResultCallback = std::function<void(StringView prefix, String key, const kvs_type::ReadResult& value)>;
 void foreach_prefix(PrefixResultCallback&&, settings::query::StringViewIterator);
 
