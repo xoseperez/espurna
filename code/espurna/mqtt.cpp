@@ -1691,6 +1691,24 @@ bool _mqttMaybeSkipRetained(espurna::StringView topic) {
     return false;
 }
 
+void _mqttMaybeDebugReceived(espurna::StringView topic, espurna::StringView message) {
+    if ((0 < message.length()) && (message.length() < mqtt::build::MessageLogMax)) {
+        DEBUG_MSG_P(PSTR("[MQTT] Received %.*s => %.*s\n"),
+            topic.length(), topic.data(),
+            message.length(), message.data());
+    } else {
+        DEBUG_MSG_P(PSTR("[MQTT] Received %.*s => (%u bytes)\n"),
+            topic.length(), topic.data(), message.length());
+    }
+}
+
+void _mqttProcessMessage(espurna::StringView topic, espurna::StringView message) {
+    _mqttMaybeDebugReceived(topic, message);
+    for (auto& callback : _mqtt_callbacks) {
+        callback(MQTT_MESSAGE_EVENT, topic, message);
+    }
+}
+
 #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
 
 // MQTT Broker can sometimes send messages in bulk. Even when message size is less than MQTT_BUFFER_MAX_SIZE, we *could*
@@ -1699,43 +1717,51 @@ bool _mqttMaybeSkipRetained(espurna::StringView topic) {
 // TODO: One pending issue is streaming arbitrary data (e.g. binary, for OTA). We always set '\0' and API consumer expects C-String.
 //       In that case, there could be MQTT_MESSAGE_RAW_EVENT and this callback only trigger on small messages.
 // TODO: Current callback model does not allow to pass message length. Instead, implement a topic filter and record all subscriptions. That way we don't need to filter out events and could implement per-event callbacks.
+struct MqttMessageBuffer {
+    static constexpr auto MinSize = size_t{ 16 };
+    static constexpr auto MaxSize = size_t{ MQTT_BUFFER_MAX_SIZE };
+    static_assert(MaxSize > 0, "");
+
+    static constexpr auto Alignment = size_t{ 4 };
+    static constexpr auto Mask = Alignment - size_t{ 1 };
+
+    static constexpr auto AlignedSize = size_t{ (MaxSize + Mask) & ~Mask };
+    static constexpr auto Size = AlignedSize + Alignment;
+
+    MqttMessageBuffer() = default;
+
+    static constexpr bool fits(size_t value) {
+        return value < AlignedSize;
+    }
+
+    alignas(4) char data[(Size < MinSize) ? MinSize : Size] = {0};
+};
 
 void _mqttOnMessageAsync(char* raw_topic, char* raw_payload, AsyncMqttClientMessageProperties, size_t len, size_t index, size_t total) {
-    static constexpr size_t BufferSize { MQTT_BUFFER_MAX_SIZE };
-    static_assert(BufferSize > 0, "");
-
-    if ((len > BufferSize) || (total > BufferSize)) {
-        return;
-    }
+    static auto buffer = MqttMessageBuffer();
 
     auto topic = espurna::StringView{ raw_topic };
     if (_mqttMaybeSkipRetained(topic)) {
         return;
     }
 
-    alignas(4) static char buffer[((BufferSize + 3) & ~3) + 4] = {0};
-    std::copy(raw_payload, raw_payload + len, &buffer[index]);
+    if (!buffer.fits(total)) {
+      DEBUG_MSG_P(PSTR("[MQTT] Ignored %.*s => %u / %u bytes\n"),
+          topic.length(), topic.data(), len, total);
+      return;
+    }
 
-    // Not done yet
+    std::copy(raw_payload, raw_payload + len, &buffer.data[index]);
     if (total != (len + index)) {
         DEBUG_MSG_P(PSTR("[MQTT] Buffered %.*s => %u / %u bytes\n"),
             topic.length(), topic.data(), len, total);
         return;
     }
 
-    buffer[len + index] = '\0';
-    if (len > 0 || len < mqtt::build::MessageLogMax) {
-        DEBUG_MSG_P(PSTR("[MQTT] Received %.*s => %s\n"),
-            topic.length(), topic.data(), buffer);
-    } else {
-        DEBUG_MSG_P(PSTR("[MQTT] Received %.*s => (%u bytes)\n"),
-            topic.length(), topic.data(), len);
-    }
+    buffer.data[total] = '\0'; // safeguard against cstring scanners
 
-    auto message = espurna::StringView{ &buffer[0], &buffer[total] };
-    for (const auto callback : _mqtt_callbacks) {
-        callback(MQTT_MESSAGE_EVENT, topic, message);
-    }
+    auto message = espurna::StringView{ &buffer.data[0], &buffer.data[total] };
+    _mqttProcessMessage(topic, message);
 }
 
 #else
@@ -1749,20 +1775,7 @@ void _mqttOnMessage(char* raw_topic, char* raw_payload, unsigned int len) {
     }
 
     auto message = espurna::StringView{ raw_payload, len };
-
-    if (len > 0 || len < mqtt::build::MessageLogMax) {
-        DEBUG_MSG_P(PSTR("[MQTT] Received %.*s => %.*s\n"),
-            topic.length(), topic.data(),
-            message.length(), message.data());
-    } else {
-        DEBUG_MSG_P(PSTR("[MQTT] Received %.*s => (%u bytes)\n"),
-            topic.length(), topic.data(), len);
-    }
-
-    // Call subscribers with the message buffer
-    for (auto& callback : _mqtt_callbacks) {
-        callback(MQTT_MESSAGE_EVENT, topic, message);
-    }
+    _mqttProcessMessage(topic, message);
 }
 
 #endif // MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
