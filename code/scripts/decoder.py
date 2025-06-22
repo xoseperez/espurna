@@ -5,12 +5,16 @@
 # Stack line detection from https://github.com/platformio/platform-espressif8266/ monitor exception filter by Vojtěch Boček (@Tasssadar)
 # - https://github.com/platformio/platform-espressif8266/commits?author=Tasssadar
 
-import os
 import argparse
 import sys
 import re
 import subprocess
 import shutil
+import pathlib
+import fileinput
+
+import typing
+from typing import Callable, Iterator, TypedDict, Literal
 
 # https://github.com/me-no-dev/EspExceptionDecoder/blob/349d17e4c9896306e2c00b4932be3ba510cad208/src/EspExceptionDecoder.java#L59-L90
 EXCEPTION_CODES = (
@@ -54,35 +58,52 @@ EXCEPTION_CODES = (
 )
 
 
+def run_command(cmd: list[str]) -> list[str]:
+    try:
+        result = subprocess.run(
+            cmd, capture_output=True, check=True, universal_newlines=True
+        )
+    except subprocess.CalledProcessError as e:
+        if e.stdout:
+            print(e.stdout, file=sys.stdout)
+        if e.stderr:
+            print(e.stderr, file=sys.stderr)
+        e.cmd = e.cmd[0]
+        sys.exit(e.returncode)
+
+    return result.stdout.splitlines()
+
+
 # similar to java version, which used `list` and re-formatted it
 # instead, simply use an already short-format `info line`
 # TODO `info symbol`? revert to `list`?
-def addresses_gdb(gdb, elf, addresses):
-    cmd = [gdb, "--batch"]
+def addresses_gdb(gdb: pathlib.Path, elf: pathlib.Path, addresses: list[str]):
+    cmd = [str(gdb), "--batch"]
     for address in addresses:
         if not address.startswith("0x"):
             address = f"0x{address}"
         cmd.extend(["--ex", f"info line *{address}"])
-    cmd.append(elf)
+    cmd.append(str(elf))
 
-    with subprocess.Popen(cmd, stdout=subprocess.PIPE, universal_newlines=True) as proc:
-        for line in proc.stdout.readlines():
-            if "No line number" in line:
-                continue
-            yield line.strip()
+    for line in run_command(cmd):
+        if "No line number" in line:
+            continue
+        yield line.strip()
 
 
 # original approach using addr2line, which is pretty enough already
-def addresses_addr2line(addr2line, elf, addresses):
+def addresses_addr2line(
+    addr2line: pathlib.Path, elf: pathlib.Path, addresses: list[str]
+):
     cmd = [
-        addr2line,
+        str(addr2line),
         "--addresses",
         "--inlines",
         "--functions",
         "--pretty-print",
         "--demangle",
         "--exe",
-        elf,
+        str(elf),
     ]
 
     for address in addresses:
@@ -90,19 +111,23 @@ def addresses_addr2line(addr2line, elf, addresses):
             address = f"0x{address}"
         cmd.append(address)
 
-    with subprocess.Popen(cmd, stdout=subprocess.PIPE, universal_newlines=True) as proc:
-        for line in proc.stdout.readlines():
-            if "??:0" in line:
-                continue
-            elif "inlined by" in line:
-                yield f" {line.strip()}"
-            else:
-                yield line.strip()
+    for line in run_command(cmd):
+        if "??:0" in line:
+            continue
+        elif "inlined by" in line:
+            yield f" {line.strip()}"
+
+        yield line.strip()
 
 
-def decode_lines(format_addresses, elf, lines):
+type Tool = Literal["gdb", "addr2line"]
+type Formatter = Callable[[pathlib.Path, list[str]], None]
+
+
+def decode_lines(
+    format_addresses: Formatter, elf: pathlib.Path, lines: fileinput.FileInput
+):
     ANY_ADDR_RE = re.compile(r"0x[0-9a-fA-F]{8}|[0-9a-fA-F]{8}")
-    HEX_ADDR_RE = re.compile(r"0x[0-9a-f]{8}")
 
     MEM_ERR_LINE_RE = re.compile(r"^(Stack|last failed alloc call)")
 
@@ -117,7 +142,7 @@ def decode_lines(format_addresses, elf, lines):
 
     # either print everything as-is, or cache current string and dump after stack contents end
     last_stack = None
-    stack_addresses = {}
+    stack_addresses: dict[str, list[str]] = {}
 
     in_stack = False
 
@@ -141,9 +166,9 @@ def decode_lines(format_addresses, elf, lines):
         # 3fffffb0:  feefeffe feefeffe 3ffe85d8 401004ed
         elif IGNORE_FIRMWARE_RE.match(line):
             continue
-        elif in_stack and STACK_LINE_RE.match(line):
-            _, addrs = line.split(":")
-            addrs = ANY_ADDR_RE.findall(addrs)
+        elif in_stack and STACK_LINE_RE.match(line) and last_stack:
+            _, _, raw_addrs = line.partition(":")
+            addrs = ANY_ADDR_RE.findall(raw_addrs)
             stack_addresses.setdefault(last_stack, [])
             stack_addresses[last_stack].extend(addrs)
         # epc1=0xfffefefe epc2=0xfefefefe epc3=0xefefefef excvaddr=0xfefefefe depc=0xfefefefe
@@ -185,41 +210,59 @@ def decode_lines(format_addresses, elf, lines):
     print_all_addresses(stack_addresses)
 
 
-TOOLS = {"gdb": addresses_gdb, "addr2line": addresses_addr2line}
+type Output = Callable[[pathlib.Path, pathlib.Path, list[str]], Iterator[str]]
 
 
-def select_tool(toolchain_path, tool, func):
-    path = f"xtensa-lx106-elf-{tool}"
+class ToolsDict(TypedDict):
+    gdb: Output
+    addr2line: Output
+
+
+TOOLS: ToolsDict = {
+    "gdb": addresses_gdb,
+    "addr2line": addresses_addr2line,
+}
+
+
+def select_tool(toolchain_path: pathlib.Path | None, tool: Tool) -> Formatter:
+    cmd = f"xtensa-lx106-elf-{tool}"
     if toolchain_path:
-        path = os.path.join(toolchain_path, path)
+        cmd = str(toolchain_path / cmd)
 
-    if not shutil.which(path):
-        raise FileNotFoundError(path)
+    path = shutil.which(cmd)
+    if not path:
+        raise FileNotFoundError(cmd)
 
-    def formatter(func, path):
+    def formatter(output: Output):
         def wrapper(elf, addresses):
-            return func(path, elf, addresses)
+            return output(path, elf, addresses)
 
         return wrapper
 
-    return formatter(func, path)
+    return formatter(TOOLS[tool])
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--tool", choices=TOOLS, default="addr2line")
     parser.add_argument(
-        "--toolchain-path", help="Sets path to Xtensa tools, when they are not in PATH"
+        "--toolchain-path",
+        type=pathlib.Path,
+        help="Sets path to Xtensa tools, when they are not in PATH",
+    )
+    # XXX typing.get_args(Tool) is an empty tuple, see https://github.com/python/cpython/issues/112472
+    parser.add_argument(
+        "--tool", choices=typing.get_args(Tool.__value__), default="addr2line"
     )
 
-    parser.add_argument("firmware_elf")
-    parser.add_argument(
-        "postmortem", nargs="?", type=argparse.FileType("r"), default=sys.stdin
-    )
+    parser.add_argument("firmware_elf", type=pathlib.Path)
+    parser.add_argument("postmortem", nargs="?", type=str, default="-")
 
     args = parser.parse_args()
-    decode_lines(
-        select_tool(args.toolchain_path, args.tool, TOOLS[args.tool]),
-        args.firmware_elf,
-        args.postmortem,
-    )
+
+    tool: Tool = args.tool
+    toolchain_path: pathlib.Path | None = args.toolchain_path
+
+    firmware_elf: pathlib.Path = args.firmware_elf
+
+    with fileinput.input(files=args.postmortem, encoding="utf-8") as postmortem:
+        decode_lines(select_tool(toolchain_path, tool), firmware_elf, postmortem)
