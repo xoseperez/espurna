@@ -17,7 +17,9 @@ case "$1" in
     ;;
 ("webui")
     # checks whether the webui can be built
-    ./build.sh -f environments
+    npm ci
+    node node_modules/gulp/bin/gulp.js
+    # note of varying zlib output, especially when using pigz
     git --no-pager diff --stat
     ;;
 ("build")
@@ -27,10 +29,6 @@ case "$1" in
 ("test")
     # run generic build test with the specified environment as base
     scripts/test_build.py -e $2
-    ;;
-("release")
-    # TODO: pending removal in favour of code/scripts/generate_release_sh.py
-    ./build.sh -r
     ;;
 (*)
     echo -e "\e[1;33mUnknown stage name, exiting!\e[0m"
