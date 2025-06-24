@@ -13,11 +13,12 @@ import os
 import itertools
 
 from espurna_utils import (
+    app_add_compiledb_defines,
+    app_add_gzip_file,
     app_add_target_build_and_copy,
-    app_patch_elf2bin,
     app_inject_flags,
     app_inject_version,
-    app_add_gzip_file,
+    app_patch_elf2bin,
     app_patch_cachedir,
     check_binsize,
     check_env,
@@ -98,3 +99,8 @@ if cachedir_fix:
 
 # workaround for Core 2.7.4 python3.12 syntax warnings, merge upstream changes
 app_patch_elf2bin(env)
+
+# modules are implicitly enabled when generating compile_commands.json
+# disabled by default, to avoid silently hijacking config values from headers
+if check_env("ESPURNA_COMPILEDB_DEFINES", "0"):
+    app_add_compiledb_defines(projenv)

@@ -16,11 +16,14 @@ import sys
 
 from SCons.Script import Delete, Move, Import, ARGUMENTS
 
-from espurna_utils import check_env
-from espurna_utils.build import app_add_builder_single_source, app_add_target_build_re2c
-
 from platformio.package.manager.library import LibraryPackageManager
 from platformio.package.meta import PackageSpec
+
+from espurna_utils import (
+    app_add_builder_single_source,
+    app_add_target_build_re2c,
+    check_env,
+)
 
 
 Import("env")
