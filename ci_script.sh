@@ -5,6 +5,11 @@ set -x -e -v
 cd code
 
 case "$1" in
+("generated")
+    # checks whether arduino.h was modified
+    scripts/generate_arduino_h.py espurna/config/arduino.h
+    git --no-pager diff --stat --exit-code
+    ;;
 ("host")
     # runs unit tests, using the host compiler and the esp8266 mock framework
     # - https://github.com/esp8266/Arduino/blob/master/tests/host/Makefile

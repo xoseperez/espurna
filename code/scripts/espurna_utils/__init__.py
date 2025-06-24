@@ -29,7 +29,7 @@ from .build import (
     app_patch_elf2bin,
 )
 from .checks import check_env, check_binsize
-from .compiledb import app_add_compiledb_defines
+from .config import generate_arduino_h, app_add_compiledb_defines
 from .flags import app_inject_flags
 from .hooks import remove_float_support, disable_postmortem_output
 from .ldscripts import ldscripts_inject_libpath
@@ -44,12 +44,13 @@ __all__ = [
     "app_full_version_for_env",
     "app_inject_flags",
     "app_inject_version",
-    "app_version",
     "app_patch_cachedir",
-    "check_env",
+    "app_version",
     "check_binsize",
+    "check_env",
     "disable_postmortem_output",
     "firmware_destination",
+    "generate_arduino_h",
     "ldscripts_inject_libpath",
     "remove_float_support",
 ]
