@@ -155,7 +155,7 @@ jobs:
       - name: Fetch and render release template
         run: |
            curl \
-             -H "Authentication: ${{ secrets.GITUB_TOKEN }}" \
+             -H "Authorization: Bearer ${{ github.token }}" \
              -H "Accept: application/vnd.github.VERSION.raw" \
              -o release_template.md \
              https://api.github.com/repos/xoseperez/espurna/contents/.github/release_template.md
