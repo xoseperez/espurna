@@ -583,7 +583,7 @@ private:
     }
 
     // TODO: timeout when buffers are filled for a long time?
-    static err_t s_on_tcp_poll(void* arg, tcp_pcb* pcb) {
+    static err_t s_on_tcp_poll(void* arg, tcp_pcb*) {
         reinterpret_cast<Client*>(arg)->flush();
         return ERR_OK;
     }
@@ -718,7 +718,7 @@ next:
         return ERR_OK;
     }
 
-    static err_t s_on_tcp_connected(void* arg, tcp_pcb* pcb, err_t) {
+    static err_t s_on_tcp_connected(void* arg, tcp_pcb*, err_t) {
         return reinterpret_cast<Client*>(arg)->on_tcp_connected();
     }
 

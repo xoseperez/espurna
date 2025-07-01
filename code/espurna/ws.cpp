@@ -120,7 +120,7 @@ void PostponedCallback::Storage::Destructor::operator()(Callback& callback) cons
     callback.~Callback();
 }
 
-void PostponedCallback::Storage::Destructor::operator()(Storage::Pointer& ptr) const noexcept {
+void PostponedCallback::Storage::Destructor::operator()(Storage::Pointer&) const noexcept {
 }
 
 void PostponedCallback::Storage::Destructor::operator()(Storage::Instance& obj) const noexcept {

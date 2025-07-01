@@ -387,21 +387,21 @@ void adc(CommandContext&& ctx) {
 #if SYSTEM_CHECK_ENABLED
 PROGMEM_STRING(Stable, "STABLE");
 
-void stable(CommandContext&& ctx) {
+void stable(CommandContext&&) {
     systemForceStable();
     prepareReset(CustomResetReason::Stability);
 }
 
 PROGMEM_STRING(Unstable, "UNSTABLE");
 
-void unstable(CommandContext&& ctx) {
+void unstable(CommandContext&&) {
     systemForceUnstable();
     prepareReset(CustomResetReason::Stability);
 }
 
 PROGMEM_STRING(Trap, "TRAP");
 
-void trap(CommandContext&& ctx) {
+void trap(CommandContext&&) {
     __builtin_trap();
 }
 #endif

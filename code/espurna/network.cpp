@@ -42,7 +42,7 @@ Pending pending;
 
 } // namespace internal
 
-void dns_found_callback_impl(const char* name, const ip_addr_t* addr, void* arg) {
+void dns_found_callback_impl(const char*, const ip_addr_t* addr, void* arg) {
     auto* pending = reinterpret_cast<Host*>(arg);
 
     if (addr) {

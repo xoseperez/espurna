@@ -705,7 +705,7 @@ void _onVisible(JsonObject& root) {
     root[espurna::web::settings::keys::Port] = _port;
 }
 
-bool _onKeyCheck(espurna::StringView key, const JsonVariant& value) {
+bool _onKeyCheck(espurna::StringView key, const JsonVariant&) {
     return key.startsWith(espurna::web::settings::keys::Prefix);
 }
 

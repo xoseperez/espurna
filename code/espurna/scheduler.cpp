@@ -498,7 +498,7 @@ Types types() {
 size_t count() {
     size_t out { 0 };
 
-    foreach_type([&](Type type) {
+    foreach_type([&](Type) {
         ++out;
     });
 
@@ -1957,7 +1957,7 @@ bool Calendar::before(const datetime::Context& ctx) {
     return false;
 }
 
-bool Calendar::after(const datetime::Context& ctx) {
+bool Calendar::after(const datetime::Context&) {
     _time_point = last_action(_index);
     return event::is_valid(_time_point);
 }

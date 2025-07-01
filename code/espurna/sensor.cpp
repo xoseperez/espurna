@@ -3761,7 +3761,7 @@ void setup() {
 #if MQTT_SUPPORT
 namespace mqtt {
 
-void report(const Value& report, const Magnitude& magnitude) {
+void report(const Value& report, const Magnitude& magnitude [[gnu::unused]]) {
     mqttSend(report.topic.c_str(), report.repr.c_str());
 
 #if SENSOR_PUBLISH_ADDRESSES
