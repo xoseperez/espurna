@@ -1862,6 +1862,7 @@ Info info(const Magnitude& magnitude) {
         .units = magnitude.units,
         .decimals = magnitude.decimals,
         .topic = topicWithIndex(magnitude),
+        .description = String(),
     };
 }
 
@@ -4638,6 +4639,8 @@ espurna::sensor::Info magnitudeInfo(unsigned char index) {
         .index = 0,
         .units = Unit::None,
         .decimals = 0,
+        .topic = String(),
+        .description = String(),
     };
 }
 
