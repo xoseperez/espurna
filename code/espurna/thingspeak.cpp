@@ -505,6 +505,7 @@ private:
 
                 ptr = ptr + __builtin_strlen(Break);
                 _parser_state = ParserState::Body;
+                // fallthrough!
             }
 
             case ParserState::Body:
