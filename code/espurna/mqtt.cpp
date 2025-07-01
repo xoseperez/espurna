@@ -919,7 +919,7 @@ namespace {
 
 #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
 
-void _mqttSetupAsyncClient(bool secure = false) {
+void _mqttSetupAsyncClient(bool secure [[gnu::unused]] = false) {
     _mqtt.setServer(_mqtt_settings.server.c_str(), _mqtt_settings.port);
     _mqtt.setClientId(_mqtt_settings.client_id.c_str());
     _mqtt.setKeepAlive(_mqtt_settings.keepalive.count());
@@ -1287,7 +1287,7 @@ String _mqttClientState(AsyncClientState state) {
 String _mqttClientInfo(bool enabled, AsyncClientState state) {
     String out;
 
-    if (_mqtt_enabled) {
+    if (enabled) {
         out += _mqttClientState(state);
     } else {
         out += STRING_VIEW("DISABLED");
