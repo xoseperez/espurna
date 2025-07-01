@@ -1316,6 +1316,7 @@ void update_from(const Schedule& schedule) {
 
 bool set(JsonObject& root, const size_t id) {
     Schedule out;
+    out.id = id;
     out.restore = -1;
 
     // always need type, time and action
