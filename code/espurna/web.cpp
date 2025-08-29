@@ -123,8 +123,6 @@ uint16_t port() {
 
 namespace {
 
-static constexpr auto WebContentEncoding = espurna::StringView(webui_content_encoding);
-static constexpr auto WebLastModified = espurna::StringView(webui_last_modified);
 static constexpr size_t WebConfigBufferMax { 4096 };
 
 template <typename T>
@@ -149,6 +147,10 @@ void _addSecurityHeaders(AsyncWebServerResponse* response) {
         STRING_VIEW("deny"));
 }
 
+#if WEB_EMBEDDED
+static constexpr auto WebContentEncoding = espurna::StringView(webui_content_encoding);
+static constexpr auto WebLastModified = espurna::StringView(webui_last_modified);
+
 void _addGenericHeaders(AsyncWebServerResponse* response) {
     if (WebContentEncoding.length()) {
         _addHeader(*response,
@@ -158,6 +160,7 @@ void _addGenericHeaders(AsyncWebServerResponse* response) {
     _addHeader(*response,
         STRING_VIEW("Last-Modified"), WebLastModified);
 }
+#endif
 
 } // namespace
 
