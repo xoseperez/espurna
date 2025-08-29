@@ -717,10 +717,6 @@ void debugSend(const char* format, ...) {
     }
 }
 
-void debugConfigureBoot() {
-    espurna::debug::onBoot();
-}
-
 #if WEB_SUPPORT
 void debugWebSetup() {
     wsRegister()
@@ -751,7 +747,16 @@ void debugShowBanner() {
 #endif
 }
 
+#endif // DEBUG_SUPPORT
+
+static void debugIgnoreChar(char) {
+}
+
 void debugSetup() {
+#if !DEBUG_SUPPORT || !DEBUG_SERIAL_SUPPORT
+    ets_install_putc1(debugIgnoreChar);
+#endif
+#if DEBUG_SUPPORT
 #if DEBUG_UDP_SUPPORT
     if (espurna::debug::syslog::build::enabled()) {
         espurna::debug::syslog::configure();
@@ -763,6 +768,12 @@ void debugSetup() {
     espurna::debug::terminal::setup();
 #endif
 #endif
+#endif
 }
 
-#endif // DEBUG_SUPPORT
+void debugConfigureBoot() {
+#if DEBUG_SUPPORT
+    espurna::debug::onBoot();
+#endif
+}
+

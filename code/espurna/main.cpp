@@ -163,10 +163,8 @@ void setup() {
     // Cache initial free heap value
     systemInitialFreeHeap();
 
-    // Init logging module
-    #if DEBUG_SUPPORT
-        debugSetup();
-    #endif
+    // Init debug & logging routines
+    debugSetup();
 
     // Init GPIO functions
     gpioSetup();
@@ -185,9 +183,11 @@ void setup() {
         uartSetup();
     #endif
 
-    // Configure logger and crash recorder
+    // Extra configuration after settings can be used
+    debugConfigureBoot();
+
+    // Crash dump only when debugging is supported as well
     #if DEBUG_SUPPORT
-        debugConfigureBoot();
         crashSetup();
     #endif
 
