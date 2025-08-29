@@ -1,5 +1,3 @@
-*.html    -diff -merge
-*.html    linguist-generated=true
 *.html.gz    -diff -merge
 *.html.gz    linguist-generated=true
 *.html.br    -diff -merge
