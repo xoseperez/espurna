@@ -536,7 +536,7 @@ String encode(uint64_t input) {
 
         out = hexEncode(begin, std::end(raw));
     } else {
-        out.concat(F("00"));
+        out += STRING_VIEW("00");
     }
 
     return out;
@@ -721,7 +721,7 @@ String encode(T& result) {
         return time::encode(raw.begin(), raw.end());
     }
 
-    return F("0");
+    return String('0');
 }
 
 } // namespace payload
@@ -1311,9 +1311,15 @@ void setup() {
 namespace terminal {
 
 struct ValueCommand {
-    const __FlashStringHelper* value;
-    const __FlashStringHelper* command;
+    StringView value;
+    StringView command;
 };
+
+#define MAKE_VALUE_COMMAND(VALUE, COMMAND)\
+    (__extension__({\
+        STRING_VIEW_INLINE(Value, VALUE);\
+        STRING_VIEW_INLINE(Command, COMMAND);\
+        ValueCommand{Value, Command};}))
 
 struct Preset {
     const ValueCommand* const begin;
@@ -1322,10 +1328,6 @@ struct Preset {
 
 namespace build {
 
-// TODO: optimize the array itself via PROGMEM? can't be static though, b/c F(...) will be resolved later and the memory is empty in the flash
-//       also note of the alignment requirements that don't always get applied to a simple PROGMEM'ed array (unless explicitly set, or the contained value is aligned)
-//       strings vs. number for values do have a slight overhead (x2 pointers, byte-by-byte cmp instead of a 2byte memcmp), but it seems to be easier to handle here
-//       but... this also means it *could* seamlessly handle state payloads just as simple values, just by changing the value retrieval function
 // TODO: have an actual name for presets (remote, device, etc.)?
 // TODO: user-defined presets?
 // TODO: pub-sub through terminal?
@@ -1336,6 +1338,7 @@ namespace build {
 #if IR_RX_PRESET != 0
 
 Preset preset() {
+    static const ValueCommand out[] PROGMEM {
 #if IR_RX_PRESET == 1
 // For the original Remote shipped with the controller
 // +------+------+------+------+
@@ -1351,37 +1354,37 @@ Preset preset() {
 // +------+------+------+------+
 // |  10  |  11  |  12  |SMOOTH|
 // +------+------+------+------+
-    static const std::array<ValueCommand, 20> instance {
-        {{F("FF906F"), F("brightness +10")},
-        {F("FFB847"), F("brightness -10")},
-        {F("FFF807"), F("light off")},
-        {F("FFB04F"), F("light on")},
 
-        {F("FF9867"), F("rgb #FF0000")},
-        {F("FFD827"), F("rgb #00FF00")},
-        {F("FF8877"), F("rgb #0000FF")},
-        {F("FFA857"), F("rgb #FFFFFF")},
+        MAKE_VALUE_COMMAND("FF906F", "brightness +10"),
+        MAKE_VALUE_COMMAND("FFB847", "brightness -10"),
+        MAKE_VALUE_COMMAND("FFF807", "light off"),
+        MAKE_VALUE_COMMAND("FFB04F", "light on"),
 
-        {F("FFE817"), F("rgb #D13A01")},
-        {F("FF48B7"), F("rgb #00E644")},
-        {F("FF6897"), F("rgb #0040A7")},
-        //{F("FFB24D"), F("effect flash")},
+        MAKE_VALUE_COMMAND("FF9867", "rgb #FF0000"),
+        MAKE_VALUE_COMMAND("FFD827", "rgb #00FF00"),
+        MAKE_VALUE_COMMAND("FF8877", "rgb #0000FF"),
+        MAKE_VALUE_COMMAND("FFA857", "rgb #FFFFFF"),
 
-        {F("FF02FD"), F("rgb #E96F2A")},
-        {F("FF32CD"), F("rgb #00BEBF")},
-        {F("FF20DF"), F("rgb #56406F")},
-        //{F("FF00FF"), F("effect strobe")},
+        MAKE_VALUE_COMMAND("FFE817", "rgb #D13A01"),
+        MAKE_VALUE_COMMAND("FF48B7", "rgb #00E644"),
+        MAKE_VALUE_COMMAND("FF6897", "rgb #0040A7"),
+        //MAKE_VALUE_COMMAND("FFB24D", "effect flash"),
 
-        {F("FF50AF"), F("rgb #EE9819")},
-        {F("FF7887"), F("rgb #00799A")},
-        {F("FF708F"), F("rgb #944E80")},
-        //{F("FF58A7"), F("effect fade")},
+        MAKE_VALUE_COMMAND("FF02FD", "rgb #E96F2A"),
+        MAKE_VALUE_COMMAND("FF32CD", "rgb #00BEBF"),
+        MAKE_VALUE_COMMAND("FF20DF", "rgb #56406F"),
+        //MAKE_VALUE_COMMAND("FF00FF", "effect strobe"),
 
-        {F("FF38C7"), F("rgb #FFFF00")},
-        {F("FF28D7"), F("rgb #0060A1")},
-        {F("FFF00F"), F("rgb #EF45AD")}}
-        //{F("FF30CF"), F("effect smooth")}
-    };
+        MAKE_VALUE_COMMAND("FF50AF", "rgb #EE9819"),
+        MAKE_VALUE_COMMAND("FF7887", "rgb #00799A"),
+        MAKE_VALUE_COMMAND("FF708F", "rgb #944E80"),
+        //MAKE_VALUE_COMMAND("FF58A7", "effect fade"),
+
+        MAKE_VALUE_COMMAND("FF38C7", "rgb #FFFF00"),
+        MAKE_VALUE_COMMAND("FF28D7", "rgb #0060A1"),
+        MAKE_VALUE_COMMAND("FFF00F", "rgb #EF45AD"),
+        //MAKE_VALUE_COMMAND("FF30CF", "effect smooth"),
+
 #elif IR_RX_PRESET == 2
 // Another identical IR Remote shipped with another controller
 //  +------+------+------+------+
@@ -1397,37 +1400,37 @@ Preset preset() {
 //  +------+------+------+------+
 //  |  10  |  11  |  12  |SMOOTH|
 //  +------+------+------+------+
-    static const std::array<ValueCommand, 20> instance {
-        {{F("FF00FF"), F("brightness +10")},
-        {F("FF807F"), F("brightness -10")},
-        {F("FF40BF"), F("light off")},
-        {F("FFC03F"), F("light on")},
 
-        {F("FF20DF"), F("rgb #FF0000")},
-        {F("FFA05F"), F("rgb #00FF00")},
-        {F("FF609F"), F("rgb #0000FF")},
-        {F("FFE01F"), F("rgb #FFFFFF")},
+        MAKE_VALUE_COMMAND("FF00FF", "brightness +10"),
+        MAKE_VALUE_COMMAND("FF807F", "brightness -10"),
+        MAKE_VALUE_COMMAND("FF40BF", "light off"),
+        MAKE_VALUE_COMMAND("FFC03F", "light on"),
 
-        {F("FF10EF"), F("rgb #D13A01")},
-        {F("FF906F"), F("rgb #00E644")},
-        {F("FF50AF"), F("rgb #0040A7")},
-        //{F("FFD02F"), F("effect flash")},
+        MAKE_VALUE_COMMAND("FF20DF", "rgb #FF0000"),
+        MAKE_VALUE_COMMAND("FFA05F", "rgb #00FF00"),
+        MAKE_VALUE_COMMAND("FF609F", "rgb #0000FF"),
+        MAKE_VALUE_COMMAND("FFE01F", "rgb #FFFFFF"),
 
-        {F("FF30CF"), F("rgb #E96F2A")},
-        {F("FFB04F"), F("rgb #00BEBF")},
-        {F("FF708F"), F("rgb #56406F")},
-        //{F("FFF00F"), F("effect strobe")},
+        MAKE_VALUE_COMMAND("FF10EF", "rgb #D13A01"),
+        MAKE_VALUE_COMMAND("FF906F", "rgb #00E644"),
+        MAKE_VALUE_COMMAND("FF50AF", "rgb #0040A7"),
+        //MAKE_VALUE_COMMAND("FFD02F", "effect flash"),
 
-        {F("FF08F7"), F("rgb #EE9819")},
-        {F("FF8877"), F("rgb #00799A")},
-        {F("FF48B7"), F("rgb #944E80")},
-        //{F("FFC837"), F("effect fade")},
+        MAKE_VALUE_COMMAND("FF30CF", "rgb #E96F2A"),
+        MAKE_VALUE_COMMAND("FFB04F", "rgb #00BEBF"),
+        MAKE_VALUE_COMMAND("FF708F", "rgb #56406F"),
+        //MAKE_VALUE_COMMAND("FFF00F", "effect strobe"),
 
-        {F("FF28D7"), F("rgb #FFFF00")},
-        {F("FFA857"), F("rgb #0060A1")},
-        {F("FF6897"), F("rgb #EF45AD")}}
-        //{F("FFE817"), F("effect smooth")}
-    };
+        MAKE_VALUE_COMMAND("FF08F7", "rgb #EE9819"),
+        MAKE_VALUE_COMMAND("FF8877", "rgb #00799A"),
+        MAKE_VALUE_COMMAND("FF48B7", "rgb #944E80"),
+        //MAKE_VALUE_COMMAND("FFC837", "effect fade"),
+
+        MAKE_VALUE_COMMAND("FF28D7", "rgb #FFFF00"),
+        MAKE_VALUE_COMMAND("FFA857", "rgb #0060A1"),
+        MAKE_VALUE_COMMAND("FF6897", "rgb #EF45AD"),
+        //MAKE_VALUE_COMMAND("FFE817", "effect smooth"),
+
 #elif IR_RX_PRESET == 3
 // Samsung AA59-00608A for a generic 8CH module
 //  +------+------+------+
@@ -1439,16 +1442,16 @@ Preset preset() {
 //  +------+------+------+
 //  |      |  0   |      |
 //  +------+------+------+
-    static const std::array<ValueCommand, 8> instance {
-        {{F("E0E020DF"), F("relay 0 toggle")},
-        {F("E0E0A05F"), F("relay 1 toggle")},
-        {F("E0E0609F"), F("relay 2 toggle")},
-        {F("E0E010EF"), F("relay 3 toggle")},
-        {F("E0E0906F"), F("relay 4 toggle")},
-        {F("E0E050AF"), F("relay 5 toggle")},
-        {F("E0E030CF"), F("relay 6 toggle")},
-        {F("E0E0B04F"), F("relay 7 toggle")}}
-    };
+
+        MAKE_VALUE_COMMAND("E0E020DF", "relay 0 toggle"),
+        MAKE_VALUE_COMMAND("E0E0A05F", "relay 1 toggle"),
+        MAKE_VALUE_COMMAND("E0E0609F", "relay 2 toggle"),
+        MAKE_VALUE_COMMAND("E0E010EF", "relay 3 toggle"),
+        MAKE_VALUE_COMMAND("E0E0906F", "relay 4 toggle"),
+        MAKE_VALUE_COMMAND("E0E050AF", "relay 5 toggle"),
+        MAKE_VALUE_COMMAND("E0E030CF", "relay 6 toggle"),
+        MAKE_VALUE_COMMAND("E0E0B04F", "relay 7 toggle"),
+
     // Plus, 2 extra buttons (TODO: on each side of 0?)
     // - E0E0708F
     // - E0E08877
@@ -1459,9 +1462,9 @@ Preset preset() {
 //  ...
 //  +------+------+------+
 //  TODO: ...but what's the rest?
-    static const std::array<ValueCommand, 1> instance {
-        {F("FFB24D"), F("relay 0 toggle")}
-    };
+
+        MAKE_VALUE_COMMAND("FFB24D", "relay 0 toggle"),
+
 #elif IR_RX_PRESET == 5
 // Another identical IR Remote shipped with another controller as SET 1 and 2
 // +------+------+------+------+
@@ -1477,42 +1480,42 @@ Preset preset() {
 // +------+------+------+------+
 // |  10  |  11  |  12  |SMOOTH|
 // +------+------+------+------+
-    static const std::array<ValueCommand, 20> instance {
-        {{F("F700FF"), F("brightness +10")},
-        {F("F7807F"), F("brightness -10")},
-        {F("F740BF"), F("light off")},
-        {F("F7C03F"), F("light on")},
 
-        {F("F720DF"), F("rgb #FF0000")},
-        {F("F7A05F"), F("rgb #00FF00")},
-        {F("F7609F"), F("rgb #0000FF")},
-        {F("F7E01F"), F("rgb #FFFFFF")},
+        MAKE_VALUE_COMMAND("F700FF", "brightness +10"),
+        MAKE_VALUE_COMMAND("F7807F", "brightness -10"),
+        MAKE_VALUE_COMMAND("F740BF", "light off"),
+        MAKE_VALUE_COMMAND("F7C03F", "light on"),
 
-        {F("F710EF"), F("rgb #D13A01")},
-        {F("F7906F"), F("rgb #00E644")},
-        {F("F750AF"), F("rgb #0040A7")},
-        //{F("F7D02F"), F("effect flash")},
+        MAKE_VALUE_COMMAND("F720DF", "rgb #FF0000"),
+        MAKE_VALUE_COMMAND("F7A05F", "rgb #00FF00"),
+        MAKE_VALUE_COMMAND("F7609F", "rgb #0000FF"),
+        MAKE_VALUE_COMMAND("F7E01F", "rgb #FFFFFF"),
 
-        {F("F730CF"), F("rgb #E96F2A")},
-        {F("F7B04F"), F("rgb #00BEBF")},
-        {F("F7708F"), F("rgb #56406F")},
-        //{F("F7F00F"), F("effect strobe")},
+        MAKE_VALUE_COMMAND("F710EF", "rgb #D13A01"),
+        MAKE_VALUE_COMMAND("F7906F", "rgb #00E644"),
+        MAKE_VALUE_COMMAND("F750AF", "rgb #0040A7"),
+        //MAKE_VALUE_COMMAND("F7D02F", "effect flash"),
 
-        {F("F708F7"), F("rgb #EE9819")},
-        {F("F78877"), F("rgb #00799A")},
-        {F("F748B7"), F("rgb #944E80")},
-        //{F("F7C837"), F("effect fade")},
+        MAKE_VALUE_COMMAND("F730CF", "rgb #E96F2A"),
+        MAKE_VALUE_COMMAND("F7B04F", "rgb #00BEBF"),
+        MAKE_VALUE_COMMAND("F7708F", "rgb #56406F"),
+        //MAKE_VALUE_COMMAND("F7F00F", "effect strobe"),
 
-        {F("F728D7"), F("rgb #FFFF00")},
-        {F("F7A857"), F("rgb #0060A1")},
-        {F("F76897"), F("rgb #EF45AD")}}
-        //{F("F7E817"), F("effect smooth")}
-    };
+        MAKE_VALUE_COMMAND("F708F7", "rgb #EE9819"),
+        MAKE_VALUE_COMMAND("F78877", "rgb #00799A"),
+        MAKE_VALUE_COMMAND("F748B7", "rgb #944E80"),
+        //MAKE_VALUE_COMMAND("F7C837", "effect fade"),
+
+        MAKE_VALUE_COMMAND("F728D7", "rgb #FFFF00"),
+        MAKE_VALUE_COMMAND("F7A857", "rgb #0060A1"),
+        MAKE_VALUE_COMMAND("F76897", "rgb #EF45AD"),
+        //MAKE_VALUE_COMMAND("F7E817", "effect smooth"),
 #else
-#error "Preset is not handled"
+#error "IR_RX_PRESET value out of range, expected 1..5"
 #endif
+    };
 
-    return {std::begin(instance), std::end(instance)};
+    return {std::begin(out), std::end(out)};
 }
 
 #endif
@@ -1521,7 +1524,7 @@ Preset preset() {
 
 namespace internal {
 
-void inject(String command) {
+void inject(StringView command) {
     static EphemeralPrint output;
     PrintString error(64);
     if (!espurna::terminal::api_find_and_call(command, output, error)) {
@@ -1538,8 +1541,7 @@ void process(rx::DecodeResult& result) {
     auto preset = build::preset();
     if (preset.begin && preset.end && (preset.begin != preset.end)) {
         for (auto* it = preset.begin; it != preset.end; ++it) {
-            String other((*it).value);
-            if (other == value) {
+            if ((*it).value == value) {
                 internal::inject((*it).command);
                 return;
             }
@@ -1548,7 +1550,7 @@ void process(rx::DecodeResult& result) {
 #endif
 
     String key;
-    key += F("irCmd");
+    key += STRING_VIEW("irCmd");
     key += value;
 
     const auto cmd = espurna::settings::get(key);
@@ -1581,11 +1583,11 @@ void send(::terminal::CommandContext&& ctx) {
             return;
         }
 
-        terminalError(ctx, F("Invalid payload"));
+        terminalError(ctx, STRING_VIEW("Invalid payload"));
         return;
     }
 
-    terminalError(ctx, F("IR.SEND <PAYLOAD>"));
+    terminalError(ctx, STRING_VIEW("IR.SEND <PAYLOAD>"));
 }
 
 static constexpr ::terminal::Command Commands[] PROGMEM {
@@ -1784,29 +1786,29 @@ String serialize(const espurna::ir::simple::Payload& payload) {
     String out;
     out.reserve(128);
 
-    out += F("{ .type=decode_type_t::");
+    out += STRING_VIEW("{ .type=decode_type_t::");
     out += typeToString(payload.type);
-    out += F(", ");
+    out += STRING_VIEW(", ");
 
-    out += F(".value=");
+    out += STRING_VIEW(".value=");
     out += espurna::ir::simple::value::encode(payload.value);
-    out += F(", ");
+    out += STRING_VIEW(", ");
 
-    out += F(".bits=");
+    out += STRING_VIEW(".bits=");
     out += String(payload.bits, 10);
-    out += F(", ");
+    out += STRING_VIEW(", ");
 
-    out += F(".repeats=");
+    out += STRING_VIEW(".repeats=");
     out += String(payload.repeats, 10);
-    out += F(", ");
+    out += STRING_VIEW(", ");
 
-    out += F(".series=");
+    out += STRING_VIEW(".series=");
     out += String(payload.series, 10);
-    out += F(", ");
+    out += STRING_VIEW(", ");
 
-    out += F(".delay=");
+    out += STRING_VIEW(".delay=");
     out += String(payload.delay, 10);
-    out += F(" }");
+    out += STRING_VIEW(" }");
 
     return out;
 }
@@ -1815,32 +1817,32 @@ String serialize(const espurna::ir::raw::Payload& payload) {
     String out;
     out.reserve(128);
 
-    out += F("{ .frequency=");
+    out += STRING_VIEW("{ .frequency=");
     out += String(payload.frequency, 10);
-    out += F(", ");
+    out += STRING_VIEW(", ");
 
-    out += F(".series=");
+    out += STRING_VIEW(".series=");
     out += String(payload.series, 10);
-    out += F(", ");
+    out += STRING_VIEW(", ");
 
-    out += F(".delay=");
+    out += STRING_VIEW(".delay=");
     out += String(payload.delay, 10);
-    out += F(", ");
+    out += STRING_VIEW(", ");
 
-    out += F(".time[");
+    out += STRING_VIEW(".time[");
     out += String(payload.time.size(), 10);
-    out += F("]={");
+    out += STRING_VIEW("]={");
 
     bool comma { false };
     for (auto& value : payload.time) {
         if (comma) {
-            out += F(", ");
+            out += STRING_VIEW(", ");
         }
         out += String(value, 10);
         comma = true;
     }
 
-    out += F("} }");
+    out += STRING_VIEW("} }");
 
     return out;
 }
@@ -1848,22 +1850,26 @@ String serialize(const espurna::ir::raw::Payload& payload) {
 #endif
 
 struct Report {
-    Report(int line, String&& repr) :
+    Report(int line, StringView repr) :
         _line(line),
-        _repr(std::move(repr))
+        _repr(repr)
     {}
 
     int line() const {
         return _line;
     }
 
-    const String& repr() const {
+    StringView repr() const {
         return _repr;
+    }
+
+    String toString() const {
+        return _repr.toString();
     }
 
 private:
     int _line;
-    String _repr;
+    StringView _repr;
 };
 
 struct NoopPayloadSender : public ir::tx::ReschedulablePayload {
@@ -1909,7 +1915,7 @@ struct Context {
                 _reports.size() ? "FAILED" : "SUCCESS");
         for (auto& report : _reports) {
             DEBUG_MSG_P(PSTR("[IR TEST] " __FILE__ ":%d '%.*s'\n"),
-                    report.line(), report.repr().length(), report.repr().c_str());
+                    report.line(), report.repr().length(), report.repr().data());
         }
     }
 #endif
@@ -1957,7 +1963,7 @@ private:
 
 #define IR_TEST(EXPRESSION) {\
     if (!(EXPRESSION)) {\
-        __context_view.report(__LINE__, F(#EXPRESSION));\
+        __context_view.report(__LINE__, STRING_VIEW(#EXPRESSION));\
         return;\
     }\
 }
@@ -1986,16 +1992,16 @@ void setup() {
             IR_TEST(!simple::parse("2:112233445566778899AA:31"));
         },
         IR_TEST_RUNNER() {
-            IR_TEST(simple::value::encode(0xffaabbccddee) == F("FFAABBCCDDEE"));
+            IR_TEST(simple::value::encode(0xffaabbccddee) == STRING_VIEW("FFAABBCCDDEE"));
         },
         IR_TEST_RUNNER() {
-            IR_TEST(simple::value::encode(0xfaabbccddee) == F("0FAABBCCDDEE"));
+            IR_TEST(simple::value::encode(0xfaabbccddee) == STRING_VIEW("0FAABBCCDDEE"));
         },
         IR_TEST_RUNNER() {
-            IR_TEST(simple::value::encode(0xee) == F("EE"));
+            IR_TEST(simple::value::encode(0xee) == STRING_VIEW("EE"));
         },
         IR_TEST_RUNNER() {
-            IR_TEST(simple::value::encode(0) == F("00"));
+            IR_TEST(simple::value::encode(0) == STRING_VIEW("00"));
         },
         IR_TEST_RUNNER() {
             auto result = simple::parse("2:7FAABBCC:31");
@@ -2099,7 +2105,7 @@ void setup() {
         },
         IR_TEST_RUNNER() {
             const uint16_t raw[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
-            IR_TEST(raw::time::encode(std::begin(raw), std::end(raw)) == F("2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32"));
+            IR_TEST(raw::time::encode(std::begin(raw), std::end(raw)) == STRING_VIEW("2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32"));
         }
     }
     IR_TEST_SETUP_END();
