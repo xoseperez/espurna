@@ -749,12 +749,11 @@ void debugShowBanner() {
 
 #endif // DEBUG_SUPPORT
 
-static void debugIgnoreChar(char) {
-}
-
 void debugSetup() {
 #if !DEBUG_SUPPORT || !DEBUG_SERIAL_SUPPORT
-    ets_install_putc1(debugIgnoreChar);
+    ets_install_putc1(
+        [](char) {
+        });
 #endif
 #if DEBUG_SUPPORT
 #if DEBUG_UDP_SUPPORT
