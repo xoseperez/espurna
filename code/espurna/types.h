@@ -441,7 +441,7 @@ inline String operator+(String&& lhs, const __FlashStringHelper* rhs) {
 #ifndef STRING_VIEW_INLINE
 #define STRING_VIEW_INLINE(NAME, X)\
         alignas(4) static constexpr char __pstr__ ## NAME ##  __ [] PROGMEM_STRING_ATTR = (X);\
-        constexpr auto NAME = ::espurna::StringView(__pstr__ ## NAME ## __)
+        static constexpr auto NAME PROGMEM = ::espurna::StringView(__pstr__ ## NAME ## __)
 #endif
 
 #define STRING_VIEW_SETTING(X)\
