@@ -815,8 +815,6 @@ void configure() {
         internal::server = cfg_server;
         sntp_setservername(0, internal::server.c_str());
         sntp_init();
-        DEBUG_MSG_P(PSTR("[NTP] Server: %s, TZ: %s\n"), cfg_server.c_str(),
-                cfg_tz.length() ? cfg_tz.c_str() : "UTC0");
     }
 }
 
