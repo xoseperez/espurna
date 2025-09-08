@@ -99,9 +99,7 @@ constexpr bool promiscuousSends() {
     return 1 == RFM69_PROMISCUOUS_SENDS;
 }
 
-const __FlashStringHelper* rootTopic() {
-    return F(RFM69_DEFAULT_TOPIC);
-}
+STRING_VIEW_INLINE(RootTopic, RFM69_DEFAULT_TOPIC);
 
 constexpr size_t node(size_t) {
     return 0;
@@ -112,7 +110,7 @@ constexpr size_t node(size_t) {
 namespace settings {
 
 String rootTopic() {
-    return getSetting("rfm69Topic", build::rootTopic());
+    return getSetting("rfm69Topic", build::RootTopic);
 }
 
 String topic(size_t index) {
