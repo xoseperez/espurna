@@ -71,17 +71,26 @@ static_assert((UpdateMin <= UpdateInterval) && (UpdateInterval <= UpdateMax), ""
 static constexpr auto StartRandomOffset = espurna::duration::Seconds { 10 };
 static constexpr auto UpdateRandomOffset = espurna::duration::Seconds { 300 };
 
-const __FlashStringHelper* server() {
-    return F(NTP_SERVER);
-}
-
-const char* tz() {
-    return NTP_TIMEZONE;
-}
-
 constexpr bool dhcp() {
     return 1 == (NTP_DHCP_SERVER);
 }
+
+// Strings are guarded against macro injection.
+// Mainly for TZ.h, but handle user config too.
+
+#pragma push_macro("PSTR")
+#undef PSTR
+#define PSTR(X) (X)
+
+#pragma push_macro("F")
+#undef F
+#define F(X) (X)
+
+STRING_VIEW_INLINE(Server, NTP_SERVER);
+STRING_VIEW_INLINE(Timezone, NTP_TIMEZONE);
+
+#pragma pop_macro("PSTR")
+#pragma pop_macro("F")
 
 } // namespace build
 
@@ -121,7 +130,7 @@ espurna::duration::Seconds randomUpdateInterval() {
 
 // as either DNS name or IP address
 String server() {
-    return getSetting(keys::Server, build::server());
+    return getSetting(keys::Server, build::Server);
 }
 
 void server(const String& value) {
@@ -132,7 +141,7 @@ void server(const String& value) {
 // - https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap08.html#tag_08_03
 // - https://www.gnu.org/software/libc/manual/html_node/TZ-Variable.html
 String tz() {
-    return getSetting(keys::Tz, build::tz());
+    return getSetting(keys::Tz, build::Timezone);
 }
 
 // in case DHCP packet contains a SNTP option, switch to that server instead of the one from settings
@@ -544,7 +553,7 @@ PROGMEM_STRING(Set, "NTP.SET");
 [[gnu::unused]]
 void set_simple(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() != 2) {
-        terminalError(ctx, F("NTP.SET <TIME>"));
+        terminalError(ctx, STRING_VIEW("NTP.SET <TIME>"));
         return;
     }
 
@@ -555,14 +564,14 @@ void set_simple(::terminal::CommandContext&& ctx) {
         return;
     }
 
-    terminalError(ctx, F("Invalid timestamp"));
+    terminalError(ctx, STRING_VIEW("Invalid timestamp"));
 }
 
 // TODO: strptime & mktime is around ~3.7Kb
 [[gnu::unused]]
 void set_strptime(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() != 2) {
-        terminalError(ctx, F("NTP.SET <TIME>"));
+        terminalError(ctx, STRING_VIEW("NTP.SET <TIME>"));
         return;
     }
 
@@ -571,7 +580,7 @@ void set_strptime(::terminal::CommandContext&& ctx) {
 
     tm out{};
     if (strptime(ctx.argv[1].c_str(), fmt, &out) != nullptr) {
-        terminalError(ctx, F("Invalid time"));
+        terminalError(ctx, STRING_VIEW("Invalid time"));
         return;
     }
 
@@ -731,15 +740,15 @@ void convertLegacyOffsets() {
         [&](espurna::settings::kvs_type::KeyValueResult&& kv) {
             using namespace espurna::settings::internal;
             const auto key = kv.key.read();
-            if (key == F("ntpTZ")) {
+            if (key == STRING_VIEW("ntpTZ")) {
                 save = false;
-            } else if (key == F("ntpOffset")) {
+            } else if (key == STRING_VIEW("ntpOffset")) {
                 offset = convert<int>(kv.value.read());
                 found = true;
-            } else if (key == F("ntpDST")) {
+            } else if (key == STRING_VIEW("ntpDST")) {
                 dst = convert<bool>(kv.value.read());
                 found = true;
-            } else if (key == F("ntpRegion")) {
+            } else if (key == STRING_VIEW("ntpRegion")) {
                 europe = (0 == convert<int>(kv.value.read()));
                 found = true;
             }
@@ -747,7 +756,9 @@ void convertLegacyOffsets() {
 
     if (save && found) {
         // XXX: only expect offsets in hours
-        String custom { europe ? F("CET") : F("CST") };
+        String custom = (europe
+            ? STRING_VIEW("CET")
+            : STRING_VIEW("CST")).toString();
         custom.reserve(32);
 
         if (offset > 0) {
@@ -756,20 +767,20 @@ void convertLegacyOffsets() {
         custom += abs(offset) / 60;
 
         if (dst) {
-            custom += europe ? F("CEST") : F("EDT");
+            custom += europe ? STRING_VIEW("CEST") : STRING_VIEW("EDT");
             if (europe) {
-                custom += F(",M3.5.0,M10.5.0/3");
+                custom += STRING_VIEW(",M3.5.0,M10.5.0/3");
             } else {
-                custom += F(",M3.2.0,M11.1.0");
+                custom += STRING_VIEW(",M3.2.0,M11.1.0");
             }
         }
 
-        setSetting(F("ntpTZ"), custom);
+        setSetting(STRING_VIEW("ntpTZ"), custom);
     }
 
-    delSetting(F("ntpOffset"));
-    delSetting(F("ntpDST"));
-    delSetting(F("ntpRegion"));
+    delSetting(STRING_VIEW("ntpOffset"));
+    delSetting(STRING_VIEW("ntpDST"));
+    delSetting(STRING_VIEW("ntpRegion"));
 }
 
 } // namespace settings
@@ -779,9 +790,8 @@ void configure() {
     // When enabled, it is possible that lwip will replace the NTP server pointer from under us
     sntp_servermode_dhcp(espurna::ntp::settings::dhcp());
 
-    // Note: TZ_... provided by the Core are already wrapped with PSTR(...)
-    // but, String() already handles every char pointer as a flash-string
-    auto cfg_tz = espurna::ntp::settings::tz();
+    // Reduce the number of times we call `tzset()` when timezone remains the same
+    const auto cfg_tz = espurna::ntp::settings::tz();
     const char* active_tz = getenv("TZ");
 
     bool changed = cfg_tz != active_tz;
@@ -798,8 +808,8 @@ void configure() {
     const auto active_server = activeServer();
     changed = (cfg_server != active_server) || changed;
 
-    // We skip configTime() API since we already set the TZ just above
-    // (and most of the time we expect NTP server to proxy to multiple servers instead of defining more than one here)
+    // Note that sntp_... API expects pointers to persist for the duration of its lifetime
+    // Also, expect only one server (e.g. LAN router). Prefer server side to handle multiple connections.
     if (changed) {
         sntp_stop();
         internal::server = cfg_server;
