@@ -3394,7 +3394,7 @@ void types(JsonObject& root) {
             out.add(index);
         }},
         {STRING_VIEW("prefix"), [](JsonArray& out, size_t index) {
-            out.add(FPSTR(settings::prefix::get(index).c_str()));
+            out.add(settings::prefix::get(index));
         }},
         {STRING_VIEW("name"), [](JsonArray& out, size_t index) {
             out.add(sensor::magnitude::name(index));
