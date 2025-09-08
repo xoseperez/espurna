@@ -98,13 +98,8 @@ namespace {
 
 static constexpr ::espurna::domoticz::Idx DefaultIdx;
 
-const __FlashStringHelper* topicOut() {
-    return F(DOMOTICZ_OUT_TOPIC);
-}
-
-const __FlashStringHelper* topicIn() {
-    return F(DOMOTICZ_IN_TOPIC);
-}
+STRING_VIEW_INLINE(TopicOut, DOMOTICZ_OUT_TOPIC);
+STRING_VIEW_INLINE(TopicIn, DOMOTICZ_IN_TOPIC);
 
 constexpr bool enabled() {
     return 1 == DOMOTICZ_ENABLED;
@@ -141,11 +136,11 @@ bool enabled() {
 }
 
 String topicOut() {
-    return getSetting(FPSTR(keys::TopicOut), build::topicOut());
+    return getSetting(FPSTR(keys::TopicOut), build::TopicOut);
 }
 
 String topicIn() {
-    return getSetting(FPSTR(keys::TopicIn), build::topicIn());
+    return getSetting(FPSTR(keys::TopicIn), build::TopicIn);
 }
 
 #if RELAY_SUPPORT
