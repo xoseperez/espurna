@@ -287,16 +287,26 @@ public:
     static constexpr size_t DevicesMax { PZEM004T_DEVICES_MAX };
 
     static IPAddress defaultAddress(size_t device) {
-        const __FlashStringHelper* ptr {
-            (0 == device) ? F(PZEM004T_ADDRESS_1) :
-            (1 == device) ? F(PZEM004T_ADDRESS_2) :
-            (2 == device) ? F(PZEM004T_ADDRESS_3) :
-            (3 == device) ? F(PZEM004T_ADDRESS_4) :
-            nullptr
+        static const espurna::StringView addresses[] PROGMEM {
+#define PZEM004T_MAKE_ADDRESS(X)\
+        (__extension__({\
+            STRING_VIEW_INLINE(Address, X);\
+            Address;}))
+
+            PZEM004T_MAKE_ADDRESS(PZEM004T_ADDRESS_1),
+            PZEM004T_MAKE_ADDRESS(PZEM004T_ADDRESS_2),
+            PZEM004T_MAKE_ADDRESS(PZEM004T_ADDRESS_3),
+            PZEM004T_MAKE_ADDRESS(PZEM004T_ADDRESS_4),
+
+#undef PZEM004T_MAKE_ADDRESS
         };
 
         IPAddress out;
-        out.fromString(String(ptr));
+        if (device < std::size(addresses)) {
+            out.fromString(addresses[device].toString());
+        } else {
+            out.fromString(nullptr);
+        }
 
         return out;
     }
