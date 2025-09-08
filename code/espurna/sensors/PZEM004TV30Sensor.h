@@ -202,25 +202,20 @@ public:
         }
     }
 
-    template <typename Callback>
-    void modbusProcess(const adu_builder& builder, Callback callback) {
+    bool modbussProcessInternal(buffer_type& buffer, size_t& bytes, const adu_builder& builder) {
         if (!builder.locked) {
-            return;
+            return false;
         }
 
         _port->write(builder.buffer.data(), builder.size);
 
         size_t expect = modbusExpect(builder);
         if (!expect) {
-            return;
+            return false;
         }
 
         uint8_t code = builder.buffer[1];
         uint8_t error_code = ErrorMask | code;
-
-        size_t bytes = 0;
-
-        buffer_type buffer;
 
         // In case we need multiple devices, we need to manually set each one with an unique address **and** also provide
         // a way to distinguish between bus messages based on addresses received. Multiple instances **could** work,
@@ -257,7 +252,7 @@ public:
         if (bytes != expect) {
             PZEM_DEBUG_MSG_P(PSTR("[PZEM004TV3] ERROR: Expected %u bytes, got %u\n"), expect, bytes);
             _error = SENSOR_ERROR_OTHER; // TODO: more error codes
-            return;
+            return false;
         }
 
         uint16_t received_crc = static_cast<uint16_t>(buffer[bytes - 1] << 8) | static_cast<uint16_t>(buffer[bytes - 2]);
@@ -265,16 +260,26 @@ public:
         if (received_crc != crc) {
             PZEM_DEBUG_MSG_P(PSTR("[PZEM004TV3] ERROR: CRC invalid: expected %04X expected, received %04X\n"), crc, received_crc);
             _error = SENSOR_ERROR_CRC;
-            return;
+            return false;
         }
 
         if (buffer[1] & ErrorMask) {
             PZEM_DEBUG_MSG_P(PSTR("[PZEM004TV3] ERROR: %s (0x%02X)\n"),
                 errorToString(buffer[2]).toString().c_str(), buffer[2]);
-            return;
+            return false;
         }
 
-        callback(std::move(buffer), bytes);
+        return true;
+    }
+
+    template <typename Callback>
+    void modbusProcess(const adu_builder& builder, Callback callback) {
+        buffer_type buffer;
+        size_t bytes = 0;
+
+        if (modbussProcessInternal(buffer, bytes, builder)) {
+            callback(std::move(buffer), bytes);
+        }
     }
 
     // Energy reset is a 'custom' function, and it does not take any function params
@@ -618,7 +623,7 @@ void PZEM004TV30Sensor::command_address(::terminal::CommandContext&& ctx) {
     consumeAvailable(*(_instance->_port));
     if (_instance->modbusChangeAddress(address)) {
         _instance->_address = address;
-        setSetting("pzemv30Addr", address);
+        setSetting(STRING_VIEW("pzemv30Addr"), address);
         terminalOK(ctx);
         return;
     }
