@@ -792,7 +792,12 @@ void configure() {
 
     // Reduce the number of times we call `tzset()` when timezone remains the same
     const auto cfg_tz = espurna::ntp::settings::tz();
-    const char* active_tz = getenv("TZ");
+
+    const char* env_tz = getenv("TZ");
+    StringView active_tz;
+    if (env_tz) {
+        active_tz = StringView(env_tz);
+    }
 
     bool changed = cfg_tz != active_tz;
     if (changed) {
