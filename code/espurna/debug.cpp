@@ -113,14 +113,6 @@ namespace {
 
 constexpr Timestamp AddTimestamp { 1 == DEBUG_ADD_TIMESTAMP };
 
-constexpr bool coreDebug() {
-#if defined(DEBUG_ESP_PORT) && !defined(NDEBUG)
-    return true;
-#else
-    return false;
-#endif
-}
-
 constexpr bool sdkDebug() {
     return false;
 }
@@ -439,6 +431,14 @@ using Output = void(*)(const DebugPrefix&, const char*, size_t);
 void null_output(const DebugPrefix&, const char*, size_t) {
 }
 
+static constexpr bool CoreDebug {
+#if defined(DEBUG_ESP_PORT) && !defined(NDEBUG)
+    true
+#else
+    false
+#endif
+};
+
 namespace internal {
 
 Print* port { nullptr };
@@ -471,7 +471,7 @@ void setup() {
     // this debug output and the one from SDK
     // (and most of the time this is need to grab boot info from a
     // physically connected device)
-    if (!build::coreDebug() && settings::sdkDebug()) {
+    if (!CoreDebug && settings::sdkDebug()) {
         switch (port->type) {
         case driver::uart::Type::Uart0:
             uart_set_debug(0);
