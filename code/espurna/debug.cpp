@@ -749,11 +749,16 @@ void debugShowBanner() {
 
 #endif // DEBUG_SUPPORT
 
+static void debugIgnoreChar(char) __attribute__((unused));
+static void debugIgnoreChar(char) IRAM_ATTR;
+
+static void debugIgnoreChar(char) {
+}
+
 void debugSetup() {
 #if !DEBUG_SUPPORT || !DEBUG_SERIAL_SUPPORT
-    ets_install_putc1(
-        [](char) {
-        });
+    ets_isr_mask(1 << ETS_UART_INUM);
+    ets_install_putc1(debugIgnoreChar);
 #endif
 #if DEBUG_SUPPORT
 #if DEBUG_UDP_SUPPORT
