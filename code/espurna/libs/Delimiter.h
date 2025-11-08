@@ -253,13 +253,35 @@ private:
 struct StatefulSplitView {
     explicit StatefulSplitView(StringView view) :
         _base(view),
-        _iterator(&_base)
+        _iterator(std::addressof(_base))
     {}
 
     StatefulSplitView(StringView view, StringView delimiter) :
         _base(view, delimiter),
-        _iterator(&_base)
+        _iterator(std::addressof(_base))
     {}
+
+    StatefulSplitView(const StatefulSplitView& other) :
+        _base(other._base),
+        _iterator(std::addressof(_base))
+    {}
+
+    StatefulSplitView& operator=(const StatefulSplitView& other) {
+        _base = other._base;
+        _iterator = SplitView::Iterator(std::addressof(_base));
+        return *this;
+    }
+
+    StatefulSplitView(StatefulSplitView&& other) :
+        _base(std::move(other._base)),
+        _iterator(std::addressof(_base))
+    {}
+
+    StatefulSplitView& operator=(StatefulSplitView&& other) {
+        _base = std::move(other._base);
+        _iterator = SplitView::Iterator(std::addressof(_base));
+        return *this;
+    }
 
     bool next() {
         return _iterator.next();
