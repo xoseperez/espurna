@@ -569,8 +569,9 @@ void setup() {
 #if TERMINAL_SUPPORT
     terminal::setup();
 #endif
-
     settings::query::setup();
+
+    bool disable_uart0_rx = false;
 
     for (size_t index = 0; index < build::PortsMax; ++index) {
         auto& port = internal::ports[index];
@@ -579,6 +580,14 @@ void setup() {
         if (!port) {
             break;
         }
+
+        if (port->type == Type::Uart0 && !port->rx) {
+            disable_uart0_rx = true;
+        }
+    }
+
+    if (disable_uart0_rx) {
+        ets_isr_mask(1 << ETS_UART_INUM);
     }
 }
 
