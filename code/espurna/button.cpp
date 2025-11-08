@@ -1177,10 +1177,12 @@ void buttonEvent(size_t id, ButtonEvent event) {
         break;
 
     case ButtonAction::Reset:
+        systemForceStable();
         prepareReset(CustomResetReason::Button);
         break;
 
     case ButtonAction::FactoryReset:
+        systemForceStable();
         factoryReset();
         break;
 
