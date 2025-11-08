@@ -229,9 +229,10 @@ build_tests(
     basic
     embedis
     filters
-    sensor
+    led
     mqtt
     scheduler
+    sensor
     settings
     terminal
     tuya
