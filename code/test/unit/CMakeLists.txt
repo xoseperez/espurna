@@ -177,12 +177,16 @@ add_library(espurna STATIC
     ${ESPURNA_PATH}/code/espurna/utils.cpp
 )
 target_link_libraries(espurna PUBLIC esp8266)
+target_link_options(espurna PUBLIC
+    -fsanitize=address
+)
 target_include_directories(espurna PUBLIC
     ${ESPURNA_PATH}/code/
     ${CMAKE_SOURCE_DIR}/cache/arduinojson-${arduinojson_version}-src/src
 )
 target_compile_options(espurna PUBLIC
     ${COMMON_FLAGS}
+    -fsanitize=address
 )
 target_compile_options(espurna PRIVATE
     -Wall

@@ -93,18 +93,6 @@ void add(Commands commands) {
     internal::commands.emplace_front(std::move(commands));
 }
 
-void add(StringView name, CommandFunc func) {
-    const auto cmd = new Command{
-        .name = name,
-        .func = func,
-    };
-
-    add(Commands{
-        .begin = cmd,
-        .end = cmd + 1,
-    });
-}
-
 const Command* find(StringView name) {
     for (const auto commands : internal::commands) {
         const auto found = std::find_if(

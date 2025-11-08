@@ -49,6 +49,7 @@ void add(const Command (&command)[Size]) {
     });
 }
 
+[[gnu::deprecated("espurna::terminal::add(Command[]) should be preferred")]]
 void add(StringView, CommandFunc);
 
 // total number of registered commands

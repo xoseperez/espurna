@@ -10,6 +10,17 @@
 
 namespace espurna {
 namespace terminal {
+
+static std::forward_list<Command> test_commands;
+
+void add(StringView name, CommandFunc func) {
+    auto& ref = test_commands.emplace_front(Command{.name = name, .func = func});
+    add(Commands{
+        .begin = std::addressof(ref),
+        .end = std::addressof(ref) + 1,
+    });
+}
+
 namespace test {
 namespace {
 
@@ -43,17 +54,22 @@ void test_hex_codes() {
     {
         static bool abc_done = false;
 
-        add("abc", [](CommandContext&& ctx) {
-            TEST_ASSERT_EQUAL(2, ctx.argv.size());
-            TEST_ASSERT_EQUAL_STRING("abc", ctx.argv[0].c_str());
-            TEST_ASSERT_EQUAL_STRING("abc", ctx.argv[1].c_str());
-            abc_done = true;
-        });
-
         const char input[] = "abc \"\\x61\\x62\\x63\"\r\n";
 
         const auto result = parse_line(input);
         TEST_ASSERT_EQUAL(2, result.tokens.size());
+
+        static Command commands[] = {
+            {"abc", [](CommandContext&& ctx) {
+                TEST_ASSERT_EQUAL(2, ctx.argv.size());
+                TEST_ASSERT_EQUAL_STRING("abc", ctx.argv[0].c_str());
+                TEST_ASSERT_EQUAL_STRING("abc", ctx.argv[1].c_str());
+                abc_done = true;
+            }},
+        };
+
+        add(commands);
+
         TEST_ASSERT_EQUAL_STRING("Ok", parser::error(result.error).c_str());
         TEST_ASSERT_EQUAL_STRING("abc", result.tokens[0].toString().c_str());
         TEST_ASSERT_EQUAL_STRING("abc", result.tokens[1].toString().c_str());
@@ -182,19 +198,19 @@ void test_commands_array() {
     };
 
     static Command commands[] {
-        Command{.name = "array.one", .func = [](CommandContext&&) {
+        {"array.one", [](CommandContext&&) {
             results[0] = true;
         }},
-        Command{.name = "array.two", .func = [](CommandContext&&) {
+        {"array.two", [](CommandContext&&) {
             results[1] = true;
         }},
-        Command{.name = "array.three", .func = [](CommandContext&&) {
+        {"array.three", [](CommandContext&&) {
             results[2] = true;
         }},
     };
 
     const auto before = size();
-    add(Commands{std::begin(commands), std::end(commands)});
+    add(commands);
 
     TEST_ASSERT_EQUAL(before + 3, size());
 
@@ -221,45 +237,46 @@ void test_multiple_commands() {
         false,
     };
 
-    add("test1", [](CommandContext&& ctx) {
-        TEST_ASSERT_EQUAL_STRING("test1", ctx.argv[0].c_str());
-        TEST_ASSERT_EQUAL(1, ctx.argv.size());
-        TEST_ASSERT_FALSE(results[0]);
-        TEST_ASSERT_FALSE(results[1]);
-        TEST_ASSERT_FALSE(results[2]);
-        TEST_ASSERT_FALSE(results[3]);
-        results[0] = true;
-    });
+    static Command commands[] = {
+        {"test1", [](CommandContext&& ctx) {
+            TEST_ASSERT_EQUAL_STRING("test1", ctx.argv[0].c_str());
+            TEST_ASSERT_EQUAL(1, ctx.argv.size());
+            TEST_ASSERT_FALSE(results[0]);
+            TEST_ASSERT_FALSE(results[1]);
+            TEST_ASSERT_FALSE(results[2]);
+            TEST_ASSERT_FALSE(results[3]);
+            results[0] = true;
+        }},
+        {"test2", [](CommandContext&& ctx) {
+            TEST_ASSERT_EQUAL_STRING("test2", ctx.argv[0].c_str());
+            TEST_ASSERT_EQUAL(1, ctx.argv.size());
+            TEST_ASSERT(results[0]);
+            TEST_ASSERT_FALSE(results[1]);
+            TEST_ASSERT_FALSE(results[2]);
+            TEST_ASSERT_FALSE(results[3]);
+            results[1] = true;
+        }},
+        {"test3", [](CommandContext&& ctx) {
+            TEST_ASSERT_EQUAL_STRING("test3", ctx.argv[0].c_str());
+            TEST_ASSERT_EQUAL(1, ctx.argv.size());
+            TEST_ASSERT(results[0]);
+            TEST_ASSERT(results[1]);
+            TEST_ASSERT_FALSE(results[2]);
+            TEST_ASSERT_FALSE(results[3]);
+            results[2] = true;
+        }},
+        {"test4", [](CommandContext&& ctx) {
+            TEST_ASSERT_EQUAL_STRING("test4", ctx.argv[0].c_str());
+            TEST_ASSERT_EQUAL(1, ctx.argv.size());
+            TEST_ASSERT(results[0]);
+            TEST_ASSERT(results[1]);
+            TEST_ASSERT(results[2]);
+            TEST_ASSERT_FALSE(results[3]);
+            results[3] = true;
+        }},
+    };
 
-    add("test2", [](CommandContext&& ctx) {
-        TEST_ASSERT_EQUAL_STRING("test2", ctx.argv[0].c_str());
-        TEST_ASSERT_EQUAL(1, ctx.argv.size());
-        TEST_ASSERT(results[0]);
-        TEST_ASSERT_FALSE(results[1]);
-        TEST_ASSERT_FALSE(results[2]);
-        TEST_ASSERT_FALSE(results[3]);
-        results[1] = true;
-    });
-
-    add("test3", [](CommandContext&& ctx) {
-        TEST_ASSERT_EQUAL_STRING("test3", ctx.argv[0].c_str());
-        TEST_ASSERT_EQUAL(1, ctx.argv.size());
-        TEST_ASSERT(results[0]);
-        TEST_ASSERT(results[1]);
-        TEST_ASSERT_FALSE(results[2]);
-        TEST_ASSERT_FALSE(results[3]);
-        results[2] = true;
-    });
-
-    add("test4", [](CommandContext&& ctx) {
-        TEST_ASSERT_EQUAL_STRING("test4", ctx.argv[0].c_str());
-        TEST_ASSERT_EQUAL(1, ctx.argv.size());
-        TEST_ASSERT(results[0]);
-        TEST_ASSERT(results[1]);
-        TEST_ASSERT(results[2]);
-        TEST_ASSERT_FALSE(results[3]);
-        results[3] = true;
-    });
+    add(commands);
 
     const char input[] = "test1; test2\n test3\r\n test4";
     TEST_ASSERT(api_find_and_call(input, DefaultOutput));
@@ -273,11 +290,15 @@ void test_multiple_commands() {
 void test_command() {
     static int counter = 0;
 
-    add("test.command", [](CommandContext&& ctx) {
-        TEST_ASSERT_EQUAL_MESSAGE(1, ctx.argv.size(),
-            "Command without args should have argc == 1");
-        ++counter;
-    });
+    static Command commands[] = {
+        {"test.command", [](CommandContext&& ctx) {
+            TEST_ASSERT_EQUAL_MESSAGE(1, ctx.argv.size(),
+                "Command without args should have argc == 1");
+            ++counter;
+        }},
+    };
+
+    add(commands);
 
     const char command[] = "test.command";
     TEST_ASSERT(find_and_call(command, DefaultOutput));
@@ -303,16 +324,19 @@ void test_command() {
 void test_command_args() {
     static bool waiting = false;
 
-    add("test.command.arg1", [](CommandContext&& ctx) {
-        TEST_ASSERT_EQUAL(2, ctx.argv.size());
-        waiting = false;
-    });
+    static Command commands[] = {
+        {"test.command.arg1", [](CommandContext&& ctx) {
+            TEST_ASSERT_EQUAL(2, ctx.argv.size());
+            waiting = false;
+        }},
+        {"test.command.arg1_empty", [](CommandContext&& ctx) {
+            TEST_ASSERT_EQUAL(2, ctx.argv.size());
+            TEST_ASSERT(!ctx.argv[1].length());
+            waiting = false;
+        }},
+    };
 
-    add("test.command.arg1_empty", [](CommandContext&& ctx) {
-        TEST_ASSERT_EQUAL(2, ctx.argv.size());
-        TEST_ASSERT(!ctx.argv[1].length());
-        waiting = false;
-    });
+    add(commands);
 
     waiting = true;
 
@@ -398,13 +422,16 @@ void test_quotes() {
 // we specify that commands lowercase == UPPERCASE
 // last registered one should be called, we don't check for duplicates at this time
 void test_case_insensitive() {
-    add("test.lowercase1", [](CommandContext&&) {
-        TEST_FAIL_MESSAGE("`test.lowercase1` was registered first, but there's another function by the same name. This should not be called");
-    });
+    static Command commands[] = {
+        {"TEST.LOWERCASE1", [](CommandContext&&) {
+            __asm__ volatile ("nop");
+        }},
+        {"test.lowercase1", [](CommandContext&&) {
+            TEST_FAIL_MESSAGE("`TEST.LOWERCASE1` was registered first, and search happens in the order of appearance. This function should not be called");
+        }},
+    };
 
-    add("TEST.LOWERCASE1", [](CommandContext&&) {
-        __asm__ volatile ("nop");
-    });
+    add(commands);
 
     const char input[] = "TeSt.lOwErCaSe1";
     TEST_ASSERT(find_and_call(input, DefaultOutput));
@@ -412,11 +439,15 @@ void test_case_insensitive() {
 
 // We can use command ctx.output to send something back into the stream
 void test_output() {
-    add("test.output", [](CommandContext&& ctx) {
-        if (ctx.argv.size() == 2) {
-            ctx.output.print(ctx.argv[1]);
-        }
-    });
+    static Command commands[] = {
+        {"test.output", [](CommandContext&& ctx) {
+            if (ctx.argv.size() == 2) {
+                ctx.output.print(ctx.argv[1]);
+            }
+        }},
+    };
+
+    add(commands);
 
     const char input[] = "test.output test1234567890";
 
@@ -697,12 +728,19 @@ void test_split_view_iterator() {
 }
 
 void test_error_output() {
+    static Command commands[] {
+        {"test.error1", [](CommandContext&& ctx) {
+            ctx.error.print("foo");
+        }},
+        {"test.error2", [](CommandContext&& ctx) {
+            ctx.output.print("bar");
+        }},
+    };
+
+    add(commands);
+
     PrintString out(64);
     PrintString err(64);
-
-    add("test.error1", [](CommandContext&& ctx) {
-        ctx.error.print("foo");
-    });
 
     TEST_ASSERT(find_and_call("test.error1", out, err));
     TEST_ASSERT_EQUAL_MESSAGE(0, out.length(), out.c_str());
@@ -710,10 +748,6 @@ void test_error_output() {
 
     out.clear();
     err.clear();
-
-    add("test.error2", [](CommandContext&& ctx) {
-        ctx.output.print("bar");
-    });
 
     TEST_ASSERT(find_and_call("test.error2", out, err));
     TEST_ASSERT_EQUAL_STRING("bar", out.c_str());

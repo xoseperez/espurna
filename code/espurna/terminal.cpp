@@ -49,6 +49,19 @@ extern "C" uint32_t _FS_end;
 
 namespace espurna {
 namespace terminal {
+
+void add(StringView name, CommandFunc func) {
+    const auto cmd = new Command{
+        .name = name,
+        .func = func,
+    };
+
+    add(Commands{
+        .begin = cmd,
+        .end = cmd + 1,
+    });
+}
+
 namespace {
 
 namespace build {
@@ -404,6 +417,7 @@ PROGMEM_STRING(Trap, "TRAP");
 void trap(CommandContext&&) {
     __builtin_trap();
 }
+
 #endif
 
 static constexpr ::terminal::Command List[] PROGMEM {
@@ -774,10 +788,6 @@ void terminalError(const espurna::terminal::CommandContext& ctx, espurna::String
 
 void terminalRegisterCommand(espurna::terminal::Commands commands) {
     espurna::terminal::add(commands);
-}
-
-void terminalRegisterCommand(espurna::StringView name, espurna::terminal::CommandFunc func) {
-    espurna::terminal::add(name, func);
 }
 
 #if TERMINAL_WEB_API_SUPPORT
