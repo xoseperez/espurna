@@ -59,4 +59,6 @@ void buttonEvent(size_t id, ButtonEvent event);
 void buttonOnEvent(ButtonEventHandler);
 
 size_t buttonCount();
+
 void buttonSetup();
+void buttonSetupUnstable();

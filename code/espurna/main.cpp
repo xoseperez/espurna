@@ -217,7 +217,10 @@ void setup() {
     // -------------------------------------------------------------------------
 
     #if SYSTEM_CHECK_ENABLED
-        if (!systemCheck()) return;
+        if (!systemCheck()) {
+            systemSetupUnstable();
+            return;
+        }
     #endif
 
     // -------------------------------------------------------------------------

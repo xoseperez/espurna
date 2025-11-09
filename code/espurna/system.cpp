@@ -8,12 +8,23 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "espurna.h"
 
+#include "rtcmem.h"
+
 #if WEB_SUPPORT
 #include "ws.h"
 #endif
 
-#include "rtcmem.h"
+#if NTP_SUPPORT
 #include "ntp.h"
+#endif
+
+#if LED_SUPPORT
+#include "led.h"
+#endif
+
+#if BUTTON_SUPPORT
+#include "button.h"
+#endif
 
 #include <cstdint>
 #include <cstring>
@@ -1072,6 +1083,15 @@ void init() {
     update_persist();
 }
 
+void setup_unstable() {
+    if (!is_unstable_reset()) {
+#if LED_SUPPORT
+        ledSetupUnstable();
+#endif
+#if BUTTON_SUPPORT
+        buttonSetupUnstable();
+#endif
+    }
 }
 
 } // namespace stability
@@ -1740,6 +1760,10 @@ void systemForceStable() {
 
 bool systemCheck() {
     return espurna::boot::stability::check_unstable();
+}
+
+void systemSetupUnstable() {
+    return espurna::boot::stability::setup_unstable();
 }
 #endif
 

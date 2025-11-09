@@ -370,3 +370,4 @@ String systemHostname();
 String systemDescription();
 
 void systemSetup();
+void systemSetupUnstable();

@@ -478,6 +478,11 @@ Pattern network_pattern() {
     return Pattern(network_delay());
 }
 
+// For a special case when system is unstable
+#if SYSTEM_CHECK_ENABLED
+LED_STATIC_DELAY(SystemUnstable, 2000, 1000);
+#endif
+
 constexpr uint8_t ScheduleManual { 1 << 0 };
 constexpr uint8_t ScheduleNetwork { 1 << 1 };
 constexpr uint8_t ScheduleRelay { 1 << 2 };
@@ -1034,6 +1039,28 @@ void setup() {
     }
 }
 
+void setup_unstable() {
+#if SYSTEM_CHECK_ENABLED
+    setup();
+
+    for (auto& led : internal::leds) {
+        switch (led.mode()) {
+        case LedMode::FindMe:
+        case LedMode::FindMeWiFi:
+        case LedMode::RelaysWiFi:
+        case LedMode::WiFi:
+            led.mode(LedMode::Manual);
+            led.override_pattern(Pattern(SystemUnstable));
+            status(led, true);
+            break;
+
+        default:
+            break;
+        }
+    }
+#endif
+}
+
 } // namespace
 } // namespace led
 } // namespace espurna
@@ -1064,6 +1091,10 @@ void ledLoop() {
 
 void ledSetup() {
     espurna::led::setup();
+}
+
+void ledSetupUnstable() {
+    espurna::led::setup_unstable();
 }
 
 #endif // LED_SUPPORT
