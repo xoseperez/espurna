@@ -562,14 +562,14 @@ void setup() {
 } // namespace query
 } // namespace settings
 
-#if RELAY_SUPPORT
-namespace relay {
-
 enum class Status {
     Unknown,
     On,
     Off,
 };
+
+#if RELAY_SUPPORT
+namespace relay {
 
 struct Link {
     Led& led;
@@ -703,6 +703,7 @@ void configure(Led& led, LedMode mode, size_t id) {
     case LedMode::RelayInverse:
         link(led, settings::relay(id));
         break;
+
     default:
         unlink(led);
         break;
@@ -741,17 +742,13 @@ bool status(size_t id) {
     return status(internal::leds[id]);
 }
 
-bool status(Led& led, bool status) {
-    return led.status(status);
-}
-
 bool status(size_t id, bool value) {
-    return status(internal::leds[id], value);
+    return internal::leds[id].status(value);
 }
 
 void turn_off() {
     for (auto& led : internal::leds) {
-        status(led, false);
+        led.status(false);
     }
 }
 
@@ -788,13 +785,13 @@ void payload_status(Led& led, StringView payload) {
         break;
 
     case PayloadStatus::Toggle:
-        led::status(led, !led::status(led));
+        led.status(!led.status());
         break;
 
     case PayloadStatus::Unknown:
         if (!payload_mode(led, payload)) {
             led.override_pattern(parse(payload));
-            status(led, true);
+            led.status(true);
         }
         break;
     }
@@ -816,17 +813,16 @@ void configure() {
 }
 
 void loop(Led& led, uint8_t update) {
-    const auto mode = led.mode();
+    auto next = Status::Unknown;
 
-    switch (mode) {
-
+    switch (led.mode()) {
     case LedMode::Manual:
         break;
 
     case LedMode::WiFi:
         if (update & ScheduleNetwork) {
             led.maybe_pattern(network_pattern());
-            status(led, true);
+            next = Status::On;
         }
         break;
 
@@ -834,9 +830,9 @@ void loop(Led& led, uint8_t update) {
     case LedMode::RelaysWiFi:
 #if RELAY_SUPPORT
         if (update & (ScheduleNetwork | ScheduleRelay)) {
-            led.maybe_pattern(
-                relay::findme_pattern(relay::mode_status(led)));
-            status(led, true);
+            const auto mode_status = relay::mode_status(led);
+            led.maybe_pattern(relay::findme_pattern(mode_status));
+            next = Status::On;
         }
 #endif
         break;
@@ -847,29 +843,36 @@ void loop(Led& led, uint8_t update) {
     case LedMode::Relays:
 #if RELAY_SUPPORT
         if (update & ScheduleRelay) {
-            switch (relay::mode_status(led)) {
-            case relay::Status::Unknown:
-                break;
-
-            case relay::Status::On:
-                status(led, true);
-                break;
-
-            case relay::Status::Off:
-                status(led, false);
-                break;
-            }
+            next = relay::mode_status(led);
         }
 #endif
         break;
 
     case LedMode::On:
-    case LedMode::Off:
         if (update & ScheduleManual) {
-            status(led, mode == LedMode::On);
+            next = Status::On;
         }
         break;
 
+    case LedMode::Off:
+        if (update & ScheduleManual) {
+            next = Status::Off;
+        }
+        break;
+
+    }
+
+    switch (next) {
+    case Status::Unknown:
+        break;
+
+    case Status::On:
+        led.status(true);
+        break;
+
+    case Status::Off:
+        led.status(false);
+        break;
     }
 
     led.run();
@@ -1043,7 +1046,7 @@ void setup_unstable() {
         case LedMode::WiFi:
             led.mode(LedMode::Manual);
             led.override_pattern(Pattern(SystemUnstable));
-            status(led, true);
+            led.status(true);
             break;
 
         default:
