@@ -310,9 +310,15 @@ class HLW8012Sensor : public BaseEmonSensor {
 
             _current = _hlw8012.getCurrent();
             _voltage = _hlw8012.getVoltage();
+
             _power_active = _hlw8012.getActivePower();
-            _power_reactive = _hlw8012.getReactivePower();
             _power_apparent = _hlw8012.getApparentPower();
+
+            if (_power_apparent > _power_active) {
+                _power_reactive = fs_sqrt(fs_pow(_power_apparent, 2) - fs_pow(_power_active, 2));
+            } else {
+                _power_reactive = 0;
+            }
 
             _power_factor = _hlw8012.getPowerFactor() * 100.0;
         }
