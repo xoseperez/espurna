@@ -478,6 +478,14 @@ Mode pin_mode(uint8_t pin, Info info) {
     return out;
 }
 
+enum class PinMode : int {
+    Default = INPUT,
+    Output = OUTPUT,
+    Input = INPUT,
+    InputPulldown = INPUT_PULLDOWN,
+    InputPullup = INPUT_PULLUP,
+};
+
 namespace settings {
 namespace options {
 
@@ -496,6 +504,22 @@ static constexpr Enumeration<GpioType> GpioTypeOptions[] PROGMEM {
     {GpioType::Mcp23s08, Mcp23s08},
 #endif
     {GpioType::None, None},
+};
+
+PROGMEM_STRING(Default, "default");
+PROGMEM_STRING(Output, "output");
+PROGMEM_STRING(Input, "input");
+PROGMEM_STRING(InputPullup, "input-pull-up");
+PROGMEM_STRING(InputPulldown, "input-pull-down");
+
+using espurna::settings::options::Enumeration;
+
+static constexpr std::array<Enumeration<PinMode>, 5> PinModeOptions PROGMEM {
+    {{PinMode::Default, Default},
+     {PinMode::Output, Output},
+     {PinMode::Input, Input},
+     {PinMode::InputPullup, InputPullup},
+     {PinMode::InputPulldown, InputPulldown}}
 };
 
 } // namespace options
@@ -713,13 +737,27 @@ void gpio_list_origins(::terminal::CommandContext&& ctx) {
 
 PROGMEM_STRING(Gpio, "GPIO");
 
+int gpio_pin(const String& value) {
+    int pin = espurna::settings::internal::convert<int>(value);
+    if (pin < 0) {
+        return pin;
+    }
+
+    if (!gpioValid(pin)) {
+        pin = -1;
+    }
+
+    return pin;
+}
+
 void gpio_read_write(::terminal::CommandContext&& ctx) {
-    const int pin = (ctx.argv.size() >= 2)
-        ? espurna::settings::internal::convert<int>(ctx.argv[1])
+    const auto pin_arg = ctx.argv.size() >= 2;
+    const int pin = pin_arg
+        ? gpio_pin(ctx.argv[1])
         : -1;
 
-    if ((pin >= 0) && !gpioValid(pin)) {
-        terminalError(ctx, F("Invalid pin number"));
+    if (pin_arg && pin < 0) {
+        terminalError(ctx, STRING_VIEW("Invalid pin number"));
         return;
     }
 
@@ -775,6 +813,47 @@ void gpio_read_write(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
+PROGMEM_STRING(Mode, "GPIO.MODE");
+
+using PinModeEnumeration = settings::options::Enumeration<gpio::PinMode>;
+
+String gpio_mode_serialize(const PinModeEnumeration* begin, const PinModeEnumeration* end) {
+    String out;
+
+    for (auto it = begin; it != end; ++it) {
+        if (it != begin) {
+            out += '|';
+        }
+
+        out += (*it).string();
+    }
+
+    return out;
+}
+
+void gpio_mode(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() == 3) {
+        const auto pin = gpio_pin(ctx.argv[1]);
+        if (pin < 0) {
+            terminalError(ctx, STRING_VIEW("Invalid pin number"));
+            return;
+        }
+
+        const auto parsed_mode = espurna::settings::internal::convert(
+            settings::options::PinModeOptions, ctx.argv[2], PinMode::Input);
+        peripherals::pin::mode(pin, static_cast<int>(parsed_mode));
+
+        return;
+    }
+
+    static const String hint = STRING_VIEW("GPIO.MODE <GPIO> <").toString()
+        + gpio_mode_serialize(
+            settings::options::PinModeOptions.begin(),
+            settings::options::PinModeOptions.end())
+        + '>';
+    terminalError(ctx, hint);
+}
+
 PROGMEM_STRING(RegRead, "REG.READ");
 
 void reg_read(::terminal::CommandContext&& ctx) {
@@ -813,6 +892,7 @@ void reg_write(::terminal::CommandContext&& ctx) {
 static constexpr espurna::terminal::Command Commands[] PROGMEM {
     {GpioLocks, gpio_list_origins},
     {Gpio, gpio_read_write},
+    {Mode, gpio_mode},
     {RegRead, reg_read},
     {RegWrite, reg_write},
 };
