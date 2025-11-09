@@ -1823,15 +1823,18 @@ uint16_t mqttSendRaw(const char* topic, const char* message, bool retain, int qo
 
 #if DEBUG_SUPPORT
         {
-            const size_t len = strlen(message);
+            const size_t topic_len = strlen(topic);
+            const size_t msg_len = strlen(message);
 
             auto begin = message;
-            auto end = message + len;
+            auto end = message + msg_len;
 
-            if ((len > mqtt::build::MessageLogMax) || (end != std::find(begin, end, '\n'))) {
-                DEBUG_MSG_P(PSTR("[MQTT] Sending %s => (%u bytes) (PID %u)\n"), topic, len, packetId);
+            if (!msg_len || (msg_len > mqtt::build::MessageLogMax) || (end != std::find(begin, end, '\n'))) {
+                DEBUG_MSG_P(PSTR("[MQTT] Sending %.*s => (%u bytes) (PID %u)\n"),
+                    topic_len, topic, msg_len, packetId);
             } else {
-                DEBUG_MSG_P(PSTR("[MQTT] Sending %s => %s (PID %u)\n"), topic, message, packetId);
+                DEBUG_MSG_P(PSTR("[MQTT] Sending %.*s => %.*s (PID %u)\n"),
+                    topic_len, topic, msg_len, message, packetId);
             }
         }
 #endif
