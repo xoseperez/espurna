@@ -630,28 +630,31 @@ void link(Led& led, size_t id) {
 Status mode_status(const Led& led) {
     auto out = Status::Unknown;
 
-    const auto* link = internal::find(led);
-    if (!link || (link->relayId >= RelaysMax)) {
-        return out;
-    }
-
-    const auto id = link->relayId;
+    const auto mode = led.mode();
     auto status = false;
 
-    switch (led.mode()) {
+    switch (mode) {
     case LedMode::Relay:
-        status = relayStatus(id);
-        break;
+    case LedMode::RelayInverse: {
+        const auto* link = internal::find(led);
+        if (!link || (link->relayId >= RelaysMax)) {
+            return out;
+        }
 
-    case LedMode::RelayInverse:
-        status = !relayStatus(id);
+        status = relayStatus(link->relayId);
+        if (mode == LedMode::RelayInverse) {
+            status = !status;
+        }
         break;
+    }
 
     case LedMode::FindMe:
+    case LedMode::FindMeWiFi:
         status = relayStatus();
         break;
 
     case LedMode::Relays:
+    case LedMode::RelaysWiFi:
         status = !relayStatus();
         break;
 
@@ -668,17 +671,17 @@ Status mode_status(const Led& led) {
     return out;
 }
 
-Delay network_delay(bool status) {
+Delay network_delay(Status status) {
     Delay out;
 
     if (wifiConnected()) {
-        if (status) {
+        if (status == Status::On) {
             out = NetworkConnected;
         } else {
             out = NetworkConnectedInverse;
         }
     } else if (wifiConnectable()) {
-        if (status) {
+        if (status == Status::On) {
             out = NetworkConfig;
         } else {
             out = NetworkConfigInverse;
@@ -690,12 +693,8 @@ Delay network_delay(bool status) {
     return out;
 }
 
-Pattern findme_pattern() {
-    return Pattern(network_delay(relayStatus()));
-}
-
-Pattern relays_pattern() {
-    return Pattern(network_delay(!relayStatus()));
+Pattern findme_pattern(Status status) {
+    return Pattern(network_delay(status));
 }
 
 void configure(Led& led, LedMode mode, size_t id) {
@@ -832,18 +831,11 @@ void loop(Led& led, uint8_t update) {
         break;
 
     case LedMode::FindMeWiFi:
-#if RELAY_SUPPORT
-        if (update & ScheduleNetwork) {
-            led.maybe_pattern(relay::findme_pattern());
-            status(led, true);
-        }
-#endif
-        break;
-
     case LedMode::RelaysWiFi:
 #if RELAY_SUPPORT
         if (update & (ScheduleNetwork | ScheduleRelay)) {
-            led.maybe_pattern(relay::relays_pattern());
+            led.maybe_pattern(
+                relay::findme_pattern(relay::mode_status(led)));
             status(led, true);
         }
 #endif
