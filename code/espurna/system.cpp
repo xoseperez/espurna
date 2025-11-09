@@ -896,7 +896,7 @@ struct Data {
         _ptr(ptr)
     {}
 
-    explicit operator bool() const {
+    bool status() const {
         return rtcmemStatus();
     }
 
@@ -970,7 +970,7 @@ uint32_t system_reason() {
 // prunes custom reason after accessing it once
 CustomResetReason customReason() {
     static const CustomResetReason reason = ([]() {
-        const auto out = static_cast<bool>(internal::persistent_data)
+        const auto out = internal::persistent_data.status()
             ? internal::persistent_data.reason()
             : CustomResetReason::None;
         internal::persistent_data.reason(CustomResetReason::None);
@@ -988,18 +988,25 @@ void customReason(CustomResetReason reason) {
 namespace stability {
 namespace build {
 
-static constexpr uint8_t ChecksMin { 1 };
-static constexpr uint8_t ChecksMax { SYSTEM_CHECK_MAX };
-
-static constexpr uint8_t ChecksIncrement { 1 };
+static constexpr auto ChecksMin = uint8_t{ 1 };
+static constexpr auto ChecksMax = uint8_t{ SYSTEM_CHECK_MAX };
 
 static_assert(ChecksMax > 1, "");
 static_assert(ChecksMin < ChecksMax, "");
+static_assert(ChecksMax != std::numeric_limits<decltype(ChecksMax)>::max(), "");
 
 constexpr espurna::duration::Seconds CheckTime { SYSTEM_CHECK_TIME };
-static_assert(CheckTime > espurna::duration::Seconds::min(), "");
+static_assert(CheckTime > decltype(CheckTime)::min(), "");
 
 } // namespace build
+
+bool is_stable(uint8_t count) {
+    return count < build::ChecksMax;
+}
+
+bool check_unstable() {
+    return internal::flag;
+}
 
 void force_stable() {
     internal::persistent_data.counter(build::ChecksMin);
@@ -1012,9 +1019,13 @@ void force_unstable() {
 }
 
 uint8_t counter() {
-    return static_cast<bool>(internal::persistent_data)
+    return internal::persistent_data.status()
         ? internal::persistent_data.counter()
         : build::ChecksMin;
+}
+
+bool is_unstable_reset() {
+    return counter() > build::ChecksMax;
 }
 
 void reset() {
@@ -1023,7 +1034,24 @@ void reset() {
 }
 
 void init() {
-    const auto count = counter();
+    const auto count = std::clamp(
+        counter(),
+        build::ChecksMin, build::ChecksMax);
+
+    // normally, check if the counter can still be incremented
+    auto update_flag = [&]() {
+        internal::flag = is_stable(count);
+    };
+
+    // if not, system is flagged as unstable
+    // set up the timer to reset counting cycle after some time
+    // note that count allows +1 over the max to detect unstable mode itself resetting
+    auto update_persist = [&]() {
+        const auto next = static_cast<uint8_t>(count + 1);
+        internal::persistent_data.counter(next);
+
+        internal::timer.once(build::CheckTime, reset);
+    };
 
     switch (system_reason()) {
     // initial boot and rst are probably just fine
@@ -1034,26 +1062,16 @@ void init() {
     // no need to run the timer when counter gets changed manually
     case REASON_SOFT_RESTART:
         if (customReason() == CustomResetReason::Stability) {
-            internal::flag = (count < build::ChecksMax);
+            update_flag();
             return;
         }
         break;
     }
 
-    // bump counter value and persist. if we re-enter with maximum
-    // once more, system is flagged as unstable.
-    // so, we simply wait for the timer to reset back to minimum
-    // and start the cycle again
-    const auto next = std::min(build::ChecksMax,
-        static_cast<uint8_t>(count + build::ChecksIncrement));
-    internal::persistent_data.counter(next);
-    internal::flag = (count < build::ChecksMax);
-
-    internal::timer.once(build::CheckTime, reset);
+    update_flag();
+    update_persist();
 }
 
-bool check() {
-    return internal::flag;
 }
 
 } // namespace stability
@@ -1094,7 +1112,7 @@ void pre() {
     // Workaround for SDK changes between 1.5.3 and 2.2.x or possible
     // flash corruption happening to the 'default' WiFi config
 #if SYSTEM_CHECK_ENABLED
-    if (!stability::check()) {
+    if (!stability::check_unstable()) {
         const uint32_t Address { ESP.getFlashChipSize() - (FLASH_SECTOR_SIZE * 3) };
 
         static constexpr size_t PageSize { 256 };
@@ -1417,7 +1435,7 @@ void init() {
     });
 #if SYSTEM_CHECK_ENABLED
     push_once([](Mask) {
-        if (!espurna::boot::stability::check()) {
+        if (!espurna::boot::stability::check_unstable()) {
             DEBUG_MSG_P(PSTR("[MAIN] System UNSTABLE\n"));
         } else if (espurna::boot::internal::timer) {
             DEBUG_MSG_P(PSTR("[MAIN] Pending stability counter reset...\n"));
@@ -1721,7 +1739,7 @@ void systemForceStable() {
 }
 
 bool systemCheck() {
-    return espurna::boot::stability::check();
+    return espurna::boot::stability::check_unstable();
 }
 #endif
 
