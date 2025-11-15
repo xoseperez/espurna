@@ -255,6 +255,8 @@ Pair& operator+=(Pair& result, Seconds seconds) {
 
 enum class Type {
     Unknown,
+    Microseconds,
+    Milliseconds,
     Seconds,
     Minutes,
     Hours,
@@ -266,10 +268,19 @@ bool validNextType(Type lhs, Type rhs) {
         return true;
     case Type::Hours:
         return (rhs == Type::Minutes)
-            || (rhs == Type::Seconds);
+            || (rhs == Type::Seconds)
+            || (rhs == Type::Milliseconds)
+            || (rhs == Type::Microseconds);
     case Type::Minutes:
-        return (rhs == Type::Seconds);
+        return (rhs == Type::Seconds)
+            || (rhs == Type::Milliseconds)
+            || (rhs == Type::Microseconds);
     case Type::Seconds:
+        return (rhs == Type::Milliseconds)
+            || (rhs == Type::Microseconds);
+    case Type::Milliseconds:
+        return (rhs == Type::Microseconds);
+    case Type::Microseconds:
         break;
     }
 
@@ -307,11 +318,7 @@ loop:
             goto reset;
 
         case 'm':
-            if (validNextType(last, Type::Minutes)) {
-                type = Type::Minutes;
-                goto update_spec;
-            }
-            goto reset;
+            goto read_minutes_or_millis;
 
         case 's':
             if (validNextType(last, Type::Seconds)) {
@@ -319,6 +326,12 @@ loop:
                 goto update_spec;
             }
             goto reset;
+
+        case '\xce':
+            goto read_micros_utf8;
+
+        case 'u':
+            goto read_micros;
 
         case 'e':
         case 'E':
@@ -411,6 +424,14 @@ update_spec:
                 out.value += Seconds{ result.value };
                 break;
 
+            case Type::Milliseconds:
+                out.value += Milliseconds{ result.value };
+                break;
+
+            case Type::Microseconds:
+                out.value += Microseconds{ result.value };
+                break;
+
             case Type::Unknown:
                 goto reset;
             }
@@ -421,6 +442,58 @@ update_spec:
 
             goto loop;
         }
+    }
+
+    goto reset;
+
+read_minutes:
+    if (validNextType(last, Type::Minutes)) {
+        type = Type::Minutes;
+        goto update_spec;
+    }
+
+    goto reset;
+
+
+read_minutes_or_millis:
+    if (std::next(ptr) == view.end()) {
+        goto read_minutes;
+    }
+
+    if (*std::next(ptr) != 's') {
+        goto read_minutes;
+    }
+
+    ++ptr;
+
+    if (validNextType(last, Type::Milliseconds)) {
+        type = Type::Milliseconds;
+        goto update_spec;
+    }
+
+    goto reset;
+
+read_micros_utf8:
+    ++ptr;
+
+    if ((ptr != view.end()) && (*ptr == '\xbc')) {
+        goto read_micros;
+    }
+
+    goto reset;
+
+read_micros:
+    ++ptr;
+
+    if (ptr == view.end()) {
+        goto reset;
+    }
+
+    if (((*ptr) == 's')
+     && validNextType(last, Type::Microseconds))
+    {
+        type = Type::Microseconds;
+        goto update_spec;
     }
 
     goto reset;

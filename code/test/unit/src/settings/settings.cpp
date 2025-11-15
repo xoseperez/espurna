@@ -85,11 +85,14 @@ void test_convert_uint() {
     TEST_CONVERT_ASSERT(TEST_ASSERT_EQUAL_UINT32, uint32_t, 1234554321, "1234554321");
 }
 
+#define UNITY_TEST_ASSERT_EQUAL_CHRONO(LHS, RHS, LINE, MESSAGE)\
+    ([](auto lhs, auto rhs, int line, const char* message) {\
+        using common_type = std::common_type_t<decltype(lhs), decltype(rhs)>;\
+        UNITY_TEST_ASSERT_EQUAL_INT(common_type(lhs).count(), common_type(rhs).count(), line, message);\
+    })(LHS, RHS, LINE, MESSAGE);
+
 #define TEST_ASSERT_EQUAL_CHRONO(LHS, RHS)\
-    ([]() {\
-        using common_type = std::common_type_t<decltype(LHS), decltype(RHS)>;\
-        TEST_ASSERT_EQUAL(common_type(LHS).count(), common_type(RHS).count());\
-    })();
+    UNITY_TEST_ASSERT_EQUAL_CHRONO(LHS, RHS, __builtin_LINE(), "Durations should be equal")
 
 void test_convert_duration() {
     TEST_ASSERT_EQUAL_CHRONO(duration::Seconds(5),
@@ -130,53 +133,78 @@ void test_convert_duration() {
             internal::convert<duration::Minutes>("5s"));
 }
 
+template <typename Ratio>
+void test_parse_fail(StringView spec, Ratio ratio, int line = __builtin_LINE()) {
+    String message = "\"";
+    message += spec;
+    message += "\" ";
+    message += "should trigger parsing failure";
+
+    UNITY_TEST_ASSERT(!duration::parse(spec, ratio).ok, line, message.c_str());
+}
+
+void test_parse_fail(StringView spec, int line = __builtin_LINE()) {
+    test_parse_fail(spec, std::milli{}, line);
+}
+
+template <typename Expected, typename Ratio>
+void test_parse(Expected expected, Ratio ratio, StringView spec, int line = __builtin_LINE()) {
+    String base = "\"";
+    base += spec;
+    base += "\" ";
+
+    const auto result = duration::parse(spec, ratio);
+
+    auto message = base + "cannot be parsed";
+    UNITY_TEST_ASSERT(result.ok, line, message.c_str());
+
+    message = base + "parsed duration does not match the expected one";
+    UNITY_TEST_ASSERT_EQUAL_CHRONO(expected, duration::to_chrono<Expected>(result.value),
+        line, message.c_str());
+}
+
+template <typename Expected>
+void test_parse(Expected expected, StringView spec, int line = __builtin_LINE()) {
+    test_parse(expected, std::milli{}, spec, line);
+}
+
 void test_parse_duration() {
-    using espurna::duration::parse;
-
-    TEST_ASSERT(parse("6", std::milli{}).ok);
-    TEST_ASSERT_EQUAL_CHRONO(duration::Milliseconds(6),
-            parse("6", std::milli{}).value.microseconds);
-
-    TEST_ASSERT(parse("11", std::micro{}).ok);
-    TEST_ASSERT_EQUAL_CHRONO(duration::Microseconds(11),
-            parse("11", std::micro{}).value.microseconds);
-
-    TEST_ASSERT(parse("15", std::ratio<1>{}).ok);
-    TEST_ASSERT_EQUAL_CHRONO(duration::Seconds(15),
-            parse("15", std::ratio<1>{}).value.seconds);
-
-    TEST_ASSERT(parse("21", std::ratio<60>{}).ok);
-    TEST_ASSERT_EQUAL_CHRONO(duration::Minutes(21),
-            parse("21", std::ratio<60>{}).value.seconds);
-
-    TEST_ASSERT(parse("46", std::ratio<3600>{}).ok);
-    TEST_ASSERT_EQUAL_CHRONO(duration::Hours(46),
-            parse("46", std::ratio<3600>{}).value.seconds);
+    test_parse(duration::Microseconds(11), std::micro{}, "11");
+    test_parse(duration::Milliseconds(6), "6");
+    test_parse(duration::Seconds(15), std::ratio<1>{}, "15");
+    test_parse(duration::Minutes(21), std::ratio<60>{}, "21");
+    test_parse(duration::Hours(46), std::ratio<3600>{}, "46");
 }
 
 void test_parse_duration_spec() {
-    using espurna::duration::parse;
+    test_parse(duration::Microseconds(150000), "150000μs"); // \xce\xbc
+    test_parse(duration::Microseconds(1234), "1234us");
+    test_parse(duration::Milliseconds(100), "99ms1000us");
+    test_parse(duration::Milliseconds(6789), "6s789ms");
+    test_parse(duration::Seconds(1), "1000ms");
+    test_parse(duration::Seconds(552), "552s");
+    test_parse(duration::Seconds(112), "0h0m112s");
+    test_parse(duration::Minutes(99), "99m");
+    test_parse(duration::Minutes(5), "4m60s");
+    test_parse(duration::Minutes(62) + duration::Seconds(59), "1h2m59s");
+    test_parse(duration::Hours(2) + duration::Seconds(5), "2h5000ms");
+    test_parse(duration::Hours(7), "7h");
+    test_parse(duration::Hours(15) + duration::Seconds(30), "15h30s");
+}
 
-    TEST_ASSERT(!parse("5s2m", std::milli{}).ok);
-    TEST_ASSERT(!parse("3m10h", std::milli{}).ok);
-    TEST_ASSERT(!parse("3mm", std::milli{}).ok);
-    TEST_ASSERT(!parse("9hh", std::milli{}).ok);
-    TEST_ASSERT(!parse("11ss", std::milli{}).ok);
-    TEST_ASSERT(!parse("10000y", std::milli{}).ok);
-
-    TEST_ASSERT(parse("7h", std::milli{}).ok);
-    TEST_ASSERT_EQUAL_CHRONO(duration::Hours(7),
-            parse("7h", std::milli{}).value.seconds);
-
-    TEST_ASSERT(parse("15h30s", std::milli{}).ok);
-    TEST_ASSERT_EQUAL_CHRONO(duration::Hours(15) + duration::Seconds(30),
-            parse("15h30s", std::milli{}).value.seconds);
-
-    TEST_ASSERT_EQUAL_CHRONO(duration::Seconds(112),
-            parse("0h0m112s", std::milli{}).value.seconds);
-
-    TEST_ASSERT_EQUAL_CHRONO(duration::Minutes(5),
-            parse("5m", std::milli{}).value.seconds);
+void test_parse_fail_duration_spec() {
+    test_parse_fail("123ui");
+    test_parse_fail("123s456sm");
+    test_parse_fail("456s\x01\\789uu");
+    test_parse_fail("50ms6h");
+    test_parse_fail("100us2m");
+    test_parse_fail("5s2m");
+    test_parse_fail("3m10h");
+    test_parse_fail("3mm");
+    test_parse_fail("9ho");
+    test_parse_fail("999mu");
+    test_parse_fail("11ns");
+    test_parse_fail("10000y");
 }
 
 } // namespace
@@ -196,6 +224,7 @@ int main(int, char**) {
 
     RUN_TEST(test_parse_duration);
     RUN_TEST(test_parse_duration_spec);
+    RUN_TEST(test_parse_fail_duration_spec);
 
     return UNITY_END();
 }
