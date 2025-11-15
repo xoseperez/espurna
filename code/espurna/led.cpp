@@ -423,7 +423,12 @@ size_t relay(size_t id) {
 #endif
 
 Pattern pattern(size_t id) {
-    return parse(getSetting({keys::Pattern, id}));
+    auto result = parse(getSetting({keys::Pattern, id}));
+    if (result.ok) {
+        return result.value;
+    }
+
+    return Pattern{};
 }
 
 void migrate(int version) {
@@ -790,8 +795,11 @@ void payload_status(Led& led, StringView payload) {
 
     case PayloadStatus::Unknown:
         if (!payload_mode(led, payload)) {
-            led.override_pattern(parse(payload));
-            led.status(true);
+            auto result = parse(payload);
+            if (result.ok) {
+                led.override_pattern(std::move(result.value));
+                led.status(true);
+            }
         }
         break;
     }
