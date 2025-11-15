@@ -7,7 +7,12 @@ namespace espurna {
 namespace settings {
 namespace internal {
 
-// TODO: convert() overload for any std::chrono::duration<>
+using CustomSeconds = std::chrono::duration<float, std::ratio<1>>;
+
+template <>
+CustomSeconds convert(const String& value) {
+    return espurna::duration::unchecked_parse<CustomSeconds>(value);
+}
 
 using CustomMinutes = std::chrono::duration<float, std::ratio<60>>;
 
@@ -94,43 +99,66 @@ void test_convert_uint() {
 #define TEST_ASSERT_EQUAL_CHRONO(LHS, RHS)\
     UNITY_TEST_ASSERT_EQUAL_CHRONO(LHS, RHS, __builtin_LINE(), "Durations should be equal")
 
+template <typename Convert, typename Expected>
+void test_convert(Expected expected, StringView spec, int line = __builtin_LINE()) {
+    String message = "\"";
+    message += spec;
+    message += "\" ";
+    message += "unchecked conversion failed";
+
+    // n.b. conversion type must be able to actually hold parsed value, 0 may be a logical error
+    UNITY_TEST_ASSERT_EQUAL_CHRONO(expected, internal::convert<Convert>(spec.toString()), line, message.c_str());
+}
+
 void test_convert_duration() {
-    TEST_ASSERT_EQUAL_CHRONO(duration::Seconds(5),
-            internal::convert<duration::Seconds>("5"));
-    TEST_ASSERT_EQUAL_CHRONO(duration::Seconds(44),
-            internal::convert<duration::Seconds>("44s"));
+    test_convert<duration::Microseconds>(
+        duration::Microseconds(150000), "150000");
+    test_convert<duration::Microseconds>(
+        duration::Microseconds(300000), "300ms");
 
-    TEST_ASSERT_EQUAL_CHRONO(duration::Seconds(60),
-            internal::convert<duration::Seconds>("1m"));
-    TEST_ASSERT_EQUAL_CHRONO(duration::Minutes(1),
-            internal::convert<duration::Minutes>("60s"));
-    TEST_ASSERT_EQUAL_CHRONO(duration::Hours(1),
-            internal::convert<duration::Hours>("1h"));
-    TEST_ASSERT_EQUAL_CHRONO(duration::Minutes(60),
-            internal::convert<duration::Minutes>("60m"));
-    TEST_ASSERT_EQUAL_CHRONO(duration::Hours(1),
-            internal::convert<duration::Hours>("3600s"));
+    test_convert<internal::CustomSeconds>(
+        duration::Milliseconds(1500), "1.5");
+    test_convert<duration::Milliseconds>(
+        duration::Milliseconds(500), "500");
+    test_convert<duration::Seconds>(
+        duration::Milliseconds(3000), "3000ms");
 
-    TEST_ASSERT_EQUAL_CHRONO(duration::Seconds(90),
-            internal::convert<duration::Seconds>("1m30s"));
-    TEST_ASSERT_EQUAL_CHRONO(duration::Milliseconds(1000),
-            internal::convert<duration::Seconds>("1"));
+    test_convert<duration::Seconds>(
+        duration::Seconds(5), "5");
+    test_convert<duration::Seconds>(
+        duration::Seconds(44), "44s");
 
-    TEST_ASSERT_EQUAL_CHRONO(duration::Seconds(30),
-            internal::convert<internal::CustomMinutes>("0.5"));
-    TEST_ASSERT_EQUAL_CHRONO(duration::Minutes(15),
-            internal::convert<internal::CustomHours>("0.25"));
+    test_convert<duration::Seconds>(
+        duration::Seconds(60), "1m");
+    test_convert<duration::Minutes>(
+        duration::Minutes(1), "60s");
+    test_convert<duration::Minutes>(
+        duration::Minutes(60), "60m");
+    test_convert<duration::Hours>(
+        duration::Hours(2), "120m");
+    test_convert<duration::Hours>(
+        duration::Hours(3), "10800s");
 
-    TEST_ASSERT_EQUAL_CHRONO(duration::Minutes(3),
-            internal::convert<duration::Minutes>("3.5"));
-    TEST_ASSERT_EQUAL_CHRONO(duration::Minutes(1),
-            internal::convert<duration::Minutes>("65s"));
-    TEST_ASSERT_EQUAL_CHRONO(duration::Hours(2),
-            internal::convert<duration::Hours>("121m"));
-    TEST_ASSERT_EQUAL_CHRONO(duration::Hours(0),
-            internal::convert<duration::Hours>("59m"));
-    TEST_ASSERT_EQUAL_CHRONO(duration::Seconds(0),
-            internal::convert<duration::Minutes>("5s"));
+    test_convert<duration::Seconds>(
+        duration::Seconds(90), "1m30s");
+    test_convert<duration::Seconds>(
+        duration::Milliseconds(1000), "1");
+
+    test_convert<internal::CustomMinutes>(
+        duration::Seconds(30), "0.5");
+    test_convert<internal::CustomHours>(
+        duration::Minutes(15), "0.25");
+
+    test_convert<duration::Minutes>(
+        duration::Minutes(3), "3.5");
+    test_convert<duration::Minutes>(
+        duration::Minutes(1), "65s");
+    test_convert<duration::Hours>(
+        duration::Hours(2), "121m");
+    test_convert<duration::Hours>(
+        duration::Hours(0), "59m");
+    test_convert<duration::Minutes>(
+        duration::Seconds(0), "5s");
 }
 
 template <typename Ratio>
