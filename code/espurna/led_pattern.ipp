@@ -616,15 +616,22 @@ struct Pattern {
 
             first = false;
 
+            const auto repeat_delay = (*it).repeats > 0;
+            const auto repeat_pattern =
+                ((*it).on == Duration::zero())
+             && ((*it).off == Duration::zero());
+
+            if (!repeat_delay && repeat_pattern) {
+                out += 'R';
+                break;
+            }
+
             out += as_millis((*it).on);
             out += ',';
             out += as_millis((*it).off);
 
-            if (!(*it).repeats
-             && (*it).on == Duration::zero()
-             && (*it).off == Duration::zero())
-            {
-                continue;
+            if (!repeat_delay) {
+                break;
             }
 
             out += ',';

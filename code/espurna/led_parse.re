@@ -19,20 +19,20 @@ namespace {
 using ParseDuration = espurna::duration::Milliseconds;
 
 using DurationPair = espurna::duration::Pair;
-using ParseResult = espurna::duration::PairResult;
+using PairResult = espurna::duration::PairResult;
 
 Duration native_duration(DurationPair pair) {
     using namespace espurna::duration;
     return to_chrono<Duration>(pair);
 }
 
-Duration native_duration(ParseResult result) {
+Duration native_duration(PairResult result) {
     return result.ok
         ? native_duration(result.value)
         : Duration::min();
 }
 
-ParseResult parse_time(StringView view) {
+PairResult parse_time(StringView view) {
     using namespace espurna::duration;
     return parse(view, ParseDuration::period{});
 }
@@ -43,8 +43,13 @@ static constexpr auto RepeatsMax = size_t{ 255 };
 // '<on1>,<off1>,<repeats1> <on2>,<off2>,<repeats2> ...'
 // And returns a list of Delay objects for the pattern
 
-Pattern parse(StringView value) {
-    Pattern out;
+struct PatternResult {
+    bool ok{ false };
+    Pattern value;
+};
+
+PatternResult parse(StringView value) {
+    PatternResult out;
 
     StringView tmp;
 
@@ -56,63 +61,92 @@ Pattern parse(StringView value) {
     const char* YYLIMIT { value.end() };
     const char* YYMARKER;
 
+/*!conditions:re2c:led_parse*/
+    int c = yycinit;
+
+/*!stags:re2c:led_parse format = 'const char *@@;'; */
+
 loop:
-/*!stags:re2c format = 'const char *@@;'; */
-/*!re2c
-        re2c:define:YYCTYPE = char;
-        re2c:flags:tags = 1;
-        re2c:yyfill:enable   = 0;
-        re2c:yych:conversion = 1;
-        re2c:indent:top      = 1;
-        re2c:eof = 0;
+/*!local:re2c:led_parse
 
-        end = "\x00";
-        wsp = [ \t\v\r\n]+;
+      re2c:api:style = free-form;
+      re2c:define:YYCTYPE = char;
+      re2c:define:YYGETCONDITION = "c";
+      re2c:define:YYSETCONDITION = "c = @@;";
+      re2c:flags:tags = 1;
+      re2c:yyfill:enable = 0;
+      re2c:eof = 0;
 
-        num = [0-9]+;
-        spec = num ([a-zA-z]{1,2})?;
+      num = [0-9]+;
+      sec = [s];
 
-        $ { goto return_out; }
-        * { goto return_out; }
+      wsp = [ \t\v\r\n]+;
+      spec = num sec?;
 
-        wsp { goto loop; }
+      <init, parse> @p1 spec [,] @p2 spec ([,] @p3 num)? => separator {
+          tmp = StringView(p1, p2 - p1 - 1);
+          const auto on = parse_time(tmp);
+          if (!on.ok) {
+              goto return_err;
+          }
 
-        @p1 spec [,] @p2 spec [,] (@p3 num)? {
-            tmp = StringView(p1, p2 - p1 - 1);
-            const auto on = parse_time(tmp);
-            if (!on.ok) {
-                goto return_out;
-            }
-            
-            tmp = StringView(p2, p3 - p2 - 1);
-            const auto off = parse_time(tmp);
-            if (!off.ok) {
-                goto return_out;
-            }
+          if (p3) {
+              tmp = StringView(p2, p3 - p2 - 1);
+          } else {
+              tmp = StringView(p2, YYCURSOR);
+          }
 
-            size_t repeats_value;
-            if (p3) {
-                tmp = StringView(p3, YYCURSOR);
-                const auto repeats = parseUnsigned(tmp, 10);
-                if (!repeats.ok) {
-                    goto return_out;
-                }
-                repeats_value = repeats.value;
-            } else {
-                repeats_value = 0;
-            }
+          const auto off = parse_time(tmp);
+          if (!off.ok) {
+              goto return_err;
+          }
 
-            repeats_value = std::min(repeats_value, RepeatsMax);
+          size_t repeats_value;
+          if (p3) {
+              tmp = StringView(p3, YYCURSOR);
+              const auto repeats = parseUnsigned(tmp, 10);
+              if (!repeats.ok) {
+                  goto return_err;
+              }
+              repeats_value = repeats.value;
+          } else {
+              repeats_value = 0;
+          }
 
-            out.add(
-                native_duration(on),
-                native_duration(off),
-                repeats_value);
-            if (repeats_value) {
-                goto loop;
-            }
-        }
+          repeats_value = std::min(repeats_value, RepeatsMax);
+
+          out.value.add(
+              native_duration(on),
+              native_duration(off),
+              repeats_value);
+          out.ok = true;
+          if (!repeats_value) {
+              goto return_out;
+          }
+
+          goto loop;
+      }
+
+      <parse> [Rr] | "0,0" {
+          if (out.value.size()) {
+              out.value.add(Duration::zero(), Duration::zero(), 0);
+          } else {
+              goto return_err;
+          }
+
+          goto return_out;
+      }
+
+      <separator> wsp => parse {
+          goto loop;
+      }
+
+      <*> $ { goto return_out; }
+      <*> * { goto return_out; }
 */
+
+return_err:
+    out.ok = false;
 
 return_out:
     return out;

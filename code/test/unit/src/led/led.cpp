@@ -4,6 +4,7 @@
 #include <Arduino.h>
 
 #include <espurna/led_pattern.ipp>
+#include <espurna/led_parse.re.ipp>
 
 namespace espurna {
 namespace test {
@@ -100,15 +101,55 @@ void test_object() {
     check(d);
 }
 
+#define TEST_PATTERN_OK(EXPECTED, ACTUAL)([](){\
+    const auto result = led::parse((ACTUAL));\
+    TEST_ASSERT_TRUE(result.ok);\
+    TEST_ASSERT_EQUAL_STRING((EXPECTED),\
+        result.value.toString().c_str());})()
+
+#define TEST_PATTERN_FAIL(PATTERN)([](){\
+    const auto result = led::parse((PATTERN));\
+    TEST_ASSERT_FALSE(result.ok);\
+    TEST_ASSERT_EQUAL_STRING("",\
+        result.value.toString().c_str());})()
+
+void test_parse() {
+    TEST_PATTERN_FAIL("foo 500,500");
+    TEST_PATTERN_OK("200,100", "200,100");
+    TEST_PATTERN_OK("250,350", "250,350,0");
+    TEST_PATTERN_OK("500,1000,10", "500,1000,10");
+    TEST_PATTERN_OK("500,500", "500,500,0");
+    TEST_PATTERN_OK("100,100", "100,100 200,200,10 500,500,0");
+    TEST_PATTERN_OK("10,20,30", "10,20,30");
+    TEST_PATTERN_OK("100,200,255", "100,200,300");
+    TEST_PATTERN_OK("100,200,255 500,500,2", "100,200,300 500,500,2");
+}
+
 void test_serialize() {
-    led::Pattern p;
-    TEST_ASSERT_EQUAL_STRING("", p.toString().c_str());
-    p.add(duration::Milliseconds(100), duration::Milliseconds(200), 30);
-    TEST_ASSERT_EQUAL_STRING("100,200,30", p.toString().c_str());
-    p.add(duration::Milliseconds(500), duration::Milliseconds(1234), 5);
-    TEST_ASSERT_EQUAL_STRING("100,200,30 500,1234,5", p.toString().c_str());
-    p.add(duration::Milliseconds(0), duration::Milliseconds(0), 0);
-    TEST_ASSERT_EQUAL_STRING("100,200,30 500,1234,5 0,0", p.toString().c_str());
+    led::Pattern a;
+    TEST_ASSERT_EQUAL_STRING("", a.toString().c_str());
+    a.add(duration::Milliseconds(4900), duration::Milliseconds(100), 0);
+    TEST_ASSERT_EQUAL_STRING("4900,100", a.toString().c_str());
+    a.add(duration::Milliseconds(100), duration::Milliseconds(200), 0);
+    TEST_ASSERT_EQUAL_STRING("4900,100", a.toString().c_str());
+
+    led::Pattern b;
+    b.add(duration::Milliseconds(100), duration::Milliseconds(200), 30);
+    TEST_ASSERT_EQUAL_STRING("100,200,30", b.toString().c_str());
+    b.add(duration::Milliseconds(500), duration::Milliseconds(1234), 5);
+    TEST_ASSERT_EQUAL_STRING("100,200,30 500,1234,5", b.toString().c_str());
+    b.add(duration::Milliseconds(500), duration::Milliseconds(500), 0);
+    TEST_ASSERT_EQUAL_STRING("100,200,30 500,1234,5 500,500", b.toString().c_str());
+
+    led::Pattern c;
+    c.add(duration::Milliseconds(500), duration::Milliseconds(500), 5);
+    TEST_ASSERT_EQUAL_STRING("500,500,5", c.toString().c_str());
+    c.add(duration::Milliseconds(250), duration::Milliseconds(250), 10);
+    TEST_ASSERT_EQUAL_STRING("500,500,5 250,250,10", c.toString().c_str());
+    c.add(duration::Milliseconds(0), duration::Milliseconds(0), 0);
+    TEST_ASSERT_EQUAL_STRING("500,500,5 250,250,10 R", c.toString().c_str());
+    c.add(duration::Milliseconds(500), duration::Milliseconds(500), 10);
+    TEST_ASSERT_EQUAL_STRING("500,500,5 250,250,10 R", c.toString().c_str());
 }
 
 struct Runner {
@@ -258,6 +299,7 @@ int main(int, char**) {
 
     using namespace espurna::test;
     RUN_TEST(test_object);
+    RUN_TEST(test_parse);
     RUN_TEST(test_serialize);
     RUN_TEST(test_repeats);
 

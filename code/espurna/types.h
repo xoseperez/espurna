@@ -553,6 +553,11 @@ struct Pair {
     Microseconds microseconds{};
 };
 
+constexpr bool operator==(const Pair& lhs, const Pair& rhs) {
+    return lhs.seconds == rhs.seconds
+        && lhs.microseconds == rhs.microseconds;
+}
+
 template <typename T, typename Rep = typename T::rep, typename Period = typename T::period>
 std::chrono::duration<Rep, Period> to_chrono(Pair result) {
     using Type = std::chrono::duration<Rep, Period>;

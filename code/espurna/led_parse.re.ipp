@@ -11,7 +11,7 @@ Copyright (C) 2020-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #pragma once
 
 #include "utils.h"
-#include "led.h"
+#include "led_internal.h"
 #include "led_pattern.ipp"
 
 namespace espurna {
@@ -21,20 +21,20 @@ namespace {
 using ParseDuration = espurna::duration::Milliseconds;
 
 using DurationPair = espurna::duration::Pair;
-using ParseResult = espurna::duration::PairResult;
+using PairResult = espurna::duration::PairResult;
 
 Duration native_duration(DurationPair pair) {
     using namespace espurna::duration;
     return to_chrono<Duration>(pair);
 }
 
-Duration native_duration(ParseResult result) {
+Duration native_duration(PairResult result) {
     return result.ok
         ? native_duration(result.value)
         : Duration::min();
 }
 
-ParseResult parse_time(StringView view) {
+PairResult parse_time(StringView view) {
     using namespace espurna::duration;
     return parse(view, ParseDuration::period{});
 }
@@ -45,8 +45,13 @@ static constexpr auto RepeatsMax = size_t{ 255 };
 // '<on1>,<off1>,<repeats1> <on2>,<off2>,<repeats2> ...'
 // And returns a list of Delay objects for the pattern
 
-Pattern parse(StringView value) {
-    Pattern out;
+struct PatternResult {
+    bool ok{ false };
+    Pattern value;
+};
+
+PatternResult parse(StringView value) {
+    PatternResult out;
 
     StringView tmp;
 
@@ -58,170 +63,376 @@ Pattern parse(StringView value) {
     const char* YYLIMIT { value.end() };
     const char* YYMARKER;
 
-loop:
-#line 63 "espurna/led_parse.re.ipp"
+#line 67 "espurna/led_parse.re.ipp"
+enum YYCONDTYPE {
+	yycinit,
+	yycparse,
+	yycseparator
+};
+#line 64 "espurna/led_parse.re"
+
+    int c = yycinit;
+
+#line 77 "espurna/led_parse.re.ipp"
 const char *yyt1;const char *yyt2;const char *yyt3;
-#line 60 "espurna/led_parse.re"
+#line 67 "espurna/led_parse.re"
 
 
-#line 68 "espurna/led_parse.re.ipp"
-	{
-		char yych;
-		yych = (char)*YYCURSOR;
-		switch (yych) {
-			case '\t' ... '\v':
-			case '\r':
-			case ' ': goto yy3;
-			case '0' ... '9':
-				yyt1 = YYCURSOR;
-				goto yy5;
-			default:
-				if (YYLIMIT <= YYCURSOR) goto yy17;
-				goto yy1;
-		}
-yy1:
-		++YYCURSOR;
-yy2:
-#line 76 "espurna/led_parse.re"
-		{ goto return_out; }
-#line 88 "espurna/led_parse.re.ipp"
-yy3:
-		yych = (char)*++YYCURSOR;
-		switch (yych) {
-			case '\t' ... '\v':
-			case '\r':
-			case ' ': goto yy3;
-			default: goto yy4;
-		}
-yy4:
-#line 78 "espurna/led_parse.re"
-		{ goto loop; }
-#line 100 "espurna/led_parse.re.ipp"
-yy5:
-		yych = (char)*(YYMARKER = ++YYCURSOR);
-		switch (yych) {
-			case ',': goto yy6;
-			case '0' ... '9': goto yy8;
-			case 'A' ... 'z': goto yy9;
-			default: goto yy2;
-		}
-yy6:
-		yych = (char)*++YYCURSOR;
-		switch (yych) {
-			case '0' ... '9':
-				yyt2 = YYCURSOR;
-				goto yy10;
-			default: goto yy7;
-		}
-yy7:
-		YYCURSOR = YYMARKER;
-		goto yy2;
-yy8:
-		yych = (char)*++YYCURSOR;
-		switch (yych) {
-			case ',': goto yy6;
-			case '0' ... '9': goto yy8;
-			case 'A' ... 'z': goto yy9;
-			default: goto yy7;
-		}
-yy9:
-		yych = (char)*++YYCURSOR;
-		switch (yych) {
-			case ',': goto yy6;
-			case 'A' ... 'z': goto yy11;
-			default: goto yy7;
-		}
-yy10:
-		yych = (char)*++YYCURSOR;
-		switch (yych) {
-			case ',': goto yy12;
-			case '0' ... '9': goto yy10;
-			case 'A' ... 'z': goto yy14;
-			default: goto yy7;
-		}
-yy11:
-		yych = (char)*++YYCURSOR;
-		switch (yych) {
-			case ',': goto yy6;
-			default: goto yy7;
-		}
-yy12:
-		yych = (char)*++YYCURSOR;
-		switch (yych) {
-			case '0' ... '9':
-				yyt3 = YYCURSOR;
-				goto yy15;
-			default:
-				yyt3 = NULL;
-				goto yy13;
-		}
-yy13:
-		p1 = yyt1;
-		p2 = yyt2;
-		p3 = yyt3;
-#line 80 "espurna/led_parse.re"
-		{
-            tmp = StringView(p1, p2 - p1 - 1);
-            const auto on = parse_time(tmp);
-            if (!on.ok) {
-                goto return_out;
-            }
-            
-            tmp = StringView(p2, p3 - p2 - 1);
-            const auto off = parse_time(tmp);
-            if (!off.ok) {
-                goto return_out;
-            }
+loop:
 
-            size_t repeats_value;
-            if (p3) {
-                tmp = StringView(p3, YYCURSOR);
-                const auto repeats = parseUnsigned(tmp, 10);
-                if (!repeats.ok) {
-                    goto return_out;
-                }
-                repeats_value = repeats.value;
-            } else {
-                repeats_value = 0;
-            }
-
-            repeats_value = std::min(repeats_value, RepeatsMax);
-
-            out.add(
-                native_duration(on),
-                native_duration(off),
-                repeats_value);
-            if (repeats_value) {
-                goto loop;
-            }
-        }
-#line 199 "espurna/led_parse.re.ipp"
-yy14:
-		yych = (char)*++YYCURSOR;
-		switch (yych) {
-			case ',': goto yy12;
-			case 'A' ... 'z': goto yy16;
-			default: goto yy7;
-		}
-yy15:
-		yych = (char)*++YYCURSOR;
-		switch (yych) {
-			case '0' ... '9': goto yy15;
-			default: goto yy13;
-		}
-yy16:
-		yych = (char)*++YYCURSOR;
-		switch (yych) {
-			case ',': goto yy12;
-			default: goto yy7;
-		}
-yy17:
-#line 75 "espurna/led_parse.re"
-		{ goto return_out; }
-#line 222 "espurna/led_parse.re.ipp"
+#line 84 "espurna/led_parse.re.ipp"
+{
+	char yych;
+	unsigned int yyaccept = 0;
+	switch (c) {
+		case yycinit: goto yyc_init;
+		case yycparse: goto yyc_parse;
+		case yycseparator: goto yyc_separator;
 	}
-#line 115 "espurna/led_parse.re"
+/* *********************************** */
+yyc_init:
+	yych = *YYCURSOR;
+	switch (yych) {
+		case '0' ... '9':
+			yyt1 = YYCURSOR;
+			goto yy3;
+		default:
+			if (YYLIMIT <= YYCURSOR) goto yy13;
+			goto yy1;
+	}
+yy1:
+	++YYCURSOR;
+yy2:
+#line 145 "espurna/led_parse.re"
+	{ goto return_out; }
+#line 109 "espurna/led_parse.re.ipp"
+yy3:
+	yyaccept = 0;
+	yych = *(YYMARKER = ++YYCURSOR);
+	switch (yych) {
+		case ',': goto yy4;
+		case '0' ... '9': goto yy6;
+		case 's': goto yy7;
+		default: goto yy2;
+	}
+yy4:
+	yych = *++YYCURSOR;
+	switch (yych) {
+		case '0' ... '9':
+			yyt2 = YYCURSOR;
+			goto yy8;
+		default: goto yy5;
+	}
+yy5:
+	YYCURSOR = YYMARKER;
+	if (yyaccept == 0) {
+		goto yy2;
+	} else {
+		yyt3 = NULL;
+		goto yy9;
+	}
+yy6:
+	yych = *++YYCURSOR;
+	switch (yych) {
+		case ',': goto yy4;
+		case '0' ... '9': goto yy6;
+		case 's': goto yy7;
+		default: goto yy5;
+	}
+yy7:
+	yych = *++YYCURSOR;
+	switch (yych) {
+		case ',': goto yy4;
+		default: goto yy5;
+	}
+yy8:
+	yyaccept = 1;
+	yych = *(YYMARKER = ++YYCURSOR);
+	switch (yych) {
+		case ',': goto yy10;
+		case '0' ... '9': goto yy8;
+		case 's': goto yy11;
+		default:
+			yyt3 = NULL;
+			goto yy9;
+	}
+yy9:
+	p1 = yyt1;
+	p2 = yyt2;
+	p3 = yyt3;
+	c = yycseparator;
+#line 86 "espurna/led_parse.re"
+	{
+          tmp = StringView(p1, p2 - p1 - 1);
+          const auto on = parse_time(tmp);
+          if (!on.ok) {
+              goto return_err;
+          }
 
+          if (p3) {
+              tmp = StringView(p2, p3 - p2 - 1);
+          } else {
+              tmp = StringView(p2, YYCURSOR);
+          }
+
+          const auto off = parse_time(tmp);
+          if (!off.ok) {
+              goto return_err;
+          }
+
+          size_t repeats_value;
+          if (p3) {
+              tmp = StringView(p3, YYCURSOR);
+              const auto repeats = parseUnsigned(tmp, 10);
+              if (!repeats.ok) {
+                  goto return_err;
+              }
+              repeats_value = repeats.value;
+          } else {
+              repeats_value = 0;
+          }
+
+          repeats_value = std::min(repeats_value, RepeatsMax);
+
+          out.value.add(
+              native_duration(on),
+              native_duration(off),
+              repeats_value);
+          out.ok = true;
+          if (!repeats_value) {
+              goto return_out;
+          }
+
+          goto loop;
+      }
+#line 209 "espurna/led_parse.re.ipp"
+yy10:
+	yych = *++YYCURSOR;
+	switch (yych) {
+		case '0' ... '9':
+			yyt3 = YYCURSOR;
+			goto yy12;
+		default: goto yy5;
+	}
+yy11:
+	yyaccept = 1;
+	yych = *(YYMARKER = ++YYCURSOR);
+	switch (yych) {
+		case ',': goto yy10;
+		default:
+			yyt3 = NULL;
+			goto yy9;
+	}
+yy12:
+	yych = *++YYCURSOR;
+	switch (yych) {
+		case '0' ... '9': goto yy12;
+		default: goto yy9;
+	}
+yy13:
+#line 144 "espurna/led_parse.re"
+	{ goto return_out; }
+#line 236 "espurna/led_parse.re.ipp"
+/* *********************************** */
+yyc_parse:
+	yych = *YYCURSOR;
+	switch (yych) {
+		case '0' ... '9':
+			yyt1 = YYCURSOR;
+			goto yy17;
+		case 'R':
+		case 'r': goto yy18;
+		default:
+			if (YYLIMIT <= YYCURSOR) goto yy28;
+			goto yy15;
+	}
+yy15:
+	++YYCURSOR;
+yy16:
+#line 145 "espurna/led_parse.re"
+	{ goto return_out; }
+#line 255 "espurna/led_parse.re.ipp"
+yy17:
+	yyaccept = 0;
+	yych = *(YYMARKER = ++YYCURSOR);
+	switch (yych) {
+		case ',': goto yy19;
+		case '0' ... '9': goto yy21;
+		case 's': goto yy22;
+		default: goto yy16;
+	}
+yy18:
+	++YYCURSOR;
+#line 130 "espurna/led_parse.re"
+	{
+          if (out.value.size()) {
+              out.value.add(Duration::zero(), Duration::zero(), 0);
+          } else {
+              goto return_err;
+          }
+
+          goto return_out;
+      }
+#line 277 "espurna/led_parse.re.ipp"
+yy19:
+	yych = *++YYCURSOR;
+	switch (yych) {
+		case '0' ... '9':
+			yyt2 = YYCURSOR;
+			goto yy23;
+		default: goto yy20;
+	}
+yy20:
+	YYCURSOR = YYMARKER;
+	if (yyaccept == 0) {
+		goto yy16;
+	} else {
+		yyt3 = NULL;
+		goto yy24;
+	}
+yy21:
+	yych = *++YYCURSOR;
+	switch (yych) {
+		case ',': goto yy19;
+		case '0' ... '9': goto yy21;
+		case 's': goto yy22;
+		default: goto yy20;
+	}
+yy22:
+	yych = *++YYCURSOR;
+	switch (yych) {
+		case ',': goto yy19;
+		default: goto yy20;
+	}
+yy23:
+	yyaccept = 1;
+	yych = *(YYMARKER = ++YYCURSOR);
+	switch (yych) {
+		case ',': goto yy25;
+		case '0' ... '9': goto yy23;
+		case 's': goto yy26;
+		default:
+			yyt3 = NULL;
+			goto yy24;
+	}
+yy24:
+	p1 = yyt1;
+	p2 = yyt2;
+	p3 = yyt3;
+	c = yycseparator;
+#line 86 "espurna/led_parse.re"
+	{
+          tmp = StringView(p1, p2 - p1 - 1);
+          const auto on = parse_time(tmp);
+          if (!on.ok) {
+              goto return_err;
+          }
+
+          if (p3) {
+              tmp = StringView(p2, p3 - p2 - 1);
+          } else {
+              tmp = StringView(p2, YYCURSOR);
+          }
+
+          const auto off = parse_time(tmp);
+          if (!off.ok) {
+              goto return_err;
+          }
+
+          size_t repeats_value;
+          if (p3) {
+              tmp = StringView(p3, YYCURSOR);
+              const auto repeats = parseUnsigned(tmp, 10);
+              if (!repeats.ok) {
+                  goto return_err;
+              }
+              repeats_value = repeats.value;
+          } else {
+              repeats_value = 0;
+          }
+
+          repeats_value = std::min(repeats_value, RepeatsMax);
+
+          out.value.add(
+              native_duration(on),
+              native_duration(off),
+              repeats_value);
+          out.ok = true;
+          if (!repeats_value) {
+              goto return_out;
+          }
+
+          goto loop;
+      }
+#line 368 "espurna/led_parse.re.ipp"
+yy25:
+	yych = *++YYCURSOR;
+	switch (yych) {
+		case '0' ... '9':
+			yyt3 = YYCURSOR;
+			goto yy27;
+		default: goto yy20;
+	}
+yy26:
+	yyaccept = 1;
+	yych = *(YYMARKER = ++YYCURSOR);
+	switch (yych) {
+		case ',': goto yy25;
+		default:
+			yyt3 = NULL;
+			goto yy24;
+	}
+yy27:
+	yych = *++YYCURSOR;
+	switch (yych) {
+		case '0' ... '9': goto yy27;
+		default: goto yy24;
+	}
+yy28:
+#line 144 "espurna/led_parse.re"
+	{ goto return_out; }
+#line 395 "espurna/led_parse.re.ipp"
+/* *********************************** */
+yyc_separator:
+	yych = *YYCURSOR;
+	switch (yych) {
+		case '\t' ... '\v':
+		case '\r':
+		case ' ': goto yy31;
+		default:
+			if (YYLIMIT <= YYCURSOR) goto yy33;
+			goto yy30;
+	}
+yy30:
+	++YYCURSOR;
+#line 145 "espurna/led_parse.re"
+	{ goto return_out; }
+#line 411 "espurna/led_parse.re.ipp"
+yy31:
+	yych = *++YYCURSOR;
+	switch (yych) {
+		case '\t' ... '\v':
+		case '\r':
+		case ' ': goto yy31;
+		default: goto yy32;
+	}
+yy32:
+	c = yycparse;
+#line 140 "espurna/led_parse.re"
+	{
+          goto loop;
+      }
+#line 426 "espurna/led_parse.re.ipp"
+yy33:
+#line 144 "espurna/led_parse.re"
+	{ goto return_out; }
+#line 430 "espurna/led_parse.re.ipp"
+}
+#line 146 "espurna/led_parse.re"
+
+
+return_err:
+    out.ok = false;
 
 return_out:
     return out;

@@ -317,15 +317,15 @@ loop:
             }
             goto reset;
 
-        case 'm':
-            goto read_minutes_or_millis;
-
         case 's':
             if (validNextType(last, Type::Seconds)) {
                 type = Type::Seconds;
                 goto update_spec;
             }
             goto reset;
+
+        case 'm':
+            goto read_minutes_or_millis;
 
         case '\xce':
             goto read_micros_utf8;
