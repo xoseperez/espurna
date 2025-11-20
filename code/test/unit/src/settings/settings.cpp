@@ -221,6 +221,11 @@ void test_parse_duration_spec() {
 }
 
 void test_parse_fail_duration_spec() {
+    test_parse_fail("1000us100");
+    test_parse_fail("100s50");
+    test_parse_fail("ms100");
+    test_parse_fail("s200");
+    test_parse_fail("u300");
     test_parse_fail("123ui");
     test_parse_fail("123s456sm");
     test_parse_fail("456s\x01\\789uu");

@@ -383,6 +383,10 @@ update_floating:
 
 update_decimal:
     {
+        if ((last != Type::Unknown) && (type == Type::Unknown)) {
+            goto reset;
+        }
+
         const auto result = parseUnsigned(token, 10);
         if (result.ok) {
             // num and den are constexpr and bound to ratio types, so duration cast has to happen manually
