@@ -1036,7 +1036,7 @@ uint8_t counter() {
 }
 
 bool is_unstable_reset() {
-    return counter() > build::ChecksMax;
+    return counter() > (build::ChecksMax + 1);
 }
 
 void reset() {
