@@ -456,7 +456,7 @@ Mode pin_mode(uint8_t pin, Info info) {
     out.value = OUTPUT;
 
     if (((pin == 16) && info.gpio16_output)
-        || ((info.outputs & (pin << pin)) != 0))
+        || ((info.outputs & (1 << pin)) != 0))
     {
         return out;
     }
