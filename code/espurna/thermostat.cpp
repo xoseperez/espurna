@@ -302,7 +302,7 @@ void sendTempRangeRequest() {
 //------------------------------------------------------------------------------
 void setThermostatState(bool state) {
   DEBUG_MSG_P(PSTR("[THERMOSTAT] setThermostatState: %s\n"), state ? "ON" : "OFF");
-  relayStatus(THERMOSTAT_RELAY, state, mqttForward(), false);
+  relayStatus(THERMOSTAT_RELAY, state);
   _thermostat.last_switch = millis();
   // Send thermostat change state event to subscribers
   for (unsigned char i = 0; i < _thermostat_callbacks.size(); i++) {
