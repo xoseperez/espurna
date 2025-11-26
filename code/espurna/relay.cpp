@@ -1929,7 +1929,7 @@ void _relayProcessTimer(const Relay& relay, size_t id, bool status, uint8_t flag
                 canceled = true;
             } else {
                 timer->start();
-                DEBUG_MSG_P(PSTR("[RELAY] #%zu %s rescheduled in %lu (ms)\n"),
+                DEBUG_MSG_P(PSTR("[RELAY] #%zu %s scheduled in %lu (ms)\n"),
                     id, status ? PSTR("ON") : PSTR("OFF"),
                     timer->duration().count());
                 return;
