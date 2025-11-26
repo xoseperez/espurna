@@ -2381,23 +2381,25 @@ bool _relayStatusNotify(size_t id, bool status) {
     bool changed = false;
     auto& relay = _relays[id];
 
-    auto timer = espurna::relay::timer::find(id);
-    if ((relay.target_status != status) || (timer && timer->contains(id, !status))) {
+    auto* timer = espurna::relay::timer::find(id);
+    const bool has_timer_with_opposite_status =
+        timer && timer->contains(id, !status);
+
+    if ((relay.target_status != status) || has_timer_with_opposite_status) {
         relay.target_status = status;
         relay.flags = 0;
-        espurna::relay::timer::cancel(*timer);
-        timer = nullptr;
+        if (timer) {
+            espurna::relay::timer::cancel(*timer);
+        }
         changed = true;
+    } else if (timer) {
+        // Restart when the relay is already in the opposite state (#454)
+        timer->start();
     }
 
     relay.provider->notify(status);
     for (auto& notify : _relay_status_notify) {
         notify(id, status);
-    }
-
-    // Restart when the relay is already in the opposite state (#454)
-    if (timer) {
-        timer->start();
     }
 
     if (changed) {
