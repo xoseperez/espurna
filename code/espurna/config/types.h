@@ -112,9 +112,6 @@
 #define RELAY_PROVIDER_LIGHTFOX     RelayProvider::Lightfox
 #define RELAY_PROVIDER_TUYA         RelayProvider::Tuya
 
-#define RFB_PROVIDER_RCSWITCH       0
-#define RFB_PROVIDER_EFM8BB1        1
-
 #define RELAY_MQTT_TOPIC_NORMAL       RelayMqttTopicMode::Normal
 #define RELAY_MQTT_TOPIC_INVERSE      RelayMqttTopicMode::Inverse
 #define RELAY_MQTT_TOPIC_RECEIVE_ONLY RelayMqttTopicMode::ReceiveOnly
@@ -128,6 +125,13 @@
 #define RELAY_LOCK_NONE              RelayLock::None
 #define RELAY_LOCK_OFF               RelayLock::Off
 #define RELAY_LOCK_ON                RelayLock::On
+
+//------------------------------------------------------------------------------
+// RFBRIDGE
+//------------------------------------------------------------------------------
+
+#define RFB_PROVIDER_RCSWITCH       0
+#define RFB_PROVIDER_EFM8BB1        1
 
 //------------------------------------------------------------------------------
 // UDP SYSLOG
