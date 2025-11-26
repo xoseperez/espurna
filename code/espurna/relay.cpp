@@ -1761,7 +1761,8 @@ public:
     static void flush() {
         bool sync { true };
         RelayMaskHelper mask;
-        for (size_t index = 0; index < _instances.size(); ++index) {
+
+        for (size_t index = 0; (index < _instances.size()) && (index < mask.size()); ++index) {
             const auto status = _relayStatus(_instances[index]->relayId());
             sync = sync && status;
             mask[index] = status;
