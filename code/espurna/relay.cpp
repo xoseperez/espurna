@@ -642,7 +642,7 @@ struct BulkTimer {
 
 private:
     static Duration minimal_duration(Duration duration) {
-        return std::min(duration, TimerImpl::DurationMin);
+        return std::clamp(duration, TimerImpl::DurationMin, duration);
     }
 
     RelayMaskPair _pair;
