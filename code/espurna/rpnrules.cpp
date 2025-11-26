@@ -751,7 +751,7 @@ rpn_error status(rpn_context & ctxt, bool force) {
     rpn_uint value = status.toUint();
     if (value == 2) {
         ::relayToggle(id.toUint());
-    } else if (::relayStatusTarget(id.toUint()) != (value == 1)) {
+    } else if (::relayTargetStatus(id.toUint()) != (value == 1)) {
         ::relayStatus(id.toUint(), value == 1);
     }
 
