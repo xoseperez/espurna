@@ -408,7 +408,7 @@
 #define RELAY_DELAY_INTERLOCK       0
 #endif
 
-// Time (in ms) to wait before turning relay ON or OFF. Applied to every relay, use RELAY#_... build flag to configre per relay
+// Time (in ms) to wait before turning relay ON or OFF. Applied to every relay, use RELAY#_... build flag to configure per relay
 // This setting also has priority when RELAY_SYNC != RELAY_SYNC_ANY
 #ifndef RELAY_DELAY_ON
 #define RELAY_DELAY_ON       0

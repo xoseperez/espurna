@@ -65,7 +65,7 @@ PayloadStatus relayParsePayload(espurna::StringView);
 // toggle the specified relay after N milliseconds
 void relayTimer(size_t id, espurna::duration::Milliseconds);
 
-// immediatelly toggle the specified relay and toggle back after N milliseconds
+// immediately toggle the specified relay and toggle back after N milliseconds
 void relayPulse(size_t id, espurna::duration::Milliseconds);
 
 using RelayStatusCallback = void(*)(size_t id, bool status);
