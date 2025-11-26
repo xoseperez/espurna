@@ -3406,7 +3406,7 @@ String _relayFlagsPayload(const Relay& relay) {
     auto flags = relay.flags;
     char tmp[8];
 
-    for (size_t index = 0; flags && index < std::size(tmp); ++index) {
+    for (size_t index = 0; index < std::size(tmp); ++index) {
         const uint8_t mask = 1 << index;
         const uint8_t flag = flags & mask;
         tmp[index] = _relayFlagTag(flag);
