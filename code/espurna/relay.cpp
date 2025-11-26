@@ -1239,6 +1239,8 @@ EXACT_VALUE(bootMask, settings::bootMask)
 EXACT_VALUE(interlockDelay, settings::interlockDelay)
 EXACT_VALUE(syncMode, settings::syncMode)
 EXACT_VALUE(syncId, settings::syncId)
+EXACT_VALUE(delayOn, settings::delayOn)
+EXACT_VALUE(delayOff, settings::delayOff)
 
 ID_VALUE(provider, settings::provider)
 ID_VALUE(type, settings::type)
@@ -1272,6 +1274,8 @@ ID_VALUE(mqttTopicMode, settings::mqttTopicMode)
 static constexpr espurna::settings::query::Setting Settings[] PROGMEM {
     {keys::BootMask, internal::bootMask},
     {keys::Dummy, internal::dummyCount},
+    {keys::DelayOn, internal::delayOn},
+    {keys::DelayOff, internal::delayOff},
     {keys::Interlock, internal::interlockDelay},
 #if MQTT_SUPPORT
     {keys::MqttDelay, internal::mqttDisconnectionDelay},
