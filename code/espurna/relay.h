@@ -44,7 +44,7 @@ public:
 // relayStatus(id, relayStatus()) is called
 bool relayStatus();
 bool relayStatus(size_t id);
-bool relayStatusTarget(size_t id);
+bool relayTargetStatus(size_t id);
 
 // applies specific status or toggles between them
 bool relayStatus(size_t id, bool status);
