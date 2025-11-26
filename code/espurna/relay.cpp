@@ -3212,17 +3212,21 @@ void _relayMqttReport(size_t id) {
 }
 
 void _relayMqttReportAll() {
-    for (size_t id = 0; _relays_active[id]; ++id) {
-        mqttSend(MQTT_TOPIC_RELAY, id, relayPayload(_relayPayloadStatus(id)).c_str()); // TODO FIXED LENGTH
+    for (size_t id = 0; id < _relays.size(); ++id) {
+        if (_relays_active[id]) {
+            mqttSend(MQTT_TOPIC_RELAY, id, relayPayload(_relayPayloadStatus(id)).c_str()); // TODO FIXED LENGTH
+        }
     }
 }
 
 void _relayMqttReportDescription() {
     static const char Topic[] = MQTT_TOPIC_DESCRIPTION "/" MQTT_TOPIC_RELAY;
-    for (size_t id = 0; _relays_active[id]; ++id) {
-        const auto name = espurna::relay::settings::name(id);
-        if (name.length()) {
-            mqttSend(Topic, id, name.c_str());
+    for (size_t id = 0; id < _relays.size(); ++id) {
+        if (_relays_active[id]) {
+            const auto name = espurna::relay::settings::name(id);
+            if (name.length()) {
+                mqttSend(Topic, id, name.c_str());
+            }
         }
     }
 }
@@ -3261,8 +3265,10 @@ void _relayMqttHandleCustomTopic(espurna::StringView topic, espurna::StringView 
 
 void _relayMqttHandleDisconnectImmediate() {
     using namespace espurna::relay::settings;
-    for (size_t id = 0; _relays_active[id]; ++id) {
-        _relayHandleStatus(id, mqttDisconnectionStatus(id));
+    for (size_t id = 0; id < _relays.size(); ++id) {
+        if (_relays_active[id]) {
+            _relayHandleStatus(id, mqttDisconnectionStatus(id));
+        }
     }
 }
 
@@ -3276,9 +3282,7 @@ void _relayMqttHandleDisconnect() {
     }
 
     RelayMaskPair pair;
-    for (size_t id = 0; _relays_active[id]; ++id) {
-        pair.off[id] = true;
-    }
+    pair.off = _relays_active;
 
     if (pair.off.count()) {
         espurna::relay::timer::schedule_and_start(
