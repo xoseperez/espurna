@@ -586,7 +586,7 @@ struct BulkTimer {
         _pair = pair;
         _duration = minimal_duration(duration);
         _flags = flags;
-        _started = TimePoint::min();
+        _start_time = TimePoint::min();
         return *this;
     }
 
@@ -602,8 +602,12 @@ struct BulkTimer {
         return _pair;
     }
 
-    TimePoint started() const {
-        return _started;
+    bool started() const {
+        return _timer.armed();
+    }
+
+    TimePoint start_time() const {
+        return _start_time;
     }
 
     Duration duration() const {
@@ -649,7 +653,7 @@ private:
     Duration _duration;
     uint8_t _flags;
 
-    TimePoint _started;
+    TimePoint _start_time;
     TimerImpl _timer;
 };
 
@@ -744,7 +748,7 @@ void BulkTimer::start() {
     const auto pair = _pair;
     const auto flags = _flags;
 
-    _started = TimePoint::clock::now();
+    _start_time = TimePoint::clock::now();
     _timer.once(
         _duration,
         [pair, flags]() {
@@ -2383,10 +2387,11 @@ bool _relaySync(size_t source, bool source_target_status, uint8_t flags) {
 
 bool _relayStatusNotify(size_t id, bool status) {
     bool changed = false;
-    auto& relay = _relays[id];
 
-    auto timer = espurna::relay::timer::find(id);
-    if ((relay.target_status != status) || (timer && timer->contains(id, !status))) {
+    auto& relay = _relays[id];
+    auto* timer = espurna::relay::timer::find(id);
+
+    if (relay.target_status != status) {
         relay.target_status = status;
         relay.flags = 0;
         espurna::relay::timer::cancel(*timer);
@@ -2399,8 +2404,8 @@ bool _relayStatusNotify(size_t id, bool status) {
         notify(id, status);
     }
 
-    // Restart when the relay is already in the opposite state (#454)
-    if (timer) {
+    // Restart PULSE polling 'current' status (#454)
+    if (timer && timer->started()) {
         timer->start();
     }
 
@@ -3501,7 +3506,7 @@ static void _relayCommandDumpTimers(::terminal::CommandContext&& ctx) {
             }
         }
 
-        const auto started = timer.started().time_since_epoch();
+        const auto start_time = timer.start_time().time_since_epoch();
         const auto duration = timer.duration();
 
         const auto serialize_mask = [](RelayMask mask) {
@@ -3516,7 +3521,7 @@ static void _relayCommandDumpTimers(::terminal::CommandContext&& ctx) {
             index++,
             type.length(), type.begin(),
             duration.count(),
-            started.count(),
+            start_time.count(),
             mask_on.length(), mask_on.begin(),
             mask_off.length(), mask_off.begin());
     }
