@@ -2401,8 +2401,10 @@ bool _relayStatusNotify(size_t id, bool status) {
     if (relay.target_status != status) {
         relay.target_status = status;
         relay.flags = 0;
-        espurna::relay::timer::cancel(*timer);
-        timer = nullptr;
+        if (timer) {
+            espurna::relay::timer::cancel(*timer);
+            timer = nullptr;
+        }
         changed = true;
     }
 
