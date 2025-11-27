@@ -2785,9 +2785,9 @@ void _relayBootAll() {
     if (pair.on.count() || pair.off.count()) {
         size_t sync_id;
         if (_relay_sync_id != RelaysMax) {
-            sync_id = _relay_sync_id;
+            sync_id = _relay_sync_id; // invalid IDs get filtered out later
         } else {
-            sync_id = _relays_boot.count() - 1;
+            sync_id = _relays_boot.count() - 1; // set at the same time as pair.{on,off}, cannot be 0
         }
 
         if (sync && _relaySync(sync_id, relay_status[sync_id], _relays[sync_id].flags)) {
