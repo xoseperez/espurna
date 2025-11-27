@@ -131,6 +131,10 @@ bool operator==(const RelayMaskPair& lhs, const RelayMaskPair& rhs) {
         && lhs.off == rhs.off;
 }
 
+RelayMask operator&(const RelayMaskPair& lhs, const RelayMaskPair& rhs) {
+    return (lhs.on | lhs.off) & (rhs.on | rhs.off);
+}
+
 } // namespace
 
 // nb. settings / convert should not use type alias for bitset<32>, make sure this is used instead
@@ -695,8 +699,7 @@ BulkTimer* find(size_t id) {
 // ...especially w/ masks containing multiple IDs
 BulkTimer* find(RelayMaskPair pair) {
     return find([&](const BulkTimer& timer) {
-        return (timer.on() & pair.on).count()
-            || (timer.off() & pair.off).count();
+        return (timer.mask() & pair).count();
     });
 }
 
