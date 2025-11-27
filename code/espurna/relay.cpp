@@ -650,7 +650,7 @@ struct BulkTimer {
 private:
     // CANNOT *NOT* run, TimerImpl is allowed to do nothing w/ zero duration
     static Duration minimal_duration(Duration duration) {
-        return duration == Duration::zero()
+        return duration < TimerImpl::DurationMin
             ? TimerImpl::DurationMin
             : duration;
     }
