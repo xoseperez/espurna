@@ -165,25 +165,8 @@ struct RelayMaskHelper {
         return value[id];
     }
 
-    size_t size() const noexcept {
-        return value.size();
-    }
-
     void reset() noexcept {
         value.reset();
-    }
-
-    static size_t leading_zeroes(RelayMask mask) {
-        const auto value = mask.to_ulong();
-        if (!value) {
-            return 0;
-        }
-
-        return __builtin_clz(value);
-    }
-
-    size_t leading_zeroes() const {
-        return leading_zeroes(value);
     }
 
     template <typename T>
