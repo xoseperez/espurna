@@ -149,6 +149,10 @@ struct RelayMaskHelper {
         value(value)
     {}
 
+    constexpr size_t size() const {
+        return value.size();
+    }
+
     unsigned_type toUnsigned() const {
         return value.to_ulong();
     }
@@ -1774,6 +1778,7 @@ public:
             mask[index] = status;
         }
 
+        static_assert(mask.size() > 0, "");
         if (sync) {
             mask.reset();
             mask[std::min(_instances.size(), mask.size() - 1)] = true;
