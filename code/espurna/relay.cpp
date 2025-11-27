@@ -216,6 +216,7 @@ bool _relayStatus(size_t id, bool status);
 bool _relayStatus(size_t id, bool status, uint8_t flags);
 
 bool _relayToggle(size_t id, uint8_t flags);
+bool _relayToggle(size_t id);
 
 RelayLock _relayLock(size_t id);
 void _relayLock(size_t id, RelayLock);
@@ -612,6 +613,10 @@ struct BulkTimer {
 
     Duration duration() const {
         return _duration;
+    }
+
+    uint8_t flags() const {
+        return _flags;
     }
 
     bool contains(size_t id) const {
@@ -1915,13 +1920,15 @@ bool _relayHandlePayload(size_t id, espurna::StringView payload) {
 
 // Process lingering timer objects *after* relay changes state
 
-void _relayProcessTimer(const Relay& relay, size_t id, bool status, uint8_t flags) {
+void _relayProcessTimer(const Relay& relay, size_t id, bool status) {
     using namespace espurna::relay::timer;
 
-    auto timer = find(id);
+    auto* timer = find(id);
+
     bool canceled = false;
 
     if (timer) {
+        const auto flags = timer->flags();
         if (flags & RelayFlagTimerDelay) {
             canceled = true;
         } if (flags & RelayFlagTimerPulse) {
@@ -1970,13 +1977,12 @@ void _relayHandleTimerNative(size_t id, espurna::relay::timer::Duration duration
     const auto target = toggle ? status : !status;
 
     const auto flag_timer = toggle ? RelayFlagTimerPulse : RelayFlagTimerDelay;
-    const auto flags = RelayFlagReport | RelayFlagReportCustom | flag_timer;
-    auto it = schedule(id, duration, target, flags);
+    auto* timer = schedule(id, duration, target, RelayCommonStatusFlags | flag_timer);
 
     if (toggle) {
-        _relayToggle(id, flags);
+        _relayToggle(id, RelayCommonStatusFlags);
     } else {
-        (*it).start();
+        (*timer).start();
     }
 }
 
@@ -2524,6 +2530,10 @@ bool _relayToggle(size_t id, uint8_t flags) {
     return _relayStatus(id, status, flags);
 }
 
+bool _relayToggle(size_t id) {
+    return _relayToggle(id, RelayCommonStatusFlags);
+}
+
 } // namespace
 
 bool relayStatus(size_t id, bool status) {
@@ -2536,7 +2546,7 @@ bool relayStatus(size_t id, bool status) {
 
 bool relayToggle(size_t id) {
     if (id < _relays.size()) {
-        return _relayToggle(id, RelayCommonStatusFlags);
+        return _relayToggle(id);
     }
 
     return false;
@@ -3403,8 +3413,7 @@ constexpr char _relayFlagTag(uint8_t flag) {
         '.';
 }
 
-String _relayFlagsPayload(const Relay& relay) {
-    auto flags = relay.flags;
+String _relayFlagsPayload(uint8_t flags) {
     char tmp[8];
 
     for (size_t index = 0; index < std::size(tmp); ++index) {
@@ -3435,7 +3444,7 @@ void _relayPrint(Print& out, const Relay& relay, size_t index) {
             : STRING_VIEW("OFF");
 
     const auto lock = _relayLockPayload(relay);
-    const auto flags = _relayFlagsPayload(relay);
+    const auto flags = _relayFlagsPayload(relay.flags);
 
     out.printf_P(PSTR("relay%zu\t{Prov=%.*s Status=%.*s Lock=%.*s Flags=[%.*s]}\n"),
         index,
@@ -3517,14 +3526,17 @@ static void _relayCommandDumpTimers(::terminal::CommandContext&& ctx) {
         const auto mask_on = serialize_mask(timer.on());
         const auto mask_off = serialize_mask(timer.off());
 
+        const auto flags = _relayFlagsPayload(timer.flags());
+
         ctx.output.printf_P(
-            PSTR("timer%zu\t{%.*s Duration=%u Started=%u On=%.*s Off=%.*s}\n"),
+            PSTR("timer%zu\t{%.*s Duration=%u Started=%u On=%.*s Off=%.*s Flags=[%.*s]}\n"),
             index++,
             type.length(), type.begin(),
             duration.count(),
             start_time.count(),
             mask_on.length(), mask_on.begin(),
-            mask_off.length(), mask_off.begin());
+            mask_off.length(), mask_off.begin(),
+            flags.length(), flags.begin());
     }
 
     terminalOK(ctx);
@@ -3718,7 +3730,7 @@ bool _relayProcess(bool mode) {
             _relayScheduleSave(id);
 
             // try to immediately schedule 'normal' state
-            _relayProcessTimer(_relays[id], id, target, flags);
+            _relayProcessTimer(_relays[id], id, target);
 
             // and report to everything else, including debug logs
             _relayReport(id, target);
