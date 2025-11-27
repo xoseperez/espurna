@@ -397,7 +397,8 @@
 #define RELAY_SYNC                  RELAY_SYNC_ANY
 #endif
 
-// When booting, use relay# to set up status & sync mode order. Last relay# is used by default (set to 0)
+// When booting, use relay# (1..32) to set up status & sync mode order.
+// Last relay# used by default (0)
 #ifndef RELAY_SYNC_ID
 #define RELAY_SYNC_ID               0
 #endif
