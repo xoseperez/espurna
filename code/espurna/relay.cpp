@@ -1931,7 +1931,7 @@ void _relayProcessTimer(size_t id, Relay::PulseMode mode, Relay::Delay delay, bo
         const auto flags = timer->flags();
         if (flags & RelayFlagTimerDelay) {
             canceled = true;
-        } if (flags & RelayFlagTimerPulse) {
+        } else if (flags & RelayFlagTimerPulse) {
             if (timer->contains(id, status)) {
                 canceled = true;
             } else {
