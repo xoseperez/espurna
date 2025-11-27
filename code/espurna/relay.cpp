@@ -644,8 +644,11 @@ struct BulkTimer {
     void start();
 
 private:
+    // CANNOT *NOT* run, TimerImpl is allowed to do nothing w/ zero duration
     static Duration minimal_duration(Duration duration) {
-        return std::clamp(duration, TimerImpl::DurationMin, duration);
+        return duration == Duration::zero()
+            ? TimerImpl::DurationMin
+            : duration;
     }
 
     RelayMaskPair _pair;
