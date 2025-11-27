@@ -1345,11 +1345,9 @@ struct DummyProvider : public RelayProviderBase {
 class Relay {
 public:
     using TimeSource = espurna::time::CoreClock;
-    using Delay = espurna::duration::Milliseconds;
+    using Delay = espurna::relay::timer::Duration;
     using TimePoint = TimeSource::time_point;
-
     using PulseMode = espurna::relay::pulse::Mode;
-    using PulseDuration = espurna::relay::timer::Duration;
 
     Relay() = default;
 
@@ -1371,7 +1369,7 @@ public:
     // *After* changing status, checks whether we should remain in it
     // If not, starts a timer for the specified time (ms)
     PulseMode pulse { PulseMode::None };
-    PulseDuration pulse_time { PulseDuration::zero() };
+    Delay pulse_time { Delay::zero() };
 
     // Flood window start time
     TimePoint fw_start{};
@@ -1923,11 +1921,10 @@ bool _relayHandlePayload(size_t id, espurna::StringView payload) {
 
 // Process lingering timer objects *after* relay changes state
 
-void _relayProcessTimer(const Relay& relay, size_t id, bool status) {
+void _relayProcessTimer(size_t id, Relay::PulseMode mode, Relay::Delay delay, bool status) {
     using namespace espurna::relay::timer;
 
     auto* timer = find(id);
-
     bool canceled = false;
 
     if (timer) {
@@ -1957,11 +1954,11 @@ void _relayProcessTimer(const Relay& relay, size_t id, bool status) {
 
     // Note that timer invocation below only expected to happen after API calls, where timer is either canceled or does not exist yet
     // Pulse time is set up via configure() and should switch relay back to normal state after this timer expires
-    if ((relay.pulse_time > Relay::Delay::zero()) && wouldChange(relay.pulse, status)) {
-        schedule_and_start(id, relay.pulse_time, !status, RelayCommonStatusFlags | RelayFlagTimerPulse);
+    if ((delay > Relay::Delay::zero()) && wouldChange(mode, status)) {
+        schedule_and_start(id, delay, !status, RelayCommonStatusFlags | RelayFlagTimerPulse);
         DEBUG_MSG_P(PSTR("[RELAY] #%zu %s scheduled in %lu (ms)\n"),
             id, status ? PSTR("ON") : PSTR("OFF"),
-            relay.pulse_time.count());
+            delay.count());
     }
 }
 
@@ -3733,7 +3730,7 @@ bool _relayProcess(bool mode) {
             _relayScheduleSave(id);
 
             // try to immediately schedule 'normal' state
-            _relayProcessTimer(_relays[id], id, target);
+            _relayProcessTimer(id, _relays[id].pulse, _relays[id].pulse_time, target);
 
             // and report to everything else, including debug logs
             _relayReport(id, target);
