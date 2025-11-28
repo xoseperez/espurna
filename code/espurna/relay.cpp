@@ -201,6 +201,7 @@ size_t _relayCount();
 
 bool _relayStatus(size_t id);
 bool _relayTargetStatus(size_t id);
+uint8_t _relayTargetFlags(size_t id);
 
 bool _relayStatusChange(size_t id, bool status, uint8_t flags);
 bool _relayStatus(size_t id, bool status);
@@ -2254,6 +2255,15 @@ bool _relayTargetStatus(size_t id) {
     return _relays[id].target_status;
 }
 
+uint8_t _relayTargetFlags(size_t id) {
+    auto timer = espurna::relay::timer::find(id);
+    if (timer && timer->contains(id)) {
+        return timer->flags();
+    }
+
+    return _relays[id].flags;
+}
+
 // When any source goes ON or OFF, sync with other relays
 RelayMaskPair _relaySyncAll(size_t source, bool status, size_t relays) {
     RelayMaskPair out;
@@ -3466,7 +3476,12 @@ void _relayPrint(Print& out, const Relay& relay, size_t index) {
             : STRING_VIEW("OFF");
 
     const auto lock = _relayLockPayload(relay);
-    const auto flags = _relayFlagsPayload(relay.flags);
+
+    String flags;
+    if (current_status != target_status) {
+        const auto target_flags = _relayTargetFlags(index);
+        flags = _relayFlagsPayload(target_flags);
+    }
 
     out.printf_P(PSTR("relay%zu\t{Prov=%.*s Status=%.*s Lock=%.*s Flags=[%.*s]}\n"),
         index,
