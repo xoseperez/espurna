@@ -1897,31 +1897,45 @@ bool _relayTryParseIdFromPath(espurna::StringView value, size_t& id) {
     return tryParseIdPath(value, _relayCount(), id);
 }
 
-void _relayHandleStatus(size_t id, PayloadStatus status) {
+void _relayHandleStatus(size_t id, PayloadStatus status, uint8_t flags) {
     switch (status) {
     case PayloadStatus::Off:
-        relayStatus(id, false);
+        _relayStatus(id, false, flags);
         break;
+
     case PayloadStatus::On:
-        relayStatus(id, true);
+        _relayStatus(id, true, flags);
         break;
+
     case PayloadStatus::Toggle:
-        relayToggle(id);
+        _relayToggle(id, flags);
         break;
+
     case PayloadStatus::Unknown:
         break;
     }
 }
 
-[[gnu::unused]]
-bool _relayHandlePayload(size_t id, espurna::StringView payload) {
+void _relayHandleStatus(size_t id, PayloadStatus status) {
+    _relayHandleStatus(id, status, RelayCommonStatusFlags);
+}
+
+bool _relayHandlePayload(size_t id, espurna::StringView payload, uint8_t flags) {
     const auto status = relayParsePayload(payload);
     if (status != PayloadStatus::Unknown) {
-        _relayHandleStatus(id, status);
+        _relayHandleStatus(id, status, flags);
         return true;
     }
 
     return false;
+}
+
+bool _relayHandleMqttPayload(size_t id, espurna::StringView payload) {
+    const auto flags = mqttForward()
+        ? RelayCommonStatusFlags
+        : RelayFlagReportCustom;
+
+    return _relayHandlePayload(id, payload, flags);
 }
 
 // Process lingering timer objects *after* relay changes state
@@ -2423,7 +2437,9 @@ bool _relayStatusChange(size_t id, bool status, uint8_t flags) {
     auto change_delay = Relay::Delay::zero();
     relay.flags = flags;
 
-    if (0 == (flags & RelayFlagSync)) {
+    constexpr auto FlagsScheduled = uint8_t{ RelayFlagSync | RelayFlagTimerPulse | RelayFlagTimerDelay };
+
+    if (0 == (flags & FlagsScheduled)) {
         change_delay = status
             ? relay.delay_on
             : relay.delay_off;
@@ -2453,7 +2469,6 @@ bool _relayStatusChange(size_t id, bool status, uint8_t flags) {
     }
 
     // Previously scheduled timer already spent 'change_delay' time waiting, and now it can finally be processed
-    constexpr auto FlagsScheduled = uint8_t{ RelayFlagSync | RelayFlagTimerDelay };
     if (flags & FlagsScheduled) {
         change_delay = Relay::Delay::zero();
         flags &= ~FlagsScheduled;
@@ -3269,9 +3284,7 @@ void _relayMqttHandleCustomTopic(espurna::StringView topic, espurna::StringView 
                 status = _relayInvertStatus(status);
             }
 
-            const auto id = topic.id();
-            _relayHandleStatus(id, status);
-            _relays[id].flags &= ~RelayFlagReportCustom;
+            _relayHandleStatus(topic.id(), status, RelayFlagReport);
         }
     }
 }
@@ -3321,7 +3334,7 @@ PROGMEM_STRING(MqttTopicTimer, MQTT_TOPIC_TIMER);
 PROGMEM_STRING(MqttTopicLock, MQTT_TOPIC_LOCK);
 
 static constexpr RelayMqttTopicHandler RelayMqttTopicHandlers[] PROGMEM {
-    {MqttTopicRelay, _relayHandlePayload},
+    {MqttTopicRelay, _relayHandleMqttPayload},
     {MqttTopicPulse, _relayHandlePulsePayload},
     {MqttTopicTimer, _relayHandleTimerPayload},
     {MqttTopicLock, _relayHandleLockPayload},
@@ -3352,11 +3365,6 @@ void relayMQTTCallback(unsigned int type, espurna::StringView topic, espurna::St
                 }
 
                 pair.handler(id, payload);
-
-                if (mqttForward()) {
-                    _relays[id].flags |= RelayFlagReport;
-                }
-
                 return;
             }
         }
