@@ -397,10 +397,26 @@
 #define RELAY_SYNC                  RELAY_SYNC_ANY
 #endif
 
+// When booting, use relay# (1..32) to set up status & sync mode order.
+// Last relay# used by default (0)
+#ifndef RELAY_SYNC_ID
+#define RELAY_SYNC_ID               0
+#endif
+
 // Time (in ms) to wait between relay state changes.
 // Setting to zero (default) will cause relay switches to change as soon as possible
 #ifndef RELAY_DELAY_INTERLOCK
 #define RELAY_DELAY_INTERLOCK       0
+#endif
+
+// Time (in ms) to wait before turning relay ON or OFF. Applied to every relay, use RELAY#_... build flag to configure per relay
+// This setting also has priority when RELAY_SYNC != RELAY_SYNC_ANY
+#ifndef RELAY_DELAY_ON
+#define RELAY_DELAY_ON       0
+#endif
+
+#ifndef RELAY_DELAY_OFF
+#define RELAY_DELAY_OFF      0
 #endif
 
 // Default pulse mode / normal mode. Switching from it will start the 'pulse' timer and reset the relay back after it finishes

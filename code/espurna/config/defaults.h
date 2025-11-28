@@ -886,53 +886,53 @@
 #endif
 
 #ifndef RELAY1_DELAY_ON
-#define RELAY1_DELAY_ON       0
+#define RELAY1_DELAY_ON       RELAY_DELAY_ON
 #endif
 #ifndef RELAY2_DELAY_ON
-#define RELAY2_DELAY_ON       0
+#define RELAY2_DELAY_ON       RELAY_DELAY_ON
 #endif
 #ifndef RELAY3_DELAY_ON
-#define RELAY3_DELAY_ON       0
+#define RELAY3_DELAY_ON       RELAY_DELAY_ON
 #endif
 #ifndef RELAY4_DELAY_ON
-#define RELAY4_DELAY_ON       0
+#define RELAY4_DELAY_ON       RELAY_DELAY_ON
 #endif
 #ifndef RELAY5_DELAY_ON
-#define RELAY5_DELAY_ON       0
+#define RELAY5_DELAY_ON       RELAY_DELAY_ON
 #endif
 #ifndef RELAY6_DELAY_ON
-#define RELAY6_DELAY_ON       0
+#define RELAY6_DELAY_ON       RELAY_DELAY_ON
 #endif
 #ifndef RELAY7_DELAY_ON
-#define RELAY7_DELAY_ON       0
+#define RELAY7_DELAY_ON       RELAY_DELAY_ON
 #endif
 #ifndef RELAY8_DELAY_ON
-#define RELAY8_DELAY_ON       0
+#define RELAY8_DELAY_ON       RELAY_DELAY_ON
 #endif
 
 #ifndef RELAY1_DELAY_OFF
-#define RELAY1_DELAY_OFF      0
+#define RELAY1_DELAY_OFF      RELAY_DELAY_OFF
 #endif
 #ifndef RELAY2_DELAY_OFF
-#define RELAY2_DELAY_OFF      0
+#define RELAY2_DELAY_OFF      RELAY_DELAY_OFF
 #endif
 #ifndef RELAY3_DELAY_OFF
-#define RELAY3_DELAY_OFF      0
+#define RELAY3_DELAY_OFF      RELAY_DELAY_OFF
 #endif
 #ifndef RELAY4_DELAY_OFF
-#define RELAY4_DELAY_OFF      0
+#define RELAY4_DELAY_OFF      RELAY_DELAY_OFF
 #endif
 #ifndef RELAY5_DELAY_OFF
-#define RELAY5_DELAY_OFF      0
+#define RELAY5_DELAY_OFF      RELAY_DELAY_OFF
 #endif
 #ifndef RELAY6_DELAY_OFF
-#define RELAY6_DELAY_OFF      0
+#define RELAY6_DELAY_OFF      RELAY_DELAY_OFF
 #endif
 #ifndef RELAY7_DELAY_OFF
-#define RELAY7_DELAY_OFF      0
+#define RELAY7_DELAY_OFF      RELAY_DELAY_OFF
 #endif
 #ifndef RELAY8_DELAY_OFF
-#define RELAY8_DELAY_OFF      0
+#define RELAY8_DELAY_OFF      RELAY_DELAY_OFF
 #endif
 
 #ifndef RELAY1_PROVIDER
