@@ -1719,6 +1719,10 @@ public:
     DualProvider() = delete;
     explicit DualProvider(size_t id) : _id(id) {
         _instances.push_back(this);
+        if (_instances.size() > Mask{}.size()) {
+            DEBUG_MSG_P(PSTR("[RELAY] DUAL instances limit reached (%zu)\n"),
+                Mask{}.size());
+        }
     }
 
     ~DualProvider() {
@@ -1770,7 +1774,7 @@ public:
 
     static void flush() {
         bool sync { true };
-        RelayMaskHelper mask;
+        Mask mask;
 
         for (size_t index = 0; (index < _instances.size()) && (index < mask.size()); ++index) {
             const auto status = _relayStatus(_instances[index]->relayId());
@@ -1784,9 +1788,11 @@ public:
             mask[std::min(_instances.size(), mask.size() - 1)] = true;
         }
 
-        DEBUG_MSG_P(PSTR("[RELAY] Sending DUAL mask: %s\n"), mask.toString().c_str());
+        DEBUG_MSG_P(PSTR("[RELAY] Sending DUAL mask: %s\n"),
+            RelayMaskHelper(mask.to_ulong()).toString().c_str());
 
-        uint8_t buffer[4] { 0xa0, 0x04, static_cast<unsigned char>(mask.toUnsigned()), 0xa1 };
+        uint8_t value = static_cast<uint8_t>(mask.to_ulong());
+        uint8_t buffer[4] { 0xa0, 0x04, value, 0xa1 };
         _port->write(buffer, sizeof(buffer));
         _port->flush();
     }
@@ -1804,21 +1810,34 @@ public:
 
         // RELAYs and BUTTONs are synchonized in the SIL F330
         // Make sure we handle SYNC action first
-        RelayMaskHelper mask(bytes[2]);
-        if (mask[_instances.size()]) {
+        Mask mask(bytes[2]);
+        const auto sync_index =
+            _instances.size() < mask.size()
+                ? _instances.size()
+                : mask.size() - 1;
+
+        RelayMaskPair pair;
+        uint8_t flags = RelayCommonStatusFlags;
+
+        if (mask[sync_index]) {
             for (auto& instance : _instances) {
-                relayStatus(instance->relayId(), true);
+                pair.on[instance->relayId()] = true;
             }
-            return;
-        }
+            flags |= RelayFlagSync;
 
         // Then, manage relays individually
-        for (size_t index = 0; index < _instances.size(); ++index) {
-            relayStatus(_instances[index]->relayId(), mask[index]);
+        } else {
+            for (size_t index = 0; (index < _instances.size()) && (index < mask.size()); ++index) {
+                auto& pair_mask = mask[index] ? pair.on : pair.off;
+                pair_mask[_instances[index]->relayId()] = true;
+            }
         }
+
+        _relayStatusPair(pair, flags);
     }
 
 private:
+    using Mask = std::bitset<8>;
     size_t _id;
 
     static std::vector<DualProvider*> _instances;
