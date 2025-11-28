@@ -3768,8 +3768,6 @@ bool _relayProcess(bool mode) {
         }
 
         if ((target != _relays[id].current_status) || (_relays[id].flags & RelayFlagBoot)) {
-            // delay will be reset back to the correct value via relayStatus
-
             _relays[id].current_status = target;
             _relays[id].provider->change(target);
 
