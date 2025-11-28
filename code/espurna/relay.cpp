@@ -1920,6 +1920,7 @@ void _relayHandleStatus(size_t id, PayloadStatus status) {
     _relayHandleStatus(id, status, RelayCommonStatusFlags);
 }
 
+[[gnu::unused]]
 bool _relayHandlePayload(size_t id, espurna::StringView payload, uint8_t flags) {
     const auto status = relayParsePayload(payload);
     if (status != PayloadStatus::Unknown) {
@@ -1930,12 +1931,9 @@ bool _relayHandlePayload(size_t id, espurna::StringView payload, uint8_t flags) 
     return false;
 }
 
-bool _relayHandleMqttPayload(size_t id, espurna::StringView payload) {
-    const auto flags = mqttForward()
-        ? RelayCommonStatusFlags
-        : RelayFlagReportCustom;
-
-    return _relayHandlePayload(id, payload, flags);
+[[gnu::unused]]
+bool _relayHandlePayload(size_t id, espurna::StringView payload) {
+    return _relayHandlePayload(id, payload, RelayCommonStatusFlags);
 }
 
 // Process lingering timer objects *after* relay changes state
@@ -3259,9 +3257,13 @@ void _relayMqttReportDescription() {
     }
 }
 
-} // namespace
+bool _relayHandleMqttPayload(size_t id, espurna::StringView payload) {
+    const auto flags = mqttForward()
+        ? RelayCommonStatusFlags
+        : RelayFlagReportCustom;
 
-namespace {
+    return _relayHandlePayload(id, payload, flags);
+}
 
 bool _relayMqttHeartbeat(espurna::heartbeat::Mask mask) {
     if (mask & espurna::heartbeat::Report::Relay) {
