@@ -3043,14 +3043,7 @@ bool _relayApiTimerGet(ApiRequest& request, size_t id) {
     return true;
 }
 
-} // namespace
-
-void relaySetupAPI() {
-
-    if (!_relays.size()) {
-        return;
-    }
-
+void _relaySetupApi() {
     apiRegister(RelayTopicRelay.toString(),
         [](ApiRequest&, JsonObject& root) {
             JsonArray& out = root.createNestedArray("relayStatus");
@@ -3117,8 +3110,9 @@ void relaySetupAPI() {
                 });
         }
     );
-
 }
+
+} // namespace
 
 #endif // API_SUPPORT
 
@@ -4059,7 +4053,7 @@ void relaySetup() {
         relaySetupWS();
     #endif
     #if API_SUPPORT
-        relaySetupAPI();
+        _relaySetupApi();
     #endif
     #if MQTT_SUPPORT
         _relaySetupMqtt();
