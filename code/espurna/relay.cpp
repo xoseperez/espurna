@@ -3451,6 +3451,21 @@ namespace {
 
 using TerminalRelayPrintExtra = void(*)(const Relay&, char* out, size_t size);
 
+STRING_VIEW_INLINE(ErrTerminalRelayInvalidId, "Invalid relay ID");
+STRING_VIEW_INLINE(ErrTerminalRelayInvalidStatus, "Invalid status");
+STRING_VIEW_INLINE(ErrTerminalRelayInvalidTime, "Invalid time");
+STRING_VIEW_INLINE(ErrTerminalRelayNoTimers, "No active timers");
+
+String _relayErrorCommand(::terminal::CommandContext& ctx, espurna::StringView params) {
+    String name = std::move(ctx.argv[0]);
+
+    name.toUpperCase();
+    name += ' ';
+    name += params;
+
+    return name;
+}
+
 String _relayLockPayload(const Relay& relay) {
     return _relayTristateToPayload(relay.lock);
 }
@@ -3517,7 +3532,7 @@ void _relayPrint(Print& out, size_t start, size_t stop) {
     }
 }
 
-PROGMEM_STRING(RelayCommand, "RELAY");
+STRING_VIEW_INLINE(RelayCommand, "RELAY");
 
 static void _relayCommand(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() == 1) {
@@ -3528,7 +3543,7 @@ static void _relayCommand(::terminal::CommandContext&& ctx) {
 
     size_t id;
     if (!_relayTryParseId(ctx.argv[1], id)) {
-        terminalError(ctx, F("Invalid relayID"));
+        terminalError(ctx, ErrTerminalRelayInvalidId);
         return;
     }
 
@@ -3537,7 +3552,7 @@ static void _relayCommand(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() > 2) {
         auto status = relayParsePayload(ctx.argv[2]);
         if (PayloadStatus::Unknown == status) {
-            terminalError(ctx, F("Invalid status"));
+            terminalError(ctx, ErrTerminalRelayInvalidStatus);
             return;
         }
 
@@ -3551,13 +3566,13 @@ static void _relayCommand(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
-PROGMEM_STRING(PulseCommand, "PULSE");
+STRING_VIEW_INLINE(PulseCommand, "PULSE");
 
 static void _relayCommandDumpTimers(::terminal::CommandContext&& ctx) {
     using namespace espurna::relay;
 
     if (timer::internal::timers.empty()) {
-        terminalError(ctx, STRING_VIEW("no active timers").toString());
+        terminalError(ctx, ErrTerminalRelayNoTimers);
         return;
     }
 
@@ -3595,12 +3610,8 @@ static void _relayCommandDumpTimers(::terminal::CommandContext&& ctx) {
 
 static void _relayCommandTimerImpl(::terminal::CommandContext&& ctx, bool toggle) {
     if (ctx.argv.size() > 3) {
-        String name = ctx.argv[0];
-        name.toUpperCase();
-
-        const auto error = name + STRING_VIEW("[<ID>] [<TIME>]").toString();
+        const auto error = _relayErrorCommand(ctx, STRING_VIEW("[<ID>] [<TIME>]"));
         terminalError(ctx, error);
-
         return;
     }
 
@@ -3613,7 +3624,7 @@ static void _relayCommandTimerImpl(::terminal::CommandContext&& ctx, bool toggle
 
     size_t id;
     if (!_relayTryParseId(ctx.argv[1], id)) {
-        terminalError(ctx, F("Invalid relayID"));
+        terminalError(ctx, ErrTerminalRelayInvalidId);
         return;
     }
 
@@ -3622,7 +3633,7 @@ static void _relayCommandTimerImpl(::terminal::CommandContext&& ctx, bool toggle
     if (ctx.argv.size() == 3) {
         const auto parsed = timer::settings::parse_time(ctx.argv[2]);
         if (!parsed.ok) {
-            terminalError(ctx, F("Invalid time"));
+            terminalError(ctx, ErrTerminalRelayInvalidTime);
             return;
         }
 
@@ -3643,13 +3654,13 @@ static void _relayCommandPulse(::terminal::CommandContext&& ctx) {
     _relayCommandTimerImpl(std::move(ctx), true);
 }
 
-PROGMEM_STRING(TimerCommand, "TIMER");
+STRING_VIEW_INLINE(TimerCommand, "TIMER");
 
 static void _relayCommandTimer(::terminal::CommandContext&& ctx) {
     _relayCommandTimerImpl(std::move(ctx), false);
 }
 
-PROGMEM_STRING(LockCommand, "LOCK");
+STRING_VIEW_INLINE(LockCommand, "LOCK");
 
 static void _relayCommandLock(::terminal::CommandContext&& ctx) {
     const auto argc = ctx.argv.size();
@@ -3660,7 +3671,7 @@ static void _relayCommandLock(::terminal::CommandContext&& ctx) {
     {
         size_t id;
         if (!_relayTryParseId(ctx.argv[1], id)) {
-            terminalError(ctx, F("Invalid relayID"));
+            terminalError(ctx, ErrTerminalRelayInvalidId);
             return;
         }
 
@@ -3679,20 +3690,22 @@ static void _relayCommandLock(::terminal::CommandContext&& ctx) {
         break;
     }
 
-    terminalError(ctx, F("LOCK <ID> [NONE | OFF | ON]"));
+    const auto error = _relayErrorCommand(ctx, STRING_VIEW("<ID> [NONE | OFF | ON]"));
+    terminalError(ctx, error);
 }
 
-PROGMEM_STRING(UnlockCommand, "UNLOCK");
+STRING_VIEW_INLINE(UnlockCommand, "UNLOCK");
 
 static void _relayCommandUnlock(::terminal::CommandContext&& ctx) {
     if (ctx.argv.size() != 2) {
-        terminalError(ctx, F("UNLOCK <ID>"));
+        const auto error = _relayErrorCommand(ctx, STRING_VIEW("<ID"));
+        terminalError(ctx, error);
         return;
     }
 
     size_t id;
     if (!_relayTryParseId(ctx.argv[1], id)) {
-        terminalError(ctx, F("Invalid relayID"));
+        terminalError(ctx, ErrTerminalRelayInvalidId);
         return;
     }
 
