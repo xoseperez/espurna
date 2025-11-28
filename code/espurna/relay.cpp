@@ -2981,6 +2981,28 @@ void relaySetupWS() {
 #endif // WEB_SUPPORT
 
 //------------------------------------------------------------------------------
+// API SHARED DATA
+//------------------------------------------------------------------------------
+
+namespace {
+
+STRING_VIEW_INLINE(RelayTopicRelay, MQTT_TOPIC_RELAY);
+STRING_VIEW_INLINE(RelayTopicRelaySub, MQTT_TOPIC_RELAY "/+");
+
+STRING_VIEW_INLINE(RelayTopicPulse, MQTT_TOPIC_PULSE);
+STRING_VIEW_INLINE(RelayTopicPulseSub, MQTT_TOPIC_PULSE "/+");
+
+STRING_VIEW_INLINE(RelayTopicTimer, MQTT_TOPIC_TIMER);
+STRING_VIEW_INLINE(RelayTopicTimerSub, MQTT_TOPIC_TIMER "/+");
+
+STRING_VIEW_INLINE(RelayTopicLock, MQTT_TOPIC_LOCK);
+STRING_VIEW_INLINE(RelayTopicLockSub, MQTT_TOPIC_LOCK "/+");
+
+STRING_VIEW_INLINE(RelayTopicRelayDescription, MQTT_TOPIC_DESCRIPTION "/" MQTT_TOPIC_RELAY);
+
+} // namespace
+
+//------------------------------------------------------------------------------
 // REST API
 //------------------------------------------------------------------------------
 
@@ -3029,7 +3051,7 @@ void relaySetupAPI() {
         return;
     }
 
-    apiRegister(F(MQTT_TOPIC_RELAY),
+    apiRegister(RelayTopicRelay.toString(),
         [](ApiRequest&, JsonObject& root) {
             JsonArray& out = root.createNestedArray("relayStatus");
             for (auto& relay : _relays) {
@@ -3040,7 +3062,7 @@ void relaySetupAPI() {
         nullptr
     );
 
-    apiRegister(F(MQTT_TOPIC_RELAY "/+"),
+    apiRegister(RelayTopicRelaySub.toString(),
         [](ApiRequest& request) {
             return _relayApiTryHandle(request, [&](size_t id) {
                 request.send(String(_relays[id].target_status ? 1 : 0));
@@ -3054,7 +3076,7 @@ void relaySetupAPI() {
         }
     );
 
-    apiRegister(F(MQTT_TOPIC_PULSE "/+"),
+    apiRegister(RelayTopicPulseSub.toString(),
         [](ApiRequest& request) {
             return _relayApiTryHandle(request, [&](size_t id) {
                 return _relayApiTimerGet(request, id);
@@ -3067,7 +3089,7 @@ void relaySetupAPI() {
         }
     );
 
-    apiRegister(F(MQTT_TOPIC_TIMER "/+"),
+    apiRegister(RelayTopicTimerSub.toString(),
         [](ApiRequest& request) {
             return _relayApiTryHandle(request, [&](size_t id) {
                 return _relayApiTimerGet(request, id);
@@ -3080,7 +3102,7 @@ void relaySetupAPI() {
         }
     );
 
-    apiRegister(F(MQTT_TOPIC_LOCK "/+"),
+    apiRegister(RelayTopicLockSub.toString(),
         [](ApiRequest& request) {
             return _relayApiTryHandle(request,
                 [&](size_t id) {
@@ -3201,10 +3223,10 @@ private:
 };
 
 void _relayMqttSubscribeBaseTopics() {
-    mqttSubscribe(MQTT_TOPIC_RELAY "/+");
-    mqttSubscribe(MQTT_TOPIC_PULSE "/+");
-    mqttSubscribe(MQTT_TOPIC_TIMER "/+");
-    mqttSubscribe(MQTT_TOPIC_LOCK "/+");
+    mqttSubscribe(RelayTopicRelaySub.toString().c_str());
+    mqttSubscribe(RelayTopicPulseSub.toString().c_str());
+    mqttSubscribe(RelayTopicTimerSub.toString().c_str());
+    mqttSubscribe(RelayTopicLockSub.toString().c_str());
 }
 
 std::forward_list<RelayCustomTopic> _relay_custom_topics;
@@ -3256,9 +3278,18 @@ void _relayMqttPublishCustomTopic(size_t id) {
     mqttSendRaw(topic.c_str(), relayPayload(status).begin());
 }
 
+void _relayMqttPublish(size_t id) {
+    const auto topic = RelayTopicRelay.toString();
+
+    const auto status = _relayPayloadStatus(id);
+    const auto payload = relayPayload(status);
+
+    mqttSend(topic.c_str(), id, payload.c_str());
+}
+
 void _relayMqttReport(size_t id, uint8_t flags) {
     if (mqttForward() && (flags & RelayFlagReport)) {
-        mqttSend(MQTT_TOPIC_RELAY, id, relayPayload(_relayPayloadStatus(id)).c_str()); // TODO FIXED LENGTH
+        _relayMqttPublish(id);
     }
 
     if (flags & RelayFlagReportCustom) {
@@ -3269,18 +3300,22 @@ void _relayMqttReport(size_t id, uint8_t flags) {
 void _relayMqttReportAll() {
     for (size_t id = 0; id < _relays.size(); ++id) {
         if (_relays_active[id]) {
-            mqttSend(MQTT_TOPIC_RELAY, id, relayPayload(_relayPayloadStatus(id)).c_str()); // TODO FIXED LENGTH
+            _relayMqttPublish(id);
         }
     }
 }
 
 void _relayMqttReportDescription() {
-    static const char Topic[] = MQTT_TOPIC_DESCRIPTION "/" MQTT_TOPIC_RELAY;
+    if (!_relays.size()) {
+        return;
+    }
+
+    const auto topic = RelayTopicRelayDescription.toString();
     for (size_t id = 0; id < _relays.size(); ++id) {
         if (_relays_active[id]) {
             const auto name = espurna::relay::settings::name(id);
             if (name.length()) {
-                mqttSend(Topic, id, name.c_str());
+                mqttSend(topic.c_str(), id, name.c_str());
             }
         }
     }
@@ -3355,29 +3390,23 @@ struct RelayMqttTopicHandler {
     Handler handler;
 };
 
-PROGMEM_STRING(MqttTopicRelay, MQTT_TOPIC_RELAY);
-PROGMEM_STRING(MqttTopicPulse, MQTT_TOPIC_PULSE);
-PROGMEM_STRING(MqttTopicTimer, MQTT_TOPIC_TIMER);
-PROGMEM_STRING(MqttTopicLock, MQTT_TOPIC_LOCK);
-
 static constexpr RelayMqttTopicHandler RelayMqttTopicHandlers[] PROGMEM {
-    {MqttTopicRelay, _relayHandleMqttPayload},
-    {MqttTopicPulse, _relayHandlePulsePayload},
-    {MqttTopicTimer, _relayHandleTimerPayload},
-    {MqttTopicLock, _relayHandleLockPayload},
+    {RelayTopicRelay, _relayHandleMqttPayload},
+    {RelayTopicPulse, _relayHandlePulsePayload},
+    {RelayTopicTimer, _relayHandleTimerPayload},
+    {RelayTopicLock, _relayHandleLockPayload},
 };
 
-} // namespace
+bool _relay_mqtt_connected;
 
-void relayMQTTCallback(unsigned int type, espurna::StringView topic, espurna::StringView payload) {
-    static bool connected { false };
+void _relayMqttCallback(unsigned int type, espurna::StringView topic, espurna::StringView payload) {
     if (!_relays.size()) {
         return;
     }
 
     if (type == MQTT_CONNECT_EVENT) {
         _relayMqttHandleConnect();
-        connected = true;
+        _relay_mqtt_connected = true;
         return;
     }
 
@@ -3401,19 +3430,20 @@ void relayMQTTCallback(unsigned int type, espurna::StringView topic, espurna::St
     }
 
     if (type == MQTT_DISCONNECT_EVENT) {
-        if (connected) {
-            connected = false;
+        if (_relay_mqtt_connected) {
+            _relay_mqtt_connected = false;
             _relayMqttHandleDisconnect();
         }
         return;
     }
-
 }
 
-void relaySetupMQTT() {
+void _relaySetupMqtt() {
     mqttHeartbeat(_relayMqttHeartbeat);
-    mqttRegister(relayMQTTCallback);
+    mqttRegister(_relayMqttCallback);
 }
+
+} // namespace
 
 #endif
 
@@ -4034,7 +4064,7 @@ void relaySetup() {
         relaySetupAPI();
     #endif
     #if MQTT_SUPPORT
-        relaySetupMQTT();
+        _relaySetupMqtt();
     #endif
     #if TERMINAL_SUPPORT
         _relayCommandsSetup();
