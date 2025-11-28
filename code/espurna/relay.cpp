@@ -3716,7 +3716,7 @@ static constexpr ::terminal::Command RelayCommands[] PROGMEM {
     {UnlockCommand, _relayCommandUnlock},
 };
 
-void _relayCommandsSetup() {
+void _relaySetupTerminal() {
     espurna::terminal::add(RelayCommands);
 }
 
@@ -4065,7 +4065,7 @@ void relaySetup() {
         _relaySetupMqtt();
     #endif
     #if TERMINAL_SUPPORT
-        _relayCommandsSetup();
+        _relaySetupTerminal();
     #endif
 
     espurnaRegisterLoop(_relayLoop);
