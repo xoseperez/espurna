@@ -1114,9 +1114,11 @@ PROGMEM_STRING(Interlock, "relayIlkDelay");
 PROGMEM_STRING(Sync, "relaySync");
 PROGMEM_STRING(SyncId, "relaySyncId");
 
+#if MQTT_SUPPORT || API_SUPPORT
 PROGMEM_STRING(PayloadOn, "relayPayloadOn");
 PROGMEM_STRING(PayloadOff, "relayPayloadOff");
 PROGMEM_STRING(PayloadToggle, "relayPayloadToggle");
+#endif
 
 } // namespace
 } // namespace keys
