@@ -3257,7 +3257,7 @@ void _relayMqttPublishCustomTopic(size_t id) {
 }
 
 void _relayMqttReport(size_t id, uint8_t flags) {
-    if (flags & RelayFlagReport) {
+    if (mqttForward() && (flags & RelayFlagReport)) {
         mqttSend(MQTT_TOPIC_RELAY, id, relayPayload(_relayPayloadStatus(id)).c_str()); // TODO FIXED LENGTH
     }
 
@@ -3287,11 +3287,7 @@ void _relayMqttReportDescription() {
 }
 
 bool _relayHandleMqttPayload(size_t id, espurna::StringView payload) {
-    const auto flags = mqttForward()
-        ? RelayCommonStatusFlags
-        : RelayFlagReportCustom;
-
-    return _relayHandlePayload(id, payload, flags);
+    return _relayHandlePayload(id, payload);
 }
 
 bool _relayMqttHeartbeat(espurna::heartbeat::Mask mask) {
