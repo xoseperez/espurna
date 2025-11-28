@@ -87,9 +87,11 @@ struct Delays {
         ~Storage();
 
         Storage(const Storage&);
+        [[gnu::unused]]
         Storage& operator=(const Storage&);
 
         Storage(Storage&&) noexcept;
+        [[gnu::unused]]
         Storage& operator=(Storage&&) noexcept;
 
         bool operator==(const Storage&) const noexcept;
