@@ -1604,7 +1604,7 @@ std::forward_list<RelayStatusCallback> _relay_status_change;
 
 bool _relay_report_ws { false };
 
-void _relayScheduleWsReport() {
+void _relayScheduleWebSocketReport() {
     _relay_report_ws = true;
 }
 
@@ -2153,7 +2153,7 @@ void _relayLockSync(const RelayMaskPair& pair) {
         []() {
             _relay_sync_unlock.restore(_relays);
 #if WEB_SUPPORT
-            _relayScheduleWsReport();
+            _relayScheduleWebSocketReport();
 #endif
         });
 }
@@ -2960,16 +2960,14 @@ void _relayWebSocketOnAction(uint32_t, const char* action, JsonObject& data) {
     }
 }
 
-void _relayWsReport() {
+void _relayWebSocketReport() {
     if (_relay_report_ws) {
         wsPost(_relayWebSocketUpdate);
         _relay_report_ws = false;
     }
 }
 
-} // namespace
-
-void relaySetupWS() {
+void _relaySetupWeb() {
     wsRegister()
         .onVisible(_relayWebSocketOnVisible)
         .onConnected(_relayWebSocketOnConnected)
@@ -2977,6 +2975,8 @@ void relaySetupWS() {
         .onAction(_relayWebSocketOnAction)
         .onKeyCheck(_relayWebSocketOnKeyCheck);
 }
+
+} // namespace
 
 #endif // WEB_SUPPORT
 
@@ -3730,7 +3730,7 @@ void _relayReport(size_t id [[gnu::unused]], bool status [[gnu::unused]], uint8_
     _relayMqttReport(id, flags);
 #endif
 #if WEB_SUPPORT
-    _relayScheduleWsReport();
+    _relayScheduleWebSocketReport();
 #endif
 #if DEBUG_SUPPORT
     DEBUG_MSG_P(PSTR("[RELAY] #%u set to %s\n"),
@@ -3740,7 +3740,7 @@ void _relayReport(size_t id [[gnu::unused]], bool status [[gnu::unused]], uint8_
 
 void _relayReport() {
 #if WEB_SUPPORT
-    _relayWsReport();
+    _relayWebSocketReport();
 #endif
 }
 
@@ -4050,7 +4050,7 @@ void relaySetup() {
     _relayLoop();
 
     #if WEB_SUPPORT
-        relaySetupWS();
+        _relaySetupWeb();
     #endif
     #if API_SUPPORT
         _relaySetupApi();
