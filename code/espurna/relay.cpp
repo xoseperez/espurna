@@ -175,11 +175,11 @@ struct RelayMaskHelper {
 
     template <typename T>
     static void for_each(RelayMask mask, T&& callback) {
-        if (!mask.count()) {
+        if (!mask.any()) {
             return;
         }
 
-        for (auto tmp = mask; tmp.count();) {
+        for (auto tmp = mask; tmp.any();) {
             auto value = tmp.to_ulong();
 
             size_t bit = __builtin_ctz(value);
@@ -699,7 +699,7 @@ BulkTimer* find(size_t id) {
 // ...especially w/ masks containing multiple IDs
 BulkTimer* find(RelayMaskPair pair) {
     return find([&](const BulkTimer& timer) {
-        return (timer.mask() & pair).count();
+        return (timer.mask() & pair).any();
     });
 }
 
@@ -2332,7 +2332,7 @@ void _relaySyncScheduleOrStatus(RelayMaskPair pair, Relay::Delay delay, uint8_t 
     if (flags & RelayFlagBoot) {
         const auto mask_all = pair.on | pair.off;
         const auto retained = mask_all & ~_relays_retained;
-        if (!retained.count()) {
+        if (!retained.any()) {
             delay = Relay::Delay::zero();
         }
     }
@@ -2348,8 +2348,8 @@ void _relaySyncScheduleOrStatus(RelayMaskPair pair, Relay::Delay delay, uint8_t 
 bool _relaySyncSchedule(RelayMaskPair pair, uint8_t flags) {
     bool out = false;
 
-    const auto pair_on = pair.on.count() > 0;
-    const auto pair_off = pair.off.count() > 0;
+    const auto pair_on = pair.on.any();
+    const auto pair_off = pair.off.any();
 
     if (pair_on || pair_off) {
         const auto pair_delay = (pair_on && pair_off)
@@ -2826,7 +2826,7 @@ void _relayBootAll() {
         }
     }
 
-    if (pair.on.count() || pair.off.count()) {
+    if (pair.on.any() || pair.off.any()) {
         size_t sync_id;
         if (_relay_sync_id != RelaysMax) {
             sync_id = _relay_sync_id; // invalid IDs get filtered out later
@@ -3337,7 +3337,7 @@ void _relayMqttHandleDisconnect() {
     RelayMaskPair pair;
     pair.off = _relays_active;
 
-    if (pair.off.count()) {
+    if (pair.off.any()) {
         espurna::relay::timer::schedule_and_start(
             pair, duration,
             RelayCommonStatusFlags | RelayFlagTimerDelay);
@@ -3605,7 +3605,7 @@ static void _relayCommandTimerImpl(::terminal::CommandContext&& ctx, bool toggle
         duration = timer::settings::native_duration(parsed);
     }
 
-    if (duration.count() == 0) {
+    if (duration == decltype(duration)::zero()) {
         timer::cancel(id);
         terminalOK(ctx);
         return;
