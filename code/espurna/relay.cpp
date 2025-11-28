@@ -2451,10 +2451,9 @@ bool _relayStatusNotify(size_t id, bool status) {
 
 bool _relayStatusChange(size_t id, bool status, uint8_t flags) {
     bool changed = false;
-    auto& relay = _relays[id];
 
     auto change_delay = Relay::Delay::zero();
-    relay.flags = flags;
+    auto& relay = _relays[id];
 
     constexpr auto FlagsScheduled = uint8_t{ RelayFlagSync | RelayFlagTimerPulse | RelayFlagTimerDelay };
 
@@ -2509,6 +2508,7 @@ bool _relayStatusChange(size_t id, bool status, uint8_t flags) {
     // Or, relay is going to be switched ON / OFF next processing loop
     } else {
         relay.target_status = status;
+        relay.flags = flags;
         changed = true;
     }
 
@@ -3246,16 +3246,14 @@ void _relayMqttPublishCustomTopic(size_t id) {
     mqttSendRaw(topic.c_str(), relayPayload(status).begin());
 }
 
-void _relayMqttReport(size_t id) {
-    if (_relays[id].flags & RelayFlagReport) {
+void _relayMqttReport(size_t id, uint8_t flags) {
+    if (flags & RelayFlagReport) {
         mqttSend(MQTT_TOPIC_RELAY, id, relayPayload(_relayPayloadStatus(id)).c_str()); // TODO FIXED LENGTH
     }
 
-    if (_relays[id].flags & RelayFlagReportCustom) {
+    if (flags & RelayFlagReportCustom) {
         _relayMqttPublishCustomTopic(id);
     }
-
-    _relays[id].flags &= ~RelayCommonStatusFlags;
 }
 
 void _relayMqttReportAll() {
@@ -3695,12 +3693,12 @@ void _relayCommandsSetup() {
 
 namespace {
 
-void _relayReport(size_t id [[gnu::unused]], bool status [[gnu::unused]]) {
+void _relayReport(size_t id [[gnu::unused]], bool status [[gnu::unused]], uint8_t flags [[gnu::unused]]) {
     for (auto& change : _relay_status_change) {
         change(id, status);
     }
 #if MQTT_SUPPORT
-    _relayMqttReport(id);
+    _relayMqttReport(id, flags);
 #endif
 #if WEB_SUPPORT
     _relayScheduleWsReport();
@@ -3757,7 +3755,7 @@ bool _relayProcess(bool mode) {
             _relayProcessTimer(id, _relays[id].pulse, _relays[id].pulse_time, target);
 
             // and report to everything else, including debug logs
-            _relayReport(id, target);
+            _relayReport(id, target, flags);
 
             changed = true;
         }
