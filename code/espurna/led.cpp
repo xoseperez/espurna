@@ -790,7 +790,7 @@ void payload_status(Led& led, StringView payload) {
         break;
 
     case PayloadStatus::Toggle:
-        led.status(!led.status());
+        led.toggle();
         break;
 
     case PayloadStatus::Unknown:
