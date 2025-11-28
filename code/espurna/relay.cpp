@@ -3539,15 +3539,9 @@ static void _relayCommandDumpTimers(::terminal::CommandContext&& ctx) {
 
     size_t index = 0;
     for (auto& timer : timer::internal::timers) {
-        espurna::StringView type;
-
-        if (!type.length()) {
-            if (static_cast<bool>(timer)) {
-                type = STRING_VIEW("Active");
-            } else {
-                type = STRING_VIEW("Pending");
-            }
-        }
+        const auto type = static_cast<bool>(timer)
+            ? STRING_VIEW("Active")
+            : STRING_VIEW("Pending");
 
         const auto start_time = timer.start_time().time_since_epoch();
         const auto duration = timer.duration();
