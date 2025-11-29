@@ -48,12 +48,6 @@ constexpr bool _rfb_transmit { true };
 
 std::forward_list<RfbCodeHandler> _rfb_code_handlers;
 
-void _rfbCode(unsigned char protocol, espurna::StringView code) {
-    for (auto& handler : _rfb_code_handlers) {
-        handler(protocol, code);
-    }
-}
-
 } // namespace
 
 // -----------------------------------------------------------------------------
@@ -674,6 +668,12 @@ void _rfbLearnStartFromPayload(espurna::StringView payload) {
 #if RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
 
 namespace {
+
+void _rfbCode(unsigned char protocol, espurna::StringView code) {
+    for (auto& handler : _rfb_code_handlers) {
+        handler(protocol, code);
+    }
+}
 
 void _rfbEnqueue(uint8_t (&code)[RfbParser::PayloadSizeBasic], unsigned char repeats = 1u) {
     if (!_rfb_transmit) return;
