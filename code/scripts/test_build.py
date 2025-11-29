@@ -38,6 +38,14 @@ CONFIG_PATH = TEST_PATH / "config"
 CACHE_PATH = TEST_PATH / "cache"
 BUILD_PATH = ROOT_PATH / ".pio" / "build"
 
+CACHE_TIMEDELTA = datetime.timedelta(days=1)
+TIMEDELTA_PARAM = {
+    "d": "days",
+    "h": "hours",
+    "m": "minutes",
+    "s": "seconds",
+}
+
 
 def bold(string: str):
     return clr(Color.BOLD, string)
@@ -54,7 +62,46 @@ def pluralize(string: str, length: int):
     return string
 
 
+def make_timedelta(string: str) -> datetime.timedelta:
+    if not string:
+        return datetime.timedelta(seconds=0)
+
+    if string.isdigit():
+        suffix = "d"
+    else:
+        suffix = string[-1]
+        string = string[:-1]
+
+    param = TIMEDELTA_PARAM[suffix]
+    value = int(string, 10)
+
+    return datetime.timedelta(**{param: value})
+
+
+def cache_cleanup(cache_path: pathlib.Path, offset: datetime.timedelta):
+    now = datetime.datetime.now()
+
+    for pair in cache_path.iterdir():
+        # {CACHE_DIR} / AA / AA...rest of the hash...
+        if not pair.is_dir():
+            continue
+
+        for f in pair.iterdir():
+            mtime_raw = f.stat().st_mtime
+            mtime_dt = datetime.datetime.fromtimestamp(mtime_raw)
+
+            if now - mtime_dt > offset:
+                f.unlink()
+
+        if not any(pair.iterdir()):
+            pair.rmdir()
+
+
 def build_configurations(args: argparse.Namespace, configurations: list[pathlib.Path]):
+    cache_path = args.cache_path.resolve()
+
+    cache_cleanup(cache_path, args.expire_cache)
+
     cmd = ["platformio", "run"]
     if args.silent:
         cmd.extend(["-s"])
@@ -67,7 +114,7 @@ def build_configurations(args: argparse.Namespace, configurations: list[pathlib.
         log.info("%s contents\n%s", bold(cfg.name), cfg.read_text())
 
         os_env = os.environ.copy()
-        os_env["PLATFORMIO_BUILD_CACHE_DIR"] = args.cache_path.resolve().as_posix()
+        os_env["PLATFORMIO_BUILD_CACHE_DIR"] = cache_path.resolve().as_posix()
         if args.single_source:
             os_env["ESPURNA_BUILD_SINGLE_SOURCE"] = "1"
 
@@ -99,7 +146,10 @@ def build_configurations(args: argparse.Namespace, configurations: list[pathlib.
 
         log.info(
             "%s finished in %s, %s is %s bytes",
-            *(bold(str(x)) for x in (cfg, diff, firmware_bin, firmware_bin.stat().st_size)),
+            *(
+                bold(str(x))
+                for x in (cfg, diff, firmware_bin, firmware_bin.stat().st_size)
+            ),
         )
 
         build_time += diff
@@ -209,6 +259,13 @@ if __name__ == "__main__":
         default=BUILD_PATH,
         type=pathlib.Path,
         help="PlatformIO build path",
+    )
+
+    parser.add_argument(
+        "--expire-cache",
+        default=CACHE_TIMEDELTA,
+        type=make_timedelta,
+        help="PlatformIO cache expiration time (NUMBER or NUMBER{d,h,m,s} for days, hours, minutes or seconds respectively)}",
     )
 
     parser.add_argument(
