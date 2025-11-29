@@ -100,7 +100,8 @@ def cache_cleanup(cache_path: pathlib.Path, offset: datetime.timedelta):
 def build_configurations(args: argparse.Namespace, configurations: list[pathlib.Path]):
     cache_path = args.cache_path.resolve()
 
-    cache_cleanup(cache_path, args.expire_cache)
+    if cache_path.is_dir():
+        cache_cleanup(cache_path, args.expire_cache)
 
     cmd = ["platformio", "run"]
     if args.silent:
