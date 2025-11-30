@@ -82,6 +82,7 @@ struct RelayAddResult {
 RelayAddResult relayAdd(RelayProviderBasePtr&& provider);
 void relayOnStatusNotify(RelayStatusCallback);
 void relayOnStatusChange(RelayStatusCallback);
+void relayOnActive(RelayStatusCallback);
 
 void relaySetupDummy(size_t size, bool reconfigure = false);
 void relaySetup();

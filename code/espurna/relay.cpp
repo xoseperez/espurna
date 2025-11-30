@@ -1597,9 +1597,6 @@ RelaySyncUnlock _relay_sync_unlock;
 RelayDelayedTimer _relay_unlock_timer;
 RelaySaveTimer _relay_save_timer;
 
-std::forward_list<RelayStatusCallback> _relay_status_notify;
-std::forward_list<RelayStatusCallback> _relay_status_change;
-
 #if WEB_SUPPORT
 
 bool _relay_report_ws { false };
@@ -1640,12 +1637,46 @@ void RelayProviderBase::notify(bool) {
 
 // Direct status notifications
 
+namespace {
+
+using RelayStatusCallbacks = std::forward_list<RelayStatusCallback>;
+
+RelayStatusCallbacks& _relayStatusNotifyInstance() {
+    static RelayStatusCallbacks instance;
+    return instance;
+}
+
+RelayStatusCallbacks& _relayStatusChangeInstance() {
+    static RelayStatusCallbacks instance;
+    return instance;
+}
+
+RelayStatusCallbacks& _relayActiveInstance() {
+    static RelayStatusCallbacks instance;
+    return instance;
+}
+
+void _relayNotifyActiveStatus(RelayStatusCallback callback) {
+    for (size_t index = 0; index < _relays.size(); ++index) {
+        if (_relays_active[index]) {
+            callback(index, _relays[index].current_status);
+        }
+    }
+}
+
+} // namespace
+
 void relayOnStatusNotify(RelayStatusCallback callback) {
-    _relay_status_notify.push_front(callback);
+    _relayStatusNotifyInstance().push_front(callback);
 }
 
 void relayOnStatusChange(RelayStatusCallback callback) {
-    _relay_status_change.push_front(callback);
+    _relayStatusChangeInstance().push_front(callback);
+}
+
+void relayOnActive(RelayStatusCallback callback) {
+    _relayActiveInstance().push_front(callback);
+    _relayNotifyActiveStatus(callback);
 }
 
 namespace {
@@ -2448,7 +2479,7 @@ bool _relayStatusNotify(size_t id, bool status) {
     }
 
     relay.provider->notify(status);
-    for (auto& notify : _relay_status_notify) {
+    for (auto& notify : _relayStatusNotifyInstance()) {
         notify(id, status);
     }
 
@@ -3736,7 +3767,7 @@ void _relaySetupTerminal() {
 namespace {
 
 void _relayReport(size_t id [[gnu::unused]], bool status [[gnu::unused]], uint8_t flags [[gnu::unused]]) {
-    for (auto& change : _relay_status_change) {
+    for (auto& change : _relayStatusChangeInstance()) {
         change(id, status);
     }
 #if MQTT_SUPPORT
@@ -3755,6 +3786,19 @@ void _relayReport() {
 #if WEB_SUPPORT
     _relayWebSocketReport();
 #endif
+}
+
+void _relayActive(size_t id, bool status) {
+    const auto prev = _relays_active[id];
+    _relays_active[id] = true;
+
+    if (prev == _relays_active[id]) {
+        return;
+    }
+
+    for (auto& callback : _relayActiveInstance()) {
+        callback(id, status);
+    }
 }
 
 /**
@@ -3785,7 +3829,7 @@ bool _relayProcess(bool mode) {
             // before initial transition happens, relay should not be globally accessible
             if (flags & RelayFlagBoot) {
                 flags &= ~RelayFlagBoot;
-                _relays_active[id] = true;
+                _relayActive(id, target);
             }
 
             // persist status after provider applied it
