@@ -24,7 +24,6 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 
 namespace espurna {
 namespace domoticz {
-namespace {
 
 struct Idx {
     constexpr static size_t Default { 0 };
@@ -54,7 +53,6 @@ private:
     size_t _value { Default };
 };
 
-} // namespace
 } // namespace domoticz
 
 namespace settings {
