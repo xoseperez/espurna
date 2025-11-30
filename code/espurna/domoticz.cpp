@@ -67,15 +67,13 @@ espurna::domoticz::Idx convert(const String& value) {
 } // namespace settings
 
 namespace domoticz {
-namespace internal {
 namespace {
+
+namespace internal {
 
 bool enabled { false };
 
-} // namespace
 } // namespace internal
-
-namespace {
 
 bool enabled() {
     return internal::enabled;
@@ -89,10 +87,7 @@ void disable() {
     internal::enabled = false;
 }
 
-} // namespace
-
 namespace build {
-namespace {
 
 static constexpr ::espurna::domoticz::Idx DefaultIdx;
 
@@ -103,7 +98,6 @@ constexpr bool enabled() {
     return 1 == DOMOTICZ_ENABLED;
 }
 
-} // namespace
 } // namespace build
 
 namespace settings {
@@ -126,8 +120,6 @@ PROGMEM_STRING(LightIdx, "dczLightIdx");
 #endif
 
 } // namespace keys
-
-namespace {
 
 bool enabled() {
     return getSetting(FPSTR(keys::Enabled), build::enabled());
@@ -159,23 +151,18 @@ Idx lightIdx() {
 }
 #endif
 
-} // namespace
 } // namespace settings
 
 #if RELAY_SUPPORT
 namespace relay {
 namespace internal {
-namespace {
 
 using RelayMask = std::bitset<RelaysMax>;
 
 RelayMask last_active;
 RelayMask last_status;
 
-} // namespace
 } // namespace internal
-
-namespace {
 
 void send(Idx, bool);
 void send();
@@ -228,13 +215,11 @@ void setup() {
     ::relayOnStatusChange(on_status);
 }
 
-} // namespace
 } // namespace relay
 #endif
 
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
 namespace light {
-namespace {
 
 void status(const JsonObject& root, unsigned char nvalue) {
     JsonObject& color = root[F("Color")];
@@ -281,12 +266,10 @@ void status(const JsonObject& root, unsigned char nvalue) {
     lightUpdate();
 }
 
-} // namespace
 } // namespace light
 #endif
 
 namespace mqtt {
-namespace {
 
 void subscribe() {
     mqttSubscribeRaw(settings::topicOut().c_str());
@@ -370,12 +353,10 @@ void setup() {
     ::mqttRegister(callback);
 }
 
-} // namespace
 } // namespace mqtt
 
 #if RELAY_SUPPORT
 namespace relay {
-namespace {
 
 void send(Idx idx, bool value) {
     mqtt::send(idx, value ? 1 : 0);
@@ -390,13 +371,11 @@ void send() {
     }
 }
 
-} // namespace
 } // namespace relay
 #endif
 
 #if SENSOR_SUPPORT
 namespace sensor {
-namespace {
 
 void send(unsigned char index, const espurna::sensor::Value& value) {
     if (!enabled()) {
@@ -442,13 +421,11 @@ void send(unsigned char index, const espurna::sensor::Value& value) {
     }
 }
 
-} // namespace
 } // namespace sensor
 #endif // SENSOR_SUPPORT
 
 #if WEB_SUPPORT
 namespace web {
-namespace {
 
 STRING_VIEW_INLINE(Prefix, "dcz");
 
@@ -501,13 +478,10 @@ void setup() {
         .onKeyCheck(onKeyCheck);
 }
 
-} // namespace
 } // namespace web
 #endif // WEB_SUPPORT
 
 //------------------------------------------------------------------------------
-
-namespace {
 
 void configure() {
     auto enabled_in_cfg = settings::enabled();
