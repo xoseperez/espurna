@@ -3789,10 +3789,10 @@ void _relayReport() {
 }
 
 void _relayActive(size_t id, bool status) {
-    const auto prev = _relays_active[id];
+    const auto prev = static_cast<bool>(_relays_active[id]);
     _relays_active[id] = true;
 
-    if (prev == _relays_active[id]) {
+    if (prev) {
         return;
     }
 
