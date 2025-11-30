@@ -691,6 +691,7 @@ String convert_time(const String& weekdays, int hour, int minute, bool utc) {
 String convert_action(Type type, int target, int action) {
     String out;
 
+    using namespace espurna::scheduler::settings::internal::v1;
     StringView prefix;
 
     switch (type) {
@@ -699,21 +700,18 @@ String convert_action(Type type, int target, int action) {
 
     case Type::Relay:
     {
-        STRING_VIEW_INLINE(Relay, "relay");
         prefix = Relay;
         break;
     }
 
     case Type::Channel:
     {
-        STRING_VIEW_INLINE(Channel, "channel");
         prefix = Channel;
         break;
     }
 
     case Type::Curtain:
     {
-        STRING_VIEW_INLINE(Curtain, "curtain");
         prefix = Curtain;
         break;
     }
@@ -1658,20 +1656,22 @@ void parse_action(String action) {
 
     auto current = split.current();
 
+    using namespace espurna::scheduler::settings::internal::v1;
+
 #if RELAY_SUPPORT
-    if (current == STRING_VIEW("relay")) {
+    if (current == Relay) {
         relay::action(split);
         return;
     }
 #endif
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
-    if (current == STRING_VIEW("channel")) {
+    if (current == Channel) {
         light::action(split);
         return;
     }
 #endif
 #if CURTAIN_SUPPORT
-    if (current == STRING_VIEW("curtain")) {
+    if (current == Curtain) {
         curtain::action(split);
         return;
     }
