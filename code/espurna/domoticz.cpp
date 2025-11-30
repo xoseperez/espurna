@@ -167,7 +167,10 @@ namespace relay {
 namespace internal {
 namespace {
 
-std::bitset<RelaysMax> status;
+using RelayMask = std::bitset<RelaysMax>;
+
+RelayMask last_active;
+RelayMask last_status;
 
 } // namespace
 } // namespace internal
@@ -189,22 +192,40 @@ size_t find(Idx idx) {
 }
 
 void status(Idx idx, bool value) {
-    auto id = find(idx);
-    if (id < RelaysMax) {
-        internal::status[id] = value;
+    const auto id = find(idx);
+    if (id >= RelaysMax) {
+        return;
+    }
+
+    if (!internal::last_active[id]) {
+        return;
+    }
+
+    if (internal::last_status[id] != value) {
+        internal::last_status[id] = value;
         ::relayStatus(id, value);
     }
 }
 
-void callback(size_t id, bool value) {
-    if (internal::status[id] != value) {
-        internal::status[id] = value;
+void on_status(size_t id, bool value) {
+    if (!internal::last_active[id]) {
+        return;
+    }
+
+    if (internal::last_status[id] != value) {
+        internal::last_status[id] = value;
         send(settings::relayIdx(id), value);
     }
 }
 
+void on_active(size_t id, bool status) {
+    internal::last_active[id] = true;
+    on_status(id, status);
+}
+
 void setup() {
-    ::relayOnStatusChange(callback);
+    ::relayOnActive(on_active);
+    ::relayOnStatusChange(on_status);
 }
 
 } // namespace
@@ -361,9 +382,11 @@ void send(Idx idx, bool value) {
 }
 
 void send() {
-    const size_t Relays { relayCount() };
-    for (size_t id = 0; id < Relays; ++id) {
-        send(settings::relayIdx(id), ::relayStatus(id));
+    const auto relays = relayCount();
+    for (size_t id = 0; id < relays; ++id) {
+        if (internal::last_active[id]) {
+            send(settings::relayIdx(id), internal::last_status[id]);
+        }
     }
 }
 
@@ -495,12 +518,6 @@ void configure() {
             mqtt::unsubscribe();
         }
     }
-
-#if RELAY_SUPPORT
-    for (size_t id = 0; id < relayCount(); ++id) {
-        relay::internal::status[id] = relayStatus(id);
-    }
-#endif
 
     if (enabled_in_cfg) {
         enable();
