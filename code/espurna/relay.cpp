@@ -1911,12 +1911,14 @@ Stream* StmProvider::_port = nullptr;
 // -----------------------------------------------------------------------------
 
 bool _relayTryParseId(espurna::StringView value, size_t& id) {
-    return tryParseId(value, _relayCount(), id);
+    const auto out = tryParseId(value, _relayCount(), id);
+    return _relays_active[id] && out;
 }
 
 [[gnu::unused]]
 bool _relayTryParseIdFromPath(espurna::StringView value, size_t& id) {
-    return tryParseIdPath(value, _relayCount(), id);
+    const auto out = tryParseIdPath(value, _relayCount(), id);
+    return _relays_active[id] && out;
 }
 
 void _relayHandleStatus(size_t id, PayloadStatus status, uint8_t flags) {
@@ -2574,15 +2576,15 @@ bool _relayToggle(size_t id) {
 } // namespace
 
 bool relayStatus(size_t id, bool status) {
-    if (id < _relays.size()) {
-        return _relayStatus(id, status, RelayCommonStatusFlags);
+    if (_relays_active[id]) {
+        return _relayStatus(id, status);
     }
 
     return false;
 }
 
 bool relayToggle(size_t id) {
-    if (id < _relays.size()) {
+    if (_relays_active[id]) {
         return _relayToggle(id);
     }
 
@@ -2600,7 +2602,7 @@ bool relayStatus() {
 }
 
 bool relayStatus(size_t id) {
-    if (id < _relays.size()) {
+    if (_relays_active[id]) {
         return _relayStatus(id);
     }
 
@@ -2608,7 +2610,7 @@ bool relayStatus(size_t id) {
 }
 
 bool relayTargetStatus(size_t id) {
-    if (id < _relays.size()) {
+    if (_relays_active[id]) {
         return _relayTargetStatus(id);
     }
 
