@@ -1530,7 +1530,7 @@ RelayMaskHelper _relayMaskCurrent(size_t relays) {
 }
 
 RelayMask _relays_boot{};
-RelayMask _relays_active{};
+RelayMask _relays_ready{};
 RelayMask _relays_retained{};
 size_t _relays_dummy{};
 
@@ -1651,14 +1651,14 @@ RelayStatusCallbacks& _relayStatusChangeInstance() {
     return instance;
 }
 
-RelayStatusCallbacks& _relayActiveInstance() {
+RelayStatusCallbacks& _relayReadyInstance() {
     static RelayStatusCallbacks instance;
     return instance;
 }
 
-void _relayNotifyActiveStatus(RelayStatusCallback callback) {
+void _relayNotifyReadyStatus(RelayStatusCallback callback) {
     for (size_t index = 0; index < _relays.size(); ++index) {
-        if (_relays_active[index]) {
+        if (_relays_ready[index]) {
             callback(index, _relays[index].current_status);
         }
     }
@@ -1674,9 +1674,9 @@ void relayOnStatusChange(RelayStatusCallback callback) {
     _relayStatusChangeInstance().push_front(callback);
 }
 
-void relayOnActive(RelayStatusCallback callback) {
-    _relayActiveInstance().push_front(callback);
-    _relayNotifyActiveStatus(callback);
+void relayOnReady(RelayStatusCallback callback) {
+    _relayReadyInstance().push_front(callback);
+    _relayNotifyReadyStatus(callback);
 }
 
 namespace {
@@ -2109,7 +2109,7 @@ PayloadStatus _relayInvertStatus(PayloadStatus status) {
 
 [[gnu::unused]]
 PayloadStatus _relayPayloadStatus(size_t id) {
-    if (_relays_active[id]) {
+    if (_relays_ready[id]) {
         return _relays[id].current_status
             ? PayloadStatus::On
             : PayloadStatus::Off;
@@ -2168,7 +2168,7 @@ void _relayLockStatus(size_t id) {
 
 [[gnu::unused]]
 bool _relayHandleLockPayload(size_t id, espurna::StringView payload) {
-    if (_relays_active[id]) {
+    if (_relays_ready[id]) {
         const auto lock = _relayTristateFromPayload<RelayLock>(payload.toString());
         _relayLockStatus(id, lock);
         return true;
@@ -2559,7 +2559,7 @@ bool _relayStatusChange(size_t id, bool status, uint8_t flags) {
 bool _relayStatus(size_t id, bool status, uint8_t flags) {
     auto& relay = _relays[id];
 
-    if (!_relays_active[id] && (0 == (flags & RelayFlagBoot))) {
+    if (!_relays_ready[id] && (0 == (flags & RelayFlagBoot))) {
         flags |= RelayFlagBoot;
     }
 
@@ -2602,6 +2602,22 @@ bool _relayToggle(size_t id) {
     return _relayToggle(id, RelayCommonStatusFlags);
 }
 
+using RelayStatusFunc = bool (*)(size_t);
+
+RelayStatus _relayStatusEnum(size_t id, RelayStatusFunc func) {
+    if (id < _relays.size()) {
+        if (!_relays_ready[id]) {
+            return RelayStatus::NotReady;
+        }
+
+        return func(id)
+            ? RelayStatus::On
+            : RelayStatus::Off;
+    }
+
+    return RelayStatus::NotAvailable;
+}
+
 } // namespace
 
 bool relayStatus(size_t id, bool status) {
@@ -2622,7 +2638,7 @@ bool relayToggle(size_t id) {
 
 bool relayStatus() {
     for (size_t id = 0; id < _relays.size(); ++id) {
-        if (_relays_active[id] && _relays[id].current_status) {
+        if (_relays_ready[id] && _relays[id].current_status) {
             return true;
         }
     }
@@ -2631,34 +2647,20 @@ bool relayStatus() {
 }
 
 RelayStatus relayStatus(size_t id) {
-    if (id < _relays.size()) {
-        if (!_relays_active[id]) {
-            return RelayStatus::NotActive;
-        }
-
-        return _relayStatus(id)
-            ? RelayStatus::On
-            : RelayStatus::Off;
-    }
-
-    return RelayStatus::NotAvailable;
+    return _relayStatusEnum(id, _relayStatus);
 }
 
-bool relayTargetStatus(size_t id) {
-    if (id < _relays.size()) {
-        return _relayTargetStatus(id);
-    }
-
-    return false;
+RelayStatus relayTargetStatus(size_t id) {
+    return _relayStatusEnum(id, _relayTargetStatus);
 }
 
 namespace {
 
 void _relaySave(bool persist) {
     const auto relays_available = _relays.size();
-    const auto relays_active = _relays_active.count();
+    const auto relays_ready = _relays_ready.count();
 
-    if (relays_available && (relays_available == relays_active)) {
+    if (relays_available && (relays_available == relays_ready)) {
         const auto mask = _relayMaskCurrent(relays_available);
 
         // Persist only to rtcmem, unless requested to save to settings
@@ -3330,7 +3332,7 @@ void _relayMqttReport(size_t id, uint8_t flags) {
 
 void _relayMqttReportAll() {
     for (size_t id = 0; id < _relays.size(); ++id) {
-        if (_relays_active[id]) {
+        if (_relays_ready[id]) {
             _relayMqttPublish(id);
         }
     }
@@ -3343,7 +3345,7 @@ void _relayMqttReportDescription() {
 
     const auto topic = RelayTopicRelayDescription.toString();
     for (size_t id = 0; id < _relays.size(); ++id) {
-        if (_relays_active[id]) {
+        if (_relays_ready[id]) {
             const auto name = espurna::relay::settings::name(id);
             if (name.length()) {
                 mqttSend(topic.c_str(), id, name.c_str());
@@ -3385,7 +3387,7 @@ void _relayMqttHandleCustomTopic(espurna::StringView topic, espurna::StringView 
 void _relayMqttHandleDisconnectImmediate() {
     using namespace espurna::relay::settings;
     for (size_t id = 0; id < _relays.size(); ++id) {
-        if (_relays_active[id]) {
+        if (_relays_ready[id]) {
             _relayHandleStatus(id, mqttDisconnectionStatus(id));
         }
     }
@@ -3401,7 +3403,7 @@ void _relayMqttHandleDisconnect() {
     }
 
     RelayMaskPair pair;
-    pair.off = _relays_active;
+    pair.off = _relays_ready;
 
     if (pair.off.any()) {
         espurna::relay::timer::schedule_and_start(
@@ -3795,14 +3797,14 @@ void _relayReport() {
 }
 
 void _relayActive(size_t id, bool status) {
-    const auto prev = static_cast<bool>(_relays_active[id]);
-    _relays_active[id] = true;
+    const auto prev = static_cast<bool>(_relays_ready[id]);
+    _relays_ready[id] = true;
 
     if (prev) {
         return;
     }
 
-    for (auto& callback : _relayActiveInstance()) {
+    for (auto& callback : _relayReadyInstance()) {
         callback(id, status);
     }
 }

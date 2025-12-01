@@ -159,7 +159,7 @@ namespace internal {
 
 using RelayMask = std::bitset<RelaysMax>;
 
-RelayMask last_active;
+RelayMask last_ready;
 RelayMask last_status;
 
 } // namespace internal
@@ -184,7 +184,7 @@ void status(Idx idx, bool value) {
         return;
     }
 
-    if (!internal::last_active[id]) {
+    if (!internal::last_ready[id]) {
         return;
     }
 
@@ -195,7 +195,7 @@ void status(Idx idx, bool value) {
 }
 
 void on_status(size_t id, bool value) {
-    if (!internal::last_active[id]) {
+    if (!internal::last_ready[id]) {
         return;
     }
 
@@ -205,13 +205,13 @@ void on_status(size_t id, bool value) {
     }
 }
 
-void on_active(size_t id, bool status) {
-    internal::last_active[id] = true;
+void on_ready(size_t id, bool status) {
+    internal::last_ready[id] = true;
     on_status(id, status);
 }
 
 void setup() {
-    ::relayOnActive(on_active);
+    ::relayOnReady(on_ready);
     ::relayOnStatusChange(on_status);
 }
 
@@ -365,7 +365,7 @@ void send(Idx idx, bool value) {
 void send() {
     const auto relays = relayCount();
     for (size_t id = 0; id < relays; ++id) {
-        if (internal::last_active[id]) {
+        if (internal::last_ready[id]) {
             send(settings::relayIdx(id), internal::last_status[id]);
         }
     }

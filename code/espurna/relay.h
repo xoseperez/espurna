@@ -44,14 +44,14 @@ public:
 // relayStatus(id, relayStatus()) is called
 enum class RelayStatus {
     NotAvailable = -2,
-    NotActive = -1,
+    NotReady = -1,
     Off = 0,
     On = 1,
 };
 
 RelayStatus relayStatus(size_t id);
+RelayStatus relayTargetStatus(size_t id);
 bool relayStatus();
-bool relayTargetStatus(size_t id);
 
 // applies specific status or toggles between them
 bool relayStatus(size_t id, bool status);
@@ -89,7 +89,7 @@ struct RelayAddResult {
 RelayAddResult relayAdd(RelayProviderBasePtr&& provider);
 void relayOnStatusNotify(RelayStatusCallback);
 void relayOnStatusChange(RelayStatusCallback);
-void relayOnActive(RelayStatusCallback);
+void relayOnReady(RelayStatusCallback);
 
 void relaySetupDummy(size_t size, bool reconfigure = false);
 void relaySetup();

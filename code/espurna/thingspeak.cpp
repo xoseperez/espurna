@@ -743,7 +743,7 @@ void setup() {
 
 #if RELAY_SUPPORT
     relayOnStatusChange(client::onRelayStatus);
-    relayOnActive(client::onRelayStatus);
+    relayOnReady(client::onRelayStatus);
 #endif
 
     espurnaRegisterLoop(client::loop);
