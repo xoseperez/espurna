@@ -4343,7 +4343,7 @@ void loop() {
     if (ready_to_read()) {
         // XXX: Filter out certain magnitude types when relay is turned OFF
 #if RELAY_SUPPORT && SENSOR_POWER_CHECK_STATUS
-        const bool relay_off = (relayCount() == 1) && (relayStatus(0) == 0);
+        const bool relay_on = (relayCount() == 1) && (relayStatus(0) == RelayStatus::On);
 #endif
 
         // Report every Nth reading
@@ -4385,7 +4385,7 @@ void loop() {
             case MAGNITUDE_POWER_FACTOR:
             case MAGNITUDE_CURRENT:
             case MAGNITUDE_ENERGY_DELTA:
-                if (relay_off) {
+                if (!relay_on) {
                     state.raw.value = 0.0;
                 }
                 break;

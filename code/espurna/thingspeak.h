@@ -11,7 +11,7 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <Arduino.h>
 #include <cstdint>
 
-bool tspkEnqueueRelay(unsigned char index, bool status);
+bool tspkEnqueueRelay(unsigned char index, const String& value);
 bool tspkEnqueueMagnitude(unsigned char index, const String& value);
 void tspkFlush();
 

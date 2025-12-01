@@ -646,7 +646,7 @@ Status mode_status(const Led& led) {
             return out;
         }
 
-        status = relayStatus(link->relayId);
+        status = relayStatus(link->relayId) == RelayStatus::On;
         if (mode == LedMode::RelayInverse) {
             status = !status;
         }

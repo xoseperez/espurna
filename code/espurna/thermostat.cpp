@@ -314,7 +314,7 @@ void setThermostatState(bool state) {
 void debugPrintSwitch(bool state, const char* tmp_str, const char* reason) {
   DEBUG_MSG_P(PSTR("[THERMOSTAT] switch %s, temp: %s, min: %d, max: %d, mode: %s, relay: %s, last switch %d, reason: %s\n"),
    state ? "ON" : "OFF", tmp_str, _temp_range.min, _temp_range.max, _thermostat_mode_cooler ? "COOLER" : "HEATER",
-   relayStatus(THERMOSTAT_RELAY) ? "ON" : "OFF", millis() - _thermostat.last_switch, reason);
+   relayStatus(THERMOSTAT_RELAY) == RelayStatus::On ? "ON" : "OFF", millis() - _thermostat.last_switch, reason);
 }
 
 //------------------------------------------------------------------------------
@@ -347,7 +347,7 @@ void checkTempAndAdjustRelay(double temp) {
   // active cycle
   if ((_thermostat_mode_cooler && _thermostat_cycle == cooling) ||
      (!_thermostat_mode_cooler && _thermostat_cycle == heating)) {
-    if (!relayStatus(THERMOSTAT_RELAY)) {
+    if (relayStatus(THERMOSTAT_RELAY) == RelayStatus::Off) {
         // if relay is OFF switch it ON if min_off_time passed by
         if (_thermostat.last_switch == 0 || lastSwitchEarlierThan(_thermostat_min_off_time)) {
           switchThermostat(true, tmp_str, _thermostat_mode_cooler ? "start/continue cooling" : "start/continue heating");
@@ -362,7 +362,7 @@ void checkTempAndAdjustRelay(double temp) {
       DEBUG_MSG_P(PSTR("[THERMOSTAT] thermostat is active.\n"));
     }
     // pasive cycle
-  } else if (relayStatus(THERMOSTAT_RELAY)) {
+  } else if (relayStatus(THERMOSTAT_RELAY) == RelayStatus::On) {
     // if relay is ON - switch it OFF
       switchThermostat(false, tmp_str, _thermostat_mode_cooler ? "start heating cycle" : "start cooling cycle");
   }
@@ -370,7 +370,7 @@ void checkTempAndAdjustRelay(double temp) {
 
 //------------------------------------------------------------------------------
 void updateCounters() {
-  if (relayStatus(THERMOSTAT_RELAY)) {
+  if (relayStatus(THERMOSTAT_RELAY) == RelayStatus::On) {
     setSetting(NAME_BURN_TOTAL,      ++_thermostat_burn_total);
     setSetting(NAME_BURN_TODAY,      ++_thermostat_burn_today);
     setSetting(NAME_BURN_THIS_MONTH, ++_thermostat_burn_this_month);
@@ -470,10 +470,20 @@ void thermostatLoop(void) {
       // we don't have any temp - switch thermostat on for N minutes every hour
       _thermostat.temperature_source = temp_none;
       DEBUG_MSG_P(PSTR("[THERMOSTAT] setup thermostat by timeout\n"));
-      if (relayStatus(THERMOSTAT_RELAY) && millis() - _thermostat.last_switch > _thermostat_alone_on_time) {
-        setThermostatState(false);
-      } else if (!relayStatus(THERMOSTAT_RELAY) && millis() - _thermostat.last_switch > _thermostat_alone_off_time) {
-        setThermostatState(false);
+      const auto now = millis();
+      switch (relayStatus(THERMOSTAT_RELAY)) {
+      case RelayStatus::On:
+        if (now - _thermostat.last_switch > _thermostat_alone_on_time) {
+          setThermostatState(false);
+        }
+        break;
+      case RelayStatus::Off:
+      case RelayStatus::NotReady:
+      case RelayStatus::NotAvailable:
+        if (now - _thermostat.last_switch > _thermostat_alone_off_time) {
+          setThermostatState(false);
+        }
+        break;
       }
     }
     if (last_temp_src != _thermostat.temperature_source) {

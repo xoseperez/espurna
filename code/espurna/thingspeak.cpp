@@ -143,26 +143,30 @@ void enqueue(size_t index, const String& payload) {
     }
 }
 
-void enqueue(size_t index, bool status) {
-    enqueue(index, status ? String('1') : String('0'));
-}
-
 void value(size_t index, double status) {
     enqueue(index, String(status, 3));
 }
 
 #if RELAY_SUPPORT
-bool enqueueRelay(size_t index, bool status) {
+bool enqueueRelay(size_t index, const String& value) {
     if (internal::enabled) {
         auto relayIndex = settings::relay(index);
         if (relayIndex) {
-            enqueue(relayIndex, status);
+            enqueue(relayIndex, value);
             schedule_flush();
             return true;
         }
     }
 
     return false;
+}
+
+bool enqueueRelay(size_t index, RelayStatus status) {
+    return enqueueRelay(index, String(static_cast<int>(status), 10));
+}
+
+bool enqueueRelay(size_t index, bool status) {
+    return enqueueRelay(index, String(static_cast<int>(status), 10));
 }
 
 void onRelayStatus(size_t index, bool status) {
@@ -739,9 +743,7 @@ void setup() {
 
 #if RELAY_SUPPORT
     relayOnStatusChange(client::onRelayStatus);
-    for (size_t index = 0; index < relayCount(); ++index) {
-        client::enqueueRelay(index, relayStatus(index));
-    }
+    relayOnActive(client::onRelayStatus);
 #endif
 
     espurnaRegisterLoop(client::loop);
@@ -754,8 +756,8 @@ void setup() {
 // -----------------------------------------------------------------------------
 
 #if RELAY_SUPPORT
-bool tspkEnqueueRelay(size_t index, bool status) {
-    return ::espurna::thingspeak::client::enqueueRelay(index, status);
+bool tspkEnqueueRelay(size_t index, const String& value) {
+    return ::espurna::thingspeak::client::enqueueRelay(index, value);
 }
 #endif
 

@@ -2630,12 +2630,18 @@ bool relayStatus() {
     return false;
 }
 
-bool relayStatus(size_t id) {
+RelayStatus relayStatus(size_t id) {
     if (id < _relays.size()) {
-        return _relayStatus(id);
+        if (!_relays_active[id]) {
+            return RelayStatus::NotActive;
+        }
+
+        return _relayStatus(id)
+            ? RelayStatus::On
+            : RelayStatus::Off;
     }
 
-    return false;
+    return RelayStatus::NotAvailable;
 }
 
 bool relayTargetStatus(size_t id) {

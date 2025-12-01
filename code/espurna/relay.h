@@ -42,8 +42,15 @@ public:
 // gets either current or target status, where current is the status that we are
 // actually in and target is the status we would be, eventually, unless
 // relayStatus(id, relayStatus()) is called
+enum class RelayStatus {
+    NotAvailable = -2,
+    NotActive = -1,
+    Off = 0,
+    On = 1,
+};
+
+RelayStatus relayStatus(size_t id);
 bool relayStatus();
-bool relayStatus(size_t id);
 bool relayTargetStatus(size_t id);
 
 // applies specific status or toggles between them

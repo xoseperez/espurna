@@ -49,7 +49,8 @@ void handler(AsyncWebServerRequest* request) {
 
     if (build::relaySupport()) {
         for (size_t index = 0; index < relayCount(); ++index) {
-            response->printf_P(PSTR("relay%u %d\n"), index, relayStatus(index) ? 1 : 0);
+            const auto status = relayStatus(index);
+            response->printf_P(PSTR("relay%u %d\n"), index, static_cast<int>(status));
         }
     }
 
