@@ -1641,20 +1641,9 @@ namespace {
 
 using RelayStatusCallbacks = std::forward_list<RelayStatusCallback>;
 
-RelayStatusCallbacks& _relayStatusNotifyInstance() {
-    static RelayStatusCallbacks instance;
-    return instance;
-}
-
-RelayStatusCallbacks& _relayStatusChangeInstance() {
-    static RelayStatusCallbacks instance;
-    return instance;
-}
-
-RelayStatusCallbacks& _relayReadyInstance() {
-    static RelayStatusCallbacks instance;
-    return instance;
-}
+RelayStatusCallbacks _relays_on_status_notify;
+RelayStatusCallbacks _relays_on_status_change;
+RelayStatusCallbacks _relays_on_ready;
 
 void _relayNotifyReadyStatus(RelayStatusCallback callback) {
     for (size_t index = 0; index < _relays.size(); ++index) {
@@ -1667,15 +1656,15 @@ void _relayNotifyReadyStatus(RelayStatusCallback callback) {
 } // namespace
 
 void relayOnStatusNotify(RelayStatusCallback callback) {
-    _relayStatusNotifyInstance().push_front(callback);
+    _relays_on_status_notify.push_front(callback);
 }
 
 void relayOnStatusChange(RelayStatusCallback callback) {
-    _relayStatusChangeInstance().push_front(callback);
+    _relays_on_status_change.push_front(callback);
 }
 
 void relayOnReady(RelayStatusCallback callback) {
-    _relayReadyInstance().push_front(callback);
+    _relays_on_ready.push_front(callback);
     _relayNotifyReadyStatus(callback);
 }
 
@@ -2479,7 +2468,7 @@ bool _relayStatusNotify(size_t id, bool status) {
     }
 
     relay.provider->notify(status);
-    for (auto& notify : _relayStatusNotifyInstance()) {
+    for (auto& notify : _relays_on_status_notify) {
         notify(id, status);
     }
 
@@ -3775,7 +3764,7 @@ void _relaySetupTerminal() {
 namespace {
 
 void _relayReport(size_t id [[gnu::unused]], bool status [[gnu::unused]], uint8_t flags [[gnu::unused]]) {
-    for (auto& change : _relayStatusChangeInstance()) {
+    for (auto& change : _relays_on_status_change) {
         change(id, status);
     }
 #if MQTT_SUPPORT
@@ -3804,7 +3793,7 @@ void _relayActive(size_t id, bool status) {
         return;
     }
 
-    for (auto& callback : _relayReadyInstance()) {
+    for (auto& callback : _relays_on_ready) {
         callback(id, status);
     }
 }
