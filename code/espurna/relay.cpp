@@ -2840,8 +2840,6 @@ void _relayBootAll() {
             };
 
             relay_status[id] = _relayBoot(ctx);
-
-            _relays[id].flags |= Flags;
             if (!rtcmem_available || relay_status[id] != ctx.mask_status()) {
                 _relays_retained[id] = false;
             }
