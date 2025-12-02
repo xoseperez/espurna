@@ -761,9 +761,14 @@ rpn_error status(rpn_context & ctxt, bool force) {
     {
         bool ok = force;
         if (!ok) {
-            const auto status = relayTargetStatus(id_uint);
-            ok = status == RelayStatus::On
-              || status == RelayStatus::Off;
+            const auto status_enum =
+                status_uint == 1
+                    ? RelayStatus::On
+                    : RelayStatus::Off;
+            const auto target_status = relayTargetStatus(id_uint);
+            ok = (status_enum != target_status)
+              && ((target_status == RelayStatus::On)
+               || (target_status == RelayStatus::Off));
         }
 
         if (ok) {
