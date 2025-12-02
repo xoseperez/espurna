@@ -8,13 +8,16 @@
 #pragma GCC diagnostic warning "-Wstrict-overflow=5"
 
 #include <espurna/settings_embedis.h>
+#include <espurna/types.h>
 
 #include <algorithm>
+#include <vector>
 #include <array>
 #include <numeric>
 #include <random>
 
 #include <cstdio>
+#include <cstring>
 
 namespace espurna {
 namespace settings {
@@ -32,16 +35,56 @@ struct StaticArrayStorage {
     {}
 
     uint8_t read(size_t index) const {
-        TEST_ASSERT_LESS_THAN(_size, index);
         return _blob[index];
     }
 
-    void write(size_t index, uint8_t value) {
+    std::vector<uint8_t> read(size_t index, size_t size) const {
+        std::vector<uint8_t> out;
+        out.insert(out.end(), &_blob[index], &_blob[index + size]);
+        return out;
+    }
+
+    Span<const uint8_t> data(size_t index, size_t size) const {
         TEST_ASSERT_LESS_THAN(_size, index);
-        _blob[index] = value;
+        return Span<const uint8_t>(&_blob[index], size);
+    }
+
+    void write(size_t index, Span<const uint8_t> data) {
+        TEST_ASSERT_LESS_THAN(_size, index);
+        memmove(&_blob[index], data.begin(), data.size());
+    }
+
+    void fill(size_t index, size_t size, uint8_t value) const {
+        std::fill(&_blob[index], &_blob[index + size], value);
     }
 
     void commit() {
+    }
+
+    void dump(size_t index, size_t size) const {
+        size_t count { 0 };
+
+        char sep { ' ' };
+        for (size_t i = index; (i < _blob.size()) && (i < index + size); ++i) {
+            auto c = _blob[i];
+            ++count;
+            if (count == 24) {
+                sep = '\n';
+            }
+            ::printf("%02X%c", c, sep);
+            if (count == 24) {
+                sep = ' ';
+                count = 0;
+            }
+        }
+
+        if (sep == ' ') {
+            puts("");
+        }
+    }
+
+    void dump() const {
+        dump(0, _blob.size());
     }
 
     T& _blob;
@@ -155,7 +198,7 @@ template <typename T>
 void check_kv(T& instance, const String& key, const String& value) {
     auto result = instance.kvs.get(key);
     TEST_ASSERT_MESSAGE(static_cast<bool>(result), key.c_str());
-    TEST_ASSERT(result.length());
+    TEST_ASSERT_EQUAL(value.length(), result.size());
     TEST_ASSERT_EQUAL_STRING(value.c_str(), result.c_str());
 };
 
@@ -491,7 +534,7 @@ void test_keys_iterator() {
     // ensure we get the same order of keys when iterating via foreach
     std::vector<String> keys;
     instance.kvs.foreach([&keys](decltype(instance)::kvs_type::KeyValueResult&& kv) {
-        keys.push_back(kv.key.read());
+        keys.push_back(kv.key.toString());
     });
 
     TEST_ASSERT_EQUAL(2, keys.size());

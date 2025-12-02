@@ -192,7 +192,7 @@ bool has(const String& key) {
 Keys keys() {
     Keys out;
     foreach([&](kvs_type::KeyValueResult&& kv) {
-        out.push_back(kv.key.read());
+        out.push_back(kv.key.toString());
     });
 
     return out;
@@ -220,7 +220,7 @@ void foreach(KeyValueResultWithTokenCallback&& callback) {
 
 void foreach_prefix(PrefixResultCallback&& callback, query::StringViewIterator prefixes) {
     foreach([&](kvs_type::KeyValueResult&& kv) {
-        auto key = kv.key.read();
+        auto key = kv.key.toString();
         for (auto it = prefixes.begin(); it != prefixes.end(); ++it) {
             if (StringView{key}.startsWith(*it)) {
                 callback((*it), std::move(key), kv.value);
@@ -368,8 +368,8 @@ void gc(::terminal::CommandContext&& ctx) {
     kv_store.foreach([&](kvs_type::KeyValueResult&& result) {
         refs.push_back(
             KeyRef{
-                .key = result.key.read(),
-                .length = result.key.length(),
+                .key = result.key.toString(),
+                .length = result.key.valueLength(),
             });
     });
 

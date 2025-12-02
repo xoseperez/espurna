@@ -448,8 +448,8 @@ void _onGetConfig(AsyncWebServerRequest *request) {
     out->concat(buffer, prefix_len);
 
     espurna::settings::foreach([&](espurna::settings::kvs_type::KeyValueResult&& kv) {
-        auto key = kv.key.read();
-        auto value = kv.value.read();
+        auto key = kv.key.toString();
+        auto value = kv.value.toString();
 
         int len = snprintf_P(buffer, sizeof(buffer), PSTR("\"%s\": \"%s\""), key.c_str(), value.c_str());
         if (len > 0) {

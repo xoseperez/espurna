@@ -21,6 +21,15 @@ public:
     StorageEEPROM_Rotate(StorageEEPROM_Rotate&&) = delete;
     StorageEEPROM_Rotate& operator=(StorageEEPROM_Rotate&&) = delete;
 
+    // ensure access ptr is inlined, since original class makes this a .cpp method
+    const uint8_t* data() const {
+        return _data;
+    }
+
+    uint8_t* data() {
+        return _data;
+    }
+
     // fill all of the available storage with the 'value'
     void fill(uint8_t);
 

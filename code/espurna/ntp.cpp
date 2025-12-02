@@ -739,17 +739,17 @@ void convertLegacyOffsets() {
     espurna::settings::foreach(
         [&](espurna::settings::kvs_type::KeyValueResult&& kv) {
             using namespace espurna::settings::internal;
-            const auto key = kv.key.read();
+            const auto key = kv.key.toString();
             if (key == STRING_VIEW("ntpTZ")) {
                 save = false;
             } else if (key == STRING_VIEW("ntpOffset")) {
-                offset = convert<int>(kv.value.read());
+                offset = convert<int>(kv.value.toString());
                 found = true;
             } else if (key == STRING_VIEW("ntpDST")) {
-                dst = convert<bool>(kv.value.read());
+                dst = convert<bool>(kv.value.toString());
                 found = true;
             } else if (key == STRING_VIEW("ntpRegion")) {
-                europe = (0 == convert<int>(kv.value.read()));
+                europe = (0 == convert<int>(kv.value.toString()));
                 found = true;
             }
         });

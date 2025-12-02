@@ -34,9 +34,6 @@ void autosaveSettings();
 namespace espurna {
 namespace settings {
 
-// TODO: multi-byte access
-// {blob} read(size_t)
-// void write(size_t, {blob})
 class EepromStorage {
 public:
     using storage_type = StorageEEPROM_Rotate;
@@ -53,12 +50,34 @@ public:
         _instance(std::addressof(instance))
     {}
 
-    uint8_t read(size_t pos) const {
-        return _instance->read(pos);
+    std::vector<uint8_t> read(uint16_t pos, size_t size) const {
+        const auto* ptr = _instance->data() + pos;
+        std::vector<uint8_t> out;
+        out.insert(out.end(), ptr, ptr + size);
+        return out;
+    }
+
+    Span<const uint8_t> data(uint16_t pos, size_t size) const {
+        const auto* ptr = _instance->data() + pos;
+        return Span<const uint8_t>(ptr, size);
+    }
+
+    uint8_t read(uint16_t pos) const {
+        return _instance->data()[pos];
+    }
+
+    void write(size_t pos, Span<const uint8_t> data) const {
+        auto* ptr = const_cast<uint8_t*>(_instance->data()) + pos;
+        memmove_P(ptr, data.data(), data.size());
     }
 
     void write(size_t pos, uint8_t value) const {
-        _instance->write(pos, value);
+        write(pos, Span<const uint8_t>(&value, 1));
+    }
+
+    void fill(size_t pos, size_t size, uint8_t value) const {
+        auto* ptr = const_cast<uint8_t*>(_instance->data()) + pos;
+        std::fill(ptr, ptr + size, value);
     }
 
     void commit() const {
