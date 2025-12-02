@@ -69,7 +69,10 @@ PROGMEM_STRING(ClearCache, "tspkClear");
 PROGMEM_STRING(Address, "tspkAddress");
 
 PROGMEM_STRING(Relay, "tspkRelay");
+
+#if SENSOR_SUPPORT
 PROGMEM_STRING(Magnitude, "tspkMagnitude");
+#endif
 
 #if THINGSPEAK_USE_SSL && (SECURE_CLIENT != SECURE_CLIENT_NONE)
 PROGMEM_STRING(Check, "tspkScCheck");
