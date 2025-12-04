@@ -9,6 +9,9 @@ EEPROM MODULE
 
 namespace {
 
+[[gnu::unused]]
+bool _eeprom_boot_default = false;
+
 bool _eeprom_commit = false;
 
 size_t _eeprom_commit_count = 0;
@@ -71,6 +74,7 @@ StorageEEPROM_Rotate::StorageEEPROM_Rotate() :
         fill(0xff);
         writeReservedData();
         _eepromCommitResult(as_base()->commit());
+        _eeprom_boot_default = true;
     }
 }
 
@@ -188,11 +192,14 @@ static void _eepromCommand(::terminal::CommandContext&& ctx) {
         _eepromAvailableSectors(instance).c_str());
 
     if (_eeprom_commit_count > 0) {
-        ctx.output.printf_P(PSTR("Commits done: %lu, last: %s\n"),
+        ctx.output.printf_P(PSTR("Commits done: %lu, last: %s, boot reset: %s\n"),
             _eeprom_commit_count,
             _eeprom_last_commit_result
                 ? PSTR("OK")
-                : PSTR("ERROR"));
+                : PSTR("ERROR"),
+            _eeprom_boot_default
+                ? PSTR("YES")
+                : PSTR("NO"));
     }
 
     terminalOK(ctx);
