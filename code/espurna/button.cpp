@@ -64,6 +64,10 @@ struct ButtonEventDelays {
     unsigned long lnglngclick;
 };
 
+namespace espurna {
+namespace button {
+namespace {
+
 using ButtonEventEmitterPtr = std::unique_ptr<debounce_event::EventEmitter>;
 
 struct Button {
@@ -82,12 +86,8 @@ struct Button {
     ButtonEventDelays event_delays;
 };
 
-
-namespace espurna {
-namespace button {
 namespace settings {
 namespace keys {
-namespace {
 
 PROGMEM_STRING(Gpio, "btnGpio");
 PROGMEM_STRING(GpioType, "btnGpioType");
@@ -118,11 +118,9 @@ PROGMEM_STRING(MqttRetain, "btnMqttRetain");
 
 [[gnu::unused]] PROGMEM_STRING(TerminalCommand, "btnTermCmd");
 
-} // namespace
 } // namespace keys
 
 namespace options {
-namespace {
 
 using espurna::settings::options::Enumeration;
 
@@ -217,9 +215,9 @@ static constexpr Enumeration<ButtonAction> ButtonActionOptions[] PROGMEM {
 #endif
 };
 
-} // namespace
 } // namespace query
 } // namespace settings
+} // namespace
 } // namespace button
 
 namespace settings {
@@ -285,16 +283,15 @@ String serialize(::ButtonAction value) {
 // -----------------------------------------------------------------------------
 
 namespace button {
-namespace internal {
 namespace {
 
-static std::vector<Button> buttons;
+namespace internal {
 
-} // namespace
+std::vector<Button> buttons;
+
 } // namespace internal
 
 namespace build {
-namespace {
 
 constexpr size_t pin(size_t index) {
     return (
@@ -621,18 +618,13 @@ constexpr ButtonProvider provider(size_t index) {
     );
 }
 
-} // namespace
 } // namespace build
 
 namespace settings {
-namespace {
 
 STRING_VIEW_INLINE(Prefix, "btn");
 
-} // namespace
-
 namespace internal {
-namespace {
 
 template <typename T>
 T indexedThenGlobal(const String& prefix, size_t index, T defaultValue) {
@@ -653,10 +645,7 @@ T indexedThenGlobal(const String& prefix, size_t index, T defaultValue) {
     return defaultValue;
 }
 
-} // namespace
 } // namespace internal
-
-namespace {
 
 unsigned char pin(size_t index) {
     return getSetting({keys::Gpio, index}, build::pin(index));
@@ -758,11 +747,8 @@ String terminalCommand(size_t index) {
 }
 #endif
 
-} // namespace
-
 namespace query {
 namespace internal {
-namespace {
 
 #define ID_VALUE(NAME, FUNC)\
 String NAME (size_t id) {\
@@ -797,10 +783,7 @@ ID_VALUE(mqttRetain, settings::mqttRetain)
 
 #undef ID_VALUE
 
-} // namespace
 } // namespace internal
-
-namespace {
 
 static constexpr espurna::settings::query::IndexedSetting IndexedSettings[] PROGMEM {
     {keys::Gpio, internal::pin},
@@ -847,7 +830,6 @@ void setup() {
     });
 }
 
-} // namespace
 } // namespace query
 } // namespace settings
 
@@ -908,46 +890,6 @@ void setup() {
 }
 
 } // namespace terminal
-} // namespace button
-} // namespace espurna
-
-namespace {
-
-constexpr ButtonAction _buttonDecodeEventAction(const ButtonActions& actions, ButtonEvent event) {
-    return (
-        (event == ButtonEvent::Pressed) ? actions.pressed :
-        (event == ButtonEvent::Released) ? actions.released :
-        (event == ButtonEvent::Click) ? actions.click :
-        (event == ButtonEvent::DoubleClick) ? actions.dblclick :
-        (event == ButtonEvent::LongClick) ? actions.lngclick :
-        (event == ButtonEvent::LongLongClick) ? actions.lnglngclick :
-        (event == ButtonEvent::TripleClick) ? actions.trplclick : ButtonAction::None
-    );
-}
-
-constexpr ButtonEvent _buttonMapReleased(uint8_t count, unsigned long length, unsigned long lngclick_delay, unsigned long lnglngclick_delay) {
-    return (
-        (0 == count) ? ButtonEvent::Released :
-        (1 == count) ? (
-            (length > lnglngclick_delay) ? ButtonEvent::LongLongClick :
-            (length > lngclick_delay) ? ButtonEvent::LongClick : ButtonEvent::Click
-        ) :
-        (2 == count) ? ButtonEvent::DoubleClick :
-        (3 == count) ? ButtonEvent::TripleClick :
-        ButtonEvent::None
-    );
-}
-
-debounce_event::types::Config _buttonRuntimeConfig(size_t index) {
-    return {
-        espurna::button::settings::mode(index),
-        espurna::button::settings::defaultValue(index),
-        espurna::button::settings::pinMode(index)};
-}
-
-} // namespace
-
-// -----------------------------------------------------------------------------
 
 Button::Button(ButtonActions&& actions_, ButtonEventDelays&& delays_) :
     actions(std::move(actions_)),
@@ -960,13 +902,26 @@ Button::Button(BasePinPtr&& pin, const debounce_event::types::Config& config, Bu
     event_delays(std::move(delays_))
 {}
 
+constexpr ButtonEvent map_released(uint8_t count, unsigned long length, unsigned long lngclick_delay, unsigned long lnglngclick_delay) {
+    return (
+        (0 == count) ? ButtonEvent::Released :
+        (1 == count) ? (
+            (length > lnglngclick_delay) ? ButtonEvent::LongLongClick :
+            (length > lngclick_delay) ? ButtonEvent::LongClick : ButtonEvent::Click
+        ) :
+        (2 == count) ? ButtonEvent::DoubleClick :
+        (3 == count) ? ButtonEvent::TripleClick :
+        ButtonEvent::None
+    );
+}
+
 ButtonEvent Button::loop() {
     if (event_emitter) {
         switch (event_emitter->loop()) {
         case debounce_event::types::EventPressed:
             return ButtonEvent::Pressed;
         case debounce_event::types::EventReleased: {
-            return _buttonMapReleased(
+            return map_released(
                 event_emitter->getEventCount(),
                 event_emitter->getEventLength(),
                 event_delays.lngclick,
@@ -980,6 +935,29 @@ ButtonEvent Button::loop() {
 
     return ButtonEvent::None;
 }
+
+constexpr ButtonAction decode_actions_event(const ButtonActions& actions, ButtonEvent event) {
+    return (
+        (event == ButtonEvent::Pressed) ? actions.pressed :
+        (event == ButtonEvent::Released) ? actions.released :
+        (event == ButtonEvent::Click) ? actions.click :
+        (event == ButtonEvent::DoubleClick) ? actions.dblclick :
+        (event == ButtonEvent::LongClick) ? actions.lngclick :
+        (event == ButtonEvent::LongLongClick) ? actions.lnglngclick :
+        (event == ButtonEvent::TripleClick) ? actions.trplclick : ButtonAction::None
+    );
+}
+
+debounce_event::types::Config runtime_config(size_t index) {
+    return {
+        espurna::button::settings::mode(index),
+        espurna::button::settings::defaultValue(index),
+        espurna::button::settings::pinMode(index)};
+}
+
+} // namespace
+} // namespace button
+} // namespace espurna
 
 // -----------------------------------------------------------------------------
 
@@ -1011,16 +989,73 @@ std::bitset<ButtonsMax> _buttons_mqtt_retain(
 
 #if RELAY_SUPPORT
 
+namespace espurna {
+namespace button {
 namespace {
 
-std::vector<unsigned char> _button_relays;
+namespace relay {
 
-size_t _buttonRelay(size_t id) {
-    return _button_relays[id];
+struct Pair {
+    unsigned char button_id;
+    unsigned char relay_id;
+};
+
+namespace internal {
+
+std::forward_list<Pair> relays;
+
+} // namespace internal
+
+void remove(unsigned char buttonId) {
+    internal::relays.remove_if(
+        [&](const Pair& pair) {
+            return pair.button_id == buttonId;
+        });
 }
 
-void _buttonRelayAction(size_t id, ButtonAction action) {
-    auto relayId = _buttonRelay(id);
+Pair* find(size_t id) {
+    auto it = std::find_if(
+        internal::relays.begin(),
+        internal::relays.end(),
+        [&](const Pair& pair) {
+            return pair.button_id == id;
+        });
+
+    if (it != internal::relays.end()) {
+        return std::addressof(*it);
+    }
+
+    return nullptr;
+}
+
+void add_or_remove(unsigned char buttonId, unsigned char relayId) {
+    if (relayId == RELAY_NONE) {
+        remove(buttonId);
+        return;
+    }
+
+    auto it = find(buttonId);
+    if (it) {
+        (*it).relay_id = relayId;
+    } else {
+        internal::relays.push_front(Pair{
+            .button_id = buttonId,
+            .relay_id = relayId,
+        });
+    }
+}
+
+size_t get(size_t id) {
+    auto it = find(id);
+    if (it) {
+        return (*it).relay_id;
+    }
+
+    return RelaysMax;
+}
+
+void process_action(size_t id, ButtonAction action) {
+    auto relayId = get(id);
 
     switch (action) {
     case ButtonAction::Toggle:
@@ -1046,7 +1081,11 @@ void _buttonRelayAction(size_t id, ButtonAction action) {
     }
 }
 
+} // namespace relay
+
 } // namespace
+} // namespace button
+} // namespace espurna
 
 #endif // RELAY_SUPPORT
 
@@ -1089,8 +1128,9 @@ void buttonOnEvent(ButtonEventHandler handler) {
 //------------------------------------------------------------------------------
 
 ButtonAction buttonAction(size_t id, ButtonEvent event) {
-    return (id < espurna::button::internal::buttons.size())
-        ? _buttonDecodeEventAction(espurna::button::internal::buttons[id].actions, event)
+    using namespace espurna::button;
+    return (id < internal::buttons.size())
+        ? decode_actions_event(internal::buttons[id].actions, event)
         : ButtonAction::None;
 }
 
@@ -1150,7 +1190,7 @@ void buttonEvent(size_t id, ButtonEvent event) {
 
     auto& button = espurna::button::internal::buttons[id];
 
-    auto action = _buttonDecodeEventAction(button.actions, event);
+    auto action = espurna::button::decode_actions_event(button.actions, event);
     for (auto& notify : _button_notify_event) {
         notify(id, event);
     }
@@ -1168,7 +1208,7 @@ void buttonEvent(size_t id, ButtonEvent event) {
     case ButtonAction::Off:
     case ButtonAction::Pulse:
 #if RELAY_SUPPORT
-        _buttonRelayAction(id, action);
+        espurna::button::relay::process_action(id, action);
 #endif
         break;
 
@@ -1257,13 +1297,9 @@ namespace {
 void _buttonConfigure() {
     auto buttons = espurna::button::internal::buttons.size();
 
-#if RELAY_SUPPORT
-    _button_relays.clear();
-#endif
-
     for (decltype(buttons) id = 0; id < buttons; ++id) {
 #if RELAY_SUPPORT
-        _button_relays.push_back(espurna::button::settings::relay(id));
+        espurna::button::relay::add_or_remove(id, espurna::button::settings::relay(id));
 #endif
 #if MQTT_SUPPORT
         _buttons_mqtt_send_all[id] = espurna::button::settings::mqttSendAllEvents(id);
@@ -1487,12 +1523,23 @@ ButtonEventDelays _buttonDelays(size_t index) {
         .lnglngclick = espurna::button::settings::longLongClickDelay(index)};
 }
 
-void _buttonAddWithPin(size_t index, BasePinPtr&& pin) {
-    espurna::button::internal::buttons.emplace_back(
+template <typename T>
+void _buttonAdd(T&& button) {
+    espurna::button::internal::buttons.emplace_back(std::forward<T>(button));
+}
+
+espurna::button::Button _buttonWithPin(size_t index, BasePinPtr&& pin) {
+    return espurna::button::Button(
         std::move(pin),
-        _buttonRuntimeConfig(index),
+        espurna::button::runtime_config(index),
         _buttonActions(index),
         _buttonDelays(index));
+}
+
+espurna::button::Button _buttonWithoutPin(size_t index) {
+    return espurna::button::Button(
+            _buttonActions(index),
+            _buttonDelays(index));
 }
 
 bool _buttonSetupProvider(size_t index, ButtonProvider provider) {
@@ -1500,9 +1547,7 @@ bool _buttonSetupProvider(size_t index, ButtonProvider provider) {
 
     switch (provider) {
     case ButtonProvider::Dummy:
-        espurna::button::internal::buttons.emplace_back(
-            _buttonActions(index),
-            _buttonDelays(index));
+        _buttonAdd(_buttonWithoutPin(index));
         result = true;
         break;
 
@@ -1514,7 +1559,7 @@ bool _buttonSetupProvider(size_t index, ButtonProvider provider) {
             break;
         }
 
-        _buttonAddWithPin(index, std::move(pin));
+        _buttonAdd(_buttonWithPin(index, std::move(pin)));
         result = true;
 #endif
         break;
@@ -1522,7 +1567,7 @@ bool _buttonSetupProvider(size_t index, ButtonProvider provider) {
 
     case ButtonProvider::Lightfox:
 #ifdef FOXEL_LIGHTFOX_DUAL
-        _buttonAddWithPin(index, lightfoxMakeButtonPin(index));
+        _buttonAdd(_buttonWithPin(index, lightfoxMakeButtonPin(index)));
         result = true;
 #endif
         break;
