@@ -307,20 +307,24 @@ size_t RequestPrint::write(const uint8_t* data, size_t size) {
 
 // -----------------------------------------------------------------------------
 
+namespace espurna {
+namespace web {
 namespace {
 
-uint16_t _port{};
-AsyncWebServer* _server;
+uint16_t port{};
+AsyncWebServer* server;
 
 // XXX shared between requests!
-std::vector<uint8_t>* _webConfigBuffer;
-bool _webConfigSuccess = false;
+std::unique_ptr<std::vector<uint8_t>> config_buffer;
+bool config_success = false;
 
 // TODO server may not cache the full body
-std::vector<web_request_callback_f> _web_request_callbacks;
-std::vector<web_body_callback_f> _web_body_callbacks;
+std::vector<web_request_callback_f> request_callbacks;
+std::vector<web_body_callback_f> body_callbacks;
 
 } // namespace
+} // namespace web
+} // namespace espurna
 
 // -----------------------------------------------------------------------------
 // HOOKS
@@ -506,7 +510,7 @@ void _onPostConfig(AsyncWebServerRequest *request) {
         _webRequestAuth(request);
         return;
     }
-    request->send(_webConfigSuccess ? 200 : 400);
+    request->send(espurna::web::config_success ? 200 : 400);
 }
 
 void _onPostConfigFile(AsyncWebServerRequest *request, String, size_t index, uint8_t *data, size_t len, bool final) {
@@ -516,40 +520,41 @@ void _onPostConfigFile(AsyncWebServerRequest *request, String, size_t index, uin
         return;
     }
 
+    auto& success = espurna::web::config_success;
+    auto& buffer = espurna::web::config_buffer;
+
     // No buffer
     if (final && (index == 0)) {
-        _webConfigSuccess = settingsRestoreJson((char*) data);
+        success = settingsRestoreJson((char*) data);
         return;
     }
 
     // Buffer start => reset
-    if (index == 0) if (_webConfigBuffer) delete _webConfigBuffer;
+    if (index == 0) if (buffer) buffer.reset(nullptr);
 
     // init buffer if it doesn't exist
-    if (!_webConfigBuffer) {
-        _webConfigBuffer = new std::vector<uint8_t>();
-        _webConfigSuccess = false;
+    if (!buffer) {
+        buffer = std::make_unique<std::vector<uint8_t>>();
+        success = false;
     }
 
     // Copy
     if (len > 0) {
-        if ((_webConfigBuffer->size() + len) > std::min(WebConfigBufferMax, systemFreeHeap() - sizeof(std::vector<uint8_t>))) {
-            delete _webConfigBuffer;
-            _webConfigBuffer = nullptr;
+        using buffer_type = std::remove_cvref<decltype(buffer)>::type::element_type;
+        if ((buffer->size() + len) > std::min(WebConfigBufferMax, systemFreeHeap() - sizeof(buffer_type))) {
+            buffer.reset(nullptr);
             request->send(500);
             return;
         }
-        _webConfigBuffer->reserve(_webConfigBuffer->size() + len);
-        _webConfigBuffer->insert(_webConfigBuffer->end(), data, data + len);
+        buffer->reserve(buffer->size() + len);
+        buffer->insert(buffer->end(), data, data + len);
     }
 
     // Ending
     if (final) {
-
-        _webConfigBuffer->push_back(0);
-        _webConfigSuccess = settingsRestoreJson((char*) _webConfigBuffer->data());
-        delete _webConfigBuffer;
-
+        buffer->push_back(0);
+        success = settingsRestoreJson((char*) buffer->data());
+        buffer.reset(nullptr);
     }
 
 }
@@ -673,7 +678,7 @@ void _onRequest(AsyncWebServerRequest *request){
     if (!_onAPModeRequest(request)) return;
 
     // Send request to subscribers, break when request is 'handled' by the callback
-    for (auto& callback : _web_request_callbacks) {
+    for (auto& callback : espurna::web::request_callbacks) {
         if (callback(request)) {
             return;
         }
@@ -693,8 +698,8 @@ void _onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t i
     if (!_onAPModeRequest(request)) return;
 
     // Send request to subscribers
-    for (unsigned char i = 0; i < _web_body_callbacks.size(); i++) {
-        bool response = (_web_body_callbacks[i])(request, data, len, index, total);
+    for (unsigned char i = 0; i < espurna::web::body_callbacks.size(); i++) {
+        bool response = (espurna::web::body_callbacks[i])(request, data, len, index, total);
         if (response) return;
     }
 
@@ -705,7 +710,7 @@ void _onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t i
 }
 
 void _onVisible(JsonObject& root) {
-    root[espurna::web::settings::keys::Port] = _port;
+    root[espurna::web::settings::keys::Port] = espurna::web::port;
 }
 
 bool _onKeyCheck(espurna::StringView key, const JsonVariant&) {
@@ -727,19 +732,19 @@ bool webAuthenticate(AsyncWebServerRequest *request) {
 }
 
 uint16_t webPort() {
-    return _port;
+    return espurna::web::port;
 }
 
 AsyncWebServer& webServer() {
-    return *_server;
+    return *espurna::web::server;
 }
 
 void webBodyRegister(web_body_callback_f callback) {
-    _web_body_callbacks.push_back(callback);
+    espurna::web::body_callbacks.push_back(callback);
 }
 
 void webRequestRegister(web_request_callback_f callback) {
-    _web_request_callbacks.push_back(callback);
+    espurna::web::request_callbacks.push_back(callback);
 }
 
 void webLog(AsyncWebServerRequest* request) {
@@ -766,57 +771,57 @@ void webSetup() {
     // (since we don't want to forcibly add it to each instance)
     using namespace espurna::web;
 
-    _port = settings::port();
-    _server = new AsyncWebServer(_port);
+    port = settings::port();
+    server = new AsyncWebServer(port);
 
 #if DEBUG_SUPPORT
     if (settings::access_log()) {
         static WebAccessLogHandler log;
-        _server->addHandler(&log);
+        server->addHandler(&log);
     }
 #endif
 
     // Rewrites
-    _server->rewrite("/", "/index.html");
+    server->rewrite("/", "/index.html");
 
     // Serve home (basic authentication protection is done manually b/c the handler is installed through callback functions)
     #if WEB_EMBEDDED
-        _server->on("/index.html", HTTP_GET, _onHome);
+        server->on("/index.html", HTTP_GET, _onHome);
     #endif
 
     // Serve static files (not supported, yet)
     #if SPIFFS_SUPPORT
-        _server->serveStatic("/", SPIFFS, "/")
-            .setLastModified(_last_modified)
+        server->serveStatic("/", SPIFFS, "/")
+            .setLastModified(WebLastModified.toString().c_str())
             .setFilter([](AsyncWebServerRequest *request) -> bool {
                 webLog(request);
                 return true;
             });
     #endif
 
-    _server->on("/reset", HTTP_GET, _onReset);
-    _server->on("/config", HTTP_GET, _onGetConfig);
-    _server->on("/config", HTTP_POST | HTTP_PUT, _onPostConfig, _onPostConfigFile);
-    _server->on("/discover", HTTP_GET, _onDiscover);
+    server->on("/reset", HTTP_GET, _onReset);
+    server->on("/config", HTTP_GET, _onGetConfig);
+    server->on("/config", HTTP_POST | HTTP_PUT, _onPostConfig, _onPostConfigFile);
+    server->on("/discover", HTTP_GET, _onDiscover);
 
 #if WIFI_AP_CAPTIVE_SUPPORT
-    _server->on("/generate_204", _onAPCaptiveRequest);
-    _server->on("/fwlink", _onAPCaptiveRequest);
+    server->on("/generate_204", _onAPCaptiveRequest);
+    server->on("/fwlink", _onAPCaptiveRequest);
 #endif
 
     // Handle every other request, including 404
-    _server->onRequestBody(_onBody);
-    _server->onNotFound(_onRequest);
+    server->onRequestBody(_onBody);
+    server->onNotFound(_onRequest);
 
     // Run server
     #if WEB_SSL_ENABLED
-        _server->onSslFileRequest(_onCertificate, NULL);
-        _server->beginSecure("server.cer", "server.key", NULL);
+        server->onSslFileRequest(_onCertificate, NULL);
+        server->beginSecure("server.cer", "server.key", NULL);
     #else
-        _server->begin();
+        server->begin();
     #endif
 
-    DEBUG_MSG_P(PSTR("[WEBSERVER] Webserver running on port %hu\n"), _port);
+    DEBUG_MSG_P(PSTR("[WEBSERVER] Webserver running on port %hu\n"), port);
 
     // CORS setup
     _setupAccessControlHeaders();
