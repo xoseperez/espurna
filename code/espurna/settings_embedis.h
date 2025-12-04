@@ -192,7 +192,7 @@ private:
     static void value_concat(std::false_type, std::true_type, String& dst, T&& src, uint16_t length) {
         dst.reserve(length);
         while (src) {
-            dst += reinterpret_cast<char>(src.read());
+            dst += static_cast<char>((src++).read());
         }
     }
 
