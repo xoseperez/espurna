@@ -38,6 +38,17 @@ inline size_t estimate(StringView key, StringView value) {
     return (4 + key.length() + value.length());
 }
 
+// Most of the time we are comparing user strings with storage blobs, which are also just strings
+inline bool operator==(Span<const uint8_t> lhs, StringView rhs) {
+    const auto view = StringView(reinterpret_cast<const char*>(lhs.data()), lhs.size());
+    return view == rhs;
+}
+
+inline bool operator==(std::vector<uint8_t> lhs, StringView rhs) {
+    const auto view = StringView(reinterpret_cast<const char*>(lhs.data()), lhs.size());
+    return view == rhs;
+}
+
 // Note: KeyValueStore is templated to avoid having to provide RawStorageBase via virtual inheritance.
 
 template <typename RawStorageBase>
@@ -405,6 +416,13 @@ public:
             return _result;
         }
 
+        bool operator==(StringView other) const noexcept {
+            return valueCompare(
+                typename Traits::storage_can_data_span{},
+                typename Traits::storage_can_read_vector{},
+                other, valueCursor(), _length);
+        }
+
         ReadResult& operator=(Cursor&& other) noexcept {
             _cursor = std::move(other);
             _length = valueLengthImpl(_cursor);
@@ -489,6 +507,21 @@ public:
         template <typename T>
         static void valueConcat(std::true_type, std::true_type, String& dst, T&& src, uint16_t length) {
             valueConcat(std::true_type{}, std::false_type{}, dst, std::forward<T>(src), length);
+        }
+
+        template <typename T>
+        static bool valueCompare(std::true_type, std::false_type, StringView rhs, T&& src, uint16_t length) {
+            return src.data(length) == rhs;
+        }
+
+        template <typename T>
+        static bool valueCompare(std::false_type, std::true_type, StringView rhs, T&& src, uint16_t length) {
+            return src.read(length) == rhs;
+        }
+
+        template <typename T>
+        static bool valueCompare(std::true_type, std::true_type, StringView rhs, T&& src, uint16_t length) {
+            return valueCompare(std::true_type{}, std::false_type{}, rhs, std::forward<T>(src), length);
         }
 
         static size_t valueLengthImpl(const Cursor& cursor) {
@@ -640,10 +673,10 @@ public:
             start_pos = kv.begin();
 
             // in the very special case we can match the existing key, we either
-            if ((kv.key.valueLength() == key_len) && (kv.key.toString() == key)) {
+            if ((kv.key.valueLength() == key_len) && (kv.key == key)) {
                 if (kv.value.valueLength() == value.length()) {
                     // - do nothing, as the value is already set
-                    if (kv.value.toString() == value) {
+                    if (kv.value == value) {
                         is_same = true;
                         stop.set_done();
                         return;
@@ -736,7 +769,7 @@ public:
                 return;
             }
 
-            if ((kv.key.valueLength() == key_len) && (kv.key.toString() == key)) {
+            if ((kv.key.valueLength() == key_len) && (kv.key == key)) {
                 found = true;
                 to_erase = _make_cursor(kv.begin(), kv.end());
             }
@@ -830,8 +863,7 @@ protected:
                 return;
             }
 
-            auto kv_key = kv.key.toString();
-            if (kv_key == key) {
+            if (kv.key == key) {
                 if (read_value) {
                     out = kv.value.toString();
                 } else {
