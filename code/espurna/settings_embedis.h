@@ -147,6 +147,8 @@ private:
         "Storage class must implement `void fill(uint16_t, size_t, uint8_t)'"
     );
 
+    // data read / write methods differ and depend on available RawStorageBase functionality
+
     template <typename D, typename S>
     static void write_impl(std::true_type, std::true_type, D& dst, const S& src, size_t index) {
         dst.write(index, src.data());
@@ -179,6 +181,41 @@ private:
         out.insert(out.end(), span.data(), span.data() + span.size());
     }
 
+    template <typename T>
+    static void value_concat(std::true_type, std::false_type, String& dst, T&& src, uint16_t length) {
+        const auto data = src.data(length);
+        const auto* ptr = reinterpret_cast<const char*>(data.data());
+        dst.concat(ptr, data.size());
+    }
+
+    template <typename T>
+    static void value_concat(std::false_type, std::true_type, String& dst, T&& src, uint16_t length) {
+        dst.reserve(length);
+        while (src) {
+            dst += reinterpret_cast<char>(src.read());
+        }
+    }
+
+    template <typename T>
+    static void value_concat(std::true_type, std::true_type, String& dst, T&& src, uint16_t length) {
+        value_concat(std::true_type{}, std::false_type{}, dst, std::forward<T>(src), length);
+    }
+
+    template <typename T>
+    static bool value_compare(std::true_type, std::false_type, StringView rhs, T&& src, uint16_t length) {
+        return src.data(length) == rhs;
+    }
+
+    template <typename T>
+    static bool value_compare(std::false_type, std::true_type, StringView rhs, T&& src, uint16_t length) {
+        return src.read(length) == rhs;
+    }
+
+    template <typename T>
+    static bool value_compare(std::true_type, std::true_type, StringView rhs, T&& src, uint16_t length) {
+        return value_compare(std::true_type{}, std::false_type{}, rhs, std::forward<T>(src), length);
+    }
+
 #ifdef __cpp_lib_result_of_sfinae
     template <typename T, typename R, typename... Args>
     using enable_if_args = typename std::enable_if_t<std::is_same_v<typename std::invoke_result_t<T, Args...>, R>>;
@@ -188,15 +225,6 @@ private:
 #endif
 
     // -----------------------------------------------------------------------------------
-
-    // Tracking state of the parser inside of _raw_read()
-    enum class State {
-        Begin,
-        End,
-        Len,
-        Value,
-        Output
-    };
 
     // Pointer to the region of data that we are using
     // Note the u16 sizes, underlying storage is expected to be pretty small
@@ -375,6 +403,15 @@ private:
         uint16_t _position{ 0 };
     };
 
+    // Tracking state of the parser inside of _raw_read()
+    enum class State {
+        Begin,
+        End,
+        Len,
+        Value,
+        Output
+    };
+
     struct ReadContext {
         Cursor cursor;
         State state;
@@ -417,7 +454,7 @@ public:
         }
 
         bool operator==(StringView other) const noexcept {
-            return valueCompare(
+            return value_compare(
                 typename Traits::storage_can_data_span{},
                 typename Traits::storage_can_read_vector{},
                 other, valueCursor(), _length);
@@ -458,7 +495,7 @@ public:
 
         String toString() const {
             String out;
-            valueConcat(
+            value_concat(
                 typename Traits::storage_can_data_span{},
                 typename Traits::storage_can_read_vector{},
                 out, valueCursor(), _length);
@@ -487,41 +524,6 @@ public:
                 _cursor.storage(),
                 _cursor.begin(),
                 _cursor.begin() + _length);
-        }
-
-        template <typename T>
-        static void valueConcat(std::true_type, std::false_type, String& dst, T&& src, uint16_t length) {
-            const auto data = src.data(length);
-            const auto* ptr = reinterpret_cast<const char*>(data.data());
-            dst.concat(ptr, data.size());
-        }
-
-        template <typename T>
-        static void valueConcat(std::false_type, std::true_type, String& dst, T&& src, uint16_t length) {
-            dst.reserve(length);
-            for (size_t n = 0; n < length; ++n) {
-                dst += reinterpret_cast<char>(src.read());
-            }
-        }
-
-        template <typename T>
-        static void valueConcat(std::true_type, std::true_type, String& dst, T&& src, uint16_t length) {
-            valueConcat(std::true_type{}, std::false_type{}, dst, std::forward<T>(src), length);
-        }
-
-        template <typename T>
-        static bool valueCompare(std::true_type, std::false_type, StringView rhs, T&& src, uint16_t length) {
-            return src.data(length) == rhs;
-        }
-
-        template <typename T>
-        static bool valueCompare(std::false_type, std::true_type, StringView rhs, T&& src, uint16_t length) {
-            return src.read(length) == rhs;
-        }
-
-        template <typename T>
-        static bool valueCompare(std::true_type, std::true_type, StringView rhs, T&& src, uint16_t length) {
-            return valueCompare(std::true_type{}, std::false_type{}, rhs, std::forward<T>(src), length);
         }
 
         static size_t valueLengthImpl(const Cursor& cursor) {
