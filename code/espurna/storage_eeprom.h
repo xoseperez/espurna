@@ -30,6 +30,10 @@ public:
         return _data;
     }
 
+    void setDirty() {
+        _dirty = true;
+    }
+
     // fill all of the available storage with the 'value'
     void fill(uint8_t);
 

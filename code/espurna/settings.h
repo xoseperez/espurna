@@ -81,6 +81,7 @@ public:
     }
 
     void commit() const {
+        _instance->setDirty();
         autosaveSettings();
     }
 
