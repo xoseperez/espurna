@@ -50,6 +50,7 @@ inline bool operator==(std::vector<uint8_t> lhs, StringView rhs) {
 }
 
 // Note: KeyValueStore is templated to avoid having to provide RawStorageBase via virtual inheritance.
+// Note: Concepts support *would* help very much w/ the traits detection and conditional dispatch, TODO -std=c++2x
 
 template <typename RawStorageBase>
 struct KeyValueStoreTraits {
@@ -165,10 +166,16 @@ private:
         dst.write(index, Span<const uint8_t>(data.data(), data.size()));
     }
 
+    template <typename D, typename S>
+    static void write_impl(std::false_type, std::false_type, D&, const S&, size_t);  // can't be defined
+
     template <typename S>
     static void read_impl(std::true_type, Span<const uint8_t>& out, S& src, size_t index, size_t size) {
         out = src.data(index, size);
     }
+
+    template <typename S>
+    static void read_impl(std::false_type, Span<const uint8_t>&, S&, size_t, size_t); // can't be defined
 
     template <typename S>
     static void read_impl(std::false_type, std::true_type, std::vector<uint8_t>& out, S& src, size_t index, size_t size) {
@@ -202,6 +209,9 @@ private:
     }
 
     template <typename T>
+    static void value_concat(std::false_type, std::false_type, String&, T&&, uint16_t); // can't be defined
+
+    template <typename T>
     static bool value_compare(std::true_type, std::false_type, StringView rhs, T&& src, uint16_t length) {
         return src.data(length) == rhs;
     }
@@ -215,6 +225,9 @@ private:
     static bool value_compare(std::true_type, std::true_type, StringView rhs, T&& src, uint16_t length) {
         return value_compare(std::true_type{}, std::false_type{}, rhs, std::forward<T>(src), length);
     }
+
+    template <typename T>
+    static bool value_compare(std::false_type, std::false_type, StringView, T&&, uint16_t); // can't be defined
 
 #ifdef __cpp_lib_result_of_sfinae
     template <typename T, typename R, typename... Args>

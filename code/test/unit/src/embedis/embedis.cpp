@@ -533,9 +533,10 @@ void test_keys_iterator() {
 
     // ensure we get the same order of keys when iterating via foreach
     std::vector<String> keys;
-    instance.kvs.foreach([&keys](decltype(instance)::kvs_type::KeyValueResult&& kv) {
-        keys.push_back(kv.key.toString());
-    });
+    instance.kvs.foreach([&keys](
+        decltype(instance)::kvs_type::KeyValueResult&& kv) {
+            keys.push_back(kv.key.toString());
+        });
 
     TEST_ASSERT_EQUAL(2, keys.size());
     TEST_ASSERT_EQUAL(2, instance.kvs.count());
