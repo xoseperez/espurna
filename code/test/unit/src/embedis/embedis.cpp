@@ -39,6 +39,7 @@ struct StaticArrayStorage {
     }
 
     std::vector<uint8_t> read(size_t index, size_t size) const {
+        TEST_ASSERT_LESS_THAN(_size, index);
         std::vector<uint8_t> out;
         out.insert(out.end(), &_blob[index], &_blob[index + size]);
         return out;
@@ -55,6 +56,7 @@ struct StaticArrayStorage {
     }
 
     void fill(size_t index, size_t size, uint8_t value) const {
+        TEST_ASSERT_LESS_THAN(_size, index);
         std::fill(&_blob[index], &_blob[index + size], value);
     }
 
