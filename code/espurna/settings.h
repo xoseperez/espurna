@@ -66,16 +66,16 @@ public:
         return _instance->data()[pos];
     }
 
-    void write(size_t pos, Span<const uint8_t> data) const {
+    void write(uint16_t pos, Span<const uint8_t> data) const {
         auto* ptr = const_cast<uint8_t*>(_instance->data()) + pos;
         memmove_P(ptr, data.data(), data.size());
     }
 
-    void write(size_t pos, uint8_t value) const {
+    void write(uint16_t pos, uint8_t value) const {
         write(pos, Span<const uint8_t>(&value, 1));
     }
 
-    void fill(size_t pos, size_t size, uint8_t value) const {
+    void fill(uint16_t pos, size_t size, uint8_t value) const {
         auto* ptr = const_cast<uint8_t*>(_instance->data()) + pos;
         std::fill(ptr, ptr + size, value);
     }
