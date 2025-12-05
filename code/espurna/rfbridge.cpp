@@ -538,7 +538,7 @@ RfbRelayMatch _rfbMatch(espurna::StringView code) {
 
     espurna::settings::foreach_prefix(
         [code, &matched](espurna::StringView prefix, String key, const espurna::settings::kvs_type::ReadResult& value) {
-            if (code.length() != value.length()) {
+            if (code.length() != value.valueLength()) {
                 return;
             }
 
@@ -551,7 +551,8 @@ RfbRelayMatch _rfbMatch(espurna::StringView code) {
                 return;
             }
 
-            if (!_rfbCompare(code.begin(), value.read().begin(), code.length())) {
+            const auto kv_value = value.toString();
+            if (!_rfbCompare(code.begin(), kv_value.begin(), code.length())) {
                 return;
             }
 
