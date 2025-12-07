@@ -124,15 +124,29 @@ struct RelayStatusMask {
 struct RelayMaskPair {
     RelayMask on;
     RelayMask off;
+
+    RelayMask mask() const {
+        return on | off;
+    }
+
+    RelayMaskPair operator&(const RelayMaskPair& other) const {
+        return RelayMaskPair{
+            .on = on & other.on,
+            .off = off & other.off,
+        };
+    }
+
+    RelayMaskPair operator|(const RelayMaskPair& other) const {
+        return RelayMaskPair{
+            .on = on | other.on,
+            .off = off | other.off,
+        };
+    }
 };
 
 bool operator==(const RelayMaskPair& lhs, const RelayMaskPair& rhs) {
     return lhs.on == rhs.on
         && lhs.off == rhs.off;
-}
-
-RelayMask operator&(const RelayMaskPair& lhs, const RelayMaskPair& rhs) {
-    return (lhs.on | lhs.off) & (rhs.on | rhs.off);
 }
 
 } // namespace
@@ -594,7 +608,7 @@ struct BulkTimer {
         return _pair.off;
     }
 
-    const RelayMaskPair& mask() const {
+    const RelayMaskPair& pair() const {
         return _pair;
     }
 
@@ -699,7 +713,7 @@ BulkTimer* find(size_t id) {
 // ...especially w/ masks containing multiple IDs
 BulkTimer* find(RelayMaskPair pair) {
     return find([&](const BulkTimer& timer) {
-        return (timer.mask() & pair).any();
+        return (timer.pair() & pair).mask().any();
     });
 }
 
@@ -1529,6 +1543,17 @@ RelayMaskHelper _relayMaskCurrent(size_t relays) {
     return out;
 }
 
+RelayMaskPair _relayMaskPairCurrent(size_t relays) {
+    RelayMaskPair out;
+
+    for (size_t id = 0; id < relays; ++id) {
+        auto& mask = _relays[id].current_status ? out.on : out.off;
+        mask[id] = true;
+    }
+
+    return out;
+}
+
 RelayMask _relays_boot{};
 RelayMask _relays_ready{};
 RelayMask _relays_retained{};
@@ -2347,37 +2372,80 @@ RelayMaskPair _relaySyncJustOne(size_t source, bool status, size_t relays) {
 }
 
 void _relaySyncScheduleOrStatus(RelayMaskPair pair, Relay::Delay delay, uint8_t flags) {
-    // same as status, skip delay for retained outputs
-    // but, only when *all* relays in the mask are affected
-    if (flags & RelayFlagBoot) {
-        const auto mask_all = pair.on | pair.off;
-        const auto retained = mask_all & ~_relays_retained;
-        if (!retained.any()) {
-            delay = Relay::Delay::zero();
-        }
-    }
-
     if (delay != Relay::Delay::zero()) {
         espurna::relay::timer::schedule_and_start(pair, delay, flags);
-        DEBUG_MSG_P(PSTR("[RELAY] Sync scheduled in %u (ms)\n"), delay.count());
     } else {
         _relayStatusPair(pair, flags);
     }
 }
 
-bool _relaySyncSchedule(RelayMaskPair pair, uint8_t flags) {
+Relay::Delay _relaySyncAdjustDelayRetained(RelayMaskPair pair, Relay::Delay suggested, uint8_t flags) {
+    auto out = suggested;
+
+    // same as status, skip delay for retained outputs
+    // but, only when *all* relays in the mask are affected
+    if (flags & RelayFlagBoot) {
+        const auto retained = pair.mask() & ~_relays_retained;
+        if (!retained.any()) {
+            out = Relay::Delay::zero();
+        }
+    }
+
+    return out;
+}
+
+bool _relaySyncPairForStatus(RelayMaskPair pair, bool status, Relay::Delay& sync_delay, Relay::Delay status_delay, uint8_t flags) {
+    RelayMaskPair status_pair;
+
+    const auto& src = status ? pair.on : pair.off;
+    if (src.any()) {
+        auto& dst = status ? status_pair.on : status_pair.off;
+        dst = src;
+
+        sync_delay += _relaySyncAdjustDelayRetained(pair, status_delay, flags);
+        _relaySyncScheduleOrStatus(status_pair, sync_delay, flags);
+
+        return true;
+    }
+
+    return false;
+}
+
+bool _relaySyncSchedule(RelayMaskPair pair, size_t relays, uint8_t flags) {
     bool out = false;
+    flags |= RelayFlagSync;
 
-    const auto pair_on = pair.on.any();
-    const auto pair_off = pair.off.any();
+    auto delay = Relay::Delay::zero();
 
-    if (pair_on || pair_off) {
-        const auto pair_delay = (pair_on && pair_off)
-            ? std::max(_relay_delay_on, _relay_delay_off) :
-                (pair_on ? _relay_delay_on :
-                 pair_off ? _relay_delay_off : Relay::Delay::zero());
-        _relaySyncScheduleOrStatus(pair, pair_delay, flags | RelayFlagSync);
+    // notify when current status is going to be the same
+    // (note that current status only available after booting)
+    if (0 == (flags & RelayFlagBoot)) {
+        const auto not_ready = pair.mask() & ~_relays_ready;
+        if (!not_ready.any() && (pair == _relayMaskPairCurrent(relays))) {
+            _relaySyncScheduleOrStatus(pair, delay, flags);
+            out = true;
+        }
+    }
+
+    // pair is either getting scheduled right now
+    if (!out
+     && (_relay_delay_off == Relay::Delay::zero())
+     && (_relay_delay_on == Relay::Delay::zero()))
+    {
+        _relaySyncScheduleOrStatus(pair, delay, flags);
         out = true;
+    }
+
+    // ...or, separate ON / OFF delays, w/ delay adjusted to make them sequential
+    if (!out) {
+        out = _relaySyncPairForStatus(pair, false, delay, _relay_delay_off, flags)
+            || out;
+        out = _relaySyncPairForStatus(pair, true, delay, _relay_delay_on, flags)
+            || out;
+    }
+
+    if (out && (delay != Relay::Delay::zero())) {
+        DEBUG_MSG_P(PSTR("[RELAY] Sync scheduled in %u (ms)\n"), delay.count());
     }
 
     return out;
@@ -2410,9 +2478,9 @@ RelayMaskPair _relaySyncPair(RelaySync mode, size_t source, bool source_target_s
 
 // Usually called from status function when not flagged w/ RelayFlagSync
 // Mode check happens here, so could be left off without any guards
-bool _relaySync(size_t source, bool source_target_status, uint8_t flags) {
+bool _relaySync(RelaySync mode, size_t source, bool source_target_status, uint8_t flags) {
     // Don't sync when disabled
-    if (_relay_sync_mode == RelaySync::None) {
+    if (mode == RelaySync::None) {
         return false;
     }
 
@@ -2422,16 +2490,14 @@ bool _relaySync(size_t source, bool source_target_status, uint8_t flags) {
         return false;
     }
 
+    const auto sync = _relaySyncPair(mode, source, source_target_status, relays);
     flags |= RelayFlagSync;
 
-    const auto mode = _relay_sync_mode;
-    const auto pair = _relaySyncPair(mode, source, source_target_status, relays);
-
-    if (_relaySyncSchedule(pair, flags)) {
+    if (_relaySyncSchedule(sync, relays, flags)) {
         switch (mode) {
         case RelaySync::ZeroOrOne:
         case RelaySync::JustOne:
-            _relayLockSync(pair);
+            _relayLockSync(sync);
             break;
 
         default:
@@ -2563,7 +2629,7 @@ bool _relayStatus(size_t id, bool status, uint8_t flags) {
 
     const auto flag_sync = (flags & RelayFlagSync) > 0;
 
-    if (!flag_sync && _relaySync(id, status, flags)) {
+    if (!flag_sync && _relaySync(_relay_sync_mode, id, status, flags)) {
         return true;
     }
 
@@ -2821,8 +2887,6 @@ void _relayBootAll() {
 
     bool log = false;
 
-    const auto sync = _relay_sync_mode != RelaySync::None;
-
     constexpr auto Flags = uint8_t{ RelayCommonStatusFlags | RelayFlagBoot };
     RelayMaskPair pair;
 
@@ -2860,7 +2924,7 @@ void _relayBootAll() {
             sync_id = _relays_boot.count() - 1; // set at the same time as pair.{on,off}, cannot be 0
         }
 
-        if (sync && _relaySync(sync_id, relay_status[sync_id], _relays[sync_id].flags)) {
+        if (_relaySync(_relay_sync_mode, sync_id, relay_status[sync_id], Flags)) {
             // sync'ed status already queued, no need to use boot on/off pair
             log = false;
         } else {
