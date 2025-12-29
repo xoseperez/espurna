@@ -12,6 +12,7 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #if BUTTON_SUPPORT
 
 #include "button.h"
+#include "ac_switch.h"
 #include "compat.h"
 #include "fan.h"
 #include "gpio.h"
@@ -62,6 +63,7 @@ struct ButtonEventDelays {
     unsigned long repeat;
     unsigned long lngclick;
     unsigned long lnglngclick;
+    unsigned long min_pulses;
 };
 
 namespace espurna {
@@ -76,11 +78,14 @@ struct Button {
     Button(ButtonActions&& actions, ButtonEventDelays&& delays);
     Button(BasePinPtr&& pin, const debounce_event::types::Config& config,
         ButtonActions&& actions, ButtonEventDelays&& delays);
+    Button(BasePinPtr&& pin, const debounce_event::types::Config& config,
+        ButtonActions&& actions, ButtonEventDelays&& delays, bool is_freq);
 
     bool state();
     ButtonEvent loop();
 
     ButtonEventEmitterPtr event_emitter;
+    std::unique_ptr<AcSwitch> ac_switch;
 
     ButtonActions actions;
     ButtonEventDelays event_delays;
@@ -113,6 +118,10 @@ PROGMEM_STRING(Relay, "btnRelay");
 
 PROGMEM_STRING(MqttSendAll, "btnMqttSendAll");
 PROGMEM_STRING(MqttRetain, "btnMqttRetain");
+
+PROGMEM_STRING(Frequency, "btnFreq");
+PROGMEM_STRING(MinPulses, "btnMinPulses");
+PROGMEM_STRING(AcDebug, "btnAcDbg");
 
 [[gnu::unused]] PROGMEM_STRING(AnalogLevel, "btnLevel");
 
@@ -329,6 +338,7 @@ constexpr int DefaultHigh { 1 << 3 };
 constexpr int DefaultBoot { 1 << 4 };
 constexpr int SetPullup { 1 << 5 };
 constexpr int SetPulldown { 1 << 6 };
+constexpr int Frequency { 1 << 7 };
 
 } // namespace ButtonMask
 
@@ -711,6 +721,18 @@ unsigned long longLongClickDelay(size_t index) {
     return internal::indexedThenGlobal(keys::LongLongClickDelay, index, build::longLongClickDelay(index));
 }
 
+bool isFrequency(size_t index) {
+    return getSetting({keys::Frequency, index}, (build::internal::configBitmask(index) & build::internal::ButtonMask::Frequency));
+}
+
+unsigned long minPulses(size_t index) {
+    return internal::indexedThenGlobal(keys::MinPulses, index, 5ul);
+}
+
+bool acDebug() {
+    return getSetting(keys::AcDebug, false);
+}
+
 [[gnu::unused]]
 unsigned long repeatDelay() {
     return getSetting(keys::RepeatDelay, build::repeatDelay());
@@ -771,6 +793,12 @@ ID_VALUE(longLongClick, settings::longLongClick)
 ID_VALUE(debounceDelay, settings::debounceDelay)
 ID_VALUE(longClickDelay, settings::longClickDelay)
 ID_VALUE(longLongClickDelay, settings::longLongClickDelay)
+ID_VALUE(isFrequency, settings::isFrequency)
+ID_VALUE(minPulses, settings::minPulses)
+
+String acDebug(size_t) {
+    return espurna::settings::internal::serialize(settings::acDebug());
+}
 
 #if RELAY_SUPPORT
 ID_VALUE(relay, settings::relay)
@@ -802,6 +830,9 @@ static constexpr espurna::settings::query::IndexedSetting IndexedSettings[] PROG
     {keys::DebounceDelay, internal::debounceDelay},
     {keys::LongClickDelay, internal::longClickDelay},
     {keys::LongLongClickDelay, internal::longLongClickDelay},
+    {keys::Frequency, internal::isFrequency},
+    {keys::MinPulses, internal::minPulses},
+    {keys::AcDebug, internal::acDebug},
 #if RELAY_SUPPORT
     {keys::Relay, internal::relay},
 #endif
@@ -902,6 +933,17 @@ Button::Button(BasePinPtr&& pin, const debounce_event::types::Config& config, Bu
     event_delays(std::move(delays_))
 {}
 
+Button::Button(BasePinPtr&& pin, const debounce_event::types::Config& config, ButtonActions&& actions_, ButtonEventDelays&& delays_, bool is_freq) :
+    actions(std::move(actions_)),
+    event_delays(std::move(delays_))
+{
+    if (is_freq && pin) {
+        ac_switch = std::make_unique<AcSwitch>(pin->pin(), delays_.debounce, delays_.min_pulses);
+    } else {
+        event_emitter = std::make_unique<debounce_event::EventEmitter>(std::move(pin), config, delays_.debounce, delays_.repeat);
+    }
+}
+
 constexpr ButtonEvent map_released(uint8_t count, unsigned long length, unsigned long lngclick_delay, unsigned long lnglngclick_delay) {
     return (
         (0 == count) ? ButtonEvent::Released :
@@ -930,6 +972,12 @@ ButtonEvent Button::loop() {
         }
         case debounce_event::types::EventNone:
             break;
+        }
+    }
+
+    if (ac_switch) {
+        if (ac_switch->loop()) {
+            return ac_switch->state() ? ButtonEvent::Pressed : ButtonEvent::Released;
         }
     }
 
@@ -1520,7 +1568,8 @@ ButtonEventDelays _buttonDelays(size_t index) {
         .debounce = espurna::button::settings::debounceDelay(index),
         .repeat = espurna::button::settings::repeatDelay(index),
         .lngclick = espurna::button::settings::longClickDelay(index),
-        .lnglngclick = espurna::button::settings::longLongClickDelay(index)};
+        .lnglngclick = espurna::button::settings::longLongClickDelay(index),
+        .min_pulses = espurna::button::settings::minPulses(index)};
 }
 
 template <typename T>
@@ -1529,6 +1578,16 @@ void _buttonAdd(T&& button) {
 }
 
 espurna::button::Button _buttonWithPin(size_t index, BasePinPtr&& pin) {
+    if (espurna::button::settings::isFrequency(index)) {
+        return espurna::button::Button(
+            std::move(pin),
+            espurna::button::runtime_config(index),
+            _buttonActions(index),
+            _buttonDelays(index),
+            true
+        );
+    }
+
     return espurna::button::Button(
         std::move(pin),
         espurna::button::runtime_config(index),
