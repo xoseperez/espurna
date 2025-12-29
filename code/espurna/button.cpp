@@ -38,6 +38,10 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 
 // -----------------------------------------------------------------------------
 
+#ifndef BUTTON_AC_FREQ
+#define BUTTON_AC_FREQ 0
+#endif
+
 static constexpr auto ButtonsPresetMax [[gnu::unused]] = size_t(8);
 
 enum class ButtonProvider {
@@ -121,6 +125,7 @@ PROGMEM_STRING(MqttRetain, "btnMqttRetain");
 
 PROGMEM_STRING(Frequency, "btnFreq");
 PROGMEM_STRING(MinPulses, "btnMinPulses");
+PROGMEM_STRING(AcFreq, "btnAcFreq");
 PROGMEM_STRING(AcDebug, "btnAcDbg");
 
 [[gnu::unused]] PROGMEM_STRING(AnalogLevel, "btnLevel");
@@ -568,6 +573,10 @@ constexpr unsigned long longLongClickDelay(size_t index) {
     );
 }
 
+constexpr int acFreq() {
+    return BUTTON_AC_FREQ;
+}
+
 constexpr bool mqttSendAllEvents() {
     return (1 == BUTTON_MQTT_SEND_ALL_EVENTS);
 }
@@ -729,6 +738,10 @@ unsigned long minPulses(size_t index) {
     return internal::indexedThenGlobal(keys::MinPulses, index, 5ul);
 }
 
+int acFreq() {
+    return getSetting(keys::AcFreq, build::acFreq());
+}
+
 bool acDebug() {
     return getSetting(keys::AcDebug, false);
 }
@@ -796,6 +809,10 @@ ID_VALUE(longLongClickDelay, settings::longLongClickDelay)
 ID_VALUE(isFrequency, settings::isFrequency)
 ID_VALUE(minPulses, settings::minPulses)
 
+String acFreq(size_t) {
+    return espurna::settings::internal::serialize(settings::acFreq());
+}
+
 String acDebug(size_t) {
     return espurna::settings::internal::serialize(settings::acDebug());
 }
@@ -832,6 +849,7 @@ static constexpr espurna::settings::query::IndexedSetting IndexedSettings[] PROG
     {keys::LongLongClickDelay, internal::longLongClickDelay},
     {keys::Frequency, internal::isFrequency},
     {keys::MinPulses, internal::minPulses},
+    {keys::AcFreq, internal::acFreq},
     {keys::AcDebug, internal::acDebug},
 #if RELAY_SUPPORT
     {keys::Relay, internal::relay},
@@ -938,7 +956,7 @@ Button::Button(BasePinPtr&& pin, const debounce_event::types::Config& config, Bu
     event_delays(std::move(delays_))
 {
     if (is_freq && pin) {
-        ac_switch = std::make_unique<AcSwitch>(pin->pin(), delays_.debounce, delays_.min_pulses);
+        ac_switch = std::make_unique<AcSwitch>(pin->pin(), delays_.debounce, delays_.min_pulses, settings::acFreq());
     } else {
         event_emitter = std::make_unique<debounce_event::EventEmitter>(std::move(pin), config, delays_.debounce, delays_.repeat);
     }
