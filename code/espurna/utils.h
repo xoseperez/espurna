@@ -66,6 +66,8 @@ inline String hexEncode(uint8_t value) {
 uint8_t* hexDecode(const char* in_begin, const char* in_end, uint8_t* out_begin, uint8_t* out_end);
 size_t hexDecode(const char* in, size_t in_size, uint8_t* out, size_t out_size);
 
+espurna::StringView tryFirstPath(espurna::StringView);
+
 bool tryParseId(espurna::StringView, size_t limit, size_t& out);
 bool tryParseIdPath(espurna::StringView, size_t limit, size_t& out);
 

@@ -117,19 +117,31 @@ bool tryParseId(espurna::StringView value, size_t limit, size_t& out) {
     return false;
 }
 
-bool tryParseIdPath(espurna::StringView value, size_t limit, size_t& out) {
-    if (value.length()) {
-        const auto before_begin = value.begin() - 1;
-        for (auto it = value.end() - 1; it != before_begin; --it) {
-            if ((*it) == '/') {
-                return tryParseId(
-                    espurna::StringView(it + 1, value.end()),
-                    limit, out);
-            }
+espurna::StringView tryFirstPath(espurna::StringView value) {
+    espurna::StringView out;
+
+    const auto before_begin = value.begin() - 1;
+    for (auto it = value.end() - 1; it != before_begin; --it) {
+        if ((*it) == '/') {
+            out = espurna::StringView(it + 1, value.end());
+            break;
         }
     }
 
-    return false;
+    return out;
+}
+
+bool tryParseIdPath(espurna::StringView value, size_t limit, size_t& out) {
+    if (!value.length()) {
+        return false;
+    }
+
+    auto try_path = tryFirstPath(value);
+    if (!try_path.length()) {
+        return false;
+    }
+
+    return tryParseId(try_path, limit, out);
 }
 
 static void prettyDurationImpl(char suffix, String& out, espurna::duration::rep_type value) {
