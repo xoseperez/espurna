@@ -2222,11 +2222,12 @@ void tick(NtpTick tick) {
         return;
     }
 
-    static std::vector<Offset> restored;
+    using RestoredOffsets = std::vector<Offset>;
+    std::unique_ptr<RestoredOffsets> restored;
 
     if (initial) {
         settings::gc(settings::count());
-        restored = restore::prepare(ctx);
+        restored = std::make_unique<RestoredOffsets>(restore::prepare(ctx));
 #if SCHEDULER_SUN_SUPPORT
         sun::update_before(ctx);
 #endif
@@ -2255,12 +2256,13 @@ void tick(NtpTick tick) {
             ctx, prepared.event_offsets, relative::Order::After);
     }
 
-    if (initial) {
-        initial = false;
-        restore::filter_last_action(restored);
-        restore::run(ctx, restored);
-        restored = std::vector<Offset>();
+    if (initial && restored) {
+        restore::filter_last_action(*restored);
+        restore::run(ctx, *restored);
+        restored.reset(nullptr);
     }
+
+    initial = false;
 }
 
 void setup() {
