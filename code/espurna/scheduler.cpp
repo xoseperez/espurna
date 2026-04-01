@@ -129,17 +129,17 @@ bool named_event(String name, datetime::Clock::time_point time_point) {
 }
 
 bool named_event(String name, StringView value) {
-    datetime::DateHhMmSs datetime;
+    datetime::DateHhMmSs date_hhmmss;
     bool utc { false };
 
-    const auto result = parse_simple_iso8601(datetime, utc, value);
+    const auto result = parse_simple_iso8601(date_hhmmss, utc, value);
     if (!result) {
         return false;
     }
 
     return named_event(
         std::move(name),
-        datetime::make_time_point(datetime, utc));
+        datetime::make_time_point(date_hhmmss, utc));
 }
 
 String format_time_point(datetime::Clock::time_point time_point) {
@@ -237,16 +237,77 @@ bool check_parsed(const Schedule& schedule) {
 #if SCHEDULER_SUN_SUPPORT
 namespace sun {
 
+constexpr auto UpdateEvery = datetime::Hours{ 1 };
+
+namespace internal {
+
+auto next_update = event::DefaultTimePoint;
+
 Location location;
 Match match;
 
-auto next_update = event::DefaultTimePoint;
+} // namespace internal
+
+bool needs_update(datetime::Clock::time_point last, datetime::Clock::time_point time_point) {
+    return (last == event::DefaultTimePoint)
+        || event::less(last, time_point);
+}
+
+// scheduled to run at initial setup, preparing match for sunrise and sunset before the current time point
+void update_before(const datetime::Context& ctx) {
+    const auto time_point = event::make_time_point(ctx);
+    update<CompareBackward>(internal::match, internal::location, time_point);
+
+    internal::match.sunrise.last = internal::match.sunrise.next;
+    internal::match.sunrise.next = event::DefaultTimePoint;
+
+    internal::match.sunset.last = internal::match.sunset.next;
+    internal::match.sunset.next = event::DefaultTimePoint;
+
+    if (event::is_valid(internal::match.sunrise.last)) {
+        DEBUG_MSG_P(PSTR("[SCH] Previous sunrise at %s\n"),
+            datetime::format_local_tz(internal::match.sunrise.last).c_str());
+    }
+
+    if (event::is_valid(internal::match.sunset.last)) {
+        DEBUG_MSG_P(PSTR("[SCH] Previous sunset at %s\n"),
+            datetime::format_local_tz(internal::match.sunset.last).c_str());
+    }
+}
+
+// scheduled to run *before* calendar events are processed, but *after* the initial setup
+void update_after(const datetime::Context& ctx) {
+    const auto time_point = event::make_time_point(ctx);
+    if (!needs_update(internal::next_update, time_point)) {
+        return;
+    }
+
+    update<CompareForward>(internal::match, internal::location, time_point);
+    if (event::is_valid(internal::match.sunrise.next)) {
+        DEBUG_MSG_P(PSTR("[SCH] Sunrise at %s\n"),
+            datetime::format_local_tz(internal::match.sunrise.next).c_str());
+    }
+
+    if (event::is_valid(internal::match.sunset.next)) {
+        DEBUG_MSG_P(PSTR("[SCH] Sunset at %s\n"),
+            datetime::format_local_tz(internal::match.sunset.next).c_str());
+    }
+
+    auto fallback = [&]() -> datetime::Clock::time_point {
+        const auto hours = datetime::floor<datetime::Hours>(time_point.time_since_epoch());
+        return datetime::Clock::time_point{ hours + UpdateEvery };
+    };
+
+    internal::next_update = update_next_time_point(
+        {internal::match.sunrise.next, internal::match.sunset.next},
+        time_point, std::move(fallback));
+}
 
 void setup();
 
 void reset() {
-    match.rising = EventMatch{};
-    match.setting = EventMatch{};
+    internal::match.sunrise = EventMatch{};
+    internal::match.sunset = EventMatch{};
 }
 
 } // namespace sun
@@ -798,16 +859,16 @@ namespace sun {
 STRING_VIEW_INLINE(Module, "sun");
 
 void setup() {
-    location.latitude = settings::latitude();
-    location.longitude = settings::longitude();
-    location.altitude = settings::altitude();
+    internal::location.latitude = settings::latitude();
+    internal::location.longitude = settings::longitude();
+    internal::location.altitude = settings::altitude();
 }
 
 EventMatch* find_event_match(const TimeMatch& m) {
     if (want_sunrise(m)) {
-        return &match.rising;
+        return &internal::match.sunrise;
     } else if (want_sunset(m)) {
-        return &match.setting;
+        return &internal::match.sunset;
     }
 
     return nullptr;
@@ -845,64 +906,6 @@ bool update_schedule(Schedule& schedule) {
     return false;
 }
 
-bool needs_update(datetime::Clock::time_point time_point) {
-    const auto next = event::is_valid(next_update);
-    if (next) {
-        return event::less(next_update, time_point);
-    }
-
-    return event::less(match.rising.next, time_point)
-        || event::less(match.setting.next, time_point);
-}
-
-template <typename T>
-datetime::Clock::time_point delta_compare(tm& out, datetime::Clock::time_point, T);
-
-void update(datetime::Clock::time_point, const tm& today) {
-    const auto result = sun::sunrise_sunset(location, today);
-    update_event_match(match.rising, result.sunrise);
-    update_event_match(match.setting, result.sunset);
-}
-
-template <typename T>
-datetime::Clock::time_point update(datetime::Clock::time_point time_point, const tm& today, T compare) {
-    auto result = sun::sunrise_sunset(location, today);
-
-    const auto reset_sunrise =
-        !event::is_valid(result.sunrise) || compare(time_point, result.sunrise);
-
-    const auto reset_sunset =
-        !event::is_valid(result.sunset) || compare(time_point, result.sunset);
-
-    auto out = event::DefaultTimePoint;
-
-    tm tmp;
-    if (reset_sunrise || reset_sunset) {
-        std::memcpy(&tmp, &today, sizeof(tmp));
-
-        out = delta_compare(tmp, time_point, compare);
-
-        const auto other = sun::sunrise_sunset(location, tmp);
-        if (reset_sunrise && event::is_valid(other.sunrise)) {
-            result.sunrise = other.sunrise;
-        }
-
-        if (reset_sunset && event::is_valid(other.sunset)) {
-            result.sunset = other.sunset;
-        }
-    }
-
-    update_event_match(match.rising, result.sunrise);
-    update_event_match(match.setting, result.sunset);
-
-    return out;
-}
-
-template <typename T>
-void update(time_t timestamp, const tm& today, T&& compare) {
-    update(datetime::make_time_point(timestamp), today, std::forward<T>(compare));
-}
-
 String format_time_point(const event::time_point& time_point) {
     return (time_point.time_since_epoch() > datetime::Clock::duration::zero())
         ? datetime::format_local_tz(time_point)
@@ -915,86 +918,6 @@ String format_next(const EventMatch& match) {
 
 String format_last(const EventMatch& match) {
     return format_time_point(match.last);
-}
-
-// check() needs current or future events, discard timestamps in the past
-// round to minutes when doing so as well, since std::greater<> would compare seconds
-struct CompareAfter {
-    bool operator()(const event::time_point& lhs, const event::time_point& rhs) {
-        return event::greater(lhs, rhs);
-    }
-};
-
-datetime::Clock::time_point delta_compare_days(tm& out, datetime::Clock::time_point time_point, datetime::Days days) {
-    return datetime::make_time_point(
-        datetime::delta_utc(out, time_point.time_since_epoch(), days));
-}
-
-template <>
-datetime::Clock::time_point delta_compare(tm& out, datetime::Clock::time_point time_point, CompareAfter) {
-    return delta_compare_days(out, time_point, datetime::Days{ 1 });
-}
-
-void update_after(const datetime::Context& ctx) {
-    const auto time_point = event::make_time_point(ctx);
-    if (!needs_update(time_point)) {
-        return;
-    }
-
-    const auto next = update(time_point, ctx.utc, CompareAfter{});
-
-    event::time_point unordered[] {
-        next,
-        match.rising.next,
-        match.setting.next,
-    };
-
-    if (event::is_valid(match.rising.next)) {
-        DEBUG_MSG_P(PSTR("[SCH] Sunrise at %s\n"),
-            datetime::format_local_tz(match.rising.next).c_str());
-        unordered[0] = event::DefaultTimePoint;
-    }
-
-    if (event::is_valid(match.setting.next)) {
-        DEBUG_MSG_P(PSTR("[SCH] Sunset at %s\n"),
-            datetime::format_local_tz(match.setting.next).c_str());
-        unordered[0] = event::DefaultTimePoint;
-    }
-
-    next_update = event::DefaultTimePoint;
-
-    for (const auto& value : unordered) {
-        if (!event::is_valid(value)) {
-            continue;
-        }
-
-        next_update = event::is_valid(next_update)
-            ? std::min(next_update, value)
-            : value;
-    }
-}
-
-// relative events need current or past time point
-struct CompareBefore {
-    bool operator()(const event::time_point& lhs, const event::time_point& rhs) {
-        return event::less(lhs, rhs);
-    }
-};
-
-template <>
-datetime::Clock::time_point delta_compare(tm& out, datetime::Clock::time_point time_point, CompareBefore) {
-    return delta_compare_days(out, time_point, datetime::Days{ -1 });
-}
-
-void update_before(const datetime::Context& ctx) {
-    const auto time_point = event::make_time_point(ctx);
-    update(time_point, ctx.utc, CompareBefore{});
-
-    match.rising.last = match.rising.next;
-    match.rising.next = event::DefaultTimePoint;
-
-    match.setting.last = match.setting.next;
-    match.setting.next = event::DefaultTimePoint;
 }
 
 } // namespace sun
@@ -1012,18 +935,15 @@ namespace internal {
 
 #if SCHEDULER_SUN_SUPPORT
 
-STRING_VIEW_INLINE(Sunrise, "Sunrise");
-STRING_VIEW_INLINE(Sunset, "Sunset");
-
 struct Datetime {
     String last;
     String next;
 };
 
-Datetime sunrise_sunset(const sun::EventMatch& match) {
+Datetime sunrise_sunset(const sun::EventMatch& event_match) {
     return Datetime{
-        .last = sun::format_last(match),
-        .next = sun::format_next(match),
+        .last = sun::format_last(event_match),
+        .next = sun::format_next(event_match),
     };
 }
 
@@ -1740,14 +1660,11 @@ namespace restore {
 [[gnu::used]]
 void Context::init() {
 #if SCHEDULER_SUN_SUPPORT
-    const auto seconds = datetime::Seconds{ this->current.timestamp };
-    const auto minutes =
-        std::chrono::duration_cast<datetime::Minutes>(seconds);
-
-    const auto time_point =
-        datetime::Clock::time_point(minutes);
-
-    sun::update(time_point, this->current.utc);
+    const auto seconds = datetime::to_seconds(this->current.utc);
+    sun::update(
+        sun::internal::match,
+        sun::internal::location,
+        datetime::make_time_point(seconds));
 #endif
 }
 
@@ -2030,13 +1947,13 @@ private:
 
 struct Sunset : public Sun {
     Sunset() :
-        Sun(&sun::match.setting)
+        Sun(std::addressof(sun::internal::match.sunset))
     {}
 };
 
 struct Sunrise : public Sun {
     Sunrise() :
-        Sun(&sun::match.rising)
+        Sun(std::addressof(sun::internal::match.sunrise))
     {}
 };
 #endif

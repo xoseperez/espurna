@@ -27,7 +27,24 @@ using Hours = std::chrono::duration<rep_type, std::ratio<Minutes::period::num * 
 using Days = std::chrono::duration<rep_type, std::ratio<Hours::period::num * 24> >;
 using Weeks = std::chrono::duration<rep_type, std::ratio<Days::period::num * 7> >;
 
-// TODO import std::chrono::{floor,ceil,trunc}
+// rought import of std::chrono:: impl
+// returns greatest duration representable by T, less or equal to input
+template <typename T, typename Rep, typename Period>
+constexpr T floor(const std::chrono::duration<Rep, Period>& duration) {
+    return ({
+        constexpr auto One = T{ 1 };
+        const auto out = std::chrono::duration_cast<T>(duration);
+        out > duration ? out - One : out; });
+}
+
+// returns smallest duration representable by T, greater or equal to input
+template <typename T, typename Rep, typename Period>
+constexpr T ceil(const std::chrono::duration<Rep, Period>& duration) {
+    return ({
+        constexpr auto One = T{ 1 };
+        const auto out = std::chrono::duration_cast<T>(duration);
+        out < duration ? out + One : out; });
+}
 
 // only -std=c++20 chrono has appropriate class support. until then, use libc tm for full datetime
 // helper for to_days / from_days, where only the yyyy-mm-dd is needed
@@ -95,7 +112,7 @@ constexpr HhMmSs make_hh_mm_ss(const DateHhMmSs& datetime) {
     };
 }
 
-Date from_days(const Days&) noexcept;
+Days to_days(const DateHhMmSs&) noexcept;
 
 // on esp8266 this is a usually an internal timestamp timeshift'ed with `micros64()`
 // TODO usec precision only available w/ gettimeofday and would require 64bit time_t

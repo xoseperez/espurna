@@ -1442,29 +1442,40 @@ void test_sun() {
     location.longitude = 0.0;
     location.altitude = 0.0;
 
-    constexpr auto date = datetime::Date{
+    constexpr auto Dt = datetime::DateHhMmSs{
         .year = 1970, .month = 1, .day = 1,
-    };
+        .hours = 0, .minutes = 0, .seconds = 0};
 
-    const auto ctx = datetime::make_context(0);
-    const auto result =
-        sun::sunrise_sunset(location, ctx.utc);
+    const auto time_point = datetime::make_time_point(Dt, true);
 
-    auto expected = datetime::DateHhMmSs{
-        .year = date.year, .month = date.month, .day = date.day,
-        .hours = 5, .minutes = 59, .seconds = 54};
-    TEST_ASSERT(event::is_valid(result.sunrise));
+    sun::Match match;
+    TEST_ASSERT(sun::update(match, location, time_point));
+
+    TEST_ASSERT(!event::is_valid(match.sunrise.last));
+    TEST_ASSERT(event::is_valid(match.sunrise.next));
+
+    TEST_ASSERT(!event::is_valid(match.sunset.last));
+    TEST_ASSERT(event::is_valid(match.sunset.next));
+
+    auto expected = Dt;
+
+    // sunrise
+    expected.hours = 5;
+    expected.minutes = 59;
+    expected.seconds = 54;
+
     TEST_ASSERT_EQUAL(
         datetime::to_seconds(expected, true).count(),
-        result.sunrise.time_since_epoch().count());
+        match.sunrise.next.time_since_epoch().count());
 
-    expected = datetime::DateHhMmSs{
-        .year = date.year, .month = date.month, .day = date.day,
-        .hours = 18, .minutes = 7, .seconds = 8};
-    TEST_ASSERT(event::is_valid(result.sunset));
+    // sunset
+    expected.hours = 18;
+    expected.minutes = 7;
+    expected.seconds = 8;
+
     TEST_ASSERT_EQUAL(
         datetime::to_seconds(expected, true).count(),
-        result.sunset.time_since_epoch().count());
+        match.sunset.next.time_since_epoch().count());
 }
 
 void test_sun_event() {
@@ -1474,7 +1485,7 @@ void test_sun_event() {
     TEST_ASSERT(match.next == event::DefaultTimePoint);
 
     auto last = event::DefaultTimePoint;
-    auto next = datetime::Clock::time_point{ datetime::Seconds(ReferenceTimestamp) };
+    auto next = datetime::make_time_point(ReferenceTimestamp);
 
 #define TEST_DATE(X) \
     TEST_ASSERT_EQUAL(2006, (X).year);\
@@ -1489,7 +1500,8 @@ void test_sun_event() {
     // Initial input updates .next exactly once and .last stays 'Default'
 
     for (int times = 0; times < 2; ++times) {
-        sun::update_event_match(match, next);
+        const auto updated = sun::update_event_match(match, next);
+        TEST_ASSERT((times == 0) ? updated : !updated);
 
         TEST_DATE(match.date);
         TEST_TIME(match.time, 4);
@@ -1506,7 +1518,7 @@ void test_sun_event() {
     last = next;
     next += datetime::Minutes(1);
 
-    sun::update_event_match(match, next);
+    TEST_ASSERT(sun::update_event_match(match, next));
 
     TEST_DATE(match.date);
     TEST_TIME(match.time, 5);
@@ -1517,7 +1529,8 @@ void test_sun_event() {
     // 'Default' input updates .last and resets .next exactly once
 
     for (int times = 0; times < 2; ++times) {
-        sun::update_event_match(match, event::DefaultTimePoint);
+        const auto updated = sun::update_event_match(match, event::DefaultTimePoint);
+        TEST_ASSERT((times == 0) ? updated : !updated);
 
         TEST_DATE(match.date);
         TEST_TIME(match.time, 5);
@@ -1532,7 +1545,8 @@ void test_sun_event() {
     // Updating from .next = 'Default' preserves existing last
 
     for (int times = 0; times < 2; ++times) {
-        sun::update_event_match(match, next);
+        const auto updated = sun::update_event_match(match, next);
+        TEST_ASSERT((times == 0) ? updated : !updated);
 
         TEST_DATE(match.date);
         TEST_TIME(match.time, 6);
@@ -1541,6 +1555,270 @@ void test_sun_event() {
         TEST_ASSERT(match.next == next);
     }
 }
+
+void test_sun_update() {
+    // 1970-01-02 - prime meridian
+    sun::Location location;
+    location.latitude = 0.0;
+    location.longitude = 0.0;
+    location.altitude = 0.0;
+
+    constexpr auto Dt = datetime::DateHhMmSs{
+        .year = 1970, .month = 1, .day = 2,
+        .hours = 12, .minutes = 0, .seconds = 22,
+    };
+
+    const auto time_point = datetime::make_time_point(Dt, true);
+
+    sun::Match match;
+
+    auto prev_sunset = match.sunset.next;
+    auto prev_sunrise = match.sunrise.next;
+
+    TEST_ASSERT(sun::update<sun::CompareBackward>(match, location, time_point));
+
+    // current & previous day
+
+#define TEST_ASSERT_EQUAL_TIME_POINT(EXPECTED, ACTUAL)\
+    ([](datetime::Clock::time_point expected, datetime::Clock::time_point actual) {\
+        TEST_ASSERT_EQUAL(\
+                expected.time_since_epoch().count(),\
+                actual.time_since_epoch().count());\
+    })((EXPECTED), (ACTUAL))
+
+#define TEST_ASSERT_GREATER_THAN_TIME_POINT(THRESHOLD, ACTUAL)\
+    ([](datetime::Clock::time_point threshold, datetime::Clock::time_point actual) {\
+        TEST_ASSERT_GREATER_THAN(\
+                threshold.time_since_epoch().count(),\
+                actual.time_since_epoch().count());\
+    })((THRESHOLD), (ACTUAL))
+
+#define TEST_ASSERT_LESS_THAN_TIME_POINT(THRESHOLD, ACTUAL)\
+    ([](datetime::Clock::time_point threshold, datetime::Clock::time_point actual) {\
+        TEST_ASSERT_LESS_THAN(\
+                threshold.time_since_epoch().count(),\
+                actual.time_since_epoch().count());\
+    })((THRESHOLD), (ACTUAL))
+
+    TEST_ASSERT(!event::is_valid(match.sunset.last));
+    TEST_ASSERT(event::is_valid(match.sunset.next));
+
+    TEST_ASSERT_EQUAL_TIME_POINT(prev_sunset, match.sunset.last);
+    TEST_ASSERT_LESS_THAN_TIME_POINT(time_point, match.sunset.next);
+
+    auto sunset = Dt;
+    sunset.day = 1;
+    sunset.hours = 18;
+    sunset.minutes = 7;
+    sunset.seconds = 8;
+
+    TEST_ASSERT_EQUAL(
+        datetime::to_seconds(sunset, true).count(),
+        match.sunset.next.time_since_epoch().count());
+
+    TEST_ASSERT(!event::is_valid(match.sunrise.last));
+    TEST_ASSERT(event::is_valid(match.sunrise.next));
+
+    TEST_ASSERT_EQUAL_TIME_POINT(prev_sunrise, match.sunrise.last);
+    TEST_ASSERT_LESS_THAN_TIME_POINT(time_point, match.sunrise.next);
+
+    auto sunrise = Dt;
+    sunrise.hours = 6;
+    sunrise.minutes = 00;
+    sunrise.seconds = 21;
+
+    TEST_ASSERT_EQUAL(
+        datetime::to_seconds(sunrise, true).count(),
+        match.sunrise.next.time_since_epoch().count());
+
+    // current & next day
+
+    prev_sunset = match.sunset.next;
+    prev_sunrise = match.sunrise.next;
+
+    TEST_ASSERT(sun::update<sun::CompareForward>(match, location, time_point));
+
+    TEST_ASSERT(event::is_valid(match.sunset.last));
+    TEST_ASSERT(event::is_valid(match.sunset.next));
+
+    TEST_ASSERT_EQUAL_TIME_POINT(prev_sunset, match.sunset.last);
+    TEST_ASSERT_GREATER_THAN_TIME_POINT(time_point, match.sunset.next);
+
+    sunset = Dt;
+
+    sunset.hours = 18;
+    sunset.minutes = 7;
+    sunset.seconds = 35;
+
+    TEST_ASSERT_EQUAL(
+        datetime::to_seconds(sunset, true).count(),
+        match.sunset.next.time_since_epoch().count());
+
+    TEST_ASSERT(event::is_valid(match.sunrise.last));
+    TEST_ASSERT(event::is_valid(match.sunrise.next));
+
+    TEST_ASSERT_EQUAL_TIME_POINT(prev_sunrise, match.sunrise.last);
+    TEST_ASSERT_GREATER_THAN_TIME_POINT(time_point, match.sunrise.next);
+
+    sunrise = Dt;
+
+    sunrise.day = 3;
+    sunrise.hours = 6;
+    sunrise.minutes = 00;
+    sunrise.seconds = 48;
+
+    TEST_ASSERT_EQUAL(
+        datetime::to_seconds(sunrise, true).count(),
+        match.sunrise.next.time_since_epoch().count());
+
+    // just next day starting from sunrise
+    // update should keep 'current' sunrise
+
+    const auto next_time_point = match.sunrise.next;
+
+    prev_sunset = match.sunset.next;
+    prev_sunrise = match.sunrise.next;
+
+    const auto repeat_sunrise = match.sunrise.last;
+
+    TEST_ASSERT(sun::update<sun::CompareForward>(match, location, next_time_point));
+
+    TEST_ASSERT(event::is_valid(match.sunset.last));
+    TEST_ASSERT(event::is_valid(match.sunset.next));
+
+    TEST_ASSERT_EQUAL_TIME_POINT(prev_sunset, match.sunset.last);
+    TEST_ASSERT_GREATER_THAN_TIME_POINT(next_time_point, match.sunset.next);
+
+    sunset = Dt;
+
+    sunset.day = 3;
+    sunset.hours = 18;
+    sunset.minutes = 8;
+    sunset.seconds = 2;
+
+    TEST_ASSERT_EQUAL(
+        datetime::to_seconds(sunset, true).count(),
+        match.sunset.next.time_since_epoch().count());
+
+    TEST_ASSERT(event::is_valid(match.sunrise.last));
+    TEST_ASSERT(event::is_valid(match.sunrise.next));
+
+    TEST_ASSERT_EQUAL_TIME_POINT(prev_sunrise, match.sunrise.next);
+    TEST_ASSERT_EQUAL_TIME_POINT(repeat_sunrise, match.sunrise.last);
+    TEST_ASSERT_EQUAL_TIME_POINT(next_time_point, match.sunrise.next);
+
+    sunrise = Dt;
+
+    sunrise.day = 3;
+    sunrise.hours = 6;
+    sunrise.minutes = 00;
+    sunrise.seconds = 48;
+
+    TEST_ASSERT_EQUAL(
+        datetime::to_seconds(sunrise, true).count(),
+        match.sunrise.next.time_since_epoch().count());
+}
+
+void test_sun_update_time() {
+    // 1970-01-03 - prime meridian
+    sun::Location location;
+    location.latitude = 0.0;
+    location.longitude = 0.0;
+    location.altitude = 0.0;
+
+    constexpr auto Dt = datetime::DateHhMmSs{
+        .year = 1970, .month = 1, .day = 3,
+        .hours = 10, .minutes = 30, .seconds = 00,
+    };
+
+    const auto time_point = datetime::make_time_point(Dt, true);
+
+    auto next_update = event::DefaultTimePoint;
+
+    auto last_time_point = event::DefaultTimePoint;
+    auto next_time_point = time_point + datetime::Seconds{ 1 };
+
+    auto fallback = [&]() -> datetime::Clock::time_point {
+        return next_time_point;
+    };
+
+    sun::Match match;
+
+    // initial state, expect fallback
+
+    last_time_point = next_time_point;
+    next_update = sun::update_next_time_point(
+        match, time_point, fallback);
+
+    TEST_ASSERT_EQUAL_TIME_POINT(next_time_point, next_update);
+    TEST_ASSERT(sun::update(match, location, next_time_point));
+
+    // expecting earliest sun event
+
+    last_time_point = next_time_point;
+    next_time_point = time_point + datetime::Hours{ 1 };
+
+    next_update = sun::update_next_time_point(
+        match, last_time_point, fallback);
+
+#define TEST_ASSERT_NOT_EQUAL_TIME_POINT(EXPECTED, ACTUAL)\
+    ([](datetime::Clock::time_point expected, datetime::Clock::time_point actual) {\
+        TEST_ASSERT_NOT_EQUAL(\
+                expected.time_since_epoch().count(),\
+                actual.time_since_epoch().count());\
+    })((EXPECTED), (ACTUAL))
+
+    TEST_ASSERT(event::is_valid(match.sunrise.next));
+    TEST_ASSERT(event::is_valid(match.sunset.next));
+    TEST_ASSERT_GREATER_THAN_TIME_POINT(
+        match.sunrise.next, match.sunset.next);
+
+    TEST_ASSERT_NOT_EQUAL_TIME_POINT(next_time_point, next_update);
+    TEST_ASSERT_NOT_EQUAL_TIME_POINT(last_time_point, next_update);
+
+    TEST_ASSERT_EQUAL_TIME_POINT(match.sunset.next, next_update);
+    TEST_ASSERT_GREATER_THAN_TIME_POINT(time_point, next_update);
+
+    // still expecting earliest sun event
+
+    last_time_point = next_time_point;
+    next_time_point = time_point + datetime::Hours{ 1 };
+
+    TEST_ASSERT_FALSE(sun::update(match, location, next_time_point)); // mustn't trigger changes
+
+    TEST_ASSERT(event::is_valid(match.sunrise.next));
+    TEST_ASSERT(event::is_valid(match.sunset.next));
+    TEST_ASSERT_GREATER_THAN_TIME_POINT(
+        match.sunrise.next, match.sunset.next);
+
+    match.sunrise.next = event::DefaultTimePoint;
+    next_update = sun::update_next_time_point(
+        match, next_time_point, fallback);
+
+    TEST_ASSERT_NOT_EQUAL_TIME_POINT(next_time_point, next_update);
+    TEST_ASSERT_NOT_EQUAL_TIME_POINT(last_time_point, next_update);
+
+    TEST_ASSERT_EQUAL_TIME_POINT(match.sunrise.next, event::DefaultTimePoint);
+    TEST_ASSERT_EQUAL_TIME_POINT(match.sunset.next, next_update);
+    TEST_ASSERT_GREATER_THAN_TIME_POINT(next_time_point, next_update);
+
+    // yet again, fallback takes over
+
+    match = sun::Match{};
+
+    last_time_point = next_time_point;
+    next_time_point = time_point + datetime::Hours{ 5 };
+
+    next_update = sun::update_next_time_point(
+        match, last_time_point, fallback);
+
+    TEST_ASSERT_EQUAL_TIME_POINT(next_time_point, next_update);
+}
+
+#undef TEST_ASSERT_EQUAL_TIME_POINT
+#undef TEST_ASSERT_NOT_EQUAL_TIME_POINT
+#undef TEST_ASSERT_GREATER_THAN_TIME_POINT
+#undef TEST_ASSERT_LESS_THAN_TIME_POINT
 
 void test_datetime_parsing() {
     datetime::DateHhMmSs parsed{};
@@ -1637,6 +1915,8 @@ int main(int, char**) {
     RUN_TEST(test_search_bits);
     RUN_TEST(test_sun);
     RUN_TEST(test_sun_event);
+    RUN_TEST(test_sun_update);
+    RUN_TEST(test_sun_update_time);
     RUN_TEST(test_time_impl);
     RUN_TEST(test_time_invalid_parsing);
     RUN_TEST(test_time_parsing);

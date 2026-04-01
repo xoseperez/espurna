@@ -72,79 +72,22 @@ namespace {
 
 namespace sun {
 
-// Generic event fields plus date & time pair, to be used in scheduler matching code
-struct EventMatch : public Event {
-    datetime::Date date;
-    TimeMatch time;
+// Result is unset by default, should check if it is >0
+struct SunriseSunset {
+    datetime::Clock::time_point sunrise { event::DefaultSeconds };
+    datetime::Clock::time_point sunset { event::DefaultSeconds };
 };
 
-// Sunrise & Sunset state for the runtime
-struct Match {
-    EventMatch rising;
-    EventMatch setting;
+// Details provided by the user
+struct Location {
+    double latitude;
+    double longitude;
+    double altitude;
 };
-
-tm make_utc_date_time(datetime::Seconds seconds) {
-    tm out{};
-
-    time_t timestamp{ seconds.count() };
-    gmtime_r(&timestamp, &out);
-
-    return out;
-}
-
-datetime::Date make_date(const tm& date_time) {
-    datetime::Date out;
-
-    out.year = date_time.tm_year + 1900;
-    out.month = date_time.tm_mon + 1;
-    out.day = date_time.tm_mday;
-
-    return out;
-}
-
-TimeMatch make_time_match(const tm& date_time) {
-    TimeMatch out;
-
-    out.hour[date_time.tm_hour] = true;
-    out.minute[date_time.tm_min] = true;
-    out.flags = FlagUtc;
-
-    return out;
-}
-
-void update_event_match(EventMatch& match, datetime::Clock::time_point time_point) {
-    if (match.next == time_point) {
-        return;
-    }
-
-    const auto next_valid = event::is_valid(match.next);
-    if (!event::is_valid(time_point)) {
-        if (next_valid) {
-            match.last = match.next;
-        }
-
-        match.next = event::DefaultTimePoint;
-        return;
-    }
-
-    const auto duration = time_point.time_since_epoch();
-
-    const auto date_time = make_utc_date_time(duration);
-    match.date = make_date(date_time);
-    match.time = make_time_match(date_time);
-
-    if (next_valid) {
-        match.last = match.next;
-    }
-
-    match.next = time_point;
-}
 
 constexpr double Pi { M_PI };
 constexpr double Pi2 { M_PI_2 };
 
-// default exception numbers
 constexpr double NaN { std::numeric_limits<double>::quiet_NaN() };
 constexpr double PositiveNaN { NaN };
 constexpr double NegativeNaN { -NaN };
@@ -449,9 +392,7 @@ inline double hour_angle(double latitude, double declination) {
 
 // MeanSolarNoon calculates the time at which the sun is at its highest
 // altitude. The returned time is in Julian days.
-double mean_solar_noon(double longitude, const datetime::Date& date) {
-    auto days = datetime::to_days(date);
-
+double mean_solar_noon(double longitude, datetime::Days days) {
     // adjust for middle-of-the-day, optimistic case that handles UTC-12..UTC+12
     auto seconds = std::chrono::duration_cast<datetime::Seconds>(days);
     seconds += std::chrono::hours(12);
@@ -459,24 +400,12 @@ double mean_solar_noon(double longitude, const datetime::Date& date) {
 	return posixToJulianDay(seconds.count()) - longitude / 360.0;
 }
 
-// Result is unset by default, should check if it is >0
-struct SunriseSunset {
-    datetime::Clock::time_point sunrise { event::DefaultSeconds };
-    datetime::Clock::time_point sunset { event::DefaultSeconds };
-};
-
-// Details provided by the user
-struct Location {
-    double latitude;
-    double longitude;
-    double altitude;
-};
-
 // When the sun will rise and when it will set on the given day at the specified location and altitude.
 // Returns negative numbers when sun does not rise or set.
-SunriseSunset sunrise_sunset(const Location& location, const datetime::Date& date) {
+SunriseSunset sunrise_sunset(const Location& location, datetime::Clock::time_point time_point) {
     // TODO separate struct, debug log for intermediate calculations?
-    const auto d = mean_solar_noon(location.longitude, date);
+    const auto d = mean_solar_noon(location.longitude,
+            datetime::floor<datetime::Days>(time_point.time_since_epoch()));
 	const auto solarAnomaly = solar_mean_anomaly(d);
 	const auto equationOfCenter  = equation_of_center(solarAnomaly);
     const auto eclipticLongitude = ecliptic_longitude(solarAnomaly, equationOfCenter, d);
@@ -500,19 +429,6 @@ SunriseSunset sunrise_sunset(const Location& location, const datetime::Date& dat
 
     return out;
 }
-
-SunriseSunset sunrise_sunset(const Location& location, const tm& t) {
-    return sunrise_sunset(location, datetime::make_date(t));
-}
-
-//SunriseSunset sunrise_sunset(const Location& location) {
-//    const auto now = datetime::Clock::now();
-//
-//    const auto secs = now.time_since_epoch();
-//    const auto days = std::chrono::duration_cast<datetime::Days>(secs);
-//
-//    return sunrise_sunset(location, datetime::from_days(days));
-//}
 
 } // namespace sun
 
