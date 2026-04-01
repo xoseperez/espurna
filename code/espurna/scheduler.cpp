@@ -954,34 +954,75 @@ void format_datetime(CommandContext& ctx, const String& prefix, const Datetime& 
         datetime.next.c_str());
 }
 
-void dump_sunrise(CommandContext& ctx) {
+STRING_VIEW_INLINE(Sunrise, "Sunrise");
+STRING_VIEW_INLINE(Sunset, "Sunset");
+
+struct SunriseSunsetMatch {
+    StringView name;
+    sun::EventMatch& event_match;
+};
+
+void dump_event_match(CommandContext& ctx, const SunriseSunsetMatch& match) {
     format_datetime(ctx,
-        Sunrise.toString(),
-        sunrise_sunset(sun::match.rising));
+        match.name.toString(),
+        sunrise_sunset(match.event_match));
 }
 
-void dump_sunset(CommandContext& ctx) {
-    format_datetime(ctx,
-        Sunset.toString(),
-        sunrise_sunset(sun::match.setting));
+static constexpr auto SunriseMatch PROGMEM = SunriseSunsetMatch{
+    .name = Sunrise,
+    .event_match = sun::internal::match.sunrise,
+};
+
+static constexpr auto SunsetMatch PROGMEM = SunriseSunsetMatch{
+    .name = Sunset,
+    .event_match = sun::internal::match.sunset,
+};
+
+const SunriseSunsetMatch* maybe_sunrise_sunset(StringView name) {
+    const SunriseSunsetMatch* out { nullptr };
+    if (SunriseMatch.name.equalsIgnoreCase(name)) {
+        out = std::addressof(SunriseMatch);
+    } else if (SunsetMatch.name.equalsIgnoreCase(name)) {
+        out = std::addressof(SunsetMatch);
+    }
+
+    return out;
 }
 
 void dump_sunrise_sunset(CommandContext& ctx) {
-    if (event::is_valid(sun::next_update)) {
+    const auto next_update = sun::internal::next_update;
+    if (event::is_valid(next_update)) {
         ctx.output.printf_P(PSTR("- Next sunrise & sunset update at %s\n"),
-            datetime::format_local_tz(sun::next_update).c_str());
+            datetime::format_local_tz(next_update).c_str());
     }
 
-    dump_sunrise(ctx);
-    dump_sunset(ctx);
+    dump_event_match(ctx, SunriseMatch);
+    dump_event_match(ctx, SunsetMatch);
 }
 
 bool dump_sunrise_sunset(CommandContext& ctx, StringView name) {
-    if (Sunrise.equalsIgnoreCase(name)) {
-        dump_sunrise(ctx);
+    const auto* match = maybe_sunrise_sunset(name);
+    if (match != nullptr) {
+        dump_event_match(ctx, *match);
         return true;
-    } else if (Sunset.equalsIgnoreCase(name)) {
-        dump_sunset(ctx);
+    }
+
+    return false;
+}
+
+bool override_sunrise_sunset(CommandContext& ctx, sun::EventMatch& out, StringView value) {
+    datetime::DateHhMmSs date_hhmmss;
+    bool utc { false };
+
+    const auto result = parse_simple_iso8601(date_hhmmss, utc, value);
+    if (result) {
+        const auto time_point = datetime::make_time_point(date_hhmmss, utc);
+
+        out.last = event::DefaultTimePoint;
+        out.next = time_point;
+
+        sun::internal::next_update = time_point;
+
         return true;
     }
 
@@ -1130,12 +1171,22 @@ void event(CommandContext&& ctx) {
         return;
 
     case 3:
+    {
+#if SCHEDULER_SUN_SUPPORT
+        const auto match = internal::maybe_sunrise_sunset(ctx.argv[1]);
+        if (match) {
+            if (internal::override_sunrise_sunset(ctx, match->event_match, ctx.argv[2])) {
+                break;
+            }
+        } else
+#endif
         if (named_event(std::move(ctx.argv[1]), ctx.argv[2])) {
             break;
         }
 
         terminalError(ctx, STRING_VIEW("Cannot set event"));
         return;
+    }
 
     case 0:
     default:
