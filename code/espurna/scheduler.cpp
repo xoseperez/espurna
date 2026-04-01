@@ -2127,7 +2127,7 @@ Prepared prepare_event_offsets(const datetime::Context& ctx, Span<const schedule
 
         case Type::Sunset:
 #if SCHEDULER_SUN_SUPPORT
-            tmp.source = std::make_unique<Sunrise>();
+            tmp.source = std::make_unique<Sunset>();
             break;
 #else
             continue;
