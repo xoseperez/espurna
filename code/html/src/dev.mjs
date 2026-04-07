@@ -1,3 +1,5 @@
+/** @import { SendEvent } from './connection.mjs' */
+
 import { updateVariables } from './settings.mjs';
 
 export function init() {
@@ -27,6 +29,7 @@ export function init() {
         ntpDhcp: true,
         ntpUpdateIntvl: 1800,
         webMode: 0,
+        webPort: 80,
         useWhite: false,
         useCCT: false,
         useColor: true,
@@ -415,7 +418,8 @@ export function init() {
         });
     }
 
-    setInterval(() => {
+    /** @type {number | NodeJS.Timeout | null} */
+    let random_messages = setInterval(() => {
         const rnd = () =>
             Math.ceil(Math.random() * 100000)
             .toString()
@@ -427,4 +431,20 @@ export function init() {
             log: [`[${rnd()}] ${msg}\n`],
         });
     }, 1000);
+
+    window.addEventListener("app-send", (event) => {
+        const data = /** @type {SendEvent} */(event).detail.data;
+        if (data === "{}") {
+            return;
+        }
+
+        if (random_messages !== null) {
+            clearInterval(random_messages);
+            random_messages = null;
+        }
+
+        updateVariables({
+            "log": [`${data}\n`],
+        });
+    });
 }

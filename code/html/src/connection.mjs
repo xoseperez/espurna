@@ -196,29 +196,35 @@ async function connectToURL(root, options) {
     }
 }
 
+/** @typedef {CustomEvent<{url: URL, options: ConnectionOptions}>} ConnectionEvent */
+
 /** @param {Event} event */
 async function onConnectEvent(event) {
-    const detail = /** @type {CustomEvent<{url: URL, options: ConnectionOptions}>} */
+    const detail = /** @type {ConnectionEvent} */
         (event).detail;
     await connectToURL(
         detail.url, detail.options);
 }
 
-/** @param {Event} event */
-function onSendEvent(event) {
-    Connection.send(/** @type {CustomEvent<{data: string}>} */
-        (event).detail.data);
-}
+/** @typedef {CustomEvent<{urls: ConnectionUrls}>} ConnectedEvent */
 
 /** @param {function(ConnectionUrls): void} callback */
 export function listenAppConnected(callback) {
     window.addEventListener("app-connected", (event) => {
         event.preventDefault();
 
-        const urls = /** @type {CustomEvent<{urls: ConnectionUrls}>} */
+        const urls = /** @type {ConnectedEvent}>} */
             (event).detail.urls;
         callback(urls);
     });
+}
+
+/** @typedef {CustomEvent<{data: string}>} SendEvent */
+
+/** @param {Event} event */
+function onSendEvent(event) {
+    Connection.send(/** @type {SendEvent} */
+        (event).detail.data);
 }
 
 /** @param {string} data */
