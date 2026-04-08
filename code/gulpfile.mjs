@@ -91,7 +91,7 @@ import {
 
 /**
  * resulting blob compression type
- * @typedef {'br' | 'gz'} Compression
+ * @typedef {'br' | 'gz' | 'none'} Compression
  */
 
 /**
@@ -335,9 +335,13 @@ function toCompressed(options) {
             };
 
             switch (options.compress) {
+            case 'none':
+                callback(null, source);
+                break;
+
             case 'br':
                 zlib.brotliCompress(
-                    source.contents.buffer,
+                    source.contents,
                     {params: {
                         [zlib.constants.BROTLI_PARAM_QUALITY]: zlib.constants.BROTLI_MAX_QUALITY}
                     },
@@ -346,7 +350,7 @@ function toCompressed(options) {
 
             case 'gz':
                 zlib.gzip(
-                    source.contents.buffer,
+                    source.contents,
                     {level: zlib.constants.Z_BEST_COMPRESSION},
                     compress_callback);
                 break;
@@ -836,7 +840,6 @@ function buildHtml(options) {
     const stats = {};
 
     const out = [
-        src(ENTRYPOINT),
         trackFileStats(stats),
         modifyHtml([
             makeIndexHtml(options, stats),
@@ -881,8 +884,7 @@ function buildOutputs(options) {
     }
 
     out.push(
-        toOutput(options),
-        dest(STATIC_DIR));
+        toOutput(options))
 
     return out;
 }
@@ -899,10 +901,11 @@ function buildWebUI(name) {
         name: name,
     };
 
-    return pipeline([
+    return pipeline(
+        src(ENTRYPOINT),
         ...buildHtml(opts),
         ...buildOutputs(opts),
-    ]);
+        dest(STATIC_DIR));
 }
 
 /** @typedef ServeOptions
@@ -960,6 +963,25 @@ function serveWebUI({name, host, port}) {
         }
     }
 
+    // convert the original vinyl-fs stream back into something nodejs understands
+    async function* responseChunkGenerator(/** @type {Transform} */source) {
+        for await (const chunk of source) {
+            if (('contents' in chunk) && chunk.contents instanceof Buffer) {
+                yield chunk.contents;
+            } else {
+                throw ERR_CONTENTS_TYPE;
+            }
+        }
+    }
+
+    /** @type {BuildOptions} */
+    const opts = {
+        name,
+        modules: makeModules(name),
+        compress: 'none',
+        minify: false,
+    };
+
     /**
      * @param {http.ServerResponse<http.IncomingMessage>} response
      */
@@ -968,20 +990,10 @@ function serveWebUI({name, host, port}) {
 
         try {
             await pipeline(
-                /** @ts-ignore, types/node/stream/promises/pipeline.d.ts hates 'args' / '...args' */
-                ...buildHtml({name, modules: makeModules(name), compress: false, minify: false}),
-                // convert the original vinyl-fs stream back into something nodejs understands
-                async function* (/** @type {Transform} */source) {
-                    for await (const chunk of source) {
-                        if (('contents' in chunk) && chunk.contents instanceof Buffer) {
-                            yield chunk.contents;
-                        } else {
-                            throw ERR_CONTENTS_TYPE;
-                        }
-                    }
-                },
-                response
-            );
+                src(ENTRYPOINT),
+                ...buildHtml(opts),
+                responseChunkGenerator,
+                response);
         } catch (e) {
             log_error(e);
         }
