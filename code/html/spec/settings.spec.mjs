@@ -1,85 +1,95 @@
 import { assert, expect, test } from 'vitest';
+
+import { checkAndSetElementChanged } from '../src/settings/change.mjs';
 import {
-    checkAndSetElementChanged,
-    getDataForElement,
-    getOriginalForElement,
+    getElementOriginal,
+    isChangedElement,
     setOriginalsFromValues,
     setOriginalsFromValuesForNode,
-    setSpanValue,
-    setInputValue,
-    setSelectValue,
-} from '../src/settings.mjs';
-
-import { isChangedElement } from '../src/settings/utils.mjs';
+} from '../src/settings/dataset.mjs';
+import { setInputValue } from '../src/settings/input.mjs';
+import { setBitsetSelect, setSelectValue } from '../src/settings/select.mjs';
+import { setSpanValue } from '../src/settings/span.mjs';
+import { getElementValue, getNamedElementValue } from '../src/settings/value.mjs';
 
 test('select unchanged with empty value when original is missing', () => {
-    const node = document.createElement('select');
-    for (let value of ['', '1', '2', '3']) {
-        const elem = document.createElement('option');
-        elem.value = value;
-        node.appendChild(elem);
-    }
+    const select = document.createElement('select');
+    select.name = 'empty-one-two-three';
+    select.innerHTML = `
+        <option value=""></option>
+        <option value="1">One</option>
+        <option value="2">Two</option>
+        <option value="3">Three</option>`;
 
-    expect(getDataForElement(node))
-        .toEqual(getOriginalForElement(node));
+    expect(getElementValue(select))
+        .toBe('');
+    expect(getElementOriginal(select))
+        .toBeNull();
 
-    node.selectedIndex = -1;
-    expect(getDataForElement(node)).toBeNull();
-    assert(!isChangedElement(node));
+    select.selectedIndex = -1;
+    expect(getElementValue(select))
+        .toBeNull();
+    expect(getElementOriginal(select))
+        .toBeNull();
+    expect(isChangedElement(select))
+        .toBe(false);
 
-    node.selectedIndex = 1;
-    assert(!isChangedElement(node));
-    assert(checkAndSetElementChanged(node));
+    select.selectedIndex = 1;
+    expect(isChangedElement(select)).toBe(false);
+    expect(checkAndSetElementChanged(select)).toBe(true);
+    expect(isChangedElement(select)).toBe(true);
 
-    node.selectedIndex = 0;
-    assert(isChangedElement(node));
+    select.selectedIndex = 0;
+    expect(isChangedElement(select)).toBe(true);
+    expect(checkAndSetElementChanged(select)).toBe(false);
+    expect(isChangedElement(select)).toBe(true);
 
-    assert(checkAndSetElementChanged(node));
-    assert(!isChangedElement(node));
-
-    setOriginalsFromValuesForNode(node);
-    node.selectedIndex = 0;
-
-    assert(!checkAndSetElementChanged(node));
-    assert(!isChangedElement(node));
+    setOriginalsFromValues([select]);
+    expect(getElementOriginal(select))
+        .toBe('');
+    expect(getElementOriginal(select))
+        .toBe('');
+    expect(checkAndSetElementChanged(select)).toBe(false);
+    expect(isChangedElement(select)).toBe(false);
 });
 
 test('number input unchanged with empty value when original is missing', () => {
-    const node = document.createElement('input');
-    node.type = 'number';
+    const input = document.createElement('input');
+    input.name = 'empty-value';
+    input.type = 'number';
 
-    expect(getDataForElement(node))
-        .toEqual(getOriginalForElement(node));
+    expect(getElementValue(input))
+        .toEqual(getElementOriginal(input));
 
-    expect(getDataForElement(node)).toBeNaN();
-    assert(!isChangedElement(node));
+    expect(getElementValue(input)).toBeNaN();
+    assert(!isChangedElement(input));
 
-    setInputValue(node, 12345);
-    assert(!isChangedElement(node));
-    assert(checkAndSetElementChanged(node));
+    setInputValue(input, 12345);
+    assert(!isChangedElement(input));
+    assert(checkAndSetElementChanged(input));
 
-    setInputValue(node, '');
-    assert(isChangedElement(node));
+    setInputValue(input, '');
+    assert(isChangedElement(input));
 
-    assert(checkAndSetElementChanged(node));
-    assert(!isChangedElement(node));
+    assert(checkAndSetElementChanged(input));
+    assert(!isChangedElement(input));
 
-    setOriginalsFromValuesForNode(node);
-    setInputValue(node, '');
+    setOriginalsFromValues([input]);
+    setInputValue(input, '');
 
-    assert(!checkAndSetElementChanged(node));
-    assert(!isChangedElement(node));
+    assert(!checkAndSetElementChanged(input));
+    assert(!isChangedElement(input));
 });
 
 test('text input unchanged with empty value when original is missing', () => {
     const node = document.createElement('input');
     node.type = 'text';
 
-    expect(getDataForElement(node))
-        .toEqual(getOriginalForElement(node));
+    expect(getElementValue(node))
+        .toEqual(getElementOriginal(node));
 
     const data = 'this value does not make the element changed';
-    expect(getDataForElement(node)).toBe('');
+    expect(getElementValue(node)).toBe('');
     assert(!isChangedElement(node));
 
     node.value = data;
@@ -104,13 +114,13 @@ test('element input data with and without original', () => {
     node.type = 'text';
 
     const data = 'some kind of basic input value';
-    expect(getDataForElement(node)).toBe('');
+    expect(getElementValue(node)).toBe('');
     assert(!isChangedElement(node));
 
     node.value = data;
     assert(!isChangedElement(node));
     assert(checkAndSetElementChanged(node));
-    expect(getDataForElement(node)).toBe(data);
+    expect(getElementValue(node)).toBe(data);
     assert(isChangedElement(node));
 
     setOriginalsFromValues([node]);
@@ -216,34 +226,34 @@ test('input value update', () => {
     input.value = '';
 
     setInputValue(input, null);
-    expect(getDataForElement(input)).toBeNaN();
+    expect(getElementValue(input)).toBeNaN();
 
     setInputValue(input, 12345);
-    expect(getDataForElement(input)).toBe(12345);
+    expect(getElementValue(input)).toBe(12345);
 
     setInputValue(input, '');
-    expect(getDataForElement(input)).toBeNaN();
+    expect(getElementValue(input)).toBeNaN();
 
     setInputValue(input, '56789');
-    expect(getDataForElement(input)).toBe(56789);
+    expect(getElementValue(input)).toBe(56789);
 
     setInputValue(input, 'text');
-    expect(getDataForElement(input)).toBeNaN();
+    expect(getElementValue(input)).toBeNaN();
 
     input.type = 'text';
     input.value = '';
 
     setInputValue(input, null);
-    expect(getDataForElement(input)).toBe('');
+    expect(getElementValue(input)).toBe('');
 
     setInputValue(input, 12345);
-    expect(getDataForElement(input)).toBe('12345');
+    expect(getElementValue(input)).toBe('12345');
 
     setInputValue(input, '56789');
-    expect(getDataForElement(input)).toBe('56789');
+    expect(getElementValue(input)).toBe('56789');
 
     setInputValue(input, 'text');
-    expect(getDataForElement(input)).toBe('text');
+    expect(getElementValue(input)).toBe('text');
 });
 
 test('checkbox input value update', () => {
@@ -251,50 +261,56 @@ test('checkbox input value update', () => {
     input.type = 'checkbox';
 
     setInputValue(input, null);
-    expect(getDataForElement(input)).toEqual(false);
+    expect(getElementValue(input)).toBe(false);
 
     setInputValue(input, 12345);
-    expect(getDataForElement(input)).toEqual(true);
+    expect(getElementValue(input)).toBe(true);
 
     setInputValue(input, 0);
-    expect(getDataForElement(input)).toEqual(false);
+    expect(getElementValue(input)).toBe(false);
 
     setInputValue(input, 'true');
-    expect(getDataForElement(input)).toEqual(true);
+    expect(getElementValue(input)).toBe(true);
 
     setInputValue(input, 'false');
-    expect(getDataForElement(input)).toEqual(false);
+    expect(getElementValue(input)).toBe(false);
 
     setInputValue(input, 'yes');
-    expect(getDataForElement(input)).toEqual(true);
+    expect(getElementValue(input)).toBe(true);
 
     setInputValue(input, 'no');
-    expect(getDataForElement(input)).toEqual(false);
+    expect(getElementValue(input)).toBe(false);
 });
 
 test('select value update', () => {
     const select = document.createElement('select');
+    select.name = 'value';
     select.innerHTML = `
         <option value="initial"></option>
         <option value="one">One</option>
         <option value="two">Two</option>
         <option value="three">Three</option>`;
 
-    expect(getDataForElement(select)).toEqual('initial');
+    expect(getNamedElementValue(select))
+        .toEqual({
+            'name': 'value',
+            'value': 'initial',
+        });
 
-    setSelectValue(select, 'one');
-    expect(getDataForElement(select)).toEqual('one');
-
-    setSelectValue(select, 'two');
-    expect(getDataForElement(select)).toEqual('two');
-
-    setSelectValue(select, 'three');
-    expect(getDataForElement(select)).toEqual('three');
+    for (const value of ['one', 'two', 'three']) {
+        setSelectValue(select, value);
+        expect(getNamedElementValue(select))
+            .toEqual({
+                'name': 'value',
+                value,
+            });
+    }
 });
 
 test('select bitset update', () => {
     const select = document.createElement('select');
     select.multiple = true;
+    select.name = 'bitset';
     select.innerHTML = `
         <option value="0"></option>
         <option value="1">One</option>
@@ -303,34 +319,64 @@ test('select bitset update', () => {
         <option value="4">Four</option>
         <option value="5">Five</option>`;
 
-    expect(getDataForElement(select)).toEqual(0);
+    setBitsetSelect(select);
+    expect(getNamedElementValue(select))
+        .toEqual({
+            name: 'bitset',
+            value: 0,
+        });
     setOriginalsFromValues([select]);
 
     setSelectValue(select, 1 << 1);
 
-    expect(getDataForElement(select))
+    expect(getElementValue(select))
         .toEqual(1 << 1);
-    assert(checkAndSetElementChanged(select));
+    expect(checkAndSetElementChanged(select))
+        .toBe(true);
 
+    function makeSelected() {
+        return Array.from(select.options)
+            .filter((x) => x.selected)
+            .map((x) => x.text);
+    }
+
+    expect(makeSelected())
+        .toEqual(["One"]);
     setSelectValue(select, (1 << 2) | (1 << 4));
 
-    expect(getDataForElement(select))
+    expect(getElementValue(select))
         .toEqual((1 << 2) | (1 << 4));
-    assert(!checkAndSetElementChanged(select));
-    assert(isChangedElement(select));
+    expect(checkAndSetElementChanged(select))
+        .toBe(false);
+    expect(isChangedElement(select))
+        .toBe(true);
+    expect(makeSelected())
+        .toEqual(["Two", "Four"]);
 
     setOriginalsFromValues([select]);
     setSelectValue(select, (1 << 2) | (1 << 4));
 
-    assert(!checkAndSetElementChanged(select));
-    assert(!isChangedElement(select));
+    expect(checkAndSetElementChanged(select))
+        .toBe(false);
+    expect(isChangedElement(select))
+        .toBe(false);
+    expect(makeSelected())
+        .toEqual(["Two", "Four"]);
 
-    setSelectValue(select, (1 << 1) | (1 << 4));
+    setSelectValue(select, (1 << 1) | (1 << 5));
 
-    assert(checkAndSetElementChanged(select));
-    assert(isChangedElement(select));
+    expect(checkAndSetElementChanged(select))
+        .toBe(true);
+    expect(isChangedElement(select))
+        .toBe(true);
+    expect(makeSelected())
+        .toEqual(["One", "Five"]);
 
-    setSelectValue(select, (1 << 2) | (1 << 4));
-    assert(checkAndSetElementChanged(select));
-    assert(!isChangedElement(select));
+    setSelectValue(select, (1 << 3) | (1 << 4));
+    expect(checkAndSetElementChanged(select))
+        .toBe(false);
+    expect(isChangedElement(select))
+        .toBe(true);
+    expect(makeSelected())
+        .toEqual(["Three", "Four"]);
 });

@@ -1,11 +1,9 @@
-import {
-    groupSettingsOnAddElem,
-    variableListeners,
-} from './settings.mjs';
+import { groupSettingsOnAddElem } from './settings/group.mjs';
+import { variableListeners } from './settings.mjs';
 
-import { addFromTemplate, addFromTemplateWithSchema } from './template.mjs';
-import { lastMoreElem } from './core.mjs';
 import { sendAction } from './connection.mjs';
+import { lastMoreElem } from './core.mjs';
+import { addFromTemplate, addOriginalsFromTemplate } from './template.mjs';
 
 /** @param {function(HTMLElement): void} callback */
 function withNetworks(callback) {
@@ -13,15 +11,20 @@ function withNetworks(callback) {
         (document.getElementById("networks")));
 }
 
+const TEMPLATE_NAME = "network-config";
+
 /**
  * @param {any} value
  */
 function onConfig(value) {
     withNetworks((elem) => {
-        addFromTemplateWithSchema(
-            elem, "network-config",
-            value.networks, value.schema,
-            value.max ?? 0);
+        addOriginalsFromTemplate(
+            elem, TEMPLATE_NAME,
+            {
+                entries: value.networks,
+                schema: value.schema,
+                max: value.max ?? 0
+            });
     });
 }
 
@@ -29,7 +32,7 @@ function onConfig(value) {
  * @param {HTMLElement} elem
  */
 function networkAdd(elem) {
-    addFromTemplate(elem, "network-config", {});
+    addFromTemplate(elem, TEMPLATE_NAME, {});
     lastMoreElem(elem);
 }
 

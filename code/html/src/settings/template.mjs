@@ -11,13 +11,13 @@ export function loadTemplate(name) {
 /**
  * @param {HTMLElement} target
  * @param {DocumentFragment} template
- * @returns {Element | null}
+ * @returns {HTMLElement}
  */
 export function mergeTemplate(target, template) {
     for (let child of Array.from(template.children)) {
         target.appendChild(child);
     }
 
-    return target.lastElementChild;
+    return /** @type {HTMLElement} */(target.lastElementChild);
 }
 

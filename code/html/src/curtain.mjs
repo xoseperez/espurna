@@ -1,7 +1,9 @@
+import { addSimpleEnumerables } from './settings/enumerable.mjs';
+import { mergeTemplate } from './settings/template.mjs';
+import { variableListeners } from './settings.mjs';
+
 import { sendAction } from './connection.mjs';
 import { loadConfigTemplate } from './template.mjs';
-import { mergeTemplate } from './settings/template.mjs';
-import { addSimpleEnumerables, variableListeners } from './settings.mjs';
 
 const BACKGROUND_MOVING = "rgb(192, 0, 0)";
 const BACKGROUND_STOPPED = "rgb(64, 184, 221)";

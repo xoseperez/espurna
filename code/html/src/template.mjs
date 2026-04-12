@@ -3,25 +3,25 @@
 // (and notice that document.querySelector(...) won't be able to read inside of these)
 
 import {
-    listenEnumerable,
-    onGroupSettingsDel,
-    setInputValue,
     setOriginalsFromValuesForNode,
-    setSelectValue,
-    setSpanValue,
-} from './settings.mjs';
+} from './settings/dataset.mjs';
 
-import {
-    setGroupElement,
-} from './settings/utils.mjs';
+import { setInputValue } from './settings/input.mjs';
+import { setSelectValue } from './settings/select.mjs';
+import { setSpanValue } from './settings/span.mjs';
+
+import { listenEnumerable } from './settings/enumerable.mjs';
+
+import { setGroupElement, setGroupElements } from './settings/group.elem.mjs';
+import { onGroupSettingsDel } from './settings/group.mjs';
 
 import {
     loadTemplate,
     mergeTemplate,
 } from './settings/template.mjs';
 
-import { passwordReveal } from './password.mjs';
 import { moreParent } from './core.mjs';
+import { passwordReveal } from './password.mjs';
 
 /**
  * @import { InputOrSelect } from './settings.mjs'
@@ -33,15 +33,20 @@ import { moreParent } from './core.mjs';
  */
 export function loadConfigTemplate(name) {
     const template = loadTemplate(name);
-    for (let elem of /** @type {NodeListOf<InputOrSelect>} */(template.querySelectorAll("input,select"))) {
+
+    if (template.children.length === 1 && template.firstElementChild instanceof HTMLElement) {
+        setGroupElements(template.firstElementChild);
+    }
+
+    for (const elem of /** @type {NodeListOf<InputOrSelect>} */(template.querySelectorAll("input,select"))) {
         setGroupElement(elem);
     }
 
-    for (let elem of template.querySelectorAll("button.button-del-settings-group")) {
+    for (const elem of template.querySelectorAll("button.button-del-settings-group")) {
         elem.addEventListener("click", onGroupSettingsDel);
     }
 
-    for (let elem of template.querySelectorAll("[data-enumerable]")) {
+    for (const elem of template.querySelectorAll("[data-enumerable]")) {
         if (!(elem instanceof HTMLElement)) {
             continue;
         }
@@ -56,7 +61,7 @@ export function loadConfigTemplate(name) {
 }
 
 /**
- * @import { DisplayValue } from './settings.mjs'
+ * @import { DisplayValue } from './settings/span.mjs'
  * @typedef {{[k: string]: DisplayValue}} TemplateConfig
  */
 
@@ -98,8 +103,6 @@ export function fillTemplateFromCfg(fragment, id, cfg = {}) {
             setSpanValue(elem, value);
         }
     }
-
-    setOriginalsFromValuesForNode(fragment);
 }
 
 /**
@@ -137,34 +140,37 @@ export function fromSchema(values, schema) {
 }
 
 /**
- * @param {DisplayValue[][]} source
+ * @param {DisplayValue[][]} entries
  * @param {string[]} schema
  * @returns {TemplateConfig[]}
  */
-export function prepareFromSchema(source, schema) {
-    return source.map((values) => fromSchema(values, schema));
+export function prepareFromSchema(entries, schema) {
+    return entries.map((x) => fromSchema(x, schema));
 }
 
 /**
  * @param {HTMLElement} container
  * @param {string} name
- * @param {DisplayValue[][]} entries
- * @param {string[]} schema
- * @param {number} max
+ * @param {TemplateConfig[]} prepared
  */
-export function addFromTemplateWithSchema(container, name, entries, schema, max = 0) {
-    const prepared = prepareFromSchema(entries, schema);
-    if (!prepared) {
-        return;
-    }
+export function addOriginalsFromTemplateWithPreparedSchema(container, name, prepared) {
+    prepared.forEach((cfg) => {
+        addFromTemplate(container, name, cfg);
+    });
+    setOriginalsFromValuesForNode(container);
+}
 
+/**
+ * @param {HTMLElement} container
+ * @param {string} name
+ * @param {{entries: DisplayValue[][], schema: string[], max?: number}} opts
+ */
+export function addOriginalsFromTemplate(container, name, { entries, schema, max = 0 }) {
     if (max > 0) {
         container.dataset["settingsMax"] = max.toString();
     }
 
-    prepared.forEach((cfg) => {
-        addFromTemplate(container, name, cfg);
-    });
+    addOriginalsFromTemplateWithPreparedSchema(container, name, prepareFromSchema(entries, schema));
 }
 
 export class BaseInput {

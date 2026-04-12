@@ -1,17 +1,16 @@
 import { sendAction } from './connection.mjs';
 
 import {
-    addFromTemplate,
-    fromSchema,
     NumberInput,
+    addOriginalsFromTemplateWithPreparedSchema,
+    fromSchema,
+    prepareFromSchema,
 } from './template.mjs';
 
-import {
-    addEnumerables,
-    setOriginalsFromValues,
-    variableListeners,
-    listenEnumerableTarget,
-} from './settings.mjs';
+import { addEnumerables, listenEnumerableTarget } from './settings/enumerable.mjs';
+import { setOriginalsFromValuesForNode } from './settings/dataset.mjs';
+
+import { variableListeners } from './settings.mjs';
 
 import {
     loadTemplate,
@@ -95,42 +94,40 @@ function updateFromState(states, schema) {
     });
 }
 
-/** @param {any} cfg */
-function addConfigNode(cfg) {
-    const container = /** @type {!HTMLElement} */
-        (document.getElementById("relayConfig"));
-    addFromTemplate(container, "relay-config", cfg);
-}
-
 /**
  * @param {any[]} configs
  * @param {string[]} schema
  */
 function updateFromConfig(configs, schema) {
-    const container = document.getElementById("relays");
+    const container = document.getElementById("relayConfig");
     if (!container || container.childElementCount > 0) {
         return;
     }
 
-    /** @import { EnumerableNames } from './settings.mjs' */
+    /** @import { EnumerableNames } from './settings/enumerable.mjs' */
+
+    const prepared = prepareFromSchema(configs, schema);
+    if (!prepared) {
+        return;
+    }
 
     /** @type {EnumerableNames} */
     const names = {};
 
-    configs.forEach((config, id) => {
-        const relay = fromSchema(config, schema);
-        if (!relay.relayName) {
-            relay.relayName = `Switch #${id}`;
+    prepared.forEach((cfg, id) => {
+        if (!cfg.relayName) {
+            cfg.relayName = `Switch #${id}`;
         }
 
         names[id.toString()] =
-            `${relay.relayName} (${relay.relayProv})`;
+            `${cfg.relayName} (${cfg.relayProv})`;
 
         initToggle(id);
-        addConfigNode(relay);
     });
 
     addEnumerables("relay", names);
+    addOriginalsFromTemplateWithPreparedSchema(
+        container, "relay-config", prepared);
 }
 
 /**
@@ -147,14 +144,13 @@ export function createNodeList(id, values, keyPrefix) {
     // TODO generic template to automatically match elems to (limited) schema?
     const template = new NumberInput();
     values.forEach((value, index) => {
-        mergeTemplate(container, template.with(
-            (label, input) => {
-                listenEnumerableTarget(label, index, "relay");
-
-                input.name = keyPrefix;
-                input.value = value;
-                setOriginalsFromValues([input]);
-            }));
+            const merged = mergeTemplate(container, template.with(
+                (label, input) => {
+                    listenEnumerableTarget(label, index, "relay");
+                    input.name = keyPrefix;
+                    input.value = value;
+                }));
+            setOriginalsFromValuesForNode(merged);
         });
 }
 

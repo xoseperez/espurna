@@ -4,7 +4,6 @@ import {
     applySettingsFromForms,
     listenVariables,
 } from './settings.mjs';
-import { resetChangedElement } from './settings/utils.mjs';
 
 import {
     formPassPair,
@@ -35,7 +34,7 @@ function generatePassword() {
  */
 function generatePasswordsForForm(form) {
     const value = generatePassword();
-    for (let elem of formPassPair(form)) {
+    for (const elem of formPassPair(form)) {
         elem.type = "text";
         elem.value = value;
         elem.dispatchEvent(new Event("change"));
@@ -46,10 +45,10 @@ function generatePasswordsForForm(form) {
  * @param {HTMLFormElement} form
  */
 function clearPasswordsForForm(form) {
-    for (let elem of formPassPair(form)) {
+    for (const elem of formPassPair(form)) {
         elem.type = "password";
         elem.value = "";
-        resetChangedElement(elem);
+        elem.dispatchEvent(new Event("change"));
     }
 }
 

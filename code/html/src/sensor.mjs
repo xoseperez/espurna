@@ -1,25 +1,24 @@
 import { sendAction } from './connection.mjs';
 
-import {
-    showPanelByName,
-} from './core.mjs';
+import { showPanelByName } from './core.mjs';
+
+import { resetGroupElement } from './settings/group.elem.mjs';
 
 import {
     addEnumerables,
-    initElementOptions,
     listenEnumerableName,
     listenEnumerableTarget,
     prepareEnumerableTarget,
-    setOriginalFromValue,
-    setSelectValue,
-    variableListeners,
-} from './settings.mjs';
+} from './settings/enumerable.mjs';
+
+import { setOriginalsFromValuesForNode } from './settings/dataset.mjs';
 
 import {
-    resetGroupElement,
-    setChangedElement,
-    setIgnoredElement,
-} from './settings/utils.mjs';
+    initElementOptions,
+    setSelectValue,
+} from './settings/select.mjs';
+
+import { variableListeners } from './settings.mjs';
 
 import {
     fromSchema,
@@ -131,8 +130,7 @@ function initModuleMagnitudes(prefix, values, schema) {
 
     values.forEach((value, id) => {
         const magnitude = fromSchema(value, schema);
-
-        mergeTemplate(container, template.with(
+        const merged = mergeTemplate(container, template.with(
             (label, input, span) => {
                 listenEnumerableTarget(label, id, "magnitude");
 
@@ -141,10 +139,10 @@ function initModuleMagnitudes(prefix, values, schema) {
                 input.required = true;
                 input.value = /** @type {!number} */
                     (magnitude.index_module).toString();
-                setOriginalFromValue(input);
 
                 listenEnumerableMagnitudeDescription(span, id);
             }));
+        setOriginalsFromValuesForNode(merged);
     });
 }
 
@@ -207,7 +205,7 @@ function initMagnitudes(types, errors, units) {
  * @param {MagnitudeCallback[]} callbacks
  */
 function initMagnitudesList(values, schema, callbacks) {
-    /** @import { EnumerableNames } from './settings.mjs' */
+    /** @import { EnumerableNames } from './settings/enumerable.mjs' */
 
     /** @type {EnumerableNames} */
     const names = {};
@@ -309,10 +307,10 @@ function createMagnitudeUnitSelector(_id, magnitude) {
 
     initElementOptions(select, options);
     setSelectValue(select, magnitude.units);
-    setOriginalFromValue(select);
 
     container?.parentElement?.classList?.remove("maybe-hidden");
-    mergeTemplate(container, line);
+    const merged = mergeTemplate(container, line);
+    setOriginalsFromValuesForNode(merged);
 }
 
 /**
@@ -382,7 +380,7 @@ function initMagnitudeNumberSetting(containerId, id, keySuffix, value, {required
     container?.parentElement?.classList?.remove("maybe-hidden");
 
     const template = new NumberInput();
-    mergeTemplate(container, template.with(
+    const merged = mergeTemplate(container, template.with(
         (label, input, span) => {
             label.textContent = info.name;
             label.htmlFor = info.key;
@@ -394,10 +392,10 @@ function initMagnitudeNumberSetting(containerId, id, keySuffix, value, {required
             input.max = max;
             input.value = value.toString();
 
-            resetGroupElement(input);
-            setOriginalFromValue(input);
+            resetGroupElement(input); // TODO info key w/o index
             listenEnumerableMagnitudeDescription(span, id);
         }));
+    setOriginalsFromValuesForNode(merged);
 }
 
 /**
@@ -432,7 +430,7 @@ function initMagnitudesExpected(id) {
     expected.name += info.key;
     expected.id = expected.name;
     expected.dataset["id"] = info.id.toString();
-    setIgnoredElement(expected);
+    expected.dataset["action"] = "none";
 
     const [message] = /** @type {NodeListOf<HTMLSpanElement>} */
         (template.querySelectorAll(`span.emon-expected-${info.prefix}`));
@@ -481,7 +479,7 @@ function emonApplyRatios() {
         }
 
         ratio.value = result.value;
-        setChangedElement(ratio);
+        ratio.dispatchEvent(new Event("change"));
 
         result.value = "";
 

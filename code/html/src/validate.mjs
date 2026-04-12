@@ -1,46 +1,16 @@
+/** @import { InputOrSelect } from './settings.mjs' */
+
 import { findPanel, showPanel } from './core.mjs';
 
-import {
-    isChangedElement,
-    isIgnoredElement,
-    getElements,
-} from './settings/utils.mjs';
+import { isChangedElement } from './settings/dataset.mjs';
+import { isIgnoredElement, findInputOrSelect } from './settings/utils.mjs';
+import { reportValidityForInputOrSelect } from './validate/utils.mjs';
 
 import {
     filterForm,
     formPassPair,
     validatePassword,
 } from './password/utils.mjs';
-
-/** @import { InputOrSelect } from './settings.mjs' */
-
-const CUSTOM_VALIDITY = "customValidity";
-
-/**
- * @param {InputOrSelect} elem
- * @param {string} message
- */
-export function reportValidityForInputOrSelect(elem, message = "") {
-    findPanel(elem, (panel) => {
-        showPanel(panel);
-
-        if (message.length !== 0) {
-            elem.setCustomValidity(message);
-            elem.dataset[CUSTOM_VALIDITY] = message;
-        }
-
-        elem.focus();
-        elem.reportValidity();
-    });
-}
-
-/**
- * @param {InputOrSelect} elem
- */
-export function resetCustomValidity(elem) {
-    delete elem.dataset[CUSTOM_VALIDITY];
-    elem.setCustomValidity("");
-}
 
 /**
  * @param {InputOrSelect} elem

@@ -243,6 +243,7 @@ span.visible {
 .button-save {
     --save-background: grey;
     background: var(--save-background);
+    transition: background-color ease-in-out 0.4s;
 }
 
 .button-wifi-scan,

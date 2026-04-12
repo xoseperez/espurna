@@ -1,5 +1,6 @@
-import { groupSettingsOnAddElem, variableListeners } from './settings.mjs';
-import { addFromTemplateWithSchema, addFromTemplate } from './template.mjs';
+import { groupSettingsOnAddElem } from './settings/group.mjs';
+import { variableListeners } from './settings.mjs';
+import { addFromTemplate, addOriginalsFromTemplate } from './template.mjs';
 
 /** @param {function(HTMLElement): void} callback */
 function withRules(callback) {
@@ -21,20 +22,25 @@ function withTopics(callback) {
         (document.getElementById("rpn-topics")));
 }
 
+const TEMPLATE_NAME = "rpn-topic";
+
 /** @param {HTMLElement} elem */
 function addTopic(elem) {
-    addFromTemplate(elem, "rpn-topic", {});
+    addFromTemplate(elem, TEMPLATE_NAME, {});
 }
 
 /**
  * @param {HTMLElement} elem
  * @param {any} value
  */
-function addTopicWithSchema(elem, value) {
-    addFromTemplateWithSchema(
-        elem, "rpn-topic",
-        value.topics, value.schema,
-        value.max ?? 0);
+function addOriginalTopic(elem, value) {
+    addOriginalsFromTemplate(
+        elem, TEMPLATE_NAME,
+        {
+            entries: value.topics,
+            schema: value.schema,
+            max: value.max ?? 0
+        });
 }
 
 /**
@@ -51,7 +57,7 @@ function listeners() {
         },
         "rpnTopics": (_, value) => {
             withTopics((elem) => {
-                addTopicWithSchema(elem, value);
+                addOriginalTopic(elem, value);
             });
         },
     };

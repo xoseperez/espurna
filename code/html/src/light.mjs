@@ -2,8 +2,11 @@ import iro from '@jaames/iro';
 
 import { styleInject, styleVisible } from './core.mjs';
 import { sendAction } from './connection.mjs';
-import { addEnumerables, variableListeners } from './settings.mjs';
+
+import { addEnumerables } from './settings/enumerable.mjs';
 import { mergeTemplate, loadTemplate } from './settings/template.mjs';
+
+import { variableListeners } from './settings.mjs';
 
 /**
  * @param {iro.Color} color
@@ -361,7 +364,7 @@ function initChannels(channels) {
         return;
     }
 
-    /** @import { EnumerableNames } from './settings.mjs' */
+    /** @import { EnumerableNames } from './settings/enumerable.mjs' */
 
     /** @type {EnumerableNames} */
     const names = {};

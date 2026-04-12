@@ -1,7 +1,10 @@
-import { addFromTemplate, addFromTemplateWithSchema } from './template.mjs';
-import { addEnumerables, groupSettingsOnAddElem, variableListeners } from './settings.mjs';
-import { reportValidityForInputOrSelect } from './validate.mjs';
+import { addEnumerables } from './settings/enumerable.mjs';
+import { groupSettingsOnAddElem } from './settings/group.mjs';
+import { variableListeners } from './settings.mjs';
+
 import { capitalize } from './core.mjs';
+import { addFromTemplate, addOriginalsFromTemplate } from './template.mjs';
+import { reportValidityForInputOrSelect } from './validate/utils.mjs';
 
 /** @param {function(HTMLElement): void} callback */
 function withSchedules(callback) {
@@ -9,11 +12,13 @@ function withSchedules(callback) {
         (document.getElementById("schedules")));
 }
 
+const TEMPLATE_NAME = "schedule-config";
+
 /**
  * @param {HTMLElement} elem
  */
 function scheduleAdd(elem) {
-    addFromTemplate(elem, "schedule-config", {});
+    addFromTemplate(elem, TEMPLATE_NAME, {});
 }
 
 /**
@@ -21,10 +26,13 @@ function scheduleAdd(elem) {
  */
 function onConfig(value) {
     withSchedules((elem) => {
-        addFromTemplateWithSchema(
-            elem, "schedule-config",
-            value.schedules, value.schema,
-            value.max ?? 0);
+        addOriginalsFromTemplate(
+            elem, TEMPLATE_NAME,
+            {
+                entries: value.schedules,
+                schema: value.schema,
+                max: value.max ?? 0
+            });
     });
 }
 
@@ -56,7 +64,7 @@ function listeners() {
         },
         "schTypes": (_, value) => {
             const tuples =
-                /** @type {import('./settings.mjs').EnumerableTuple[]} */(value);
+                /** @type {import('./settings/enumerable.mjs').EnumerableTuple[]} */(value);
             addEnumerables("schType",
                 tuples.map((x) => [x[0], capitalize(x[1])]));
         },

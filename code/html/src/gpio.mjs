@@ -1,11 +1,12 @@
-import { addEnumerables, variableListeners } from './settings.mjs';
+import { addEnumerables } from './settings/enumerable.mjs';
+import { variableListeners } from './settings.mjs';
 import { notifyMessage } from './notify.mjs';
 
 /**
  * @param {any} config
  */
 function updateEnumerables(config) {
-    /** @import { EnumerableNames } from './settings.mjs' */
+    /** @import { EnumerableNames } from './settings/enumerable.mjs' */
 
     /** @type {EnumerableNames} */
     const types = {};

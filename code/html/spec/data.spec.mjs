@@ -1,42 +1,45 @@
-import { assert, afterAll, expect, test } from 'vitest';
+import { afterEach, assert, expect, test } from 'vitest';
 
 import { randomString } from '../src/core.mjs';
-import { addFromTemplate } from '../src/template.mjs';
+
+import { checkAndSetElementChanged } from '../src/settings/change.mjs';
 import {
-    checkAndSetElementChanged,
-    getData,
+    getOriginals,
+    isChangedElement,
+    makeDataRequest,
+    pendingChanges,
+    setChangedElement,
+    setOriginalFromValue,
+    setOriginalsFromValuesForNode,
+} from '../src/settings/dataset.mjs';
+import { setGroup, setGroupElement, setGroupElements } from '../src/settings/group.elem.mjs';
+import {
     groupSettingsAdd,
     groupSettingsDel,
+} from '../src/settings/group.mjs';
+import { setInputValue } from '../src/settings/input.mjs';
+
+import {
+    addFromTemplate,
+    addOriginalsFromTemplate,
+    fromSchema,
+} from '../src/template.mjs';
+
+import {
     setInputOrSelectValueByKey,
-    setInputValue,
     setSpanValueByKey,
 } from '../src/settings.mjs';
 
-import {
-    countChangedElements,
-    isChangedElement,
-    setChangedElement,
-    setGroupElement,
-} from '../src/settings/utils.mjs';
+const __forms = new Set();
 
-afterAll(() => {
+afterEach(() => {
+  document.querySelectorAll('form')
+    .forEach((form) => {
+        expect(__forms.has(form.id)).toBe(false);
+        __forms.add(form.id);
+    });
   document.body.innerHTML = '';
-  expect(document.body.childElementCount)
-    .toEqual(0);
 });
-
-/**
- * @param {import('../src/settings.mjs').ElementValue} lhs
- * @param {import('../src/settings.mjs').DataValue} rhs
- */
-function expectData(lhs, rhs) {
-    if (typeof lhs === 'boolean') {
-        assert(typeof rhs === 'number');
-        expect(lhs).toEqual(!!rhs);
-    } else {
-        expect(lhs).toEqual(rhs);
-    }
-}
 
 test('processed data can be gathered back', () => {
     const PLAIN = {
@@ -46,27 +49,36 @@ test('processed data can be gathered back', () => {
         plainBox: true,
     };
 
-    const CFGS = [
-        {groupName: 'one', groupValue: 1},
-        {groupName: 'five', groupValue: 5},
-        {groupName: 'nine', groupValue: 9},
-        {groupName: 'fifty-five', groupValue: 55},
-        {groupName: 'one-hundred', groupValue: 100},
+    const GROUP_NAME = 'groupName'
+    const GROUP_VALUE = 'groupValue';
+
+    const KEYS = [GROUP_NAME, GROUP_VALUE];
+    const VALUES = [
+        ['one', 1],
+        ['five', 5],
+        ['nine', 9],
+        ['fifty-five', 55],
+        ['one-hundred', 100],
     ];
 
+    const formId = 'gather';
+
+    const plainId = 'gather-plain';
+    const groupId = 'gather-group';
+
     document.body.innerHTML += `
-    <form id="gather">
-        <fieldset id="gather-plain">
+    <form id="${formId}">
+        <fieldset id="${plainId}">
             <legend>Plain kvs</legend>
             <input name="plainText" type="text"></input>
             <input name="plainNumber" type="number"></input>
             <input name="plainRange" type="range"></input>
             <input name="plainBox" type="checkbox"></input>
         </fieldset>
-        <div id="gather-group">
+        <div id="${groupId}" class="settings-group">
         </div>
     </form>
-    <template id="template-gather-group">
+    <template id="template-${groupId}">
         <fieldset>
             <legend>Group <span data-key="template-id" data-pre="#"></span></legend>
             <input name="groupName" type="text"></input>
@@ -74,48 +86,29 @@ test('processed data can be gathered back', () => {
         </fieldset>
     </template>`;
 
-    const plain = document.getElementById('gather-plain');
+    const plain = document.getElementById(plainId);
     assert(plain instanceof HTMLFieldSetElement);
 
     for (let [key, value] of Object.entries(PLAIN)) {
         setInputOrSelectValueByKey(plain, key, value);
     }
 
-    const group = document.getElementById('gather-group');
+    const group = document.getElementById(groupId);
     assert(group instanceof HTMLElement);
 
-    for (let cfg of CFGS) {
-        addFromTemplate(group, 'gather-group', cfg);
-    }
+    // w/ schema variant is expected to set originals after adding elements
+    addOriginalsFromTemplate(group, groupId, {entries: VALUES, schema: KEYS});
+    expect(VALUES.length)
+        .toEqual(group.childElementCount)
 
-    expect(group.childElementCount)
-        .toEqual(CFGS.length);
+    // retrieves everything, independent of ours 'changed' state
+    const data = getOriginals(formId);
+    const flat = Object.assign(PLAIN,
+        VALUES.map((x, index) =>
+            fromSchema(x, KEYS.map((key) => `${key}${index}`)))
+        .reduce((prev, curr) => Object.assign(prev, curr), {}));
 
-    const form = /** @type {HTMLFormElement | null} */
-        (document.getElementById('gather'));
-    assert(form);
-
-    const form_data = new FormData(form);
-    expect(form_data.getAll('groupValue'));
-
-    // retrieves everything, regardless of 'changed' state
-    const data = getData([form], {assumeChanged: true});
-    expect(data.del.length)
-        .toEqual(0);
-
-    const dataset = data.set;
-    expect(Object.entries(dataset).length)
-        .toEqual(Object.keys(PLAIN).length + (2 * CFGS.length));
-
-    for (let [key, value] of Object.entries(PLAIN)) {
-        expectData(value, dataset[key]);
-    }
-
-    CFGS.forEach((cfg, index) => {
-        for (let [key, value] of Object.entries(cfg)) {
-            expectData(value, dataset[`${key}${index}`]);
-        }
-    })
+    expect(flat).toEqual(data);
 });
 
 /**
@@ -123,6 +116,7 @@ test('processed data can be gathered back', () => {
  * @returns {string}
  */
 function makeFormGroup(name) {
+    expect(getOriginals(name), `${name} should not exist yet`).toEqual({});
     return `
     <form id="${name}">
         <div id="${name}-group" class="settings-group" data-settings-schema="foo bar">
@@ -141,7 +135,9 @@ const TEMPLATE_GROUP = `
     </template>`;
 
 test('settings group modify', () => {
-    document.body.innerHTML += makeFormGroup('modify');
+    const formId = 'modify';
+
+    document.body.innerHTML += makeFormGroup(formId);
     document.body.innerHTML += TEMPLATE_GROUP;
 
     const modify = /** @type {HTMLDivElement | null} */
@@ -152,102 +148,128 @@ test('settings group modify', () => {
     addFromTemplate(modify, 'group', {foo: 'two'});
     addFromTemplate(modify, 'group', {foo: 'three'});
 
+    setOriginalsFromValuesForNode(modify);
+
     const last = /** @type {HTMLInputElement | null} */
         (modify?.lastElementChild?.children[1]);
     assert(last);
 
     setInputValue(last, 'something else');
-    assert(checkAndSetElementChanged(last));
+    expect(checkAndSetElementChanged(last)).toBe(true);
 
     const first = /** @type {HTMLInputElement | null} */
         (modify?.firstElementChild?.children[1]);
     assert(first);
 
     setInputValue(first, 'complete opposite');
-    assert(checkAndSetElementChanged(first));
+    expect(checkAndSetElementChanged(first)).toBe(true);
 
     const form = /** @type {HTMLFormElement | null} */
-        (document.getElementById('modify'));
+        (document.getElementById(formId));
     assert(form);
 
-    const data = getData([form]);
+    const data = getOriginals(formId);
+    expect(data['foo0']).toEqual('one');
+    expect(data['foo1']).toEqual('two');
+    expect(data['foo2']).toEqual('three');
 
-    expect(data.del.length)
-        .toEqual(0);
-
-    expect(data.set)
-        .toEqual({
-            foo0: 'complete opposite',
-            foo2: 'something else',
-        });
+    const request = makeDataRequest([form]);
+    expect(request.del).toEqual([]);
+    expect(request.set).toEqual({
+        foo0: 'complete opposite',
+        foo2: 'something else',
+    });
 });
 
 test('settings group append', () => {
-    document.body.innerHTML += makeFormGroup('append');
+    const formId = 'append';
+
+    document.body.innerHTML += makeFormGroup(formId);
     document.body.innerHTML += TEMPLATE_GROUP;
 
     const append = /** @type {HTMLDivElement | null} */
-        (document.getElementById('append-group'));
+        (document.getElementById(`${formId}-group`));
     assert(append);
 
-    addFromTemplate(append, 'group', {foo: 'first'});
-    addFromTemplate(append, 'group', {foo: 'second'});
-    addFromTemplate(append, 'group', {foo: 'third'});
-    addFromTemplate(append, 'group', {foo: 'fourth'});
+    let target = addFromTemplate(append, 'group', {foo: 'first'});
+    assert(target instanceof HTMLElement);
+    groupSettingsAdd(append, target);
+
+    target = addFromTemplate(append, 'group', {foo: 'second'});
+    assert(target instanceof HTMLElement);
+    groupSettingsAdd(append, target);
+
+    target = addFromTemplate(append, 'group', {foo: 'third'});
+    assert(target instanceof HTMLElement);
+    groupSettingsAdd(append, target);
+
+    target = addFromTemplate(append, 'group', {foo: 'fourth'});
+    assert(target instanceof HTMLElement);
+    groupSettingsAdd(append, target);
+
     expect(append.children.length).toEqual(4);
 
-    addFromTemplate(append, 'group', {foo: 'fifth', bar: 'element'});
-    groupSettingsAdd(append);
+    setOriginalsFromValuesForNode(append);
+
+    target = addFromTemplate(append, 'group', {foo: 'fifth', bar: 'element'});
+    assert(target instanceof HTMLElement);
+    groupSettingsAdd(append, target);
+
     expect(append.children.length).toEqual(5);
 
     const last = /** @type {HTMLFieldSetElement | null} */
         (append?.lastElementChild);
     assert(last);
 
-    const foo = /** @type {HTMLInputElement | null} */
-        (last.children[1]);
-    assert(foo);
+    const foo = last.querySelector('input[name="foo"]');
+    assert(foo instanceof HTMLInputElement);
 
-    assert(isChangedElement(foo));
+    // already 'changed' by the event handler
+    expect(isChangedElement(foo)).toBe(true);
     setInputValue(foo, 'pending value');
 
     const form = /** @type {HTMLFormElement | null} */
-        (document.getElementById('append'));
-    assert(form);
+        (document.getElementById(formId));
+    assert(form instanceof HTMLFormElement);
 
-    let data = getData([form]);
-
-    expect(data.del.length)
-        .toEqual(0);
-    expect(data.set)
+    let request = makeDataRequest([form]);
+    expect(request.del)
+        .toEqual([]);
+    expect(request.set)
         .toEqual({
+            bar4: 'element',
             foo4: 'pending value',
         });
 
     groupSettingsDel(append, last);
     expect(append.children.length).toEqual(4);
 
-    data = getData([form]);
+    request = makeDataRequest([form]);
 
-    expect(data.del.length)
-        .toEqual(0);
-    expect(data.set)
+    expect(request.del)
+        .toEqual([]);
+    expect(request.set)
         .toEqual({});
+
+    expect(pendingChanges(form)).toBe(false);
 });
 
 test('settings group remove', () => {
-    document.body.innerHTML += makeFormGroup('remove');
+    const formId = 'remove';
+
+    document.body.innerHTML += makeFormGroup(formId);
     document.body.innerHTML += TEMPLATE_GROUP;
 
-    const remove = /** @type {HTMLDivElement | null} */
-        (document.getElementById('remove-group'));
-    assert(remove);
+    const remove = document.getElementById('remove-group');
+    assert(remove instanceof HTMLDivElement);
 
     addFromTemplate(remove, 'group', {foo: '1111111'});
     addFromTemplate(remove, 'group', {foo: '2222222', bar: 'foobarfoo'});
     addFromTemplate(remove, 'group', {foo: '3333333', bar: 'barfoobar'});
     addFromTemplate(remove, 'group', {foo: '4444444'});
-    expect(remove.children.length).toEqual(4);
+    expect(remove.children.length).toBe(4);
+
+    setOriginalsFromValuesForNode(remove);
 
     const second = remove.children[1];
     assert(second instanceof HTMLFieldSetElement);
@@ -255,25 +277,23 @@ test('settings group remove', () => {
     const form = document.getElementById('remove');
     assert(form instanceof HTMLFormElement);
 
-    let data = getData([form]);
-    expect(data.del.length)
-        .toEqual(0);
-    expect(Object.entries(data.set).length)
-        .toEqual(0);
+    let request = makeDataRequest([form]);
+    expect(request.del)
+        .toEqual([]);
+    expect(request.set)
+        .toEqual({});
 
     // until now, all rows are expected to be 'unchanged'
     groupSettingsDel(remove, second);
     expect(remove.children.length)
         .toEqual(3);
-    expect(countChangedElements(remove))
-        .toEqual(4);
 
-    // 2nd row removal should handle following keys
-    data = getData([form]);
+    // 2nd row removal should shift indices of 3rd and 4th rows
+    request = makeDataRequest([form]);
 
-    expect(data.del)
+    expect(request.del)
         .toEqual(['foo3', 'bar3']);
-    expect(data.set)
+    expect(request.set)
         .toEqual({
             bar1: 'barfoobar',
             bar2: '',
@@ -283,16 +303,16 @@ test('settings group remove', () => {
 
     // extra row is always at the end. because add event was triggered,
     // make sure that the required fields are in the payload
-    addFromTemplate(remove, 'group', {foo: '5555555', bar: 'ttttttt'});
-    groupSettingsAdd(remove);
+    let target = addFromTemplate(remove, 'group', {foo: '5555555'});
+    assert(target instanceof HTMLElement);
+    groupSettingsAdd(remove, target);
 
     // since the new row is on top of the removed one, no need to erase it
-    // non-required data, however, should still be removed when still 'unchanged'
-    data = getData([form]);
+    request = makeDataRequest([form]);
 
-    expect(data.del)
-        .toEqual(['bar3']);
-    expect(data.set)
+    expect(request.del)
+        .toEqual([]);
+    expect(request.set)
         .toEqual({
             bar1: 'barfoobar',
             bar2: '',
@@ -301,8 +321,9 @@ test('settings group remove', () => {
             foo3: 5555555,
         });
 
-    addFromTemplate(remove, 'group', {foo: '6666666', bar: 'yyyyyyy'});
-    groupSettingsAdd(remove);
+    target = addFromTemplate(remove, 'group', {foo: '6666666', bar: 'yyyyyyy'});
+    assert(target instanceof HTMLElement);
+    groupSettingsAdd(remove, target);
 
     const last = remove?.lastElementChild;
     assert(last instanceof HTMLFieldSetElement);
@@ -317,26 +338,22 @@ test('settings group remove', () => {
 
     expect(remove.children.length)
         .toEqual(5);
-    expect(countChangedElements(remove))
-        .toEqual((3 * 2) + 1);
 
     groupSettingsDel(remove, first);
     expect(remove.children.length)
         .toEqual(4);
-    expect(countChangedElements(remove))
-        .toEqual(4 * 2);
 
     // substituted row keys should no longer be in del set
     // resulting data is effectively every element present
-    data = getData([form]);
+    request = makeDataRequest([form]);
 
-    expect(data.del.length)
-        .toEqual(0);
-    expect(data.set)
+    expect(request.del)
+        .toEqual([]);
+    expect(request.set)
         .toEqual({
             bar0: 'barfoobar',
             bar1: '',
-            bar2: 'ttttttt',
+            bar2: '',
             bar3: 'yyyyyyy',
             foo0: 3333333,
             foo1: 4444444,
@@ -349,30 +366,30 @@ test('settings group remove', () => {
     }
 
     // original data removed, extra rows are omitted
-    data = getData([form]);
+    request = makeDataRequest([form]);
 
-    expect(data.del.length)
-        .toEqual(8);
-    expect(data.del)
+    expect(request.del)
         .toEqual(expect.arrayContaining([
             'foo0', 'bar0',
             'foo1', 'bar1',
             'foo2', 'bar2',
             'foo3', 'bar3',
         ]));
-    expect(data.set)
+    expect(request.set)
         .toEqual({});
 });
 
 test('settings group schema remove', () => {
+    const formId = 'schema-del';
+
     document.body.innerHTML += `
-    <form id="schema-del">
-        <div id="schema-del-group" class="settings-group" data-settings-schema-del="foo" data-settings-schema="foo bar">
+    <form id="${formId}">
+        <div id="${formId}-group" class="settings-group" data-settings-schema-del="foo" data-settings-schema="foo bar">
         </div>
     </form>`;
     document.body.innerHTML += TEMPLATE_GROUP;
 
-    const group = document.getElementById('schema-del-group');
+    const group = document.getElementById(`${formId}-group`);
     assert(group instanceof HTMLDivElement);
 
     addFromTemplate(group, 'group', {foo: 'asdasdasd'});
@@ -380,36 +397,41 @@ test('settings group schema remove', () => {
     addFromTemplate(group, 'group', {foo: 'oneoneone', bar: 'twotwotwo'});
     expect(group.children.length).toEqual(3);
 
+    setOriginalsFromValuesForNode(group);
+
     const form = group.parentElement;
     assert(form instanceof HTMLFormElement);
 
-    let data = getData([form]);
-    expect(data.set)
+    expect(pendingChanges(form)).toBe(false);
+
+    let request = makeDataRequest([form]);
+    expect(request.del)
+        .toEqual([]);
+    expect(request.set)
         .toEqual({});
-    expect(data.del.length)
-        .toEqual(0);
 
     while (group.firstElementChild instanceof HTMLFieldSetElement) {
         groupSettingsDel(group, group.firstElementChild);
     }
 
-    data = getData([form]);
+    expect(pendingChanges(form)).toBe(true);
 
-    expect(data.del.length)
-        .toEqual(3);
-    expect(data.del)
+    request = makeDataRequest([form]);
+    expect(request.del)
         .toEqual(expect.arrayContaining([
             'foo0',
             'foo1',
             'foo2',
         ]));
-    expect(data.set)
+    expect(request.set)
         .toEqual({});
+
 });
 
 test('number inputs without data consistently serialize as nan string', () => {
+    const formId = "numbers-and-nan-strings";
     document.body.innerHTML += `
-    <form id="numbers-and-nan-strings">
+    <form id="${formId}">
         <input name="number:a" type="number">
         <input name="number:b" type="number">
         <input name="number:c" type="number">
@@ -417,61 +439,92 @@ test('number inputs without data consistently serialize as nan string', () => {
     </form>
     `;
 
-    const form = document.forms.namedItem("numbers-and-nan-strings");
+    const form = document.forms.namedItem(formId);
     assert(form instanceof HTMLFormElement);
 
     setInputOrSelectValueByKey(form, "number:a", 12345);
     setInputOrSelectValueByKey(form, "number:d", 56789);
 
-    const data = getData([form], {assumeChanged: true});
-    expect(data.del.length)
-        .toEqual(0);
-    expect(Object.keys(data.set))
-        .toEqual(expect.arrayContaining(
-            ['number:a', 'number:b', 'number:c', 'number:d']));
+    // not in originals storage
+    expect(getOriginals(formId))
+        .toEqual({
+            'number:a': 12345,
+            'number:d': 56789,
+        });
 
-    expect(data.set["number:a"]).toEqual(12345);
-    expect(data.set["number:b"]).toEqual("nan");
-    expect(data.set["number:c"]).toEqual("nan");
-expect(data.set["number:d"]).toEqual(56789);
+    // but only when ready for the wire
+    const request = makeDataRequest([form], {assumeChanged: true});
+    expect(request.del)
+        .toEqual([]);
+    expect(request.set)
+        .toEqual({
+            'number:a': 12345,
+            'number:b': 'nan',
+            'number:c': 'nan',
+            'number:d': 56789,
+        });
 });
 
 test('mixed plain and group element names should not conflict with each other', () => {
     document.body.innerHTML += `
-    <form id="mixed-plain-and-group">
-        <fieldset id="plain-value-1">
-            <input name="foo">
-            <input name="bar">
-            <input name="baz" readonly>
-        </fieldset>
-        <fieldset id="group-value-1">
-            <input name="foo">
-            <input name="foo">
-            <input name="foo">
-            <input name="foo">
-            <input name="foo">
-        </fieldset>
-        <fieldset id="group-value-2">
-            <input name="bar">
-            <input name="bar">
-            <input name="bar">
-        </fieldset>
-        <fieldset id="plain-value-2">
+    <div id="mixed-plain-and-group">
+        <form id="plain-value-1">
+            <fieldset>
+                <input name="foo">
+                <input name="bar">
+                <input name="baz" readonly>
+            </fieldset>
+        </form>
+        <form id="group-value-1">
+            <div>
+                <fieldset>
+                    <input name="foo">
+                </fieldset>
+                <fieldset>
+                    <input name="foo">
+                </fieldset>
+                <fieldset>
+                    <input name="foo">
+                </fieldset>
+                <fieldset>
+                    <input name="foo">
+                </fieldset>
+                <fieldset>
+                    <input name="foo">
+                </fieldset>
+            </div>
+        </form>
+        <form id="group-value-2">
+            <div>
+                <fieldset>
+                    <input name="bar">
+                </fieldset>
+                <fieldset>
+                    <input name="bar">
+                </fieldset>
+                <fieldset>
+                    <input name="bar">
+                </fieldset>
+            </div>
+        </form>
+        <form id="plain-value-2">
             <span data-key="foo">
             </span>
-        </fieldset>
-        <fieldset id="plain-value-2">
+        </form>
+        <form id="plain-value-3">
             <span data-key="bar">
             </span>
-        </fieldset>
-    </form>
+        </form>
+    </div>
     `;
 
-    const form = document.forms.namedItem("mixed-plain-and-group");
-    assert(form instanceof HTMLFormElement);
+    const root = document.getElementById('mixed-plain-and-group');
+    assert(root instanceof HTMLDivElement);
 
     /** @type {{[k: string]: string}} */
-    const values = {};
+    const values = {
+        'baz': 'for plain elements',
+    };
 
     /**
      * @param {HTMLInputElement} elem
@@ -480,44 +533,62 @@ test('mixed plain and group element names should not conflict with each other', 
     function updateInput(elem, index) {
         setGroupElement(elem);
         setInputValue(elem, randomString(16));
+        setOriginalFromValue(elem);
         values[`${elem.name}${index}`] = elem.value;
     }
 
-    /** @type {NodeListOf<HTMLInputElement>} */
-    (form.querySelectorAll('#group-value-1 > input'))
-        .forEach(updateInput);
+    ["#group-value-1", "#group-value-2"]
+        .forEach((id) => {
+            /** @type {NodeListOf<HTMLDivElement>} */
+            (root.querySelectorAll(`${id} div`))
+                .forEach(setGroup);
 
-    /** @type {NodeListOf<HTMLInputElement>} */
-    (form.querySelectorAll('#group-value-2 > input'))
-        .forEach(updateInput);
+            /** @type {NodeListOf<HTMLFieldSetElement>} */
+            (root.querySelectorAll(`${id} fieldset`))
+                .forEach(setGroupElements);
+
+            /** @type {NodeListOf<HTMLInputElement>} */
+            (root.querySelectorAll(`${id} input`))
+                .forEach(updateInput);
+        });
 
     const plain = [
         ['foo', 'plain value'],
         ['bar', 'set only once'],
     ];
 
-    for (const [name, value] of plain) {
-        setInputOrSelectValueByKey(form, name, value);
-        setSpanValueByKey(form, name, value);
-        values[name] = value;
-    }
+    (root.querySelectorAll('#plain-value-1, #plain-value-2, #plain-value-3'))
+        .forEach((form) => {
+            for (const [name, value] of plain) {
+                setInputOrSelectValueByKey(form, name, value);
+                setSpanValueByKey(form, name, value);
+                values[name] = value;
+            }
+            setInputOrSelectValueByKey(form, 'baz', values['baz']);
+        });
 
-    setInputOrSelectValueByKey(form, 'baz', 'for plain elements');
-
-    const data = getData([form], {assumeChanged: true});
-    expect(data.del.length).toBe(0);
-    expect(data.set).toEqual(values);
-
-    form.querySelectorAll('span')
+    root.querySelectorAll('span')
         .forEach((elem) => {
-            const key = elem.dataset["key"];
-            assert(key !== undefined);
-            assert(values[key] !== undefined);
+            const key = elem.dataset['key'] ?? 'does-not-exist';
+            expect(values[key]).toBeDefined();
             expect(elem.textContent)
                 .toEqual(values[key]);
         });
 
-    const baz = form.querySelector('input[name="baz"]');
+    const baz = root.querySelector('input[name="baz"]');
     assert(baz instanceof HTMLInputElement);
     expect(baz.value).toEqual('for plain elements');
+
+    const forms = Array.from(root.querySelectorAll('form'));
+
+    expect(getOriginals(forms.map((x) => x.id)))
+        .toEqual(values);
+
+    const request = makeDataRequest(
+        forms, { assumeChanged: true });
+
+    expect(request.del)
+        .toEqual([]);
+    expect(request.set)
+        .toEqual(values);
 });

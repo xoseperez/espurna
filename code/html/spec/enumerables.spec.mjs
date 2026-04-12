@@ -1,23 +1,19 @@
-import { assert, afterAll, expect, test } from 'vitest';
+import { afterEach, assert, expect, test } from 'vitest';
+
+/** @import { EnumerableNames } from '../src/settings/enumerable.mjs' */
 import {
     addEnumerables,
     addSimpleEnumerables,
     getEnumerables,
     listenEnumerable,
     listenEnumerableTarget,
-    setSpanValue,
-} from '../src/settings.mjs';
+} from '../src/settings/enumerable.mjs';
 
-import {
-    randomString,
-} from '../src/core.mjs';
+import { randomString } from '../src/core.mjs';
+import { setSpanValue } from '../src/settings/span.mjs';
 
-/** @import { EnumerableNames } from '../src/settings.mjs' */
-
-afterAll(() => {
+afterEach(() => {
     document.body.innerHTML = '';
-    expect(document.body.childElementCount)
-        .toEqual(0);
 });
 
 /**

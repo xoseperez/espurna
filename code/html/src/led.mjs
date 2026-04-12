@@ -1,11 +1,8 @@
-import {
-    addSimpleEnumerables,
-    groupSettingsOnAddElem,
-    variableListeners,
-    addEnumerables,
-} from './settings.mjs';
+import { addEnumerables, addSimpleEnumerables } from './settings/enumerable.mjs';
+import { groupSettingsOnAddElem } from './settings/group.mjs';
 
-import { addFromTemplate, addFromTemplateWithSchema } from './template.mjs';
+import { addFromTemplate, addOriginalsFromTemplate } from './template.mjs';
+import { variableListeners } from './settings.mjs';
 
 /** @param {function(HTMLElement): void} callback */
 function withLeds(callback) {
@@ -13,11 +10,13 @@ function withLeds(callback) {
         (document.getElementById("leds")));
 }
 
+const TEMPLATE_NAME = "led-config";
+
 /**
  * @param {HTMLElement} elem
  */
 function addLed(elem) {
-    addFromTemplate(elem, "led-config", {});
+    addFromTemplate(elem, TEMPLATE_NAME, {});
 }
 
 /**
@@ -25,10 +24,13 @@ function addLed(elem) {
  */
 function onConfig(value) {
     withLeds((elem) => {
-        addFromTemplateWithSchema(
-            elem, "led-config",
-            value.leds, value.schema,
-            value.max ?? 0);
+        addOriginalsFromTemplate(
+            elem, TEMPLATE_NAME,
+            {
+                entries: value.leds,
+                schema: value.schema,
+                max: value.max ?? 0
+            });
     });
     addSimpleEnumerables("led", "LED", value.leds.length);
 }

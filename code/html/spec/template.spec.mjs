@@ -1,7 +1,8 @@
 import { assert, expect, test, beforeAll } from 'vitest';
 import { addFromTemplate } from '../src/template.mjs';
 import { loadTemplate, mergeTemplate } from '../src/settings/template.mjs';
-import { countChangedElements } from '../src/settings/utils.mjs';
+import { isChangedElement } from '../src/settings/dataset.mjs';
+import { findInputOrSelect } from '../src/settings/utils.mjs';
 
 beforeAll(async () => {
     document.body.innerHTML += `
@@ -116,6 +117,6 @@ test('template fragment with config', () => {
 
     expect(container.children.length)
         .toEqual(cfgs.length);
-    expect(countChangedElements(container))
-        .toEqual(0);
+    expect(findInputOrSelect(container)
+        .some((x) => isChangedElement(x))).toBe(false);
 });

@@ -1,16 +1,18 @@
 <template id="template-curtain-control">
-    <div class="curtain-roller" id="curtain-picture"></div>
-    <div class="pure-button-group">
-        <button type="button" class="pure-button pure-input-1-3 curtain-button button-curtain-close">CLOSE</button>
-        <button type="button" class="pure-button pure-input-1-3 curtain-button button-curtain-pause">PAUSE</button>
-        <button type="button" class="pure-button pure-input-1-3 curtain-button button-curtain-open">OPEN</button>
-    </div>
-    <div class="pure-control-group">
-        <input type="range" list="tickmarks" min="0" max="100" class="slider pure-input-1 reverse-range" id="curtain-set">
-        <datalist id="tickmarks">
-            <option value="0"></option>
-            <option value="50"></option>
-            <option value="100"></option>
-        </datalist>
+    <div>
+        <div class="curtain-roller" id="curtain-picture"></div>
+        <div class="pure-button-group">
+            <button type="button" class="pure-button pure-input-1-3 curtain-button button-curtain-close">CLOSE</button>
+            <button type="button" class="pure-button pure-input-1-3 curtain-button button-curtain-pause">PAUSE</button>
+            <button type="button" class="pure-button pure-input-1-3 curtain-button button-curtain-open">OPEN</button>
+        </div>
+        <div class="pure-control-group">
+            <input type="range" list="tickmarks" min="0" max="100" class="slider pure-input-1 reverse-range" id="curtain-set">
+            <datalist id="tickmarks">
+                <option value="0"></option>
+                <option value="50"></option>
+                <option value="100"></option>
+            </datalist>
+        </div>
     </div>
 </template>

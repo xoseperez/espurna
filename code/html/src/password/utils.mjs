@@ -17,17 +17,20 @@ export function filterForm(forms) {
         (x) => x.id === FORM_SETUP_PASSWORD);
 }
 
+const FORM_INPUT_NAME = "adminPass[]";
+
 /**
  * @param {HTMLFormElement} form
  * @returns {PasswordInputPair | []}
  */
 export function formPassPair(form) {
-    const out = ["adminPass0", "adminPass1"]
-        .map((x) => form.elements.namedItem(x))
-        .filter((x) => x instanceof HTMLInputElement);
-
-    if (out.length === 2) {
-        return [out[0], out[1]];
+    const items = form.elements.namedItem(FORM_INPUT_NAME);
+    if ((items instanceof RadioNodeList)
+     && (items.length === 2)
+     && (items[0] instanceof HTMLInputElement)
+     && (items[1] instanceof HTMLInputElement))
+    {
+        return [items[0], items[1]]
     }
 
     return [];

@@ -1,19 +1,17 @@
-import { assert, test, expect, beforeAll } from 'vitest';
+import { assert, beforeAll, expect, test } from 'vitest';
+
+import { onElementChange } from '../src/settings/change.mjs';
+import { isChangedElement } from '../src/settings/dataset.mjs';
+import { setInputValue } from '../src/settings/input.mjs';
 
 import {
-    onElementChange,
-    setInputValue,
-} from '../src/settings.mjs';
-import { isChangedElement } from '../src/settings/utils.mjs';
-
-import {
-    validateFormsReportValidity,
     validateFormsPasswords,
+    validateFormsReportValidity,
 } from '../src/validate.mjs';
 
 import {
-    formPassPair,
     filterForm,
+    formPassPair,
 } from '../src/password/utils.mjs';
 
 import { readFile } from 'node:fs/promises';
@@ -94,8 +92,8 @@ test('password can be empty when other forms change', () => {
     const inputs = getFormPassPair();
     changePasswordPair(inputs, '', '');
 
-    const hostname = document.forms['form-general']
-        .elements.namedItem('hostname');
+    const hostname = document.forms.namedItem('form-general')
+        ?.elements.namedItem('hostname');
     assert(hostname instanceof HTMLInputElement);
 
     changeInput(hostname, 'espurna-test1');

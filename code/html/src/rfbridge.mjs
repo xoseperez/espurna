@@ -1,19 +1,12 @@
 import { sendAction } from './connection.mjs';
 
-import {
-    setInputValue,
-    setOriginalsFromValues,
-    listenEnumerableName,
-    variableListeners,
-} from './settings.mjs';
+import { listenEnumerableName } from './settings/enumerable.mjs';
+import { mergeTemplate } from './settings/template.mjs';
+import { setInputValue } from './settings/input.mjs';
+import { setOriginalsFromValues } from './settings/dataset.mjs';
 
-import {
-    loadConfigTemplate,
-} from './template.mjs';
-
-import {
-    mergeTemplate,
-} from './settings/template.mjs';
+import { variableListeners } from './settings.mjs';
+import { loadConfigTemplate } from './template.mjs';
 
 /** @param {Event} event */
 function onButtonPress(event) {

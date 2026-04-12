@@ -1,6 +1,7 @@
-import { addFromTemplate, addFromTemplateWithSchema } from './template.mjs';
-import { groupSettingsOnAddElem, variableListeners } from './settings.mjs';
 import { sendAction } from './connection.mjs';
+import { variableListeners } from './settings.mjs';
+import { groupSettingsOnAddElem } from './settings/group.mjs';
+import { addFromTemplate, addOriginalsFromTemplate } from './template.mjs';
 
 /**
  * @typedef {Map<number, string>} FiltersMap
@@ -44,18 +45,23 @@ function withMapping(callback) {
         (document.getElementById("rfm69-mapping")));
 }
 
+const TEMPLATE_NAME = "rfm69-node";
+
 /** @param {HTMLElement} elem */
 function addMappingNode(elem) {
-    addFromTemplate(elem, "rfm69-node", {});
+    addFromTemplate(elem, TEMPLATE_NAME, {});
 }
 
 /** @param {any} value */
 function onMapping(value) {
     withMapping((elem) => {
-        addFromTemplateWithSchema(
-            elem, "rfm69-node",
-            value.mapping, value.schema,
-            value.max ?? 0);
+        addOriginalsFromTemplate(
+            elem, TEMPLATE_NAME,
+            {
+                entries: value.mapping,
+                schema: value.schema,
+                max: value.max ?? 0
+            });
     });
 }
 

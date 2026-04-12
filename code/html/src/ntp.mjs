@@ -1,7 +1,7 @@
-import { addEnumerables } from './settings.mjs';
+import { addEnumerables } from './settings/enumerable.mjs';
 
 export function init() {
-    /** @import { EnumerableNames } from './settings.mjs' */
+    /** @import { EnumerableNames } from './settings/enumerable.mjs' */
 
     /** @type {EnumerableNames} */
     const timezones = {"UTC0": "No offset"};
