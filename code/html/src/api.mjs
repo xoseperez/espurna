@@ -1,19 +1,15 @@
 import { randomString } from './core.mjs';
-import { setChangedElement } from './settings/utils.mjs';
 
 function randomApiKey() {
-    const form = document.forms.namedItem("form-admin");
-    if (!form) {
-        return;
-    }
-
-    const elem = form.elements.namedItem("apiKey");
+    const elem = document
+        ?.forms?.namedItem("form-api")
+        ?.elements?.namedItem("apiKey");
     if (!(elem instanceof HTMLInputElement)) {
         return;
     }
 
     elem.value = randomString(16, {hex: true});
-    setChangedElement(elem);
+    elem.dispatchEvent(new Event("change"));
 }
 
 export function init() {
