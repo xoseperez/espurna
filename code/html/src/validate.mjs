@@ -31,11 +31,10 @@ function validateInputOrSelect(elem) {
  */
 export function validateFormsReportValidity(forms) {
     const elems = forms
-        .flatMap((form) => getElements(form))
+        .flatMap((form) => findInputOrSelect(form))
         .filter((x) => isChangedElement(x) && !isIgnoredElement(x))
-
     if (!elems.length) {
-        return false;
+        return true;
     }
 
     return elems.every(validateInputOrSelect);
