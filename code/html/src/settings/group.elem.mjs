@@ -71,3 +71,38 @@ export function resetGroupElement(elem) {
 export function isGroupElement(elem) {
     return elem.classList.contains(SETTINGS_GROUP_ELEMENT);
 }
+
+const SETTINGS_MAX = "settingsMax";
+
+/**
+ * @param {HTMLElement} elem
+ * @returns {number}
+ */
+export function getGroupMax(elem) {
+    const max = elem.dataset[SETTINGS_MAX];
+    if ((max === undefined) || (max === "0")) {
+        return 0;
+    }
+
+    const out = parseInt(max, 10);
+    if (Number.isNaN(out) || (out <= 0)) {
+        return 0;
+    }
+
+    return out;
+}
+
+/**
+ * @param {HTMLElement} elem
+ * @param {number} value
+ */
+export function setGroupMax(elem, value) {
+    elem.dataset[SETTINGS_MAX] = `${value}`;
+}
+
+/**
+ * @param {HTMLElement} elem
+ */
+export function resetSettingsMax(elem) {
+    delete elem.dataset[SETTINGS_MAX];
+}

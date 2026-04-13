@@ -12,7 +12,7 @@ import { setSpanValue } from './settings/span.mjs';
 
 import { listenEnumerable } from './settings/enumerable.mjs';
 
-import { setGroupElement, setGroupElements } from './settings/group.elem.mjs';
+import { setGroupElement, setGroupElements, setGroupMax } from './settings/group.elem.mjs';
 import { onGroupSettingsDel } from './settings/group.mjs';
 
 import {
@@ -167,7 +167,7 @@ export function addOriginalsFromTemplateWithPreparedSchema(container, name, prep
  */
 export function addOriginalsFromTemplate(container, name, { entries, schema, max = 0 }) {
     if (max > 0) {
-        container.dataset["settingsMax"] = max.toString();
+        setGroupMax(container, max);
     }
 
     addOriginalsFromTemplateWithPreparedSchema(container, name, prepareFromSchema(entries, schema));

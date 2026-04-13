@@ -1,6 +1,6 @@
 /** @import { InputOrSelect } from '../settings.mjs' */
 
-import { parentGroupElements } from './group.elem.mjs';
+import { parentGroupElements, getGroupMax } from './group.elem.mjs';
 import { checkAndSetElementChanged } from './change.mjs';
 import { findInputOrSelect } from './utils.mjs';
 import {
@@ -180,27 +180,6 @@ export function onGroupSettingsEventDel(event) {
     groupSettingsDel(group, target);
 }
 
-/**
- * @param {Event} event
- * @returns {boolean}
- */
-function groupSettingsCheckMax(event) {
-    const target = event.target;
-    if (!(target instanceof HTMLElement)) {
-        return false;
-    }
-
-    const max = target.dataset["settingsMax"];
-    const val = 1 + target.children.length;
-
-    if ((max !== undefined) && (max !== "0") && (parseInt(max, 10) < val)) {
-        alert(`Max number of ${target.id} has been reached (${val} out of ${max})`);
-        return false;
-    }
-
-    return true;
-}
-
 const SETTINGS_GROUP_EVENT_ADD = "settings-group-add";
 
 /**
@@ -211,10 +190,6 @@ export function groupSettingsOnAddElem(elem, listener) {
     elem.addEventListener(SETTINGS_GROUP_EVENT_ADD,
         (event) => {
             event.stopPropagation();
-            if (!groupSettingsCheckMax(event)) {
-                return;
-            }
-
             listener(event);
             onGroupSettingsEventAdd(event);
         });
@@ -243,11 +218,21 @@ export function onGroupSettingsAddClick(event) {
         return;
     }
 
-    const name = elem.dataset[SETTINGS_GROUP];
-    if (!name) {
+    const id = elem.dataset[SETTINGS_GROUP];
+    if (!id) {
         return;
     }
 
-    document.getElementById(name)
-        ?.dispatchEvent(new CustomEvent(SETTINGS_GROUP_EVENT_ADD));
+    const group = document.getElementById(id);
+    if (!group) {
+        throw `Unable to find group w/ [id='${id}']`;
+    }
+
+    const max = getGroupMax(group);
+    if ((max > 0) && (1 + group.children.length) > max) {
+        alert(`Can't add more than ${max} elements to ${id}`);
+        return;
+    }
+
+    group.dispatchEvent(new CustomEvent(SETTINGS_GROUP_EVENT_ADD));
 }
