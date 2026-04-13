@@ -12,7 +12,7 @@ import {
     setOriginalFromValue,
     setOriginalsFromValuesForNode,
 } from '../src/settings/dataset.mjs';
-import { setGroup, setGroupElement, setGroupElements } from '../src/settings/group.elem.mjs';
+import { setGroup, setGroupCleanup, setGroupElement, setGroupElements } from '../src/settings/group.elem.mjs';
 import {
     groupSettingsAdd,
     groupSettingsDel,
@@ -119,7 +119,7 @@ function makeFormGroup(name) {
     expect(getOriginals(name), `${name} should not exist yet`).toEqual({});
     return `
     <form id="${name}">
-        <div id="${name}-group" class="settings-group" data-settings-schema="foo bar">
+        <div id="${name}-group" class="settings-group">
         </div>
     </form>`;
 }
@@ -384,13 +384,20 @@ test('settings group schema remove', () => {
 
     document.body.innerHTML += `
     <form id="${formId}">
-        <div id="${formId}-group" class="settings-group" data-settings-schema-del="foo" data-settings-schema="foo bar">
+        <div id="${formId}-group" class="settings-group">
         </div>
     </form>`;
     document.body.innerHTML += TEMPLATE_GROUP;
 
     const group = document.getElementById(`${formId}-group`);
     assert(group instanceof HTMLDivElement);
+
+    const foo = /** @type {HTMLTemplateElement} */
+        (document.getElementById('template-group'))
+        ?.content?.querySelector('input[name="foo"]');
+    assert(foo instanceof HTMLInputElement);
+
+    setGroupCleanup(foo);
 
     addFromTemplate(group, 'group', {foo: 'asdasdasd'});
     addFromTemplate(group, 'group', {foo: 'foobarfoo', bar: 'barfoobar'});
@@ -417,12 +424,8 @@ test('settings group schema remove', () => {
     expect(pendingChanges(form)).toBe(true);
 
     request = makeDataRequest([form]);
-    expect(request.del)
-        .toEqual(expect.arrayContaining([
-            'foo0',
-            'foo1',
-            'foo2',
-        ]));
+    expect(request.del.sort())
+        .toEqual(['foo0', 'foo1', 'foo2']);
     expect(request.set)
         .toEqual({});
 

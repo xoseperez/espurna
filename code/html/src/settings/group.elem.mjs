@@ -1,3 +1,7 @@
+/** @import { InputOrSelect } from '../settings.mjs' */
+
+import { findInputOrSelect } from './utils.mjs';
+
 export const SETTINGS_GROUP = "settings-group";
 
 /**
@@ -105,4 +109,38 @@ export function setGroupMax(elem, value) {
  */
 export function resetSettingsMax(elem) {
     delete elem.dataset[SETTINGS_MAX];
+}
+
+const SETTINGS_GROUP_CLEANUP = "settings-group-cleanup";
+
+/**
+ * @param {HTMLElement} elem
+ */
+export function setGroupCleanup(elem) {
+    elem.classList.add(SETTINGS_GROUP_CLEANUP);
+}
+
+/**
+ * @param {HTMLElement} elem
+ */
+export function resetGroupCleanup(elem) {
+    elem.classList.remove(SETTINGS_GROUP_CLEANUP);
+}
+
+/**
+ * @param {HTMLElement | InputOrSelect[]} elem_or_elems
+ * @returns {InputOrSelect[]}
+ */
+export function groupCleanupElements(elem_or_elems) {
+    let elems = elem_or_elems instanceof HTMLElement
+        ? findInputOrSelect(elem_or_elems)
+        : elem_or_elems;
+
+    const cleanup = elems.filter(
+        (x) => x.classList.contains(SETTINGS_GROUP_CLEANUP));
+    if (cleanup.length !== 0) {
+        elems = cleanup;
+    }
+
+    return elems;
 }

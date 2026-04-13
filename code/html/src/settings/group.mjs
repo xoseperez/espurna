@@ -1,8 +1,9 @@
 /** @import { InputOrSelect } from '../settings.mjs' */
 
-import { parentGroupElements, getGroupMax } from './group.elem.mjs';
+import { parentGroupElements, getGroupMax, groupCleanupElements } from './group.elem.mjs';
 import { checkAndSetElementChanged } from './change.mjs';
 import { findInputOrSelect } from './utils.mjs';
+import { getElementName } from './name.mjs';
 import {
     maybeGetFormId,
     getOriginalForName,
@@ -11,36 +12,28 @@ import {
     setDatasetCleanup,
 } from './dataset.mjs';
 
-const SETTINGS_SCHEMA = "settingsSchema";
-const SETTINGS_SCHEMA_DEL = `${SETTINGS_SCHEMA}Del`;
-
- /** @typedef {{del: string[], schema: string[]}} GroupSettingsSchema */
-
-/**
- * @param {HTMLElement} elem
- * @returns {GroupSettingsSchema}
- */
-export function groupSettingsSchema(elem) {
-    const [del, schema] =
-        [SETTINGS_SCHEMA_DEL, SETTINGS_SCHEMA]
-        .map((name) => elem.dataset[name] ?? "")
-        .map((data) => data.split(" "));
-    return { del, schema };
-}
-
 /**
  * @param {HTMLElement} elem
  * @returns {string[]}
  */
-function pickGroupSettingsSchema(elem) {
-    const { del, schema } = groupSettingsSchema(elem);
-    return ((del.length > 0) ? del : schema)
+export function groupElementNames(elem) {
+    return findInputOrSelect(elem)
+        .map(getElementName);
 }
 
 // Right now, group additions happen from:
 // - WebSocket, likely to happen exactly once per connection through processData handler(s). Specific keys trigger functions that append into the container element.
 // - User input. Same functions are triggered, but with an additional event for the container element that causes most recent element to be marked as changed.
 // Removal only happens from user input by triggering 'settings-group-del' from the target element.
+
+/**
+ * @param {HTMLElement | InputOrSelect[]} elem_or_elems
+ * @returns {string[]}
+ */
+function groupCleanupKeys(elem_or_elems) {
+    return groupCleanupElements(elem_or_elems)
+        .map(getElementName);
+}
 
 /**
  * @param {HTMLElement} group
@@ -56,7 +49,8 @@ export function groupSettingsAdd(group, target) {
         return elem.reportValidity();
     };
 
-    for (let elem of findInputOrSelect(target)) {
+    const elems = findInputOrSelect(target);
+    for (const elem of elems) {
         if (elem.required && validity && !validity(elem)) {
             validity = null;
         }
@@ -67,10 +61,7 @@ export function groupSettingsAdd(group, target) {
     const form = group.closest("form");
     const formId = maybeGetFormId(form);
 
-    const index = group.children.length - 1;
-
-    pickGroupSettingsSchema(group)
-        .map((key) => `${key}${index}`)
+    groupCleanupKeys(elems)
         .forEach((key) => {
             resetDatasetCleanup(formId, key);
         });
@@ -108,24 +99,23 @@ export function groupSettingsDel(group, target) {
     const form = group.closest("form");
     const formId = maybeGetFormId(form);
 
-    const delIndex = group.children.length - 1;
-
-    /** @type {function(string): string} */
-    const makeDelKey =
-        (key) => `${key}${delIndex}`;
-
     /** @type {function(string): boolean} */
     const originalExists =
         (key) => getOriginalForName(formId, key) !== undefined;
 
-    // note that if 'schema' is not the same as 'del' attr,
-    // dataset keeps previous values until page reload
-    const delKeys = pickGroupSettingsSchema(group)
-        .map(makeDelKey)
-        .filter(originalExists);
+    const last = group.lastElementChild;
+    if (!(last instanceof HTMLElement)) {
+        return;
+    }
 
-    if (delKeys.length > 0) {
-        setDatasetCleanup(formId, delKeys);
+    // note that if 'cleanup' class is present, only those names get deleted
+    // rest of the dataset kv remain until page reload, since they are still stored on the device
+    // usually, those get removed by the device itself on reboot (i.e. 'scheduler' gc)
+    const last_elems = findInputOrSelect(last);
+    const cleanup = groupCleanupKeys(last_elems)
+        .filter(originalExists);
+    if (cleanup.length > 0) {
+        setDatasetCleanup(formId, cleanup);
     }
 
     findInputOrSelect(target)

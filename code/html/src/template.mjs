@@ -117,9 +117,6 @@ export function addFromTemplate(container, name, cfg) {
     return mergeTemplate(container, fragment);
 }
 
-// TODO: note that we also include kv schema as 'data-settings-schema' on the container.
-// produce a 'set' and compare instead of just matching length?
-
 /**
  * @param {DisplayValue[]} values
  * @param {string[]} schema
@@ -127,16 +124,11 @@ export function addFromTemplate(container, name, cfg) {
  */
 export function fromSchema(values, schema) {
     if (schema.length !== values.length) {
-        throw `Schema mismatch! Expected length ${schema.length} vs. ${values.length}`;
+        throw `Cannot construct entries from schema (${schema.length}) for values (${values.length})`;
     }
 
-    /** @type {{[k: string]: any}} */
-    const out = {};
-    schema.forEach((key, index) => {
-        out[key] = values[index];
-    });
-
-    return out;
+    return Object.fromEntries(
+        schema.map((key, index) => [key, values[index]]));
 }
 
 /**
