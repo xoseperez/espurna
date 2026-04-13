@@ -1076,6 +1076,11 @@ export async function vitest() {
                 run: true,
             });
             await runner.close();
+
+            const testModules = runner.state.getTestModules()
+            if (testModules.some((x) => !x.ok())) {
+                throw new Error('vitest failed');
+            }
         }
     );
 }
