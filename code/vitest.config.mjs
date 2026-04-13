@@ -1,6 +1,6 @@
 import * as path from 'node:path';
 
-import { MODULE_DEV } from './html/preset.mjs';
+import { MODULE_DEV } from './html/lib/preset.mjs';
 import {
     PRESET_DIR,
     SPEC_DIR,

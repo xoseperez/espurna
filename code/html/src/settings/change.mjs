@@ -30,7 +30,7 @@ export function checkAndSetElementChanged(elem) {
      && isNaN(lhs.value)
      && isNaN(rhs.value))
     {
-        changed = false;
+        /* normalized values are the same, even if input is not */
     } else {
         changed = lhs.value !== rhs.value;
     }

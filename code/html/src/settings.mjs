@@ -264,13 +264,15 @@ function afterSavedAction(forms) {
                 case "reboot":
                 case "reload":
                 case "reconnect":
+                {
                     const after = __after_save[action];
                     if (after !== undefined) {
                         const { message, action } = after;
                         once = () => { askAndCall([(ask) => ask(message)], action) };
                     }
-
+                }
                     break;
+
                 }
             }
 

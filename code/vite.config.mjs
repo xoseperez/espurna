@@ -4,8 +4,8 @@ import * as fs from 'node:fs/promises';
 
 import { minify as htmlMinifyImpl } from 'html-minifier-terser';
 
-import { MODULE_PRESETS } from './html/preset.mjs';
-import { maybeInline, needElement } from './html/inline.mjs';
+import { MODULE_PRESETS } from './html/lib/preset.mjs';
+import { maybeInline, needElement } from './html/lib/inline.mjs';
 import { defineConfig } from 'vite';
 import { JSDOM } from 'jsdom';
 
@@ -39,7 +39,7 @@ import {
 /** @import { PluginOption } from 'vite' */
 
 /**
- * @param {import("./html/preset.mjs").Modules} modules
+ * @param {import("./html/lib/preset.mjs").Modules} modules
  * @returns {PluginOption}
  */
 function stripModules(modules) {

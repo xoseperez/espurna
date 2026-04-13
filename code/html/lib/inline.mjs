@@ -139,10 +139,12 @@ export async function maybeInline(dom, elem, {resolve, load, post} = {}) {
             break;
 
         case 'STYLE':
+        {
             const style = dom.window.document.createElement(tag);
             style.innerHTML = code;
             elem.parentElement?.replaceChild(style, elem);
             break;
+        }
 
         case 'SCRIPT':
             elem.removeAttribute('crossorigin');

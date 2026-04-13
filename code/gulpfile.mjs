@@ -42,7 +42,7 @@ import { JSDOM } from 'jsdom';
 import { removeMapFileComments } from 'convert-source-map';
 import log from 'fancy-log';
 
-import { Transform } from 'node:stream';
+import { Readable, Transform } from 'node:stream';
 import { escape as queryEscape } from 'node:querystring';
 import { parseArgs } from 'node:util';
 import { pipeline } from 'node:stream/promises';
@@ -57,14 +57,14 @@ import {
     maybeInline,
     needElement,
     stripModules as stripModulesImpl,
-} from './html/inline.mjs';
+} from './html/lib/inline.mjs';
 
 import {
     MODULE_PRESETS,
     MODULE_DEV,
     build as buildPresets,
     makeModules,
-} from './html/preset.mjs';
+} from './html/lib/preset.mjs';
 
 // -----------------------------------------------------------------------------
 // Configuration
@@ -120,6 +120,9 @@ export const HTML_DIR = path.join(ROOT, 'html');
 // build preset environment files
 export const PRESET_DIR = path.join(HTML_DIR, 'preset');
 
+// html lib root
+export const HTML_LIB_DIR = path.join(HTML_DIR, 'lib');
+
 // output .html w/ inline sourcemaps (for development only)
 // output .html.{gz,br}, cleaned-up for firmware use
 export const BUILD_DIR = path.join(HTML_DIR, 'build');
@@ -152,7 +155,7 @@ export const BUILD_SCRIPTS = [
     'gulpfile.mjs',
     'vite.config.mjs',
     'vitest.config.mjs',
-    `${HTML_DIR}/*.mjs`,
+    `${HTML_LIB_DIR}/**/*.mjs`,
     `${PRESET_DIR}/**/*.mjs`,
 ];
 
@@ -734,40 +737,40 @@ function makeInlineSource(options, stats) {
 
         // current build always produces a single entrypoint, minify asap
         case 'SCRIPT':
-            if (!options.minify) {
-                return code.toString();
+            if (options.minify) {
+                const result = await rollup({
+                    input: src,
+                    treeshake: {
+                        moduleSideEffects: () => false,
+                    },
+                    plugins: [
+                        rollupAlias({
+                            entries: makeImportAlias(options.name),
+                        }),
+                        rollupVirtual({
+                            src: code.toString(),
+                        }),
+                        rollupEsbuild({
+                            platform: 'browser',
+                            target: 'es2022',
+                            minify: true,
+                            format: 'esm',
+                        }),
+                    ],
+                });
+
+                const bundle = await result.generate({
+                    sourcemap: 'inline',
+                });
+
+                if (bundle.output.length !== 1) {
+                    throw ERR_SINGLE_BUNDLE;
+                }
+
+                return bundle.output[0].code;
             }
 
-            const result = await rollup({
-                input: src,
-                treeshake: {
-                    moduleSideEffects: () => false,
-                },
-                plugins: [
-                    rollupAlias({
-                        entries: makeImportAlias(options.name),
-                    }),
-                    rollupVirtual({
-                        src: code.toString(),
-                    }),
-                    rollupEsbuild({
-                        platform: 'browser',
-                        target: 'es2022',
-                        minify: true,
-                        format: 'esm',
-                    }),
-                ],
-            });
-
-            const bundle = await result.generate({
-                sourcemap: 'inline',
-            });
-
-            if (bundle.output.length !== 1) {
-                throw ERR_SINGLE_BUNDLE;
-            }
-
-            return bundle.output[0].code;
+            break;
         }
 
         return code.toString();
@@ -1048,21 +1051,22 @@ function serveWebUI({name, host, port}) {
  * @param {string | string[]} pattern
  */
 function sourcePath(pattern) {
-    return [
-        src(pattern, {read: false, buffer: false}),
-        async function* (/** @type {AsyncIterable<File>} */source) {
-            for await (const chunk of source) {
-                yield chunk.path;
-            }
-        },
-    ];
+    /** @param {AsyncIterable<File>} source */
+    async function* paths(source) {
+        for await (const chunk of source) {
+            yield chunk.path;
+        }
+    }
+
+    return Readable.from(
+        paths(/** @type {AsyncIterable<File>} */(
+            src(pattern, {read: false, buffer: false}))));
 }
 
 // .spec.mjs vitest tests
 export async function vitest() {
     return pipeline(
-        /** @ts-ignore, types/node/stream/promises/pipeline.d.ts hates 'args' / '...args' */
-        ...sourcePath(TEST_SCRIPTS),
+        sourcePath(TEST_SCRIPTS),
         async function* (/** @type {AsyncIterable<any>} */source) {
             // ref. 'vitest/node' parseVitestCLI('vitest --environment jsdom --dir html/spec --run')
             let filter = [];
@@ -1094,8 +1098,7 @@ export async function eslint() {
     ];
 
     return pipeline(
-        /** @ts-ignore, types/node/stream/promises/pipeline.d.ts hates 'args' / '...args' */
-        ...sourcePath(files),
+        sourcePath(files),
         async function* (/** @type {AsyncIterable<string>} */source) {
             let paths = [];
             for await (const chunk of source) {
@@ -1125,8 +1128,7 @@ export async function eslint() {
 // Validate all HTML sources. *Cannot* happen at inline stage, since JSDOM modifications break some style rules
 async function html_validate() {
     return pipeline(
-        /** @ts-ignore, types/node/stream/promises/pipeline.d.ts hates 'args' / '...args' */
-        ...sourcePath(SOURCE_HTML),
+        sourcePath(SOURCE_HTML),
         async function* (/** @type {AsyncIterable<string>} */source) {
             const {
                 FileSystemConfigLoader,
@@ -1178,7 +1180,7 @@ export async function presets() {
     }
 }
 
-presets.description = 'generate all of the required preset files, based on the html/preset.mjs configuration';
+presets.description = `generate all of the required preset files, based on the ${HTML_LIB_DIR}/preset.mjs configuration`;
 
 /** @import { ParseArgsOptionsConfig } from 'node:util' */
 
@@ -1208,8 +1210,10 @@ export function build() {
         options,
     });
 
-    const { preset } = values;
-    if ((preset == null) || !preset) {
+    if (!Array.isArray(values[PRESET])
+     || values[PRESET].length === 0
+     || values[PRESET].some((x) => typeof x === 'boolean' || x.length === 0))
+    {
         throw ERR_PRESET_EMPTY;
     }
 
@@ -1222,11 +1226,7 @@ export function build() {
         throw ERR_PARSE_STRING;
     }
 
-    if (Array.isArray(preset)) {
-        return Promise.all(preset.map(run));
-    }
-
-    return run(preset);
+    return Promise.all(values[PRESET].map(run));
 }
 
 build.description = `builds one or more of the available presets: ${Array.from(MODULE_BUILD_PRESETS).join(', ')}`;

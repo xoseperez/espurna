@@ -124,7 +124,7 @@ export function addFromTemplate(container, name, cfg) {
  */
 export function fromSchema(values, schema) {
     if (schema.length !== values.length) {
-        throw `Cannot construct entries from schema (${schema.length}) for values (${values.length})`;
+        throw new Error(`Cannot construct entries from schema (${schema.length}) for values (${values.length})`);
     }
 
     return Object.fromEntries(

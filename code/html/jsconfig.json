@@ -1,7 +1,6 @@
 {
   "include": [
-      "./preset.mjs",
-      "./inline.mjs",
+      "lib/*",
       "src/*"
   ],
   "compilerOptions": {

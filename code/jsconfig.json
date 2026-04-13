@@ -1,7 +1,6 @@
 {
   "include": [
-      "./html/inline.mjs",
-      "./html/preset.mjs",
+      "./html/lib/*",
       "./gulpfile.mjs",
       "./vite.config.mjs"
   ],

@@ -21,12 +21,14 @@ import { validateFormsPasswords } from './validate.mjs';
  * @returns {string}
  */
 function generatePassword() {
-    let password = "";
-    do {
-        password = randomString(10, {special: true});
-    } while (!validatePassword(password));
+    for (let count = 0; count < 10; ++count) {
+        let password = randomString(10, {special: true});
+        if (validatePassword(password)) {
+            return password;
+        }
+    }
 
-    return password;
+    return "";
 }
 
 /**

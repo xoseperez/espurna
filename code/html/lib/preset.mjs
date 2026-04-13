@@ -169,16 +169,11 @@ export const MODULE_PRESETS = new Set([
 
 /** @param {any} e */
 function maybeRethrow(e) {
-    /** @type {Error?} */
-    let rethrow = null;
-
     if (e instanceof Error) {
-        rethrow = e;
-    } else {
-        rethrow = new Error(e?.toString() ?? 'unknown error');
+        return e;
     }
 
-    return rethrow;
+    return new Error(e?.toString() ?? 'unknown error');
 }
 
 /** 
@@ -195,6 +190,7 @@ async function maybe_write(target, data) {
         readable = await fs.open(target, 'r');
         existing = (await readable.read()).toString();
     } catch (_) {
+        /* whatever */
     } finally {
         if (readable) {
             await readable.close();
@@ -208,6 +204,7 @@ async function maybe_write(target, data) {
     try {
         await fs.mkdir(path.dirname(target));
     } catch (_) {
+        /* whatever */
     }
 
     /** @type {Error?} */
