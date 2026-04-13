@@ -36,7 +36,7 @@ import { listenEnumerable } from './settings/enumerable.mjs';
 
 import { findInputOrSelect } from './settings/utils.mjs';
 
-import { isGroupElement, SETTINGS_GROUP } from './settings/group.elem.mjs';
+import { isGroupElement, checkSettingsMax, SETTINGS_GROUP } from './settings/group.elem.mjs';
 import {
     onGroupSettingsAddClick,
     onGroupSettingsEventDel,
@@ -51,6 +51,8 @@ import { MODULE_DEV } from '@build-preset/constants.mjs';
 /** @import { DisplayValue } from './settings/span.mjs' */
 /** @import { ElementValue } from './settings/value.mjs' */
 
+const PROPERTY_SAVE_BACKGROUND = "--save-background";
+
 /** @param {boolean} changed */
 function stylizeSave(changed) {
     document.querySelectorAll(".button-save")
@@ -60,11 +62,54 @@ function stylizeSave(changed) {
             }
 
             if (changed) {
-                elem.style.setProperty("--save-background", "rgb(0, 192, 0)");
+                elem.style.setProperty(PROPERTY_SAVE_BACKGROUND, "rgb(0, 192, 0)");
             } else {
-                elem.style.removeProperty("--save-background");
+                elem.style.removeProperty(PROPERTY_SAVE_BACKGROUND);
             }
         });
+}
+
+/**
+ * @param {boolean} enabled
+ * @param {string?} id
+ */
+function stylizeAdd(enabled, id = null) {
+    let query = ".button-add-settings-group";
+    if (id !== null) {
+        query += `[data-settings-group="${id}"]`;
+    }
+
+    document.querySelectorAll(query)
+        .forEach((elem) => {
+            if (!(elem instanceof HTMLButtonElement)) {
+                return;
+            }
+
+            elem.disabled = !enabled;
+        });
+}
+
+/**
+ * limit the number of user-created settings groups for the specific id
+ * @param {HTMLElement} group
+ */
+function listenStylizeAdd(group) {
+    /** @param {number} next */
+    function wrapper(next) {
+        stylizeAdd(checkSettingsMax(group, next), group.id);
+    }
+
+    group.addEventListener("settings-group-change", () => {
+        wrapper(group.children.length);
+    });
+
+    group.addEventListener("settings-group-add", () => {
+        wrapper(group.children.length + 1);
+    });
+
+    group.addEventListener("settings-group-del", () => {
+        wrapper(group.children.length > 0 ? group.children.length - 1 : 0);
+    });
 }
 
 /**
@@ -447,7 +492,13 @@ export function init() {
     // No group handler should be registered after this point, since we depend on the order
     // of registration to trigger 'after-add' handler and update group attributes *after*
     // module function finishes modifying the container
-    for (const group of document.querySelectorAll(`.${SETTINGS_GROUP}`)) {
+    for (const group of document.getElementsByClassName(SETTINGS_GROUP)) {
+        if (!(group instanceof HTMLElement)) {
+            continue;
+        }
+
+        listenStylizeAdd(group);
+
         group.addEventListener("settings-group-del", onGroupSettingsEventDel);
         group.addEventListener("change", onElementChange);
     }

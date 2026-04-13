@@ -13,7 +13,7 @@ import { setSpanValue } from './settings/span.mjs';
 import { listenEnumerable } from './settings/enumerable.mjs';
 
 import { setGroupElement, setGroupElements, setGroupMax } from './settings/group.elem.mjs';
-import { onGroupSettingsDel } from './settings/group.mjs';
+import { emitSettingsGroupChange, onGroupSettingsDel } from './settings/group.mjs';
 
 import {
     loadTemplate,
@@ -163,6 +163,7 @@ export function addOriginalsFromTemplate(container, name, { entries, schema, max
     }
 
     addOriginalsFromTemplateWithPreparedSchema(container, name, prepareFromSchema(entries, schema));
+    emitSettingsGroupChange(container);
 }
 
 export class BaseInput {

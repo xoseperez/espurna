@@ -101,7 +101,7 @@ export function getGroupMax(elem) {
  * @param {number} value
  */
 export function setGroupMax(elem, value) {
-    elem.dataset[SETTINGS_MAX] = `${value}`;
+    elem.dataset[SETTINGS_MAX] = value.toString();
 }
 
 /**
@@ -109,6 +109,17 @@ export function setGroupMax(elem, value) {
  */
 export function resetSettingsMax(elem) {
     delete elem.dataset[SETTINGS_MAX];
+}
+
+/**
+ * @param {HTMLElement} elem
+ * @param {number?} count
+ * @returns {boolean}
+ */
+export function checkSettingsMax(elem, count = null) {
+    const max = getGroupMax(elem);
+    return 0 === max
+        || (count ?? elem.children.length) < max;
 }
 
 const SETTINGS_GROUP_CLEANUP = "settings-group-cleanup";

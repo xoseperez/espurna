@@ -208,35 +208,35 @@ span.visible {
     width: 100px;
 }
 
-.button-reboot,
-.button-reconnect,
-.button-ha-disabled,
-.button-rfb-forget,
-.button-lightfox-clear,
-.button-del-settings-group,
-.button-dbg-clear,
-.button-upgrade,
+.button-clear-counts,
 .button-clear-filters,
 .button-clear-messages,
-.button-clear-counts,
+.button-dbg-clear,
+.button-del-settings-group,
+.button-ha-disabled,
+.button-lightfox-clear,
+.button-reboot,
+.button-reconnect,
+.button-rfb-forget,
 .button-settings-factory,
 .button-settings-password,
-.button-setup-password.button-setup-lenient {
+.button-setup-password.button-setup-lenient,
+.button-upgrade {
     background: rgb(192, 0, 0); /* redish */
 }
 
-.button-setup-password,
 .button-add-settings-group,
-.button-upgrade-browse,
-.button-rfb-learn,
-.button-lightfox-learn,
+.button-apikey,
+.button-cmd,
+.button-emon-expected-calculate,
+.button-garland-set-default,
 .button-ha-enabled,
+.button-lightfox-learn,
+.button-rfb-learn,
 .button-settings-backup,
 .button-settings-restore,
-.button-garland-set-default,
-.button-cmd,
-.button-apikey,
-.button-emon-expected-calculate {
+.button-setup-password,
+.button-upgrade-browse {
     background: rgb(0, 192, 0); /* green */
 }
 
