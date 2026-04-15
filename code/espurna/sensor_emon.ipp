@@ -54,7 +54,7 @@ Energy& Energy::operator+=(const Energy& other) {
     const auto left = WattSecondsMax - _ws.value;
     if (other._ws.value >= left) {
         _kwh.value += 1;
-        _ws.value += (other._ws.value - left);
+        _ws.value = (other._ws.value - left);
     } else {
         _ws.value += other._ws.value;
     }

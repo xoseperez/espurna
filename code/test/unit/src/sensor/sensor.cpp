@@ -36,6 +36,34 @@ namespace espurna {
 namespace test {
 namespace {
 
+void test_energy() {
+    using namespace espurna::sensor;
+
+    Energy energy;
+    TEST_ASSERT_EQUAL_DOUBLE(0.0, energy.asDouble());
+
+    energy += WattSeconds(7200.0);
+    TEST_ASSERT_EQUAL_DOUBLE(0.002, energy.asDouble());
+
+    for (size_t times = 99; times != 0; --times) {
+        energy += WattSeconds(7200.0);
+    }
+
+    TEST_ASSERT_EQUAL_DOUBLE(0.2, energy.asDouble());
+
+    for (size_t times = 50; times != 0; --times) {
+        energy += WattSeconds(28800.0);
+    }
+
+    TEST_ASSERT_EQUAL_DOUBLE(0.6, energy.asDouble());
+
+    for (size_t times = 100; times != 0; --times) {
+        energy += WattSeconds(28800.0);
+    }
+
+    TEST_ASSERT_EQUAL_DOUBLE(1.4, energy.asDouble());
+}
+
 void test_cse7766_data() {
     constexpr size_t PacketSize = 24;
 
@@ -363,6 +391,7 @@ void test_dht_data() {
 int main(int, char**) {
     UNITY_BEGIN();
     using namespace espurna::test;
+    RUN_TEST(test_energy);
     RUN_TEST(test_cse7766_data);
     RUN_TEST(test_a02yyu_data);
     RUN_TEST(test_dht_data);
