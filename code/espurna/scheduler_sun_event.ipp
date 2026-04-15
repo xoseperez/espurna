@@ -46,16 +46,6 @@ tm make_utc_date_time(datetime::Seconds seconds) {
     return out;
 }
 
-datetime::Date make_date(const tm& date_time) {
-    datetime::Date out;
-
-    out.year = date_time.tm_year + 1900;
-    out.month = date_time.tm_mon + 1;
-    out.day = date_time.tm_mday;
-
-    return out;
-}
-
 TimeMatch make_time_match(const tm& date_time) {
     TimeMatch out;
 
@@ -66,6 +56,23 @@ TimeMatch make_time_match(const tm& date_time) {
     return out;
 }
 
+DateMatch make_date_match(const EventMatch& match) {
+    DateMatch out;
+
+    out.year = match.date.year;
+    out.month[match.date.month - 1] = true;
+    out.day[match.date.day] = true;
+
+    return out;
+}
+
+void update_event_match_date_time(EventMatch& match, datetime::Clock::time_point time_point) {
+    const auto duration = time_point.time_since_epoch();
+    const auto date_time = make_utc_date_time(duration);
+    match.date = datetime::make_date(date_time);
+    match.time = make_time_match(date_time);
+}
+
 bool update_event_match(EventMatch& match, datetime::Clock::time_point time_point) {
     if (match.next != time_point) {
         if (event::is_valid(match.next)) {
@@ -73,12 +80,7 @@ bool update_event_match(EventMatch& match, datetime::Clock::time_point time_poin
         }
 
         if (event::is_valid(time_point)) {
-            const auto duration = time_point.time_since_epoch();
-
-            const auto date_time = make_utc_date_time(duration);
-            match.date = make_date(date_time);
-            match.time = make_time_match(date_time);
-
+            update_event_match_date_time(match, time_point);
             match.next = time_point;
         } else {
             match.next = event::DefaultTimePoint;

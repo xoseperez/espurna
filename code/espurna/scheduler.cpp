@@ -879,9 +879,7 @@ EventMatch* find_event_match(const Schedule& schedule) {
 }
 
 void update_schedule_from(Schedule& schedule, const EventMatch& match) {
-    schedule.date.day[match.date.day] = true;
-    schedule.date.month[match.date.month] = true;
-    schedule.date.year = match.date.year;
+    schedule.date = make_date_match(match);
     schedule.time = match.time;
 }
 
