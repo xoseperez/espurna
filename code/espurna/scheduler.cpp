@@ -992,7 +992,7 @@ const SunriseSunsetMatch* maybe_sunrise_sunset(StringView name) {
 void dump_sunrise_sunset(CommandContext& ctx) {
     const auto next_update = sun::internal::next_update;
     if (event::is_valid(next_update)) {
-        ctx.output.printf_P(PSTR("- Next sunrise & sunset update at %s\n"),
+        ctx.output.printf_P(PSTR("- Next sunrise & sunset update after %s\n"),
             datetime::format_local_tz(next_update).c_str());
     }
 
