@@ -139,7 +139,7 @@ void test_date_impl() {
     scheduler::DateMatch m;
     m.year = 2006;
     m.day.set(1);
-    m.day_index.set(1);
+    m.day_index.set(1); // day index takes priority, parser wouldnt set these both
     m.month.set(0);
 
     TEST_SCHEDULER_MATCH(m);
@@ -1478,6 +1478,35 @@ void test_sun() {
         match.sunset.next.time_since_epoch().count());
 }
 
+void test_sun_date_impl() {
+    scheduler::DateMatch m;
+    m.year = 2006;
+    m.day.set(2);
+    m.month.set(0);
+
+    const auto clock_time_point = datetime::Clock::time_point{
+        datetime::Seconds{ ReferenceTimestamp }};
+    const auto clock_duration = clock_time_point.time_since_epoch();
+
+    tm tmp{};
+
+    time_t timestamp{ clock_duration.count() };
+    gmtime_r(&timestamp, &tmp);
+
+    TEST_ASSERT(scheduler::match(m, tmp));
+
+    sun::EventMatch mm;
+    mm.date = datetime::make_date(tmp);
+
+    auto dm = sun::make_date_match(mm);
+    TEST_ASSERT(scheduler::match(dm, tmp));
+
+    TEST_ASSERT_EQUAL(m.year, dm.year);
+    TEST_ASSERT_EQUAL(m.day.to_ulong(), dm.day.to_ulong());
+    TEST_ASSERT_EQUAL(m.month.to_ulong(), dm.month.to_ulong());
+    TEST_ASSERT_EQUAL(m.day_index.to_ulong(), dm.day_index.to_ulong());
+}
+
 void test_sun_event() {
     sun::EventMatch match;
 
@@ -1914,6 +1943,7 @@ int main(int, char**) {
     RUN_TEST(test_schedule_parsing_weekdays_range);
     RUN_TEST(test_search_bits);
     RUN_TEST(test_sun);
+    RUN_TEST(test_sun_date_impl);
     RUN_TEST(test_sun_event);
     RUN_TEST(test_sun_update);
     RUN_TEST(test_sun_update_time);

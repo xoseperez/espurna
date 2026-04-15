@@ -1016,6 +1016,8 @@ bool override_sunrise_sunset(CommandContext& ctx, sun::EventMatch& out, StringVi
     if (result) {
         const auto time_point = datetime::make_time_point(date_hhmmss, utc);
 
+        update_event_match_date_time(out, time_point);
+
         out.last = event::DefaultTimePoint;
         out.next = time_point;
 
