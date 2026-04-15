@@ -248,6 +248,56 @@ Match match;
 
 } // namespace internal
 
+STRING_VIEW_INLINE(Sunrise, "Sunrise");
+STRING_VIEW_INLINE(Sunset, "Sunset");
+
+struct NamedEventMatch {
+    StringView name;
+    sun::EventMatch& event_match;
+};
+
+static constexpr auto SunriseMatch PROGMEM = NamedEventMatch{
+    .name = Sunrise,
+    .event_match = sun::internal::match.sunrise,
+};
+
+static constexpr auto SunsetMatch PROGMEM = NamedEventMatch{
+    .name = Sunset,
+    .event_match = sun::internal::match.sunset,
+};
+
+const NamedEventMatch* maybe_sunrise_sunset(StringView name) {
+    const NamedEventMatch* out { nullptr };
+    if (SunriseMatch.name.equalsIgnoreCase(name)) {
+        out = std::addressof(SunriseMatch);
+    } else if (SunsetMatch.name.equalsIgnoreCase(name)) {
+        out = std::addressof(SunsetMatch);
+    }
+
+    return out;
+}
+
+bool override_sunrise_sunset(sun::EventMatch& out, StringView value) {
+    datetime::DateHhMmSs date_hhmmss;
+    bool utc { false };
+
+    const auto result = parse_simple_iso8601(date_hhmmss, utc, value);
+    if (result) {
+        const auto time_point = datetime::make_time_point(date_hhmmss, utc);
+
+        update_event_match_date_time(out, time_point);
+
+        out.last = event::DefaultTimePoint;
+        out.next = time_point;
+
+        sun::internal::next_update = time_point;
+
+        return true;
+    }
+
+    return false;
+}
+
 bool needs_update(datetime::Clock::time_point last, datetime::Clock::time_point time_point) {
     return (last == event::DefaultTimePoint)
         || event::less(last, time_point);
@@ -921,6 +971,34 @@ String format_last(const EventMatch& match) {
 } // namespace sun
 #endif
 
+bool api_update_named_event(String name, StringView payload) {
+#if SCHEDULER_SUN_SUPPORT
+    const auto match = sun::maybe_sunrise_sunset(name);
+    if (match) {
+        return sun::override_sunrise_sunset(
+            match->event_match, payload);
+    }
+#endif
+
+    return named_event(std::move(name), payload);
+}
+
+String api_format_named_event(StringView name) {
+#if SCHEDULER_SUN_SUPPORT
+    const auto* match = sun::maybe_sunrise_sunset(name);
+    if (match) {
+        return sun::format_next(match->event_match);
+    }
+#endif
+
+    const auto it = find_named(name);
+    if (it) {
+        return format_named_event(*it);
+    }
+
+    return emptyString;
+}
+
 // -----------------------------------------------------------------------------
 
 #if TERMINAL_SUPPORT
@@ -930,7 +1008,6 @@ using espurna::terminal::Command;
 using espurna::terminal::CommandContext;
 
 namespace internal {
-
 #if SCHEDULER_SUN_SUPPORT
 
 struct Datetime {
@@ -952,39 +1029,10 @@ void format_datetime(CommandContext& ctx, const String& prefix, const Datetime& 
         datetime.next.c_str());
 }
 
-STRING_VIEW_INLINE(Sunrise, "Sunrise");
-STRING_VIEW_INLINE(Sunset, "Sunset");
-
-struct SunriseSunsetMatch {
-    StringView name;
-    sun::EventMatch& event_match;
-};
-
-void dump_event_match(CommandContext& ctx, const SunriseSunsetMatch& match) {
+void dump_event_match(CommandContext& ctx, const sun::NamedEventMatch& match) {
     format_datetime(ctx,
         match.name.toString(),
         sunrise_sunset(match.event_match));
-}
-
-static constexpr auto SunriseMatch PROGMEM = SunriseSunsetMatch{
-    .name = Sunrise,
-    .event_match = sun::internal::match.sunrise,
-};
-
-static constexpr auto SunsetMatch PROGMEM = SunriseSunsetMatch{
-    .name = Sunset,
-    .event_match = sun::internal::match.sunset,
-};
-
-const SunriseSunsetMatch* maybe_sunrise_sunset(StringView name) {
-    const SunriseSunsetMatch* out { nullptr };
-    if (SunriseMatch.name.equalsIgnoreCase(name)) {
-        out = std::addressof(SunriseMatch);
-    } else if (SunsetMatch.name.equalsIgnoreCase(name)) {
-        out = std::addressof(SunsetMatch);
-    }
-
-    return out;
 }
 
 void dump_sunrise_sunset(CommandContext& ctx) {
@@ -994,35 +1042,14 @@ void dump_sunrise_sunset(CommandContext& ctx) {
             datetime::format_local_tz(next_update).c_str());
     }
 
-    dump_event_match(ctx, SunriseMatch);
-    dump_event_match(ctx, SunsetMatch);
+    dump_event_match(ctx, sun::SunriseMatch);
+    dump_event_match(ctx, sun::SunsetMatch);
 }
 
 bool dump_sunrise_sunset(CommandContext& ctx, StringView name) {
-    const auto* match = maybe_sunrise_sunset(name);
+    const auto* match = sun::maybe_sunrise_sunset(name);
     if (match != nullptr) {
         dump_event_match(ctx, *match);
-        return true;
-    }
-
-    return false;
-}
-
-bool override_sunrise_sunset(CommandContext& ctx, sun::EventMatch& out, StringView value) {
-    datetime::DateHhMmSs date_hhmmss;
-    bool utc { false };
-
-    const auto result = parse_simple_iso8601(date_hhmmss, utc, value);
-    if (result) {
-        const auto time_point = datetime::make_time_point(date_hhmmss, utc);
-
-        update_event_match_date_time(out, time_point);
-
-        out.last = event::DefaultTimePoint;
-        out.next = time_point;
-
-        sun::internal::next_update = time_point;
-
         return true;
     }
 
@@ -1171,22 +1198,12 @@ void event(CommandContext&& ctx) {
         return;
 
     case 3:
-    {
-#if SCHEDULER_SUN_SUPPORT
-        const auto match = internal::maybe_sunrise_sunset(ctx.argv[1]);
-        if (match) {
-            if (internal::override_sunrise_sunset(ctx, match->event_match, ctx.argv[2])) {
-                break;
-            }
-        } else
-#endif
-        if (named_event(std::move(ctx.argv[1]), ctx.argv[2])) {
+        if (api_update_named_event(ctx.argv[1], ctx.argv[2])) {
             break;
         }
 
         terminalError(ctx, STRING_VIEW("Cannot set event"));
         return;
-    }
 
     case 0:
     default:
@@ -1399,10 +1416,19 @@ namespace events {
 
 bool get(ApiRequest& req, JsonObject& root) {
     const auto param = req.wildcard(0);
+    auto& out = root.createNestedArray(Events);
 
-    auto& events = root.createNestedArray(Events);
+#if SCHEDULER_SUN_SUPPORT
+    const auto refs = { std::cref(sun::SunsetMatch), std::cref(sun::SunsetMatch) };
+    for (const auto ref : refs) {
+        auto& entry = out.createNestedObject();
+        entry[Name] = ref.get().name;
+        entry[Datetime] = format_next(ref.get().event_match);
+    }
+#endif
+
     for (auto& event : named_events) {
-        auto& entry = events.createNestedObject();
+        auto& entry = out.createNestedObject();
         entry[Name] = event.name.c_str();
         entry[Datetime] = format_named_event(event);
     }
@@ -1415,11 +1441,11 @@ bool get(ApiRequest& req, JsonObject& root) {
 namespace event {
 
 bool get(ApiRequest& req, JsonObject& root) {
-    const auto param = req.wildcard(0);
+    const auto name = req.wildcard(0);
+    const auto fmt = api_format_named_event(name);
 
-    const auto it = find_named(param);
-    if (it) {
-        root[Datetime] = format_named_event(*it);
+    if (fmt.length()) {
+        root[Datetime] = fmt;
         return true;
     }
 
@@ -1432,7 +1458,7 @@ bool set(ApiRequest& req, JsonObject& root) {
         return false;
     }
 
-    return named_event(
+    return api_update_named_event(
         req.wildcard(0), datetime.as<String>());
 }
 
@@ -1471,7 +1497,7 @@ void callback(unsigned int type, StringView topic, StringView payload) {
             return;
         }
 
-        named_event(name.toString(), payload);
+        api_update_named_event(name.toString(), payload);
         return;
     }
 }
