@@ -788,7 +788,7 @@ function makeInlineSource(options, stats) {
 
         // prevent '?...' query params from appearing,
         // vite assets would sometimes use '?inline'
-        const asUrl = new URL(`file:///${src}`);
+        const asUrl = new URL(`file://${src}`);
         for (const [param] of asUrl.searchParams) {
             asUrl.searchParams.delete(param);
         }
