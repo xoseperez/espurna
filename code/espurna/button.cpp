@@ -85,11 +85,9 @@ struct Button {
     Button(BasePinPtr&& pin, const debounce_event::types::Config& config,
         ButtonActions&& actions, ButtonEventDelays&& delays, bool is_freq);
 
-    bool state();
     ButtonEvent loop();
 
     ButtonEventEmitterPtr event_emitter;
-    std::unique_ptr<AcSwitch> ac_switch;
 
     ButtonActions actions;
     ButtonEventDelays event_delays;
@@ -956,7 +954,10 @@ Button::Button(BasePinPtr&& pin, const debounce_event::types::Config& config, Bu
     event_delays(std::move(delays_))
 {
     if (is_freq && pin) {
-        ac_switch = std::make_unique<AcSwitch>(pin->pin(), delays_.debounce, delays_.min_pulses, settings::acFreq());
+        event_emitter = std::make_unique<debounce_event::EventEmitter>(
+            std::make_unique<AcSwitch>(pin->pin(), delays_.debounce, delays_.min_pulses, settings::acFreq()),
+            config, delays_.debounce, delays_.repeat
+        );
     } else {
         event_emitter = std::make_unique<debounce_event::EventEmitter>(std::move(pin), config, delays_.debounce, delays_.repeat);
     }
@@ -990,12 +991,6 @@ ButtonEvent Button::loop() {
         }
         case debounce_event::types::EventNone:
             break;
-        }
-    }
-
-    if (ac_switch) {
-        if (ac_switch->loop()) {
-            return ac_switch->state() ? ButtonEvent::Pressed : ButtonEvent::Released;
         }
     }
 

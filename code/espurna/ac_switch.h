@@ -7,11 +7,11 @@ AC FREQUENCY DETECTION SWITCH MODULE
 #pragma once
 
 #include <Arduino.h>
-#include <FunctionalInterrupt.h>
+#include "libs/BasePin.h"
 
 namespace espurna {
 
-class AcSwitch {
+class AcSwitch final : public BasePin {
     public:
         // pin: GPIO pin
         // timeout_ms: time window for pulse counting (default 100 ms)
@@ -20,10 +20,17 @@ class AcSwitch {
         AcSwitch(uint8_t pin, unsigned long timeout_ms = 100, unsigned long min_pulses = 5, int frequency = 0);
         ~AcSwitch();
 
-        bool loop();
+        // BasePin implementation
+        const char* id() const override;
+        unsigned char pin() const override;
+        int digitalRead() override;
+        void pinMode(int8_t mode) override;
+        void digitalWrite(int8_t val) override;
+
         bool state() const;
 
     private:
+        static void IRAM_ATTR _isr_static(void* arg);
         void IRAM_ATTR _isr();
 
         uint8_t _pin;

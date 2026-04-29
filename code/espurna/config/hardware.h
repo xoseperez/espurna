@@ -140,6 +140,49 @@
     #define MANUFACTURER        "NODEMCU"
     #define DEVICE              "LOLIN"
 
+// -----------------------------------------------------------------------------
+// Moes MS-104B 2-Gang Switch Module
+// -----------------------------------------------------------------------------
+
+#elif defined(MOES_MS_104B)
+
+    // Info
+    #define MANUFACTURER            "MOES"
+    #define DEVICE                  "MS_104B"
+
+    #define BUTTON_AC_FREQ          50
+
+    // Switch 1 (GPIO 13) controls Relay 1 (GPIO 14)
+    #define BUTTON1_PIN             13
+    #define BUTTON1_CONFIG          BUTTON_FREQUENCY
+    #define BUTTON1_RELAY           1
+    #define BUTTON1_PRESS           BUTTON_ACTION_TOGGLE
+    #define BUTTON1_RELEASE         BUTTON_ACTION_TOGGLE
+    #define BUTTON1_DEBOUNCE_DELAY  100
+
+    // Switch 2 (GPIO 12) controls Relay 2 (GPIO 15)
+    #define BUTTON2_PIN             12
+    #define BUTTON2_CONFIG          BUTTON_FREQUENCY
+    #define BUTTON2_RELAY           2
+    #define BUTTON2_PRESS           BUTTON_ACTION_TOGGLE
+    #define BUTTON2_RELEASE         BUTTON_ACTION_TOGGLE
+    #define BUTTON2_DEBOUNCE_DELAY  100
+
+    // Onboard Button (GPIO 2)
+    #define BUTTON3_PIN             2
+    #define BUTTON3_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON3_RELAY           1
+
+    // Relay 1
+    #define RELAY1_PIN              14
+    #define RELAY1_TYPE             RELAY_TYPE_NORMAL
+
+    // Relay 2
+    #define RELAY2_PIN              15
+    #define RELAY2_TYPE             RELAY_TYPE_NORMAL
+
+    #define RELAY_SUPPORT           1
+
     // Buttons
     #define BUTTON1_PIN         0
     #define BUTTON1_CONFIG      BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
