@@ -75,7 +75,8 @@ public:
         }
 
         void detach() {
-            gpioUnlock(_current);
+            espurna::gpioUnlock
+(_current);
             ::detachInterrupt(_current);
             _current = GPIO_NONE;
         }
@@ -93,7 +94,7 @@ public:
 
         void _attach(void* instance, VoidCallback callback, int mode) {
             if (_current != _pin) {
-                if (!gpioLock(_pin)) {
+                if (!espurna::gpioLock(_pin)) {
                     return;
                 }
 

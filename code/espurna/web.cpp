@@ -14,9 +14,13 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <functional>
 #include <memory>
 
+#if defined(ESP8266)
 #include <Schedule.h>
+#endif
 #include <Print.h>
+#if defined(ESP8266)
 #include <Hash.h>
+#endif
 #include <FS.h>
 
 #include <ArduinoJson.h>

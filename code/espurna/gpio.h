@@ -1,141 +1,123 @@
 /*
 
-GPIO MODULE
+Part of the GPIO module
 
-Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2021-2023 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 */
 
 #pragma once
 
+#include <Arduino.h>
+
+#include <memory>
+#include <vector>
+
 #include "types.h"
 #include "libs/BasePin.h"
 
-#include <cstddef>
+// -----------------------------------------------------------------------------
 
-enum class GpioType : int {
-    None,
-    Hardware,
-    Mcp23s08
-};
+struct GpioBase {
+    virtual ~GpioBase() = default;
 
-namespace espurna {
-namespace gpio {
-
-struct Origin {
-    const char* base;
-    uint8_t pin;
-    bool lock;
-    bool result;
-    SourceLocation location;
-};
-
-inline bool operator==(Origin lhs, Origin rhs) {
-    return lhs.base == rhs.base
-        && lhs.pin == rhs.pin
-        && lhs.lock == rhs.lock
-        && lhs.result == rhs.result
-        && lhs.location == rhs.location;
-}
-
-struct Mode {
-    int8_t value;
-};
-
-Mode pin_mode(uint8_t);
-
-} // namespace gpio
-
-namespace settings {
-namespace internal {
-
-String serialize(GpioType);
-
-} // namespace internal
-} // namespace settings
-} // namespace espurna
-
-class GpioBase {
-public:
     virtual const char* id() const = 0;
     virtual size_t pins() const = 0;
+
     virtual bool lock(unsigned char index) const = 0;
     virtual void lock(unsigned char index, bool value) = 0;
+
     virtual bool valid(unsigned char index) const = 0;
     virtual BasePinPtr pin(unsigned char index) = 0;
 };
 
-GpioBase* gpioBase(GpioType);
+// -----------------------------------------------------------------------------
 
+enum class GpioType : int {
+    None = 0,
+    Hardware = 1,
+    Mcp23s08 = 2
+};
+
+GpioBase* gpioBase(GpioType type);
 GpioBase& hardwareGpio();
+
 void hardwareGpioIgnore(unsigned char gpio);
-
-void gpioLockOrigin(espurna::gpio::Origin);
-
 void gpioSetup();
 
-inline size_t gpioPins(const GpioBase& base) {
-    return base.pins();
-}
+namespace espurna {
+namespace gpio {
 
-inline size_t gpioPins() {
-    return gpioPins(hardwareGpio());
-}
+enum class Origin : int {
+    None,
+    Relay,
+    Button,
+    Led,
+    Encoder,
+    OneWire,
+    Sensor,
+    Uart,
+    I2c,
+    Spi
+};
 
-inline bool gpioValid(const GpioBase& base, unsigned char gpio) {
-    return base.valid(gpio);
-}
+void lockOrigin(Origin);
 
-inline bool gpioValid(unsigned char gpio) {
-    return gpioValid(hardwareGpio(), gpio);
-}
+} // namespace gpio
 
-inline bool gpioLock(GpioBase& base, unsigned char pin, bool value,
-        espurna::SourceLocation source_location = espurna::make_source_location())
+BasePinPtr gpioRegister(GpioBase& base, unsigned char gpio,
+        SourceLocation source_location = make_source_location());
+BasePinPtr gpioRegister(unsigned char gpio,
+        SourceLocation source_location = make_source_location());
+
+inline bool gpioLock(GpioBase& base, unsigned char gpio, bool value,
+        SourceLocation source_location = make_source_location())
 {
-    if (base.valid(pin)) {
-        const auto old = base.lock(pin);
-        base.lock(pin, value);
-
-        const auto result = value != old;
-
-        gpioLockOrigin(espurna::gpio::Origin{
-            .base = base.id(),
-            .pin = pin,
-            .lock = value,
-            .result = result,
-            .location = trim_source_location(source_location),
-        });
-
-        return result;
+    if (base.valid(gpio)) {
+        base.lock(gpio, value);
+        return true;
     }
-
     return false;
 }
 
 inline bool gpioLock(GpioBase& base, unsigned char gpio,
-        espurna::SourceLocation source_location = espurna::make_source_location())
+        SourceLocation source_location = make_source_location())
 {
     return gpioLock(base, gpio, true, source_location);
 }
 
-inline bool gpioLock(unsigned char gpio,
-        espurna::SourceLocation source_location = espurna::make_source_location())
+inline bool gpioLock(BasePinPtr& pin, bool value,
+        SourceLocation source_location = make_source_location())
 {
-    return gpioLock(hardwareGpio(), gpio, source_location);
+    if (pin) {
+        return gpioLock(hardwareGpio(), pin->pin(), value, source_location);
+    }
+    return false;
 }
 
-inline bool gpioUnlock(GpioBase& base, unsigned char gpio,
-        espurna::SourceLocation source_location = espurna::make_source_location())
+inline bool gpioLock(unsigned char gpio,
+        SourceLocation source_location = make_source_location())
 {
-    return gpioLock(base, gpio, false, source_location);
+    return gpioLock(hardwareGpio(), gpio, true, source_location);
 }
 
 inline bool gpioUnlock(unsigned char gpio,
-        espurna::SourceLocation source_location = espurna::make_source_location())
+        SourceLocation source_location = make_source_location())
 {
-    return gpioUnlock(hardwareGpio(), gpio, source_location);
+    return gpioLock(hardwareGpio(), gpio, false, source_location);
 }
+
+#if defined(ESP8266)
+inline bool gpioUnlock(unsigned char gpio,
+        SourceLocation location) {
+    return gpioUnlock(hardwareGpio(), gpio, location);
+}
+#elif defined(ESP32)
+bool gpioUnlock(unsigned char gpio,
+        SourceLocation location);
+#endif
+
+} // namespace espurna
 
 inline bool gpioLocked(const GpioBase& base, unsigned char gpio) {
     if (base.valid(gpio)) {
@@ -148,7 +130,31 @@ inline bool gpioLocked(unsigned char gpio) {
     return gpioLocked(hardwareGpio(), gpio);
 }
 
-BasePinPtr gpioRegister(GpioBase& base, unsigned char gpio,
-        espurna::SourceLocation source_location = espurna::make_source_location());
-BasePinPtr gpioRegister(unsigned char gpio,
-        espurna::SourceLocation source_location = espurna::make_source_location());
+void gpioLockOrigin(espurna::gpio::Origin origin);
+
+// -----------------------------------------------------------------------------
+// Settings conversion for GpioType
+// -----------------------------------------------------------------------------
+
+namespace espurna {
+namespace settings {
+namespace internal {
+
+template <typename T> String serialize(T value);
+template <typename T> T convert(const String& value);
+
+template <> inline String serialize(GpioType type) {
+    if (type == GpioType::Hardware) return "hardware";
+    if (type == GpioType::Mcp23s08) return "mcp23s08";
+    return "none";
+}
+
+template <> inline GpioType convert(const String& value) {
+    if (value.equalsIgnoreCase("hardware")) return GpioType::Hardware;
+    if (value.equalsIgnoreCase("mcp23s08")) return GpioType::Mcp23s08;
+    return GpioType::None;
+}
+
+} // namespace internal
+} // namespace settings
+} // namespace espurna

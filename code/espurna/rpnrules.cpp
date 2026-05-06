@@ -24,7 +24,11 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "rtcmem.h"
 #include "sensor.h"
 #include "terminal.h"
-#include "wifi.h"
+#if defined(ESP8266)
+#include "wifi_esp8266.h"
+#elif defined(ESP32)
+#include "wifi_esp32.h"
+#endif
 #include "ws.h"
 
 #include <forward_list>

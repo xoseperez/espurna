@@ -20,7 +20,11 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <memory>
 
 #if THINGSPEAK_USE_ASYNC
+#if defined(ESP8266)
 #include <ESPAsyncTCP.h>
+#elif defined(ESP32)
+#include <AsyncTCP.h>
+#endif
 #else
 #include <ESP8266HTTPClient.h>
 #endif

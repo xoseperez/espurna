@@ -16,12 +16,16 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #if NTP_SUPPORT
 
 #include <Arduino.h>
+#if defined(ESP8266)
 #include <coredecls.h>
+#endif
 
 #include <ctime>
 #include <errno.h>
 #include <lwip/apps/sntp.h>
+#if defined(ESP8266)
 #include <TZ.h>
+#endif
 
 #include <algorithm>
 #include <forward_list>
@@ -434,11 +438,22 @@ String activeServer() {
 
     server = sntp_getservername(0);
     if (!server.length()) {
+    #if defined(ESP8266)
         auto ip = IPAddress(sntp_getserver(0));
-        if (ip) {
+        if (ip.isSet()) {
             server = ip.toString();
         }
+    #elif defined(ESP32)
+        const ip_addr_t* addr = sntp_getserver(0);
+        if (addr) {
+            auto ip = IPAddress(addr->u_addr.ip4.addr);
+            if ((uint32_t)ip != 0) {
+                server = ip.toString();
+            }
+        }
+    #endif
     }
+
 
     return server;
 }
@@ -823,6 +838,7 @@ void configure() {
     }
 }
 
+#if defined(ESP8266)
 void onStationModeGotIP(WiFiEventStationModeGotIP) {
     if (!sntp_enabled()) {
         return;
@@ -843,6 +859,7 @@ void onStationModeGotIP(WiFiEventStationModeGotIP) {
         settings::server(server);
     }
 }
+#endif
 
 void setup() {
     // Randomize both times to avoid simultaneous requests from multiple devices
@@ -852,11 +869,15 @@ void setup() {
         internal::start_delay.count(), internal::update_interval.count());
 
     // will be called every time after ntp syncs AND loop() finishes
+#if defined(ESP8266)
     settimeofday_cb(onSystemTimeSynced);
+#endif
 
     // make sure our logic does know about the actual server
     // in case dhcp sends out ntp settings
+#if defined(ESP8266)
     static auto track_active_server = WiFi.onStationModeGotIP(onStationModeGotIP);
+#endif
 
     // generic configuration, always handled
     ::espurnaRegisterReload(configure);

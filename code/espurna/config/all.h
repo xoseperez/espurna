@@ -22,9 +22,13 @@
 #pragma once
 
 #include <Arduino.h>
+
+#if defined(ESP8266)
 #include <core_version.h>
-#include <pgmspace.h>
 #include <spi_flash.h>
+#endif
+
+#include <pgmspace.h>
 
 #ifdef USE_CUSTOM_H
 #include "custom.h"

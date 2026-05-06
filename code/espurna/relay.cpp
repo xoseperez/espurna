@@ -854,7 +854,7 @@ timer::Duration time(size_t index) {
 }
 
 Mode mode(size_t index) {
-    return getSetting({keys::Mode, index}, build::mode(index));
+    return getSetting(espurna::settings::Key{keys::Mode, index}, build::mode(index));
 }
 
 } // namespace settings
@@ -1146,31 +1146,31 @@ size_t dummyCount() {
 
 [[gnu::unused]]
 String name(size_t index) {
-    return getSetting({keys::Name, index});
+    return getSetting(espurna::settings::Key{keys::Name, index});
 }
 
 RelayProvider provider(size_t index) {
-    return getSetting({keys::Provider, index}, build::provider(index));
+    return getSetting(espurna::settings::Key{keys::Provider, index}, build::provider(index));
 }
 
 RelayType type(size_t index) {
-    return getSetting({keys::Type, index}, build::type(index));
+    return getSetting(espurna::settings::Key{keys::Type, index}, build::type(index));
 }
 
 GpioType pinType(size_t index) {
-    return getSetting({keys::GpioType, index}, build::pinType(index));
+    return getSetting(espurna::settings::Key{keys::GpioType, index}, build::pinType(index));
 }
 
 unsigned char pin(size_t index) {
-    return getSetting({keys::Gpio, index}, build::pin(index));
+    return getSetting(espurna::settings::Key{keys::Gpio, index}, build::pin(index));
 }
 
 unsigned char resetPin(size_t index) {
-    return getSetting({keys::ResetGpio, index}, build::resetPin(index));
+    return getSetting(espurna::settings::Key{keys::ResetGpio, index}, build::resetPin(index));
 }
 
 RelayBoot bootMode(size_t index) {
-    return getSetting({keys::Boot, index}, build::bootMode(index));
+    return getSetting(espurna::settings::Key{keys::Boot, index}, build::bootMode(index));
 }
 
 RelayMaskHelper bootMask() {
@@ -1190,7 +1190,7 @@ espurna::duration::Milliseconds delayOn() {
 }
 
 espurna::duration::Milliseconds delayOn(size_t index) {
-    return getSetting({keys::DelayOn, index}, build::delayOn(index));
+    return getSetting(espurna::settings::Key{keys::DelayOn, index}, build::delayOn(index));
 }
 
 espurna::duration::Milliseconds delayOff() {
@@ -1198,7 +1198,7 @@ espurna::duration::Milliseconds delayOff() {
 }
 
 espurna::duration::Milliseconds delayOff(size_t index) {
-    return getSetting({keys::DelayOff, index}, build::delayOff(index));
+    return getSetting(espurna::settings::Key{keys::DelayOff, index}, build::delayOff(index));
 }
 
 espurna::duration::Milliseconds interlockDelay() {
@@ -1229,15 +1229,15 @@ String payloadToggle() {
 
 #if MQTT_SUPPORT
 String mqttTopicSub(size_t index) {
-    return getSetting({keys::TopicSub, index}, build::mqttTopicSub(index));
+    return getSetting(espurna::settings::Key{keys::TopicSub, index}, build::mqttTopicSub(index));
 }
 
 String mqttTopicPub(size_t index) {
-    return getSetting({keys::TopicPub, index}, build::mqttTopicPub(index));
+    return getSetting(espurna::settings::Key{keys::TopicPub, index}, build::mqttTopicPub(index));
 }
 
 RelayMqttTopicMode mqttTopicMode(size_t index) {
-    return getSetting({keys::TopicMode, index}, build::mqttTopicMode(index));
+    return getSetting(espurna::settings::Key{keys::TopicMode, index}, build::mqttTopicMode(index));
 }
 
 duration::Seconds mqttDisconnectionDelay() {
@@ -1245,7 +1245,7 @@ duration::Seconds mqttDisconnectionDelay() {
 }
 
 PayloadStatus mqttDisconnectionStatus(size_t index) {
-    return getSetting({keys::MqttStatus, index}, build::mqttDisconnectionStatus(index));
+    return getSetting(espurna::settings::Key{keys::MqttStatus, index}, build::mqttDisconnectionStatus(index));
 }
 
 #endif
@@ -2795,7 +2795,7 @@ void _relaySettingsMigrate(int version) {
         // groups use a new set of keys
 #if MQTT_SUPPORT
         for (size_t index = 0; index < RelaysMax; ++index) {
-            auto group = getSetting({"mqttGroup", index});
+            auto group = getSetting(espurna::settings::Key{"mqttGroup", index});
             if (!group.length()) {
                 break;
             }
@@ -4006,12 +4006,12 @@ std::unique_ptr<GpioProvider> _relayGpioProvider(size_t index, RelayType type) {
         return nullptr;
     }
 
-    auto main = gpioRegister(*base, cfg.main);
+    auto main = espurna::gpioRegister(*base, cfg.main);
     if (!main) {
         return nullptr;
     }
 
-    auto reset = gpioRegister(*base, cfg.reset);
+    auto reset = espurna::gpioRegister(*base, cfg.reset);
     if (GpioType::Hardware == cfg.type) {
         hardwareGpioIgnore(cfg.main);
         if (GPIO_NONE != cfg.reset) {

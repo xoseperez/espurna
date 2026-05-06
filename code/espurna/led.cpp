@@ -417,13 +417,13 @@ LedMode mode(size_t id) {
 #if RELAY_SUPPORT
 
 size_t relay(size_t id) {
-    return getSetting({keys::Relay, id}, build::relay(id));
+    return getSetting(espurna::settings::Key{keys::Relay, id}, build::relay(id));
 }
 
 #endif
 
 Pattern pattern(size_t id) {
-    auto result = parse(getSetting({keys::Pattern, id}));
+    auto result = parse(getSetting(espurna::settings::Key{keys::Pattern, id}));
     if (result.ok) {
         return result.value;
     }

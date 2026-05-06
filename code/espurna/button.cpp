@@ -743,7 +743,7 @@ int analogLevel(size_t index) {
 
 #if TERMINAL_SUPPORT
 String terminalCommand(size_t index) {
-    return getSetting({keys::TerminalCommand, index});
+    return getSetting(espurna::settings::Key{keys::TerminalCommand, index});
 }
 #endif
 
@@ -1470,7 +1470,7 @@ BasePinPtr _buttonGpioPin(size_t index, ButtonProvider provider) {
             break;
         }
 
-        if (!gpioLock(*base, pin)) {
+        if (!espurna::gpioLock(*base, pin)) {
             break;
         }
 

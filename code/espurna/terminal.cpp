@@ -27,7 +27,11 @@ Copyright (C) 2020-2022 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include "telnet.h"
 #include "terminal.h"
 #include "utils.h"
-#include "wifi.h"
+#if defined(ESP8266)
+#include "wifi_esp8266.h"
+#elif defined(ESP32)
+#include "wifi_esp32.h"
+#endif
 
 #include "libs/PrintString.h"
 #include "libs/Delimiter.h"
@@ -35,7 +39,9 @@ Copyright (C) 2020-2022 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include <algorithm>
 #include <utility>
 
+#if defined(ESP8266)
 #include <Schedule.h>
+#endif
 #include <Stream.h>
 
 // FS 'range', declared at compile time via .ld script PROVIDE declarations

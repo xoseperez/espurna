@@ -28,7 +28,9 @@ Updated secure client support by Niek van der Maas < mail at niekvandermaas dot 
 #include "mqtt_common.ipp"
 
 #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
+#if defined(ESP8266)
 #include <ESPAsyncTCP.h>
+#endif
 #include <AsyncMqttClient.h>
 #elif MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT
 #include <MQTTClient.h>

@@ -18,7 +18,11 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "system.h"
 #include "utils.h"
 #include "web.h"
-#include "wifi.h"
+#if defined(ESP8266)
+#include "wifi_esp8266.h"
+#elif defined(ESP32)
+#include "wifi_esp32.h"
+#endif
 
 #include "ws.h"
 #include "ws_internal.h"
@@ -721,7 +725,7 @@ void _onAuth(AsyncWebServerRequest* request) {
 
     auto it = std::begin(_ws_tickets);
     while (it != std::end(_ws_tickets)) {
-        if (!(*it).ip.isSet()
+        if (!((*it).ip != IPAddress())
             || ((*it).ip == ip)
             || (now - (*it).timestamp > WsTimeout)) {
             break;

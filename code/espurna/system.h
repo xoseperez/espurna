@@ -2,74 +2,32 @@
 
 SYSTEM MODULE
 
-Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
+Copyright (C) 2020-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 */
 
 #pragma once
 
-#include "system_time.h"
-
-#include "settings.h"
-#include "types.h"
+#include <Arduino.h>
 
 #include <chrono>
-#include <cstdint>
-#include <limits>
+#include <memory>
+#include <vector>
 
-#include <user_interface.h>
+#include "types.h"
 
-struct HeapStats {
-    uint32_t available;
-    uint32_t usable;
-    uint8_t fragmentation;
-};
+#if defined(ESP8266)
+extern "C" {
+#include "user_interface.h"
+}
+#elif defined(ESP32)
+#include "user_interface_esp32.h"
+#endif
 
-enum class CustomResetReason : uint8_t {
-    None,
-    Button,    // button event action
-    Factory,   // requested factory reset
-    Hardware,  // driver event
-    Mqtt,
-    Ota,       // successful ota
-    Rpc,       // rpc (api) calls
-    Rule,      // rpn rule operator action
-    Scheduler, // scheduled reset
-    Terminal,  // terminal command action
-    Web,       // webui action
-    Stability, // stable counter action
-};
+// -----------------------------------------------------------------------------
 
 namespace espurna {
-namespace sleep {
-
-// Both LIGHT and DEEP sleep accept microseconds as input
-// Effective limit is ~31bit - 1 in size
-using Microseconds = std::chrono::duration<uint32_t, std::micro>;
-
-constexpr auto FpmSleepMin = Microseconds{ 1000 };
-constexpr auto FpmSleepIndefinite = Microseconds{ 0xFFFFFFF };
-
-} // namespace sleep
-
-namespace system {
-
-struct RandomDevice {
-    using result_type = uint32_t;
-
-    static constexpr result_type min() {
-        return std::numeric_limits<result_type>::min();
-    }
-
-    static constexpr result_type max() {
-        return std::numeric_limits<result_type>::max();
-    }
-
-    uint32_t operator()() const;
-};
-
-} // namespace system
-
 namespace timer {
 
 struct SystemTimer {
@@ -79,9 +37,13 @@ struct SystemTimer {
     static constexpr Duration DurationMin = Duration(5);
 
     SystemTimer();
+#if defined(ESP8266)
     ~SystemTimer() {
         stop();
     }
+#elif defined(ESP32)
+    ~SystemTimer();
+#endif
 
     SystemTimer(const SystemTimer&) = delete;
     SystemTimer& operator=(const SystemTimer&) = delete;
@@ -97,6 +59,7 @@ struct SystemTimer {
         return armed();
     }
 
+#if defined(ESP8266)
     void once(Duration duration, Callback callback) {
         start(duration, std::move(callback), false);
     }
@@ -104,21 +67,20 @@ struct SystemTimer {
     void repeat(Duration duration, Callback callback) {
         start(duration, std::move(callback), true);
     }
+#elif defined(ESP32)
+    void once(Duration duration, Callback callback);
+    void repeat(Duration duration, Callback callback);
+#endif
 
     void schedule_once(Duration, Callback);
     void stop();
+    void callback();
 
 private:
-    // limit is per https://www.espressif.com/sites/default/files/documentation/2c-esp8266_non_os_sdk_api_reference_en.pdf
-    // > 3.1.1 os_timer_arm
-    // > with `system_timer_reinit()`, the timer value allowed ranges from 100 to 0x0x689D0.
-    // > otherwise, the timer value allowed ranges from 5 to 0x68D7A3.
-    // with current implementation we use division by 2 until we reach value less than this one
     static constexpr Duration DurationMax = Duration(6870947);
 
     void reset();
     void start(Duration, Callback, bool repeat);
-    void callback();
 
     struct Tick {
         size_t total;
@@ -137,74 +99,28 @@ private:
 } // namespace timer
 
 struct ReadyFlag {
-    bool wait(duration::Milliseconds);
+    ReadyFlag() :
+        _timer()
+    {}
+
+    bool wait(duration::Milliseconds timeout);
     void stop();
 
-    bool stop_wait(duration::Milliseconds duration) {
+    template <typename T>
+    void stop_wait(T) {
         stop();
-        return wait(duration);
-    }
-
-    bool ready() const {
-        return _ready;
     }
 
     explicit operator bool() const {
-        return ready();
+        return _ready;
     }
 
 private:
-    bool _ready { true };
     timer::SystemTimer _timer;
+    bool _ready { false };
 };
-
-struct PolledReadyFlag {
-    bool wait(duration::Milliseconds);
-    void stop();
-
-    bool stop_wait(duration::Milliseconds duration) {
-        stop();
-        return wait(duration);
-    }
-
-    bool ready();
-
-    explicit operator bool() {
-        return ready();
-    }
-
-private:
-    bool _ready { true };
-    time::SystemClock::time_point _until{};
-};
-
-template <typename T>
-struct PolledFlag {
-    bool wait(typename T::duration);
-
-    void reset() {
-        _last = T::now();
-    }
-
-protected:
-    typename T::time_point _last { T::now() };
-};
-
-template <typename T>
-bool PolledFlag<T>::wait(typename T::duration interval) {
-    const auto now = T::now();
-    if (now - _last > interval) {
-        _last = now;
-        return true;
-    }
-
-    return false;
-}
 
 namespace heartbeat {
-
-using Mask = int32_t;
-using Callback = bool(*)(Mask);
 
 enum class Mode {
     None,
@@ -212,146 +128,105 @@ enum class Mode {
     Repeat
 };
 
-enum class Report : Mask {
-    Status = 1 << 1,
-    Ssid = 1 << 2,
-    Ip = 1 << 3,
-    Mac = 1 << 4,
-    Rssi = 1 << 5,
-    Uptime = 1 << 6,
-    Datetime = 1 << 7,
-    Freeheap = 1 << 8,
-    Vcc = 1 << 9,
-    Relay = 1 << 10,
-    Light = 1 << 11,
-    Hostname = 1 << 12,
-    App = 1 << 13,
-    Version = 1 << 14,
-    Board = 1 << 15,
-    Loadavg = 1 << 16,
-    Interval = 1 << 17,
-    Description = 1 << 18,
-    Range = 1 << 19,
-    RemoteTemp = 1 << 20,
-    Bssid = 1 << 21
+struct Report {
+    enum : uint32_t {
+        None = 0,
+        Uptime = 1 << 0,
+        Freeheap = 1 << 1,
+        Vcc = 1 << 2,
+        Rssi = 1 << 3,
+        Datetime = 1 << 4,
+        Hostname = 1 << 5,
+        Description = 1 << 6,
+        Ssid = 1 << 7,
+        Bssid = 1 << 8,
+        Ip = 1 << 9,
+        Mac = 1 << 10,
+        Rst = 1 << 11,
+        Loadavg = 1 << 12,
+        Version = 1 << 13,
+        Status = 1 << 14,
+        Interval = 1 << 15,
+        App = 1 << 16,
+        Board = 1 << 17,
+        Relay = 1 << 18
+    };
 };
 
-constexpr Mask operator*(Report lhs, Mask rhs) {
-    return static_cast<Mask>(lhs) * rhs;
-}
+using Mask = uint32_t;
+using Callback = std::function<bool(Mask)>;
 
-constexpr Mask operator*(Mask lhs, Report rhs) {
-    return lhs * static_cast<Mask>(rhs);
-}
-
-constexpr Mask operator|(Report lhs, Report rhs) {
-    return static_cast<Mask>(lhs) | static_cast<Mask>(rhs);
-}
-
-constexpr Mask operator|(Report lhs, Mask rhs) {
-    return static_cast<Mask>(lhs) | rhs;
-}
-
-constexpr Mask operator|(Mask lhs, Report rhs) {
-    return lhs | static_cast<Mask>(rhs);
-}
-
-constexpr Mask operator&(Report lhs, Mask rhs) {
-    return static_cast<Mask>(lhs) & rhs;
-}
-
-constexpr Mask operator&(Mask lhs, Report rhs) {
-    return lhs & static_cast<Mask>(rhs);
-}
-
-constexpr Mask operator&(Report lhs, Report rhs) {
-    return static_cast<Mask>(lhs) & static_cast<Mask>(rhs);
-}
-
-espurna::duration::Seconds currentInterval();
-espurna::duration::Milliseconds currentIntervalMs();
-
-Mask currentValue();
 Mode currentMode();
+duration::Seconds currentInterval();
 
 } // namespace heartbeat
 
-namespace sleep {
-
-enum class Interrupt {
-    Low,
-    High,
-};
-
-} // namespace sleep
-
-namespace settings {
-namespace internal {
-
-template <>
-heartbeat::Mode convert(const String&);
-
-String serialize(heartbeat::Mode);
-String serialize(duration::ClockCycles);
-
-} // namespace internal
-} // namespace settings
 } // namespace espurna
 
-uint32_t randomNumber(uint32_t minimum, uint32_t maximum);
-uint32_t randomNumber();
+// -----------------------------------------------------------------------------
 
-unsigned long systemFreeStack();
+struct HeapStats {
+    uint32_t available;
+    uint32_t usable;
+    uint8_t fragmentation;
+};
 
 HeapStats systemHeapStats();
 
-size_t systemFreeHeap();
-size_t systemInitialFreeHeap();
+enum class CustomResetReason : uint8_t {
+    None = 0,
+    Hardware = 1,
+    Button = 2,
+    Terminal = 3,
+    Web = 4,
+    Ota = 5,
+    Mqtt = 6,
+    Rpc = 7,
+    Rule = 8,
+    Scheduler = 9,
+    Stability = 10,
+    Discovery = 11,
+    Factory = 12,
+    Garland = 13,
+    Nofuss = 14,
+    I2c = 15,
+    Spi = 16
+};
 
-[[noreturn]] void forceEraseSDKConfig();
-
-bool eraseSDKConfig();
+void prepareReset(CustomResetReason);
 void factoryReset();
-
-uint32_t systemResetReason();
-uint8_t systemStabilityCounter();
-void systemStabilityCounter(uint8_t count);
-
-void systemForceStable();
-void systemForceUnstable();
-bool systemCheck();
 
 void customResetReason(CustomResetReason);
 CustomResetReason customResetReason();
 String customResetReasonToPayload(CustomResetReason);
 
-void deferredReset(espurna::duration::Milliseconds, CustomResetReason);
-void prepareReset(CustomResetReason);
+void deferredReset(espurna::duration::Milliseconds delay, CustomResetReason reason);
 bool pendingDeferredReset();
 
-bool wakeupModemForcedSleep();
-bool prepareModemForcedSleep();
+bool instantDeepSleep(espurna::sleep::Microseconds);
+bool instantLightSleep();
+bool instantLightSleep(espurna::sleep::Microseconds);
 
-using SleepCallback = void (*)();
+typedef std::function<void()> SleepCallback;
 void systemBeforeSleep(SleepCallback);
 void systemAfterSleep(SleepCallback);
 
-bool instantLightSleep();
-bool instantLightSleep(espurna::sleep::Microseconds);
-bool instantLightSleep(uint8_t pin, espurna::sleep::Interrupt);
+uint32_t randomNumber(uint32_t min, uint32_t max);
+uint32_t randomNumber();
 
-bool instantDeepSleep(espurna::sleep::Microseconds);
-
+unsigned long systemFreeStack();
 unsigned long systemLoadAverage();
+size_t systemInitialFreeHeap();
+size_t systemFreeHeap();
+uint16_t systemVcc();
 
-espurna::duration::Seconds systemHeartbeatInterval();
-void systemScheduleHeartbeat();
+uint32_t systemResetReason();
 
-void systemStopHeartbeat(espurna::heartbeat::Callback);
-void systemHeartbeat(espurna::heartbeat::Callback, espurna::heartbeat::Mode, espurna::duration::Seconds interval);
-void systemHeartbeat(espurna::heartbeat::Callback, espurna::heartbeat::Mode);
-void systemHeartbeat(espurna::heartbeat::Callback);
-bool systemHeartbeat();
+bool systemCheck();
+void systemForceStable();
+void systemForceUnstable();
+uint8_t systemStabilityCounter();
+void systemStabilityCounter(uint8_t count);
 
 espurna::duration::Seconds systemUptime();
 
@@ -371,3 +246,47 @@ String systemDescription();
 
 void systemSetup();
 void systemSetupUnstable();
+
+void systemScheduleHeartbeat();
+void systemStopHeartbeat(espurna::heartbeat::Callback callback);
+void systemHeartbeat(espurna::heartbeat::Callback callback, espurna::heartbeat::Mode mode, espurna::duration::Seconds interval);
+void systemHeartbeat(espurna::heartbeat::Callback callback, espurna::heartbeat::Mode mode);
+void systemHeartbeat(espurna::heartbeat::Callback callback);
+espurna::duration::Seconds systemHeartbeatInterval();
+
+void espurnaRegisterOnce(espurna::Callback);
+espurna::duration::Milliseconds espurnaLoopDelay();
+void espurnaLoopDelay(espurna::duration::Milliseconds);
+
+void delSettingPrefix(espurna::settings::query::StringViewIterator);
+void migrateVersion(void (*callback)(int));
+
+[[noreturn]] void forceEraseSDKConfig();
+
+namespace espurna {
+namespace settings {
+namespace internal {
+
+// Base templates
+template <typename T> String serialize(T value);
+template <typename T> T convert(const String& value);
+
+// Forward declare GpioType
+enum class GpioType : int;
+
+// Specialized inline implementations
+template <> inline String serialize(espurna::heartbeat::Mode mode) {
+    if (mode == espurna::heartbeat::Mode::Once) return "once";
+    if (mode == espurna::heartbeat::Mode::Repeat) return "repeat";
+    return "none";
+}
+
+template <> inline espurna::heartbeat::Mode convert(const String& value) {
+    if (value.equalsIgnoreCase("once")) return espurna::heartbeat::Mode::Once;
+    if (value.equalsIgnoreCase("repeat")) return espurna::heartbeat::Mode::Repeat;
+    return espurna::heartbeat::Mode::None;
+}
+
+} // namespace internal
+} // namespace settings
+} // namespace espurna

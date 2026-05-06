@@ -25,6 +25,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "config/all.h"
 
 #include "compat.h"
+#if defined(ESP32)
+#include "compat_esp32.h"
+#endif
 
 #include "build.h"
 #include "types.h"
@@ -37,7 +40,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "uart.h"
 #include "utils.h"
 #include "network.h"
-#include "wifi.h"
+#if defined(ESP8266)
+#include "wifi_esp8266.h"
+#elif defined(ESP32)
+#include "wifi_esp32.h"
+#endif
 
 #include <functional>
 #include <algorithm>
