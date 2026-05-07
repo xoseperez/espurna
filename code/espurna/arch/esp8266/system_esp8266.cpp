@@ -32,14 +32,10 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <random>
 #include <vector>
 
-#if defined(ESP8266)
 extern "C" {
 #include "user_interface.h"
 extern struct rst_info resetInfo;
 }
-#elif defined(ESP32)
-#include "../../user_interface_orch.h"
-#endif
 
 #include "libs/TypeChecks.h"
 
@@ -455,7 +451,6 @@ STRING_VIEW_INLINE(Password, ADMIN_PASS);
 
 StringView chip_id() {
     const static String out = ([]() {
-#if defined(ESP8266)
         const uint32_t regs[3] {
             READ_PERI_REG(0x3ff00050),
             READ_PERI_REG(0x3ff00054),
@@ -468,10 +463,6 @@ StringView chip_id() {
             static_cast<uint8_t>((regs[1] >> 8ul) & 0xfful),
             static_cast<uint8_t>(regs[1] & 0xffu),
             static_cast<uint8_t>((regs[0] >> 24ul) & 0xffu)};
-#elif defined(ESP32)
-        uint8_t mac[6];
-        esp_efuse_mac_get_default(mac);
-#endif
 
         if (mac[2] != 0) {
             mac[0] = (regs[2] >> 16ul) & 0xffu;
