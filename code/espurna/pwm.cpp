@@ -244,6 +244,91 @@ void duty(size_t channel, float value) {
 // Currently, new-pwm - a drop-in replacement for the version provided in the Espressif SDK
 // API is the same as the SDK one, so it is possible (in theory) to seamlessly replace one with the other
 // But, one would need to fix period <-> frequency scaling, b/c of (NONOS) SDK weird limits
+#elif PWM_PROVIDER == PWM_PROVIDER_ESP32
+namespace esp32 {
+
+struct Channel {
+    uint8_t pin;
+    uint8_t channel;
+    uint32_t duty;
+};
+
+namespace internal {
+
+uint32_t duty_limit;
+uint32_t resolution;
+std::vector<Channel> channels;
+
+} // namespace internal
+
+PwmRange range() {
+    return PwmRange{
+        .min = 0,
+        .max = (1UL << internal::resolution) - 1,
+    };
+}
+
+size_t channels() {
+    return internal::channels.size();
+}
+
+void setup() {
+    internal::resolution = settings::resolution();
+    const auto max_duty = (1UL << internal::resolution) - 1;
+    
+    const auto limit = settings::limit();
+    internal::duty_limit = (limit < 100.f)
+        ? (static_cast<float>(max_duty) / 100.f) * limit
+        : max_duty;
+
+    DEBUG_MSG_P(PSTR("[PWM] ESP32 LEDC - Frequency %u (Hz), resolution %u (bits)\n"),
+        settings::frequency(), internal::resolution);
+}
+
+void update() {
+    for (auto& channel : internal::channels) {
+        ledcWrite(channel.channel, channel.duty);
+    }
+}
+
+bool init(const uint8_t* begin, const uint8_t* end) {
+    if (internal::channels.empty()) {
+        uint8_t next_channel = 0;
+        for (auto it = begin; it != end; ++it) {
+            const auto pin = *it;
+            if (gpioLocked(pin)) {
+                internal::channels.clear();
+                return false;
+            }
+
+            ledcSetup(next_channel, settings::frequency(), internal::resolution);
+            ledcAttachPin(pin, next_channel);
+            
+            internal::channels.push_back(Channel{
+                .pin = pin,
+                .channel = next_channel,
+                .duty = 0,
+            });
+            
+            gpioLock(pin);
+            next_channel++;
+        }
+        return !internal::channels.empty();
+    }
+    return false;
+}
+
+void duty(size_t channel, uint32_t value) {
+    internal::channels[channel].duty = std::min(internal::duty_limit, value);
+}
+
+void duty(size_t channel, float value) {
+    const auto max_duty = (1UL << internal::resolution) - 1;
+    duty(channel, static_cast<uint32_t>((std::clamp(value, 0.f, 100.f) / 100.f) * max_duty));
+}
+
+} // namespace esp32
+
 #elif PWM_PROVIDER == PWM_PROVIDER_GENERIC
 namespace generic {
 namespace pin {
@@ -432,6 +517,8 @@ bool init(const uint8_t* begin, const uint8_t* end) {
 using namespace arduino;
 #elif PWM_PROVIDER == PWM_PROVIDER_GENERIC
 using namespace generic;
+#elif PWM_PROVIDER == PWM_PROVIDER_ESP32
+using namespace esp32;
 #endif
 
 #if TERMINAL_SUPPORT

@@ -261,6 +261,7 @@
 #define PWM_PROVIDER_NONE           0
 #define PWM_PROVIDER_GENERIC        1
 #define PWM_PROVIDER_ARDUINO        2
+#define PWM_PROVIDER_ESP32          3
 
 //------------------------------------------------------------------------------
 // ENVIRONMENTAL

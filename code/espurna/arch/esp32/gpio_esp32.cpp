@@ -6,94 +6,201 @@ GPIO MODULE FOR ESP32
 
 #include "gpio.h"
 #include "settings.h"
+#include "rtcmem.h"
 
 #include <Arduino.h>
 
 #include <algorithm>
 #include <vector>
+#include <map>
 
-// --- BasePin implementation ---
-String BasePin::description() const {
-    return String("GPIO") + String(pin());
+// --------------------------------------------------------------------------
+
+namespace espurna {
+namespace gpio {
+
+namespace origin {
+
+// We want to keep track of who locked which pin. 
+static std::vector<Origin> _origins;
+
+void add(const Origin& origin) {
+    _origins.push_back(origin);
 }
+
+const std::vector<Origin>& all() {
+    return _origins;
+}
+
+} // namespace origin
 
 namespace {
 
-// Concrete implementation of BasePin for Hardware pins
+struct Lock {
+    GpioBase* base;
+    unsigned char pin;
+    SourceLocation location;
+};
+
+static std::vector<Lock> _locks;
+
+} // namespace
+
+bool lock(GpioBase& base, unsigned char pin, const SourceLocation& location) {
+    for (const auto& lock : _locks) {
+        if ((lock.base == &base) && (lock.pin == pin)) {
+            return false;
+        }
+    }
+
+    _locks.push_back(Lock{&base, pin, location});
+    base.lock(pin, true);
+    return true;
+}
+
+void unlock(GpioBase& base, unsigned char pin) {
+    auto it = std::remove_if(_locks.begin(), _locks.end(), [&](const Lock& lock) {
+        return (lock.base == &base) && (lock.pin == pin);
+    });
+    if (it != _locks.end()) {
+        _locks.erase(it, _locks.end());
+        base.lock(pin, false);
+    }
+}
+
+bool locked(GpioBase& base, unsigned char pin) {
+    for (const auto& lock : _locks) {
+        if ((lock.base == &base) && (lock.pin == pin)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// --------------------------------------------------------------------------
+
+class Hardware final : public GpioBase {
+public:
+    static constexpr size_t Pins = 40;
+
+    const char* id() const override {
+        return "hardware";
+    }
+
+    size_t pins() const override {
+        return Pins;
+    }
+
+    bool valid(unsigned char pin) const override {
+        return pin < Pins;
+    }
+
+    bool lock(unsigned char pin) const override {
+        return _locked[pin];
+    }
+
+    void lock(unsigned char pin, bool value) override {
+        if (pin < Pins) {
+            _locked[pin] = value;
+        }
+    }
+
+    BasePinPtr pin(unsigned char pin) override;
+
+private:
+    bool _locked[Pins] { false };
+};
+
 class HardwarePin final : public BasePin {
 public:
     explicit HardwarePin(unsigned char pin) : _pin(pin) {}
-    
-    const char* id() const override { return "hardware"; }
-    unsigned char pin() const override { return _pin; }
-    
+
+    const char* id() const override {
+        return "hardware";
+    }
+
+    unsigned char pin() const override {
+        return _pin;
+    }
+
     void pinMode(int8_t mode) override {
-        if (_pin != GPIO_NONE) ::pinMode(_pin, mode);
+        ::pinMode(_pin, mode);
     }
-    
+
     void digitalWrite(int8_t val) override {
-        if (_pin != GPIO_NONE) ::digitalWrite(_pin, val);
+        ::digitalWrite(_pin, val);
     }
-    
+
     int digitalRead() override {
-        return (_pin != GPIO_NONE) ? ::digitalRead(_pin) : LOW;
+        return ::digitalRead(_pin);
     }
 
 private:
     unsigned char _pin;
 };
 
-class HardwareGpio : public GpioBase {
-public:
-    const char* id() const override { return "hardware"; }
-    size_t pins() const override { return 40; }
-    
-    bool lock(unsigned char index) const override {
-        return (index < 40) ? _locked[index] : false;
-    }
-    
-    void lock(unsigned char index, bool value) override {
-        if (index < 40) _locked[index] = value;
-    }
-    
-    bool valid(unsigned char index) const override {
-        return index < pins();
-    }
-    
-    BasePinPtr pin(unsigned char index) override {
-        return std::unique_ptr<BasePin>(new HardwarePin(index));
-    }
+BasePinPtr Hardware::pin(unsigned char pin) {
+    return BasePinPtr(new HardwarePin(pin));
+}
 
-private:
-    bool _locked[40] { false };
-};
+} // namespace gpio
+} // namespace espurna
 
-HardwareGpio _hardware_gpio;
+// --------------------------------------------------------------------------
 
-} // namespace
-
-GpioBase* gpioBase(GpioType type) {
-    if (type == GpioType::Hardware) return &_hardware_gpio;
-    return nullptr;
+String BasePin::description() const {
+    char buffer[64];
+    snprintf(buffer, sizeof(buffer), "%s @ GPIO%02hhu", id(), pin());
+    return buffer;
 }
 
 GpioBase& hardwareGpio() {
-    return _hardware_gpio;
+    static espurna::gpio::Hardware gpio;
+    return gpio;
 }
 
-void hardwareGpioIgnore(unsigned char) {}
+GpioBase* gpioBase(GpioType type) {
+    GpioBase* ptr { nullptr };
 
-void gpioSetup() {}
+    switch (type) {
+    case GpioType::Hardware:
+        ptr = &hardwareGpio();
+        break;
+    case GpioType::Mcp23s08:
+#if MCP23S08_SUPPORT
+        // To be implemented or ported
+        // ptr = &mcp23s08Gpio();
+#endif
+        break;
+    case GpioType::None:
+        break;
+    }
 
-void gpioLockOrigin(espurna::gpio::Origin) {}
+    return ptr;
+}
 
 BasePinPtr gpioRegister(GpioBase& base, unsigned char gpio, espurna::SourceLocation source_location) {
-    base.lock(gpio, true);
-    return base.pin(gpio);
+    BasePinPtr result;
+    if (espurna::gpio::lock(base, gpio, source_location)) {
+        result = base.pin(gpio);
+    }
+    return result;
 }
 
 BasePinPtr gpioRegister(unsigned char gpio, espurna::SourceLocation source_location) {
     return gpioRegister(hardwareGpio(), gpio, source_location);
+}
+
+void gpioSetup() {
+    // Terminal and Web setup can be ported here as well
+}
+
+void hardwareGpioIgnore(unsigned char gpio) {
+    Rtcmem->gpio_ignore |= (1ULL << gpio);
+}
+
+void gpioLockOrigin(espurna::gpio::Origin origin) {
+    espurna::gpio::origin::add(origin);
 }
 
 namespace espurna {
@@ -101,15 +208,17 @@ namespace settings {
 namespace internal {
 
 String serialize_gpio_type(GpioType type) {
-    if (type == GpioType::Hardware) return "hardware";
-    if (type == GpioType::Mcp23s08) return "mcp23s08";
-    return "none";
+    switch (type) {
+        case GpioType::Hardware: return "hardware";
+        case GpioType::Mcp23s08: return "mcp23s08";
+        default: return "none";
+    }
 }
 
 GpioType convert_gpio_type(const String& value) {
-    if (value.equalsIgnoreCase("hardware")) return (GpioType)1;
-    if (value.equalsIgnoreCase("mcp23s08")) return (GpioType)2;
-    return (GpioType)0;
+    if (value.equalsIgnoreCase("hardware")) return GpioType::Hardware;
+    if (value.equalsIgnoreCase("mcp23s08")) return GpioType::Mcp23s08;
+    return GpioType::None;
 }
 
 } // namespace internal
