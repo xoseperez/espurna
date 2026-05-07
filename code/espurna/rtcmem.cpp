@@ -146,3 +146,4 @@ bool rtcmemStatus() {
 void rtcmemSetup() {
     espurna::peripherals::rtc::setup();
 }
+

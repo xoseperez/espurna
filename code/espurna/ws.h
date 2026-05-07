@@ -180,3 +180,4 @@ void wsPayloadModule(JsonObject&, espurna::StringView);
 
 espurna::web::ws::Callbacks& wsRegister();
 void wsSetup();
+

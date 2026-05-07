@@ -122,3 +122,4 @@ class MAX6675Sensor : public BaseSensor {
 };
 
 #endif // SENSOR_SUPPORT && MAX6675_SUPPORT
+

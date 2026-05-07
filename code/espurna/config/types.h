@@ -441,3 +441,4 @@
 
 #define WIFI_DISABLED               BootMode::Disabled
 #define WIFI_ENABLED                BootMode::Enabled
+

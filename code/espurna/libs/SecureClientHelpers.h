@@ -234,3 +234,4 @@ using SecureClientChecks = SecureClientHelpers::SecureClientChecks;
 using SecureClient = SecureClientHelpers::SecureClient;
 
 #endif // SECURE_CLIENT != SECURE_CLIENT_NONE
+

@@ -46,3 +46,4 @@ public:
 private:
     unsigned char _pin { GPIO_NONE };
 };
+

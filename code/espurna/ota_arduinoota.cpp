@@ -11,7 +11,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #if OTA_ARDUINOOTA_SUPPORT
 
 #include "ota.h"
-#include "system.h"
+#include "system_orch.h"
 #include "ws.h"
 
 #include <ArduinoOTA.h>
@@ -147,3 +147,4 @@ void otaArduinoSetup() {
 }
 
 #endif // OTA_ARDUINOOTA_SUPPORT
+

@@ -6,9 +6,9 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#include "espurna.h"
+#include "../../espurna.h"
 
-#include "rtcmem.h"
+#include "../../rtcmem.h"
 
 #if WEB_SUPPORT
 #include "ws.h"
@@ -38,7 +38,7 @@ extern "C" {
 extern struct rst_info resetInfo;
 }
 #elif defined(ESP32)
-#include "user_interface_esp32.h"
+#include "../../user_interface_orch.h"
 #endif
 
 #include "libs/TypeChecks.h"
@@ -1846,3 +1846,4 @@ String systemDescription() {
 void systemSetup() {
     espurna::setup();
 }
+

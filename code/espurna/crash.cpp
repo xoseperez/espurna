@@ -18,7 +18,7 @@ Copyright (C) 2019-2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #if DEBUG_SUPPORT
 
 #include "crash.h"
-#include "system.h"
+#include "system_orch.h"
 #include "rtcmem.h"
 #include "storage_eeprom.h"
 
@@ -388,3 +388,4 @@ void crashSetup() {
 }
 
 #endif // DEBUG_SUPPORT
+

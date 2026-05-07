@@ -1,12 +1,12 @@
 #if defined(ARDUINO_ARCH_ESP32)
 
+#include <WiFi.h>
+#include <IPAddress.h>
+
 #include "espurna.h"
-#include "wifi_esp32.h"
+#include "wifi_orch.h"
 #include "rtcmem.h"
 #include "settings.h"
-
-#include <IPAddress.h>
-#include <WiFi.h>
 
 #if WEB_SUPPORT
 #include "ws.h"
@@ -156,13 +156,13 @@ void _wifiSetup() {
         Serial.printf("[WIFI] AP Started! SSID: %s\n", ap_ssid.c_str());
     }
 
-    WiFi.onEvent([](WiFiEvent_t event) {
+    WiFi.onEvent([=](arduino_event_id_t event, arduino_event_info_t info) {
         Event e = Event::Initial;
         switch (event) {
-            case SYSTEM_EVENT_STA_START:
+            case ARDUINO_EVENT_WIFI_STA_START:
                 Serial.println("[WIFI] Station started");
                 break;
-            case SYSTEM_EVENT_STA_GOT_IP:
+            case ARDUINO_EVENT_WIFI_STA_GOT_IP:
                 _wifi_connected = true;
                 e = Event::StationConnected;
                 Serial.print("[WIFI] Connected! IP: ");
@@ -175,15 +175,15 @@ void _wifiSetup() {
                     WiFi.mode(WIFI_STA);
                 }
                 break;
-            case SYSTEM_EVENT_STA_DISCONNECTED:
+            case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
                 _wifi_connected = false;
                 e = Event::StationDisconnected;
                 Serial.println("[WIFI] Disconnected!");
                 break;
-            case SYSTEM_EVENT_AP_STACONNECTED:
+            case ARDUINO_EVENT_WIFI_AP_STACONNECTED:
                 Serial.println("[WIFI] AP Client connected");
                 break;
-            case SYSTEM_EVENT_AP_STADISCONNECTED:
+            case ARDUINO_EVENT_WIFI_AP_STADISCONNECTED:
                 Serial.println("[WIFI] AP Client disconnected");
                 break;
             default:

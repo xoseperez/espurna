@@ -178,3 +178,4 @@ void eepromCommit();
 void eepromSetup();
 
 StorageEEPROM_Rotate& eepromInstance();
+

@@ -13,11 +13,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "mdns.h"
 #include "nofuss.h"
 #include "terminal.h"
-#if defined(ESP8266)
-#include "wifi_esp8266.h"
-#elif defined(ESP32)
-#include "wifi_esp32.h"
-#endif
+#include "wifi_orch.h"
 #include "ws.h"
 
 #include <NoFUSSClient.h>
@@ -202,3 +198,5 @@ void nofussSetup() {
 }
 
 #endif // NOFUSS_SUPPORT
+
+

@@ -19,7 +19,7 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include "lightfox.h"
 #include "mqtt.h"
 #include "relay.h"
-#include "system.h"
+#include "system_orch.h"
 #include "thermostat.h"
 
 #if WEB_SUPPORT
@@ -1470,7 +1470,7 @@ BasePinPtr _buttonGpioPin(size_t index, ButtonProvider provider) {
             break;
         }
 
-        if (!espurna::gpioLock(*base, pin)) {
+        if (!gpioLock(*base, pin)) {
             break;
         }
 
@@ -1643,3 +1643,4 @@ void buttonSetupUnstable() {
 }
 
 #endif // BUTTON_SUPPORT
+

@@ -1546,3 +1546,4 @@ void haSetup() {
 }
 
 #endif // HOMEASSISTANT_SUPPORT
+

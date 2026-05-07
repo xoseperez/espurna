@@ -85,8 +85,6 @@ void hardwareGpioIgnore(unsigned char) {}
 
 void gpioSetup() {}
 
-namespace espurna {
-
 void gpioLockOrigin(espurna::gpio::Origin) {}
 
 BasePinPtr gpioRegister(GpioBase& base, unsigned char gpio, espurna::SourceLocation source_location) {
@@ -98,6 +96,7 @@ BasePinPtr gpioRegister(unsigned char gpio, espurna::SourceLocation source_locat
     return gpioRegister(hardwareGpio(), gpio, source_location);
 }
 
+namespace espurna {
 namespace settings {
 namespace internal {
 

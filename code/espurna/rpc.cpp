@@ -11,7 +11,7 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #include <cstring>
 
-#include "system.h"
+#include "system_orch.h"
 #include "utils.h"
 
 namespace espurna {
@@ -111,3 +111,4 @@ PayloadStatus rpcParsePayload(espurna::StringView payload, RpcPayloadCheck check
 PayloadStatus rpcParsePayload(espurna::StringView payload) {
     return espurna::rpc::parse(payload, nullptr);
 }
+

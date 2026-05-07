@@ -10,7 +10,7 @@ Copyright (C) 2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 */
 
-#include "espurna.h"
+#include "../../espurna.h"
 
 #include "wifi_esp8266.h"
 
@@ -3137,3 +3137,4 @@ IPAddress wifiApIp() {
 void wifiSetup() {
     espurna::wifi::setup();
 }
+

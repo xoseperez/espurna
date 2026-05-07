@@ -891,3 +891,4 @@ bool SplitView::Iterator::operator==(const SplitView::Iterator::End&) const {
 }
 
 } // namespace espurna
+

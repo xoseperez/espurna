@@ -63,3 +63,4 @@ extern volatile RtcmemData* Rtcmem;
 
 bool rtcmemStatus();
 void rtcmemSetup();
+

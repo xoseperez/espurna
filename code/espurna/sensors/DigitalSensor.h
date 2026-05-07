@@ -374,3 +374,4 @@ inline void load() {
 } // namespace espurna
 
 #endif // SENSOR_SUPPORT && DIGITAL_SUPPORT
+

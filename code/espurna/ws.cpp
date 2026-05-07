@@ -15,14 +15,10 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "datetime.h"
 #include "ntp.h"
-#include "system.h"
+#include "system_orch.h"
 #include "utils.h"
 #include "web.h"
-#if defined(ESP8266)
-#include "wifi_esp8266.h"
-#elif defined(ESP32)
-#include "wifi_esp32.h"
-#endif
+#include "wifi_orch.h"
 
 #include "ws.h"
 #include "ws_internal.h"
@@ -1260,3 +1256,5 @@ void wsSetup() {
 }
 
 #endif // WEB_SUPPORT
+
+

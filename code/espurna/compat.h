@@ -205,3 +205,4 @@ constexpr Type to_underlying(Enum value) {
 #if defined(ESP8266) and not defined(INPUT_PULLDOWN)
 #define INPUT_PULLDOWN 0x3
 #endif
+

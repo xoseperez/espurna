@@ -526,3 +526,4 @@ size_t consumeAvailable(Stream& stream) {
 
     return consumeAvailableImpl(stream, static_cast<size_t>(result));
 }
+

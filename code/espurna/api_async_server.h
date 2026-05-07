@@ -15,3 +15,4 @@ bool apiAuthenticateHeader(AsyncWebServerRequest*, const String& key);
 bool apiAuthenticateParam(AsyncWebServerRequest*, const String& key);
 bool apiAuthenticate(AsyncWebServerRequest*);
 
+

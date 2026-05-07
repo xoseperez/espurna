@@ -480,3 +480,4 @@ espurna::build::Info buildInfo() {
 espurna::StringView buildModules() {
     return espurna::build::app::modules();
 }
+

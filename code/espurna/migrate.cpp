@@ -8,7 +8,7 @@ Copyright (C) 2020-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 */
 
 #include "settings.h"
-#include "system.h"
+#include "system_orch.h"
 
 #include "config/version.h"
 
@@ -102,3 +102,4 @@ void migrateVersion(MigrateVersionCallback callback) {
 void migrate() {
     espurna::settings::migrate::run();
 }
+

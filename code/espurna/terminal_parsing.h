@@ -15,7 +15,7 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include <iterator>
 #include <vector>
 
-#include "types.h"
+#include "types_orch.h"
 
 namespace espurna {
 namespace terminal {
@@ -120,3 +120,4 @@ ParsedLine parse_terminated(StringView line);
 
 } // namespace terminal
 } // namespace espurna
+

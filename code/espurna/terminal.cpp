@@ -22,16 +22,12 @@ Copyright (C) 2020-2022 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include "crash.h"
 #include "mqtt.h"
 #include "settings.h"
-#include "system.h"
+#include "system_orch.h"
 #include "sensor.h"
 #include "telnet.h"
 #include "terminal.h"
 #include "utils.h"
-#if defined(ESP8266)
-#include "wifi_esp8266.h"
-#elif defined(ESP32)
-#include "wifi_esp32.h"
-#endif
+#include "wifi_orch.h"
 
 #include "libs/PrintString.h"
 #include "libs/Delimiter.h"
@@ -807,3 +803,5 @@ void terminalSetup() {
 }
 
 #endif // TERMINAL_SUPPORT
+
+

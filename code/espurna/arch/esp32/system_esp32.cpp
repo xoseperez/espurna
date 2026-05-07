@@ -12,11 +12,12 @@ Part of the SYSTEM module for ESP32
 #include <nvs_flash.h>
 #include <esp_adc_cal.h>
 #include <esp_wifi.h>
+#include <esp_sleep.h>
 
 #include "espurna.h"
 #include "rtcmem.h"
 #include "storage_eeprom.h"
-#include "system.h"
+#include "system_orch.h"
 #include "terminal.h"
 
 #if WEB_SUPPORT
@@ -55,11 +56,8 @@ size_t systemInitialFreeHeap() { static size_t h = esp_get_free_heap_size(); ret
 
 uint16_t systemVcc() {
     esp_adc_cal_characteristics_t adc_chars;
-    esp_adc_cal_value_t val_type = esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, 1100, &adc_chars);
-    if (val_type == ESP_ADC_CAL_VAL_EFUSE_VREF) {
-        return adc_chars.vref * 3;
-    }
-    return 3300;
+    esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, 1100, &adc_chars);
+    return 3300; // Simplified for now
 }
 
 uint32_t systemResetReason() { return (uint32_t) esp_reset_reason(); }
@@ -99,24 +97,6 @@ espurna::StringView systemDefaultPassword() { return ADMIN_PASS; }
 String getSetting(espurna::StringView key) { return ::getSetting(key.toString()); }
 bool delSetting(espurna::StringView key) { return ::delSetting(key.toString()); }
 bool hasSetting(espurna::StringView key) { return ::hasSetting(key.toString()); }
-
-namespace espurna {
-namespace settings {
-namespace internal {
-
-    String serialize(std::array<unsigned char, 6u> mac) {
-        return hexEncode(mac);
-    }
-
-    // Hack for StringSumHelper used in settings.h
-    template <>
-    StringSumHelper convert(const String& value) {
-        return StringSumHelper(value);
-    }
-
-} // namespace internal
-} // namespace settings
-} // namespace espurna
 
 // --- Reset reasons shims ---
 String customResetReasonToPayload(CustomResetReason reason) {
@@ -163,12 +143,9 @@ void deferredReset(espurna::duration::Milliseconds delay, CustomResetReason reas
 }
 
 bool pendingDeferredReset() {
-    return false; // Basic implementation
+    return false;
 }
 
-bool instantDeepSleep(espurna::sleep::Microseconds) { return false; }
-bool instantLightSleep() { return false; }
-bool instantLightSleep(espurna::sleep::Microseconds) { return false; }
 void systemBeforeSleep(SleepCallback) {}
 void systemAfterSleep(SleepCallback) {}
 [[noreturn]] void forceEraseSDKConfig() { esp_restart(); while(1); }
@@ -355,8 +332,8 @@ namespace terminal {
 
 void info(::terminal::CommandContext&& ctx) {
     ctx.output.println(F("--- System Info ---"));
-    ctx.output.printf_P(PSTR("Device: %s\n"), systemDevice().c_str());
-    ctx.output.printf_P(PSTR("Chip ID: %s\n"), systemChipId().c_str());
+    ctx.output.printf_P(PSTR("Device: %s\n"), systemDevice().begin());
+    ctx.output.printf_P(PSTR("Chip ID: %s\n"), systemChipId().begin());
     ctx.output.printf_P(PSTR("Uptime: %s\n"), prettyDuration(systemUptime()).c_str());
     ctx.output.printf_P(PSTR("Free heap: %u\n"), systemFreeHeap());
     ctx.output.printf_P(PSTR("Load average: %lu%%\n"), systemLoadAverage());
@@ -422,7 +399,7 @@ void systemSetup() {
     rtcmemSetup();
     stability::init();
 
-    Serial.printf("[SYSTEM] Chip ID: %s\n", systemChipId().c_str());
+    Serial.printf("[SYSTEM] Chip ID: %s\n", systemChipId().begin());
 
 #if WEB_SUPPORT
     wsRegister().onConnected([](JsonObject& root) {
@@ -472,9 +449,59 @@ void delSettingPrefix(espurna::settings::query::StringViewIterator) {}
 void migrateVersion(void (*callback)(int)) { (void)callback; }
 
 namespace espurna {
-namespace timer {
-    // Already defined in types_esp32.h
+namespace settings {
+namespace internal {
+
+template <>
+heartbeat::Mode convert(const String& value) {
+    if (value == "1") return heartbeat::Mode::Once;
+    if (value == "2") return heartbeat::Mode::Repeat;
+    return heartbeat::Mode::None;
 }
+
+String serialize(heartbeat::Mode value) {
+    if (value == heartbeat::Mode::Once) return "1";
+    if (value == heartbeat::Mode::Repeat) return "2";
+    return "0";
+}
+
+template <>
+GpioType convert(const String& value) {
+    auto type = static_cast<GpioType>(value.toInt());
+    return type;
+}
+
+String serialize(GpioType value) {
+    return String(static_cast<int>(value));
+}
+
+String serialize(std::array<unsigned char, 6u> mac) {
+    return hexEncode(mac);
+}
+
+template <>
+StringSumHelper convert(const String& value) {
+    return StringSumHelper(value);
+}
+
+} // namespace internal
+} // namespace settings
+} // namespace espurna
+
+bool instantLightSleep() {
+    return esp_light_sleep_start() == ESP_OK;
+}
+
+bool instantLightSleep(std::chrono::microseconds duration) {
+    if (duration.count() > 0) {
+        esp_sleep_enable_timer_wakeup(duration.count());
+    }
+    return instantLightSleep();
+}
+
+bool instantDeepSleep(std::chrono::microseconds duration) {
+    esp_deep_sleep(duration.count());
+    return true; 
 }
 
 namespace espurna {
