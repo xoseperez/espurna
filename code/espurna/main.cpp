@@ -129,6 +129,7 @@ void push_once_unique(Callback::Type callback) {
 void loop() {
     // Reload config before running any callbacks
     if (check_reload()) {
+        Serial.println("[MAIN] Reloading configuration...");
         for (const auto& callback : internal::reload_callbacks) {
             callback();
         }

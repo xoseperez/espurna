@@ -99,7 +99,8 @@ inline uint64_t micros64() {
 #endif
 
 // UART related shims for uart.cpp
-using SerialConfig = uint32_t;
+// (SerialConfig is defined in esp32-hal-uart.h in newer cores)
+// using SerialConfig = uint32_t;
 using SerialMode = uint32_t;
 
 // Timer shims

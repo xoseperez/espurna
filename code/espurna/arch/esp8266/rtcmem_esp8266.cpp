@@ -7,7 +7,7 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 */
 
 #include "espurna.h"
-#include "rtcmem.h"
+#include "arch/esp8266/rtcmem_esp8266.h"
 
 static constexpr uint32_t RtcmemMagic { RTCMEM_MAGIC };
 
@@ -146,4 +146,3 @@ bool rtcmemStatus() {
 void rtcmemSetup() {
     espurna::peripherals::rtc::setup();
 }
-
