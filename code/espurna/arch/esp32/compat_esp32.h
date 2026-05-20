@@ -22,7 +22,7 @@
 // Missing ADC/UART/TZ constants/functions
 #define ADC_VCC 255
 #ifndef ADC_MODE_VALUE
-#define ADC_MODE_VALUE 0
+#define ADC_MODE_VALUE ADC_VCC
 #endif
 inline void uart_set_debug(uint8_t) {}
 #define TZ_Etc_UTC "UTC0"
@@ -35,10 +35,11 @@ inline String getResetReasonShim() { return "ESP32 Reset"; }
 inline String getResetInfoShim() { return "ESP32 Reset Info"; }
 
 // We use a macro for ESP to intercept reset calls without changing source code
+extern uint16_t systemVcc();
 struct EspCompat {
     String getResetReason() { return getResetReasonShim(); }
     String getResetInfo() { return getResetInfoShim(); }
-    uint16_t getVcc() { return 0; }
+    uint16_t getVcc() { return systemVcc(); }
     
     EspClass* operator->() { return &ESP; }
     operator EspClass&() { return ESP; }

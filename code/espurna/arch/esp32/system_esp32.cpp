@@ -14,6 +14,8 @@ Part of the SYSTEM module for ESP32
 #include <esp_sleep.h>
 #include <soc/rtc_cntl_reg.h>
 
+#include <esp_adc_cal.h>
+
 #include "espurna.h"
 #include "rtcmem.h"
 #include "storage_eeprom.h"
@@ -60,7 +62,14 @@ HeapStats systemHeapStats() {
     return {(uint32_t)info.total_free_bytes, (uint32_t)info.largest_free_block, frag};
 }
 
-uint16_t systemVcc() { return 3300; }
+uint16_t systemVcc() {
+    esp_adc_cal_characteristics_t adc_chars;
+    esp_adc_cal_value_t val_type = esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, 1100, &adc_chars);
+    if (val_type == ESP_ADC_CAL_VAL_EFUSE_VREF) {
+        return adc_chars.vref;
+    }
+    return 3300;
+}
 uint32_t systemResetReason() { return (uint32_t) esp_reset_reason(); }
 espurna::duration::Seconds systemUptime() { return espurna::duration::Seconds(millis() / 1000); }
 unsigned long systemLoadAverage() { return load_average::value(); }
@@ -186,6 +195,53 @@ namespace web {
 }
 #endif
 
+namespace load_average {
+
+using TimeSource = espurna::time::SystemClock;
+using Type = unsigned long;
+
+struct Counter {
+    TimeSource::time_point last;
+    Type count;
+    Type value;
+    Type max;
+};
+
+namespace internal {
+    Type load_average { 0 };
+}
+
+Type value() {
+    return internal::load_average;
+}
+
+void loop() {
+    static Counter counter {
+        .last = TimeSource::now(),
+        .count = 0,
+        .value = 0,
+        .max = 0
+    };
+
+    ++counter.count;
+
+    const auto timestamp = TimeSource::now();
+    if (timestamp - counter.last < espurna::duration::Seconds(LOADAVG_INTERVAL)) {
+        return;
+    }
+
+    counter.last = timestamp;
+    counter.value = counter.count;
+    counter.count = 0;
+    counter.max = std::max(counter.max, counter.value);
+
+    internal::load_average = counter.max
+        ? (100 - (100 * counter.value / counter.max))
+        : 0;
+}
+
+} // namespace load_average
+
 void systemSetup() {
     _system_initial_heap = esp_get_free_heap_size();
     esp_err_t err = nvs_flash_init();
@@ -205,6 +261,10 @@ void systemSetup() {
     terminal::setup();
 #endif
     system_query::setup();
+
+    espurnaRegisterLoop([]() {
+        load_average::loop();
+    });
 }
 
 // --- Other stubs ---
@@ -228,7 +288,6 @@ namespace espurna {
         bool tryDelay(time::CoreClock::time_point s, time::CoreClock::duration t, time::CoreClock::duration i) { return true; }
     }
 }
-namespace load_average { void loop() {} unsigned long value() { return 0; } }
 bool instantLightSleep() { return true; }
 bool instantLightSleep(std::chrono::microseconds) { return true; }
 bool instantDeepSleep(std::chrono::microseconds) { esp_deep_sleep(0); return true; }

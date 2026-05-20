@@ -1202,7 +1202,7 @@ Type value() {
 
 void loop() {
     static Counter counter {
-        .last = (TimeSource::now() - build::Interval),
+        .last = TimeSource::now(),
         .count = 0,
         .value = 0,
         .max = 0

@@ -73,8 +73,11 @@ function initToggle(id) {
  */
 function updateFromState(states, schema) {
     states.forEach((state, id) => {
-        const elem = /** @type {!HTMLInputElement} */
+        const elem = /** @type {HTMLInputElement} */
             (document.querySelector(`input[name='relay'][data-id='${id}']`));
+        if (!elem) {
+            return;
+        }
 
         const relay = fromSchema(state, schema);
 
