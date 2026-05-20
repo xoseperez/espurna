@@ -92,8 +92,14 @@ espurna::StringView systemShortChipId() {
 }
 
 espurna::StringView systemDevice() { return DEVICE; }
-espurna::StringView systemIdentifier() { return DEVICE; }
-String systemHostname() { return getSetting("hostname", DEVICE); }
+espurna::StringView systemIdentifier() {
+    static String _identifier;
+    if (!_identifier.length()) {
+        _identifier = String("ESPURNA-") + systemShortChipId().c_str();
+    }
+    return _identifier;
+}
+String systemHostname() { return getSetting("hostname", systemIdentifier().c_str()); }
 String systemDescription() { return getSetting("desc", DEVICE); }
 String systemPassword() { return getSetting("adminPass", ADMIN_PASS); }
 bool systemPasswordEquals(espurna::StringView password) { return systemPassword().equals(password.c_str()); }
