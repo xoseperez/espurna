@@ -37,7 +37,7 @@ def merge_bin(source, target, env):
             return
 
     cmd = (f"$PYTHONEXE {esptool} --chip {board} merge_bin -o {output} "
-           f"--flash_mode dio --flash_size {flash_size} "
+           f"--flash_mode dout --flash_size {flash_size} "
            f"0x1000 {bootloader} "
            f"0x8000 {partitions} "
            f"0xe000 {boot_app0} "

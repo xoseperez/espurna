@@ -1119,7 +1119,7 @@ export async function eslint() {
 
             const fatal = results.some((x) => x.errorCount > 0);
             if (fatal) {
-                throw new Error(`eslint: ${path} failed`);
+                throw new Error('eslint failed');
             }
         },
     );

@@ -14,6 +14,10 @@ GPIO MODULE FOR ESP32
 #include <vector>
 #include <map>
 
+#if WEB_SUPPORT
+#include "ws.h"
+#endif
+
 // --------------------------------------------------------------------------
 
 namespace espurna {
@@ -191,8 +195,67 @@ BasePinPtr gpioRegister(unsigned char gpio, espurna::SourceLocation source_locat
     return gpioRegister(hardwareGpio(), gpio, source_location);
 }
 
+#if WEB_SUPPORT
+namespace espurna {
+namespace gpio {
+namespace web {
+
+void onVisible(JsonObject& root) {
+    JsonObject& config = root.createNestedObject(F("gpioConfig"));
+
+    constexpr GpioType known_types[] {
+        GpioType::Hardware,
+#if MCP23S08_SUPPORT
+        GpioType::Mcp23s08,
+#endif
+    };
+
+    JsonArray& types = config.createNestedArray(F("types"));
+
+    for (auto& type : known_types) {
+        auto* base = gpioBase(type);
+        if (base) {
+            JsonArray& entry = types.createNestedArray();
+            entry.add(base->id());
+            entry.add(static_cast<int>(type));
+
+            JsonArray& pins = config.createNestedArray(base->id());
+            for (size_t pin = 0; pin < base->pins(); ++pin) {
+                if (base->valid(pin)) {
+                    pins.add(pin);
+                }
+            }
+        }
+    }
+
+    JsonObject& info = root.createNestedObject(F("gpioInfo"));
+
+    JsonArray& locks = info.createNestedArray(F("failed-locks"));
+    for (const auto& origin : origin::all()) {
+        if (!origin.result) {
+            JsonArray& entry = locks.createNestedArray();
+            entry.add(origin.pin);
+            entry.add(origin.location.file);
+            entry.add(origin.location.func);
+            entry.add(origin.location.line);
+        }
+    }
+}
+
+void setup() {
+    wsRegister()
+        .onVisible(onVisible);
+}
+
+} // namespace web
+} // namespace gpio
+} // namespace espurna
+#endif
+
 void gpioSetup() {
-    // Terminal and Web setup can be ported here as well
+#if WEB_SUPPORT
+    espurna::gpio::web::setup();
+#endif
 }
 
 void hardwareGpioIgnore(unsigned char gpio) {

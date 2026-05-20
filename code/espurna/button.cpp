@@ -110,6 +110,7 @@ PROGMEM_STRING(LongLongClickDelay, "btnLLclkDel");
 PROGMEM_STRING(RepeatDelay, "btnRepDel");
 
 PROGMEM_STRING(Relay, "btnRelay");
+PROGMEM_STRING(RelayBtnGpio, "relayBtnGpio");
 
 PROGMEM_STRING(MqttSendAll, "btnMqttSendAll");
 PROGMEM_STRING(MqttRetain, "btnMqttRetain");
@@ -288,6 +289,13 @@ namespace {
 namespace internal {
 
 std::vector<Button> buttons;
+
+struct DynamicButton {
+    size_t button_id;
+    size_t relay_id;
+    unsigned char gpio;
+};
+std::vector<DynamicButton> dynamic_buttons;
 
 } // namespace internal
 
@@ -645,57 +653,105 @@ T indexedThenGlobal(const String& prefix, size_t index, T defaultValue) {
     return defaultValue;
 }
 
+const ::espurna::button::internal::DynamicButton* getDynamicButton(size_t index) {
+    for (const auto& btn : ::espurna::button::internal::dynamic_buttons) {
+        if (btn.button_id == index) {
+            return &btn;
+        }
+    }
+    return nullptr;
+}
+
 } // namespace internal
 
 unsigned char pin(size_t index) {
+    if (auto* btn = internal::getDynamicButton(index)) {
+        return btn->gpio;
+    }
     return getSetting({keys::Gpio, index}, build::pin(index));
 }
 
 GpioType pinType(size_t index) {
+    if (internal::getDynamicButton(index)) {
+        return GPIO_TYPE_NONE;
+    }
     return getSetting({keys::GpioType, index}, build::pinType(index));
 }
 
 ButtonProvider provider(size_t index) {
+    if (internal::getDynamicButton(index)) {
+        return ButtonProvider::Gpio;
+    }
     return getSetting({keys::Provider, index}, build::provider(index));
 }
 
 debounce_event::types::Mode mode(size_t index) {
+    if (internal::getDynamicButton(index)) {
+        return debounce_event::types::Mode::Pushbutton;
+    }
     return getSetting({keys::Mode, index}, build::mode(index));
 }
 
 debounce_event::types::PinValue defaultValue(size_t index) {
+    if (internal::getDynamicButton(index)) {
+        return debounce_event::types::PinValue::High;
+    }
     return getSetting({keys::DefaultValue, index}, build::defaultValue(index));
 }
 
 debounce_event::types::PinMode pinMode(size_t index) {
+    if (internal::getDynamicButton(index)) {
+        return debounce_event::types::PinMode::InputPullup;
+    }
     return getSetting({keys::PinMode, index}, build::pinMode(index));
 }
 
 ButtonAction release(size_t index) {
+    if (internal::getDynamicButton(index)) {
+        return ButtonAction::None;
+    }
     return getSetting({keys::Release, index}, build::release(index));
 }
 
 ButtonAction press(size_t index) {
+    if (internal::getDynamicButton(index)) {
+        return ButtonAction::Toggle;
+    }
     return getSetting({keys::Press, index}, build::press(index));
 }
 
 ButtonAction click(size_t index) {
+    if (internal::getDynamicButton(index)) {
+        return ButtonAction::None;
+    }
     return getSetting({keys::Click, index}, build::click(index));
 }
 
 ButtonAction doubleClick(size_t index) {
+    if (internal::getDynamicButton(index)) {
+        return ButtonAction::None;
+    }
    return getSetting({keys::DoubleClick, index}, build::doubleClick(index));
 }
 
 ButtonAction tripleClick(size_t index) {
+    if (internal::getDynamicButton(index)) {
+        return ButtonAction::None;
+    }
    return getSetting({keys::TripleClick, index}, build::tripleClick(index));
 }
 
 ButtonAction longClick(size_t index) {
+    if (internal::getDynamicButton(index)) {
+        return ButtonAction::None;
+    }
    return getSetting({keys::LongClick, index}, build::longClick(index));
 }
 
 ButtonAction longLongClick(size_t index) {
+    if (internal::getDynamicButton(index)) {
+        return ButtonAction::None;
+    }
    return getSetting({keys::LongLongClick, index}, build::longLongClick(index));
 }
 
@@ -722,6 +778,9 @@ unsigned long repeatDelay(size_t index) {
 
 [[gnu::unused]]
 size_t relay(size_t index) {
+    if (auto* btn = internal::getDynamicButton(index)) {
+        return btn->relay_id;
+    }
     return getSetting({keys::Relay, index}, build::relay(index));
 }
 
@@ -1597,6 +1656,35 @@ void buttonSetup() {
         auto provider = espurna::button::settings::provider(index);
         if (!_buttonSetupProvider(index, provider)) {
             break;
+        }
+    }
+
+    for (size_t r = 0; r < relayCount(); ++r) {
+        auto pin_num = relayBtnGpio(r);
+        if (pin_num >= 0 && pin_num != GPIO_NONE) {
+            // Check if this GPIO pin is already configured for one of the standard/static buttons
+            bool already_registered = false;
+            for (size_t index = 0; index < espurna::button::internal::buttons.size(); ++index) {
+                if (espurna::button::settings::pin(index) == pin_num) {
+                    already_registered = true;
+                    break;
+                }
+            }
+            if (already_registered) {
+                continue;
+            }
+
+            size_t button_id = espurna::button::internal::buttons.size();
+            espurna::button::internal::DynamicButton dyn_btn {
+                .button_id = button_id,
+                .relay_id = r,
+                .gpio = (unsigned char)pin_num
+            };
+            espurna::button::internal::dynamic_buttons.push_back(dyn_btn);
+
+            if (!_buttonSetupProvider(button_id, ButtonProvider::Gpio)) {
+                espurna::button::internal::dynamic_buttons.pop_back();
+            }
         }
     }
 

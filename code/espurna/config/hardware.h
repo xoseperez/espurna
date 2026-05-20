@@ -89,7 +89,6 @@
     #define BUTTON1_PIN             0
     #define BUTTON1_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
     #define BUTTON1_RELAY           1
-
     // Relays
     #define RELAY1_PIN              16
     #define RELAY1_TYPE             RELAY_TYPE_NORMAL

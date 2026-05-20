@@ -58,6 +58,7 @@ bool relayStatus(size_t id, bool status);
 bool relayToggle(size_t id);
 
 size_t relayCount();
+int relayBtnGpio(size_t index);
 
 // globally used strings for payload parsing & report
 // is customizable, but for every relay at once

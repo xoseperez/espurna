@@ -370,6 +370,19 @@ constexpr unsigned char pin(size_t index) {
     );
 }
 
+constexpr int relayBtnGpio(size_t index) {
+    return (
+        (index == 0) ? RELAY1_BTN_GPIO :
+        (index == 1) ? RELAY2_BTN_GPIO :
+        (index == 2) ? RELAY3_BTN_GPIO :
+        (index == 3) ? RELAY4_BTN_GPIO :
+        (index == 4) ? RELAY5_BTN_GPIO :
+        (index == 5) ? RELAY6_BTN_GPIO :
+        (index == 6) ? RELAY7_BTN_GPIO :
+        (index == 7) ? RELAY8_BTN_GPIO : GPIO_NONE
+    );
+}
+
 constexpr RelayType type(size_t index) {
     return (
         (index == 0) ? RELAY1_TYPE :
@@ -1114,6 +1127,7 @@ PROGMEM_STRING(ResetGpio, "relayResetGpio");
 PROGMEM_STRING(Boot, "relayBoot");
 PROGMEM_STRING(DelayOn, "relayDelayOn");
 PROGMEM_STRING(DelayOff, "relayDelayOff");
+PROGMEM_STRING(RelayBtnGpio, "relayBtnGpio");
 
 #if MQTT_SUPPORT
 PROGMEM_STRING(TopicPub, "relayTopicPub");
@@ -1167,6 +1181,10 @@ unsigned char pin(size_t index) {
 
 unsigned char resetPin(size_t index) {
     return getSetting({keys::ResetGpio, index}, build::resetPin(index));
+}
+
+int relayBtnGpio(size_t index) {
+    return getSetting({keys::RelayBtnGpio, index}, build::relayBtnGpio(index));
 }
 
 RelayBoot bootMode(size_t index) {
@@ -1280,6 +1298,7 @@ ID_VALUE(type, settings::type)
 ID_VALUE(pinType, settings::pinType)
 ID_VALUE(pin, settings::pin)
 ID_VALUE(resetPin, settings::resetPin)
+ID_VALUE(relayBtnGpio, settings::relayBtnGpio)
 ID_VALUE(bootMode, settings::bootMode)
 ID_VALUE(delayOn, settings::delayOn)
 ID_VALUE(delayOff, settings::delayOff)
@@ -1324,6 +1343,7 @@ static constexpr espurna::settings::query::IndexedSetting IndexedSettings[] PROG
     {keys::GpioType, internal::pinType},
     {keys::Gpio, internal::pin},
     {keys::ResetGpio, internal::resetPin},
+    {keys::RelayBtnGpio, internal::relayBtnGpio},
     {keys::Boot, internal::bootMode},
     {keys::DelayOn, internal::delayOn},
     {keys::DelayOff, internal::delayOff},
@@ -2762,6 +2782,10 @@ void _relayScheduleSave(size_t id) {
 
 size_t relayCount() {
     return _relayCount();
+}
+
+int relayBtnGpio(size_t index) {
+    return espurna::relay::settings::relayBtnGpio(index);
 }
 
 PayloadStatus relayParsePayload(espurna::StringView payload) {
