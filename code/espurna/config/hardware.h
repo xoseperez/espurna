@@ -79,6 +79,18 @@
     #define NETBIOS_SUPPORT         0
     #define SSDP_SUPPORT            0
 
+#elif defined(ESP12F_RELAY_X2)
+
+    // Info
+    #define MANUFACTURER            "LC_TECH"
+    #define DEVICE                  "ESP12F_RELAY_X2"
+
+    // Relays
+    #define RELAY1_PIN              4
+    #define RELAY1_TYPE             RELAY_TYPE_NORMAL
+    #define RELAY2_PIN              5
+    #define RELAY2_TYPE             RELAY_TYPE_NORMAL
+
 #elif defined(ESP32_RELAY_X2)
 
     // Info

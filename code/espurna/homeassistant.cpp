@@ -390,11 +390,16 @@ bool Discovery::ready() const {
 class RelayDiscovery : public Discovery {
 public:
     explicit RelayDiscovery(Context& ctx) :
-        _ctx(ctx)
+        _ctx(ctx),
+        _root(nullptr)
     {}
 
     JsonObject& root() {
-        return _ctx.makeObject();
+        if (!_root) {
+            _root = &_ctx.makeObject();
+        }
+
+        return *_root;
     }
 
     bool ready() const override {
@@ -484,6 +489,7 @@ private:
     InfoPtr _makeInfo();
 
     Context& _ctx;
+    JsonObject* _root { nullptr };
 
     InfoPtr _info;
     size_t _index;
@@ -532,11 +538,16 @@ static constexpr char Topic[] = MQTT_TOPIC_LIGHT_JSON;
 class LightDiscovery : public Discovery {
 public:
     explicit LightDiscovery(Context& ctx) :
-        _ctx(ctx)
+        _ctx(ctx),
+        _root(nullptr)
     {}
 
     JsonObject& root() {
-        return _ctx.makeObject();
+        if (!_root) {
+            _root = &_ctx.makeObject();
+        }
+
+        return *_root;
     }
 
     bool ready() const override {
@@ -648,6 +659,7 @@ public:
 
 private:
     Context& _ctx;
+    JsonObject* _root { nullptr };
 
     bool _ready { false };
     size_t _count;
@@ -800,11 +812,16 @@ void receiveLightJson(StringView payload) {
 class SensorDiscovery : public Discovery {
 public:
     explicit SensorDiscovery(Context& ctx) :
-        _ctx(ctx)
+        _ctx(ctx),
+        _root(nullptr)
     {}
 
     JsonObject& root() {
-        return _ctx.makeObject();
+        if (!_root) {
+            _root = &_ctx.makeObject();
+        }
+
+        return *_root;
     }
 
     bool ready() const override {
@@ -901,6 +918,7 @@ public:
 
 private:
     Context& _ctx;
+    JsonObject* _root { nullptr };
 
     sensor::Info _info;
     size_t _count;
@@ -1093,7 +1111,8 @@ public:
 
     DiscoveryTask(Context ctx, State state) :
         _ctx(std::move(ctx)),
-        _state(state)
+        _state(state),
+        _advance(false)
     {}
 
     void add(Entity&& entity) {
@@ -1143,6 +1162,8 @@ private:
     State _state;
     Entities _entities;
 
+    bool _advance { false };
+
     Wait _wait_short { ShortDurations };
     Wait _wait_long { LongDurations };
 };
@@ -1165,6 +1186,17 @@ Result DiscoveryTask::prepare_all() {
 
 template <typename T>
 Result DiscoveryTask::try_send_one(T&& action) {
+    if (_advance) {
+        auto it = _entities.begin();
+        if (it != _entities.end()) {
+            if (!(*it)->next()) {
+                _entities.erase_after(_entities.before_begin());
+                _ctx.reset();
+            }
+        }
+        _advance = false;
+    }
+
     auto it = _entities.begin();
 
     while (it != _entities.end()) {
@@ -1181,12 +1213,7 @@ Result DiscoveryTask::try_send_one(T&& action) {
             : "";
 
         if (action(topic, msg)) {
-            if (!(*it)->next()) {
-                it = _entities.erase_after(
-                    _entities.before_begin());
-                _ctx.reset();
-            }
-
+            _advance = true;
             return next_send();
         }
 
