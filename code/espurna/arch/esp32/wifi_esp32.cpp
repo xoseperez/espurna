@@ -171,6 +171,8 @@ State _wifiStateInit(State state) {
     WiFi.setSleep(false); 
     WiFi.setTxPower(WIFI_POWER_19_5dBm); // Max power to improve handshake success
     
+    WiFi.mode(WIFI_MODE_NULL);
+    WiFi.setHostname(systemHostname().c_str());
     _wifiStartAp();
 
     // Force EU country code for better channel 12/13 support
@@ -215,6 +217,7 @@ State _wifiStateConnect(State state) {
             WiFi.disconnect();
             delay(100); // Small pause for driver to settle
             
+            WiFi.setHostname(systemHostname().c_str());
             WiFi.begin(ssid.c_str(), pass.c_str());
             
             // Re-apply best AP selection settings after begin()
