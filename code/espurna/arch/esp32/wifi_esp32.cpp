@@ -393,6 +393,12 @@ bool onKeyCheck(StringView key, const JsonVariant& value) {
 }
 #endif
 
+void _wifiPublish(espurna::wifi::Event event) {
+    for (auto& callback : internal::callbacks) {
+        callback(event);
+    }
+}
+
 void _wifiSetup() {
     WiFi.onEvent([](arduino_event_id_t event, arduino_event_info_t info) {
         switch (event) {
@@ -409,6 +415,7 @@ void _wifiSetup() {
                 internal::wifi_connected = true;
                 internal::disconnect_triggered = false;
                 DEBUG_MSG_P(PSTR("[WIFI] CONNECTED! IP: %s\n"), WiFi.localIP().toString().c_str());
+                _wifiPublish(espurna::wifi::Event::StationConnected);
                 break;
             case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
                 {
@@ -418,6 +425,7 @@ void _wifiSetup() {
                     uint8_t* b = info.wifi_sta_disconnected.bssid;
                     DEBUG_MSG_P(PSTR("[WIFI] DISCONNECTED! Reason: %d, BSSID: %02X:%02X:%02X:%02X:%02X:%02X\n"), 
                         internal::last_disconnect_reason, b[0], b[1], b[2], b[3], b[4], b[5]);
+                    _wifiPublish(espurna::wifi::Event::StationDisconnected);
                 }
                 break;
         }
