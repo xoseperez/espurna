@@ -5,6 +5,8 @@ Part of the SYSTEM module for ESP32
 */
 
 #include <Arduino.h>
+#include <vector>
+#include <algorithm>
 
 #include <esp_system.h>
 #include <esp_task_wdt.h>
@@ -37,18 +39,250 @@ namespace load_average { void loop(); unsigned long value(); }
 // --- SETTINGS KEYS ---
 namespace espurna {
 namespace heartbeat {
+namespace {
+
+namespace build {
+
+constexpr Mode mode() {
+    return HEARTBEAT_MODE;
+}
+
+constexpr espurna::duration::Seconds interval() {
+    return espurna::duration::Seconds { HEARTBEAT_INTERVAL };
+}
+
+constexpr Mask value() {
+    return (Report::Status * (HEARTBEAT_REPORT_STATUS))
+        | (Report::Ssid * (HEARTBEAT_REPORT_SSID))
+        | (Report::Ip * (HEARTBEAT_REPORT_IP))
+        | (Report::Mac * (HEARTBEAT_REPORT_MAC))
+        | (Report::Rssi * (HEARTBEAT_REPORT_RSSI))
+        | (Report::Uptime * (HEARTBEAT_REPORT_UPTIME))
+        | (Report::Datetime * (HEARTBEAT_REPORT_DATETIME))
+        | (Report::Freeheap * (HEARTBEAT_REPORT_FREEHEAP))
+        | (Report::Vcc * (HEARTBEAT_REPORT_VCC))
+        | (Report::Relay * (HEARTBEAT_REPORT_RELAY))
+        | (Report::Light * (HEARTBEAT_REPORT_LIGHT))
+        | (Report::Hostname * (HEARTBEAT_REPORT_HOSTNAME))
+        | (Report::Description * (HEARTBEAT_REPORT_DESCRIPTION))
+        | (Report::App * (HEARTBEAT_REPORT_APP))
+        | (Report::Version * (HEARTBEAT_REPORT_VERSION))
+        | (Report::Board * (HEARTBEAT_REPORT_BOARD))
+        | (Report::Loadavg * (HEARTBEAT_REPORT_LOADAVG))
+        | (Report::Interval * (HEARTBEAT_REPORT_INTERVAL))
+        | (Report::Range * (HEARTBEAT_REPORT_RANGE))
+        | (Report::RemoteTemp * (HEARTBEAT_REPORT_REMOTE_TEMP))
+        | (Report::Bssid * (HEARTBEAT_REPORT_BSSID));
+}
+
+} // namespace build
+
 namespace settings {
-    namespace keys {
-        PROGMEM_STRING(Mode, "hbMode");
-        PROGMEM_STRING(Interval, "hbInterval");
-        PROGMEM_STRING(Report, "hbReport");
+namespace keys {
+
+PROGMEM_STRING(Mode, "hbMode");
+PROGMEM_STRING(Interval, "hbInterval");
+PROGMEM_STRING(Report, "hbReport");
+
+} // namespace keys
+
+Mode mode() {
+    return getSetting(keys::Mode, build::mode());
+}
+
+espurna::duration::Seconds interval() {
+    return getSetting(keys::Interval, build::interval());
+}
+
+Mask value() {
+    static constexpr Mask MaskAll { 1 };
+
+    auto value = getSetting(keys::Report, build::value());
+    if (value == MaskAll) {
+        value = std::numeric_limits<Mask>::max();
     }
-    espurna::duration::Seconds interval() { return espurna::duration::Seconds(::getSetting(keys::Interval, 30u)); }
-    espurna::heartbeat::Mode mode() { return static_cast<espurna::heartbeat::Mode>(::getSetting(keys::Mode, 2)); }
-    uint32_t value() { return ::getSetting(keys::Report, 0xFFFFFFFFu); }
+
+    return value;
 }
+
+} // namespace settings
+
+using TimeSource = espurna::time::CoreClock;
+
+struct CallbackRunner {
+    Callback callback;
+    Mode mode;
+    TimeSource::duration interval;
+    TimeSource::time_point last;
+};
+
+namespace internal {
+
+timer::SystemTimer timer;
+std::vector<CallbackRunner> runners;
+bool scheduled { false };
+
+} // namespace internal
+
+void schedule() {
+    internal::scheduled = true;
 }
+
+bool scheduled() {
+    if (internal::scheduled) {
+        internal::scheduled = false;
+        return true;
+    }
+
+    return false;
 }
+
+void run() {
+    static constexpr duration::Milliseconds BeatMin { duration::Seconds(1) };
+    static constexpr duration::Milliseconds BeatMax { BeatMin * 10 };
+
+    auto next = duration::Milliseconds(settings::interval());
+
+    if (internal::runners.size()) {
+        auto mask = settings::value();
+
+        auto it = internal::runners.begin();
+        auto end = internal::runners.end();
+
+        auto ts = TimeSource::now();
+        while (it != end) {
+            auto diff = ts - (*it).last;
+            if (diff > (*it).interval) {
+                auto result = (*it).callback(mask);
+                if (result && ((*it).mode == Mode::Once)) {
+                    it = internal::runners.erase(it);
+                    end = internal::runners.end();
+                    continue;
+                }
+
+                if (result) {
+                    (*it).last = ts;
+                } else if (diff < ((*it).interval + BeatMax)) {
+                    next = BeatMin;
+                }
+
+                next = std::min(next, (*it).interval);
+            } else {
+                next = std::min(next, (*it).interval - diff);
+            }
+            ++it;
+        }
+    }
+
+    if (next < BeatMin) {
+        next = BeatMin;
+    }
+
+    internal::timer.once(next, schedule);
+}
+
+void stop(Callback callback) {
+    auto found = std::remove_if(
+        internal::runners.begin(),
+        internal::runners.end(),
+        [&](const CallbackRunner& runner) {
+            return callback == runner.callback;
+        });
+    internal::runners.erase(found, internal::runners.end());
+}
+
+void push(Callback callback, Mode mode, duration::Seconds interval) {
+    if (mode == Mode::None) {
+        return;
+    }
+
+    auto msec = duration::Milliseconds(interval);
+    if ((mode != Mode::Once) && !msec.count()) {
+        return;
+    }
+
+    auto offset = TimeSource::now() - TimeSource::duration(1);
+    internal::runners.push_back({
+        callback, mode,
+        msec,
+        offset - msec
+    });
+
+    internal::timer.stop();
+    schedule();
+}
+
+[[gnu::unused]]
+void push_once(Callback callback) {
+    push(callback, Mode::Once, espurna::duration::Seconds::min());
+}
+
+duration::Seconds interval() {
+    TimeSource::duration result { settings::interval() };
+
+    for (auto& runner : internal::runners) {
+        if (runner.mode != Mode::Once) {
+            result = std::min(result, runner.interval);
+        }
+    }
+
+    return std::chrono::duration_cast<duration::Seconds>(result);
+}
+
+void reschedule() {
+    static constexpr TimeSource::duration Offset { 1 };
+
+    const auto ts = TimeSource::now();
+    for (auto& runner : internal::runners) {
+        runner.last = ts - runner.interval - Offset;
+    }
+
+    schedule();
+}
+
+void loop() {
+    if (scheduled()) {
+        run();
+    }
+}
+
+void init() {
+#if DEBUG_SUPPORT
+    push_once([](Mask) {
+        const auto mode = settings::mode();
+        if (mode != Mode::None) {
+            DEBUG_MSG_P(PSTR("[MAIN] Heartbeat \"%s\", every %u (seconds)\n"),
+                espurna::settings::internal::serialize(mode).c_str(),
+                settings::interval().count());
+        } else {
+            DEBUG_MSG_P(PSTR("[MAIN] Heartbeat disabled\n"));
+        }
+        return true;
+    });
+#endif
+    schedule();
+}
+
+} // namespace
+
+espurna::duration::Milliseconds currentIntervalMs() {
+    return settings::interval();
+}
+
+espurna::duration::Seconds currentInterval() {
+    return settings::interval();
+}
+
+Mask currentValue() {
+    return settings::value();
+}
+
+Mode currentMode() {
+    return settings::mode();
+}
+
+} // namespace heartbeat
+} // namespace espurna
 
 // --- SYSTEM API ---
 
@@ -134,12 +368,32 @@ CustomResetReason customResetReason() { return CustomResetReason::None; }
 
 void systemBeforeSleep(SleepCallback) {}
 void systemAfterSleep(SleepCallback) {}
-void systemStopHeartbeat(espurna::heartbeat::Callback) {}
-void systemScheduleHeartbeat() {}
-void systemHeartbeat(espurna::heartbeat::Callback, espurna::heartbeat::Mode, espurna::duration::Seconds) {}
-void systemHeartbeat(espurna::heartbeat::Callback, espurna::heartbeat::Mode) {}
-void systemHeartbeat(espurna::heartbeat::Callback) {}
-espurna::duration::Seconds systemHeartbeatInterval() { return espurna::duration::Seconds(30); }
+void systemStopHeartbeat(espurna::heartbeat::Callback callback) {
+    espurna::heartbeat::stop(callback);
+}
+
+void systemHeartbeat(espurna::heartbeat::Callback callback, espurna::heartbeat::Mode mode, espurna::duration::Seconds interval) {
+    espurna::heartbeat::push(callback, mode, interval);
+}
+
+void systemHeartbeat(espurna::heartbeat::Callback callback, espurna::heartbeat::Mode mode) {
+    espurna::heartbeat::push(callback, mode,
+        espurna::heartbeat::settings::interval());
+}
+
+void systemHeartbeat(espurna::heartbeat::Callback callback) {
+    espurna::heartbeat::push(callback,
+        espurna::heartbeat::settings::mode(),
+        espurna::heartbeat::settings::interval());
+}
+
+espurna::duration::Seconds systemHeartbeatInterval() {
+    return espurna::heartbeat::interval();
+}
+
+void systemScheduleHeartbeat() {
+    espurna::heartbeat::reschedule();
+}
 
 [[noreturn]] void forceEraseSDKConfig() { esp_restart(); while(1); }
 
@@ -270,20 +524,44 @@ void systemSetup() {
 
     espurnaRegisterLoop([]() {
         load_average::loop();
+        espurna::heartbeat::loop();
     });
+    espurna::heartbeat::init();
 }
 
 // --- Other stubs ---
 namespace espurna {
     bool ReadyFlag::wait(duration::Milliseconds) { return true; }
     void ReadyFlag::stop() {}
-    namespace heartbeat {
-        Mode currentMode() { return Mode::None; }
-        duration::Seconds currentInterval() { return duration::Seconds(30); }
-    }
+
+    namespace system {
+    namespace settings {
+    namespace options {
+
+    PROGMEM_STRING(None, "none");
+    PROGMEM_STRING(Once, "once");
+    PROGMEM_STRING(Repeat, "repeat");
+
+    template <typename T>
+    using Enumeration = espurna::settings::options::Enumeration<T>;
+
+    static constexpr Enumeration<heartbeat::Mode> HeartbeatModeOptions[] PROGMEM {
+        {heartbeat::Mode::None, None},
+        {heartbeat::Mode::Once, Once},
+        {heartbeat::Mode::Repeat, Repeat},
+    };
+
+    } // namespace options
+    } // namespace settings
+    } // namespace system
+
     namespace settings { namespace internal {
-        template <> heartbeat::Mode convert(const String& v) { return heartbeat::Mode::None; }
-        String serialize(heartbeat::Mode v) { return "0"; }
+        template <> heartbeat::Mode convert(const String& value) {
+            return convert(system::settings::options::HeartbeatModeOptions, value, heartbeat::Mode::Repeat);
+        }
+        String serialize(heartbeat::Mode mode) {
+            return serialize(system::settings::options::HeartbeatModeOptions, mode);
+        }
         template <> GpioType convert(const String& v) { return static_cast<GpioType>(v.toInt()); }
         String serialize(GpioType v) { return String(static_cast<int>(v)); }
         String serialize(std::array<unsigned char, 6u> mac) { return hexEncode(mac); }
