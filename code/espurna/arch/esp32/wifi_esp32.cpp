@@ -439,7 +439,12 @@ void _wifiSetup() {
 #endif
 
     espurnaRegisterReload([]() {
-        action(Action::TurnOn);
+        if (WiFi.status() != WL_CONNECTED) {
+            DEBUG_MSG_P(PSTR("[WIFI] Reload: WiFi not connected, initiating connection...\n"));
+            action(Action::TurnOn);
+        } else {
+            DEBUG_MSG_P(PSTR("[WIFI] Reload: WiFi already connected, skipping reconnect\n"));
+        }
     });
 
     espurnaRegisterLoop([]() {

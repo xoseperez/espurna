@@ -394,11 +394,7 @@ public:
     {}
 
     JsonObject& root() {
-        if (!_root) {
-            _root = &_ctx.makeObject();
-        }
-
-        return *_root;
+        return _ctx.makeObject();
     }
 
     bool ready() const override {
@@ -488,7 +484,6 @@ private:
     InfoPtr _makeInfo();
 
     Context& _ctx;
-    JsonObject* _root { nullptr };
 
     InfoPtr _info;
     size_t _index;
@@ -541,11 +536,7 @@ public:
     {}
 
     JsonObject& root() {
-        if (!_root) {
-            _root = &_ctx.makeObject();
-        }
-
-        return *_root;
+        return _ctx.makeObject();
     }
 
     bool ready() const override {
@@ -657,7 +648,6 @@ public:
 
 private:
     Context& _ctx;
-    JsonObject* _root { nullptr };
 
     bool _ready { false };
     size_t _count;
@@ -814,11 +804,7 @@ public:
     {}
 
     JsonObject& root() {
-        if (!_root) {
-            _root = &_ctx.makeObject();
-        }
-
-        return *_root;
+        return _ctx.makeObject();
     }
 
     bool ready() const override {
@@ -915,7 +901,6 @@ public:
 
 private:
     Context& _ctx;
-    JsonObject* _root { nullptr };
 
     sensor::Info _info;
     size_t _count;
