@@ -120,7 +120,7 @@ namespace internal {
 
 timer::SystemTimer timer;
 std::vector<CallbackRunner> runners;
-bool scheduled { false };
+volatile bool scheduled { false };
 
 } // namespace internal
 
@@ -531,8 +531,51 @@ void systemSetup() {
 
 // --- Other stubs ---
 namespace espurna {
-    bool ReadyFlag::wait(duration::Milliseconds) { return true; }
-    void ReadyFlag::stop() {}
+    bool ReadyFlag::wait(duration::Milliseconds interval) {
+        if (_ready) {
+            _ready = false;
+            _timer.schedule_once(
+                interval,
+                [&]() {
+                    _ready = true;
+                });
+
+            return true;
+        }
+
+        return false;
+    }
+
+    void ReadyFlag::stop() {
+        _timer.stop();
+        _ready = true;
+    }
+
+    constexpr auto PolledReadFlagHalfInterval = time::SystemClock::duration::max() / 2;
+
+    bool PolledReadyFlag::wait(duration::Milliseconds interval) {
+        if (_ready) {
+            const auto now = time::SystemClock::now();
+            _ready = false;
+            _until = now + interval;
+            return true;
+        }
+
+        return false;
+    }
+
+    void PolledReadyFlag::stop() {
+        _ready = true;
+    }
+
+    bool PolledReadyFlag::ready() {
+        if (!_ready) {
+            const auto now = time::SystemClock::now();
+            _ready = (now - _until) < PolledReadFlagHalfInterval;
+        }
+
+        return _ready;
+    }
 
     namespace system {
     namespace settings {
