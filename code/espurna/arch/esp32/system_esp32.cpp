@@ -5,6 +5,7 @@ Part of the SYSTEM module for ESP32
 */
 
 #include <Arduino.h>
+#include <atomic>
 #include <vector>
 #include <algorithm>
 
@@ -120,21 +121,16 @@ namespace internal {
 
 timer::SystemTimer timer;
 std::vector<CallbackRunner> runners;
-volatile bool scheduled { false };
+std::atomic<bool> scheduled { false };
 
 } // namespace internal
 
 void schedule() {
-    internal::scheduled = true;
+    internal::scheduled.store(true, std::memory_order_release);
 }
 
 bool scheduled() {
-    if (internal::scheduled) {
-        internal::scheduled = false;
-        return true;
-    }
-
-    return false;
+    return internal::scheduled.exchange(false, std::memory_order_acq_rel);
 }
 
 void run() {
@@ -348,23 +344,73 @@ void systemForceStable() {}
 void systemForceUnstable() {}
 uint8_t systemStabilityCounter() { return 0; }
 
-void prepareReset(CustomResetReason reason) { esp_restart(); }
-void factoryReset() { ::resetSettings(); esp_restart(); }
+namespace {
+// Custom reset reason is stored in byte 1 of Rtcmem->sys, matching the layout
+// the ESP8266 path uses. Byte 0 holds the stability counter (unused on ESP32 today),
+// bytes 2/3 are reserved.
+constexpr uint32_t ResetReasonMask  { 0x0000FFFFu };
+constexpr uint32_t ResetReasonByte  { 0x0000FF00u };
+constexpr uint32_t ResetReasonShift { 8u };
+
+void persistCustomResetReason(CustomResetReason reason) {
+    if (!Rtcmem) return;
+    uint32_t sys = Rtcmem->sys;
+    sys = (sys & ~ResetReasonByte)
+        | ((static_cast<uint32_t>(reason) << ResetReasonShift) & ResetReasonByte);
+    Rtcmem->sys = sys;
+}
+} // namespace
+
+void prepareReset(CustomResetReason reason) {
+    persistCustomResetReason(reason);
+    esp_restart();
+}
+void factoryReset() {
+    persistCustomResetReason(CustomResetReason::Factory);
+    ::resetSettings();
+    esp_restart();
+}
 void deferredReset(espurna::duration::Milliseconds delay, CustomResetReason reason) {
+    persistCustomResetReason(reason);
     static espurna::timer::SystemTimer timer;
     timer.once(delay, []() { esp_restart(); });
 }
 
 String customResetReasonToPayload(CustomResetReason reason) {
     switch (reason) {
+        case CustomResetReason::Button: return "button";
         case CustomResetReason::Factory: return "factory";
-        case CustomResetReason::Terminal: return "terminal";
+        case CustomResetReason::Hardware: return "hardware";
+        case CustomResetReason::Mqtt: return "mqtt";
         case CustomResetReason::Ota: return "ota";
-        default: return "unknown";
+        case CustomResetReason::Rpc: return "rpc";
+        case CustomResetReason::Rule: return "rule";
+        case CustomResetReason::Scheduler: return "scheduler";
+        case CustomResetReason::Terminal: return "terminal";
+        case CustomResetReason::Web: return "web";
+        case CustomResetReason::Stability: return "stability";
+        case CustomResetReason::None: return "unknown";
     }
+    return "unknown";
 }
-void customResetReason(CustomResetReason reason) {}
-CustomResetReason customResetReason() { return CustomResetReason::None; }
+void customResetReason(CustomResetReason reason) {
+    persistCustomResetReason(reason);
+}
+CustomResetReason customResetReason() {
+    // Cached one-shot — first read returns the persisted value, then prunes it
+    // so subsequent boots without an explicit cause report None.
+    static const CustomResetReason cached = ([]() {
+        if (!rtcmemStatus() || !Rtcmem) {
+            return CustomResetReason::None;
+        }
+        const uint32_t sys = Rtcmem->sys;
+        const auto value = static_cast<CustomResetReason>(
+            (sys & ResetReasonByte) >> ResetReasonShift);
+        Rtcmem->sys = sys & ~ResetReasonByte;
+        return value;
+    })();
+    return cached;
+}
 
 void systemBeforeSleep(SleepCallback) {}
 void systemAfterSleep(SleepCallback) {}
@@ -611,18 +657,15 @@ namespace espurna {
         template <> StringSumHelper convert(const String& v) { return StringSumHelper(v); }
     }}
     namespace time {
-        bool blockingDelay(time::CoreClock::duration t) { ::delay(std::chrono::duration_cast<std::chrono::milliseconds>(t).count()); return true; }
+        // blockingDelay(duration) is defined in compat_esp32.cpp.
         bool tryDelay(time::CoreClock::time_point s, time::CoreClock::duration t, time::CoreClock::duration i) { return true; }
     }
 }
 bool instantLightSleep() { return true; }
 bool instantLightSleep(std::chrono::microseconds) { return true; }
 bool instantDeepSleep(std::chrono::microseconds) { esp_deep_sleep(0); return true; }
-void espurnaRegisterOnce(espurna::Callback cb) { cb(); }
-espurna::duration::Milliseconds espurnaLoopDelay() { return espurna::duration::Milliseconds(1); }
-void espurnaLoopDelay(espurna::duration::Milliseconds) {}
-void migrateVersion(void (*callback)(int)) {}
-void delSettingPrefix(espurna::settings::query::StringViewIterator) {}
+// espurnaRegisterOnce / espurnaLoopDelay defined in main.cpp.
+// migrateVersion / delSettingPrefix defined in migrate.cpp.
 String getSetting(espurna::StringView key) { return ::getSetting(key.toString()); }
 bool delSetting(espurna::StringView key) { return ::delSetting(key.toString()); }
 bool hasSetting(espurna::StringView key) { return ::hasSetting(key.toString()); }

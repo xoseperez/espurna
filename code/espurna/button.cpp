@@ -673,7 +673,9 @@ unsigned char pin(size_t index) {
 
 GpioType pinType(size_t index) {
     if (internal::getDynamicButton(index)) {
-        return GPIO_TYPE_NONE;
+        // Dynamic buttons are always backed by on-chip GPIO; returning None
+        // would route through gpioBase(None) == nullptr and silently skip provider setup.
+        return GpioType::Hardware;
     }
     return getSetting({keys::GpioType, index}, build::pinType(index));
 }
@@ -1683,6 +1685,8 @@ void buttonSetup() {
             espurna::button::internal::dynamic_buttons.push_back(dyn_btn);
 
             if (!_buttonSetupProvider(button_id, ButtonProvider::Gpio)) {
+                DEBUG_MSG_P(PSTR("[BUTTON] relayBtnGpio%u=%d: provider setup failed (pin locked or out of range)\n"),
+                    (unsigned)r, (int)pin_num);
                 espurna::button::internal::dynamic_buttons.pop_back();
             }
         }

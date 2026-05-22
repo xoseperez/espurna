@@ -503,6 +503,9 @@ uint8_t update;
 
 bool add(size_t index) {
     const auto pin = settings::pin(index);
+    if (!gpioValidForOutput(pin)) {
+        return false;
+    }
     if (gpioLock(pin)) {
         internal::leds.emplace_back(pin,
                 settings::inverse(index), settings::mode(index));

@@ -99,7 +99,23 @@ public:
         return pin < Pins;
     }
 
+    // Classic ESP32 wiring constraints:
+    //   GPIO 6..11: bonded to the on-chip SPI flash; driving them = boot crash.
+    //   GPIO 20, 24, 28..31: not bonded on most packages.
+    //   GPIO 34..39: input-only, no output driver and no pull resistors.
+    // Strapping pins (0, 2, 5, 12, 15) remain valid for output — they only
+    // need attention at reset time.
+    bool validForOutput(unsigned char pin) const override {
+        if (!valid(pin)) return false;
+        if (pin >= 6 && pin <= 11) return false;
+        if (pin >= 34) return false;
+        if (pin == 20 || pin == 24) return false;
+        if (pin >= 28 && pin <= 31) return false;
+        return true;
+    }
+
     bool lock(unsigned char pin) const override {
+        if (pin >= Pins) return false;
         return _locked[pin];
     }
 

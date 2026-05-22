@@ -7,6 +7,7 @@
 #include <soc/rtc_cntl_reg.h>
 
 #include <algorithm>
+#include <atomic>
 #include <vector>
 #include <list>
 #include <queue>
@@ -52,9 +53,15 @@ enum class State {
 
 namespace internal {
     bool enabled { false };
-    bool wifi_connected = false;
-    bool disconnect_triggered = false;
-    int last_disconnect_reason = 0;
+    std::atomic<bool> wifi_connected { false };
+    std::atomic<bool> disconnect_triggered { false };
+    std::atomic<int> last_disconnect_reason { 0 };
+
+    // Set from WiFi system task, consumed by loop task in _wifiLoop().
+    // Keeps registered callbacks (MQTT/NTP/Alexa/mDNS) off the WiFi task stack.
+    std::atomic<bool> pending_connect_publish { false };
+    std::atomic<bool> pending_disconnect_publish { false };
+
     ActionsQueue actions;
 
     State state { State::Boot };
@@ -163,8 +170,12 @@ void _wifiStartAp() {
 }
 
 State _wifiStateInit(State state) {
-    // Disable Brownout detector to prevent reboots during WiFi power spikes
+#if WIFI_DISABLE_BROWNOUT_DETECTOR
+    // Opt-in: disables hardware brownout protection. Leaving this on can
+    // protect against TX-current spikes on weak PSUs but also masks real
+    // brownouts and risks flash corruption mid-write.
     WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
+#endif
 
     WiFi.persistent(false);
     WiFi.setAutoReconnect(false); 
@@ -213,7 +224,7 @@ State _wifiStateConnect(State state) {
                 WiFi.config(ipAddr, gwAddr, maskAddr, dnsAddr);
             }
 
-            internal::disconnect_triggered = false; // Reset flag before starting
+            internal::disconnect_triggered.store(false, std::memory_order_relaxed); // Reset flag before starting
             WiFi.disconnect();
             delay(100); // Small pause for driver to settle
             
@@ -239,21 +250,20 @@ State _wifiStateConnect(State state) {
 }
 
 State _wifiStateWaitConnected(State state) {
-    if (WiFi.status() == WL_CONNECTED || internal::wifi_connected) {
+    if (WiFi.status() == WL_CONNECTED || internal::wifi_connected.load(std::memory_order_acquire)) {
         DEBUG_MSG_P(PSTR("[WIFI] Successfully connected!\n"));
         return State::Connected;
     }
-    
+
     // If driver explicitly told us it failed
-    if (internal::disconnect_triggered) {
-        internal::disconnect_triggered = false;
-        
+    if (internal::disconnect_triggered.exchange(false, std::memory_order_acq_rel)) {
         // Ignore disconnects that happen too soon after begin (likely transient or from disconnect() call)
         if (millis() - internal::last_connect < 500) {
             return state;
         }
 
-        DEBUG_MSG_P(PSTR("[WIFI] Connection failed (Reason: %d), retrying in 2s...\n"), internal::last_disconnect_reason);
+        DEBUG_MSG_P(PSTR("[WIFI] Connection failed (Reason: %d), retrying in 2s...\n"),
+            internal::last_disconnect_reason.load(std::memory_order_relaxed));
         internal::last_connect = millis() + 2000; // Small delay before next attempt
         return State::WaitConnected;
     }
@@ -289,7 +299,19 @@ State _wifiStateFallback(State state) {
     return State::Idle;
 }
 
+void _wifiPublish(espurna::wifi::Event event);
+
 void _wifiLoop() {
+    // Drain events that were latched by the WiFi system task. We dispatch
+    // here so registered callbacks (MQTT publish, mDNS, Alexa, etc.) run on
+    // the loop task with its larger stack and without racing internal state.
+    if (internal::pending_connect_publish.exchange(false, std::memory_order_acq_rel)) {
+        _wifiPublish(espurna::wifi::Event::StationConnected);
+    }
+    if (internal::pending_disconnect_publish.exchange(false, std::memory_order_acq_rel)) {
+        _wifiPublish(espurna::wifi::Event::StationDisconnected);
+    }
+
     auto next_state = internal::state;
 
     next_state = handle_action(internal::state, [](State state, Action action) {
@@ -415,20 +437,21 @@ void _wifiSetup() {
                 DEBUG_MSG_P(PSTR("[WIFI] Station connected\n"));
                 break;
             case ARDUINO_EVENT_WIFI_STA_GOT_IP:
-                internal::wifi_connected = true;
-                internal::disconnect_triggered = false;
+                internal::wifi_connected.store(true, std::memory_order_release);
+                internal::disconnect_triggered.store(false, std::memory_order_relaxed);
+                internal::pending_connect_publish.store(true, std::memory_order_release);
                 DEBUG_MSG_P(PSTR("[WIFI] CONNECTED! IP: %s\n"), WiFi.localIP().toString().c_str());
-                _wifiPublish(espurna::wifi::Event::StationConnected);
                 break;
             case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
                 {
-                    internal::wifi_connected = false;
-                    internal::disconnect_triggered = true;
-                    internal::last_disconnect_reason = (int)info.wifi_sta_disconnected.reason;
+                    const int reason = (int)info.wifi_sta_disconnected.reason;
+                    internal::wifi_connected.store(false, std::memory_order_relaxed);
+                    internal::last_disconnect_reason.store(reason, std::memory_order_relaxed);
+                    internal::disconnect_triggered.store(true, std::memory_order_release);
+                    internal::pending_disconnect_publish.store(true, std::memory_order_release);
                     uint8_t* b = info.wifi_sta_disconnected.bssid;
-                    DEBUG_MSG_P(PSTR("[WIFI] DISCONNECTED! Reason: %d, BSSID: %02X:%02X:%02X:%02X:%02X:%02X\n"), 
-                        internal::last_disconnect_reason, b[0], b[1], b[2], b[3], b[4], b[5]);
-                    _wifiPublish(espurna::wifi::Event::StationDisconnected);
+                    DEBUG_MSG_P(PSTR("[WIFI] DISCONNECTED! Reason: %d, BSSID: %02X:%02X:%02X:%02X:%02X:%02X\n"),
+                        reason, b[0], b[1], b[2], b[3], b[4], b[5]);
                 }
                 break;
         }
@@ -461,7 +484,10 @@ void _wifiSetup() {
 
 // ГЛОБАЛЬНЫЕ ФУНКЦИИ
 void wifiReload() { espurna::wifi::action(espurna::wifi::Action::TurnOn); }
-void wifiDisconnect() { espurna::wifi::action(espurna::wifi::Action::TurnOn); }
+void wifiDisconnect() {
+    espurna::wifi::internal::wifi_connected.store(false, std::memory_order_relaxed);
+    WiFi.disconnect();
+}
 void wifiRegister(espurna::wifi::EventCallback callback) { espurna::wifi::internal::callbacks.push_back(callback); }
 bool wifiConnected() { return WiFi.status() == WL_CONNECTED; }
 void wifiSetup() { espurna::wifi::_wifiSetup(); }

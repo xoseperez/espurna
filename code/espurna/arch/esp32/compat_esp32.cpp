@@ -39,9 +39,15 @@ void SystemTimer::repeat(Duration delay, Callback callback) {
 }
 
 void SystemTimer::start(Duration delay, Callback callback, bool repeat) {
+    // Disarm first so any in-flight dispatch finishes before we swap _callback.
+    // Ticker::detach() on ESP32 invokes esp_timer_stop+esp_timer_delete, which
+    // blocks until a currently-running callback returns — preventing torn reads
+    // of std::function state when start() reconfigures a live timer.
+    auto* timer = _timer.get();
+    timer->detach();
+
     _callback = std::move(callback);
     _repeat = repeat;
-    auto* timer = _timer.get();
     uint32_t ms = std::chrono::duration_cast<std::chrono::milliseconds>(delay).count();
     if (_repeat) {
         timer->attach_ms(ms, static_callback, this);

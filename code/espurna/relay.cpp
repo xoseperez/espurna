@@ -4029,6 +4029,17 @@ std::unique_ptr<GpioProvider> _relayGpioProvider(size_t index, RelayType type) {
         return nullptr;
     }
 
+    if (!gpioValidForOutput(*base, cfg.main)) {
+        DEBUG_MSG_P(PSTR("[RELAY] #%u: GPIO%u is not valid for output (flash-reserved or input-only)\n"),
+            (unsigned)index, (unsigned)cfg.main);
+        return nullptr;
+    }
+    if (cfg.reset != GPIO_NONE && !gpioValidForOutput(*base, cfg.reset)) {
+        DEBUG_MSG_P(PSTR("[RELAY] #%u: reset GPIO%u is not valid for output\n"),
+            (unsigned)index, (unsigned)cfg.reset);
+        return nullptr;
+    }
+
     auto main = gpioRegister(*base, cfg.main);
     if (!main) {
         return nullptr;

@@ -9,6 +9,8 @@ RTMEM MODULE FOR ESP32
 
 #if defined(ESP32)
 
+#include <esp_system.h>
+
 // Safe static buffer for ESP32, placed in RTC memory to persist across reboots
 RTC_NOINIT_ATTR static RtcmemData _rtcmem_storage;
 volatile RtcmemData* Rtcmem = &_rtcmem_storage;
@@ -26,7 +28,19 @@ void init() {
     Rtcmem->magic = RTCMEM_MAGIC;
 }
 
+// Treat RTC_NOINIT memory as dirty after cold boot, RST-pin, or brownout —
+// matches the ESP8266 path which discards REASON_EXT_SYS_RST/REASON_DEFAULT_RST.
+// RTC_NOINIT_ATTR retains values only across SW/WDT/panic resets and deep sleep.
 bool status() {
+    switch (esp_reset_reason()) {
+        case ESP_RST_POWERON:
+        case ESP_RST_EXT:
+        case ESP_RST_BROWNOUT:
+        case ESP_RST_UNKNOWN:
+            return false;
+        default:
+            break;
+    }
     return Rtcmem && (Rtcmem->magic == RTCMEM_MAGIC);
 }
 

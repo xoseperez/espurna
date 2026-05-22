@@ -155,14 +155,16 @@ function tasmotaToEspurna(tmpl) {
 
             case 'button':
                 settings[`btnGpio${espurnaIndex}`] = gpioPin.toString();
-                settings[`btnConfig${espurnaIndex}`] = inverted
-                    ? '2'  // BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
-                    : '6'; // BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+                settings[`btnMode${espurnaIndex}`] = 'pushbutton';
+                // Tasmota "inverted" button: idle-high (active-low), external pull-up wired.
+                // Non-inverted: idle-high but rely on MCU internal pull-up.
+                settings[`btnDefVal${espurnaIndex}`] = 'high';
+                settings[`btnPinMode${espurnaIndex}`] = inverted ? 'default' : 'pull-up';
                 break;
 
             case 'led':
                 settings[`ledGpio${espurnaIndex}`] = gpioPin.toString();
-                settings[`ledInverse${espurnaIndex}`] = inverted ? '1' : '0';
+                settings[`ledInv${espurnaIndex}`] = inverted ? '1' : '0';
                 break;
         }
     });

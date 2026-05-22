@@ -292,30 +292,47 @@ void update() {
 }
 
 bool init(const uint8_t* begin, const uint8_t* end) {
-    if (internal::channels.empty()) {
-        uint8_t next_channel = 0;
-        for (auto it = begin; it != end; ++it) {
-            const auto pin = *it;
-            if (gpioLocked(pin)) {
-                internal::channels.clear();
-                return false;
-            }
-
-            ledcSetup(next_channel, settings::frequency(), internal::resolution);
-            ledcAttachPin(pin, next_channel);
-            
-            internal::channels.push_back(Channel{
-                .pin = pin,
-                .channel = next_channel,
-                .duty = 0,
-            });
-            
-            gpioLock(pin);
-            next_channel++;
-        }
-        return !internal::channels.empty();
+    if (!internal::channels.empty()) {
+        return false;
     }
-    return false;
+
+    // SOC_LEDC_CHANNEL_NUM: classic ESP32 = 16, S2/S3 = 8, C3 = 6.
+    // We bail before touching the peripheral so a misconfigured pin list
+    // cannot half-claim channels and leak them.
+    const size_t requested = static_cast<size_t>(end - begin);
+    if (requested == 0 || requested > SOC_LEDC_CHANNEL_NUM) {
+        DEBUG_MSG_P(PSTR("[PWM] ESP32 LEDC channel budget %u, requested %u\n"),
+            (unsigned)SOC_LEDC_CHANNEL_NUM, (unsigned)requested);
+        return false;
+    }
+
+    for (auto it = begin; it != end; ++it) {
+        if (!gpioValidForOutput(*it)) {
+            DEBUG_MSG_P(PSTR("[PWM] GPIO%u is not valid for output\n"), (unsigned)*it);
+            return false;
+        }
+        if (gpioLocked(*it)) {
+            return false;
+        }
+    }
+
+    const auto freq = settings::frequency();
+    uint8_t next_channel = 0;
+    for (auto it = begin; it != end; ++it) {
+        const auto pin = *it;
+        ledcSetup(next_channel, freq, internal::resolution);
+        ledcAttachPin(pin, next_channel);
+        gpioLock(pin);
+
+        internal::channels.push_back(Channel{
+            .pin = pin,
+            .channel = next_channel,
+            .duty = 0,
+        });
+        ++next_channel;
+    }
+
+    return true;
 }
 
 void duty(size_t channel, uint32_t value) {

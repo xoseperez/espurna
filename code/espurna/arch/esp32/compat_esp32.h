@@ -27,7 +27,7 @@
 inline void uart_set_debug(uint8_t) {}
 #define TZ_Etc_UTC "UTC0"
 
-// Stack info
+// Stack info — uxTaskGetStackHighWaterMark returns words; convert to bytes for ESP8266 parity.
 #define getFreeStack() (uxTaskGetStackHighWaterMark(NULL) * sizeof(StackType_t))
 
 // ESP class shim helper
@@ -47,20 +47,21 @@ struct EspCompat {
     uint32_t getFreeHeap() { return ESP.getFreeHeap(); }
     uint32_t getChipId() { return (uint32_t)ESP.getEfuseMac(); }
     uint32_t getEfuseMac() { return (uint32_t)ESP.getEfuseMac(); }
-    
-    // OTA and Flash related
-    uint32_t magicFlashChipSize(uint8_t byte) { return 0; }
-    uint32_t getFlashChipRealSize() { return 4 * 1024 * 1024; }
-    uint32_t getFlashChipSize() { return 4 * 1024 * 1024; }
-    uint32_t getFlashChipSpeed() { return 40000000; }
-    uint32_t getFlashChipMode() { return 0; }
+
+    // OTA and Flash related — delegate to Arduino-ESP32 core (which reads efuse / SPI flash).
+    uint32_t magicFlashChipSize(uint8_t byte) { return ESP.getFlashChipSize(); }
+    uint32_t getFlashChipRealSize() { return ESP.getFlashChipSize(); }
+    uint32_t getFlashChipSize() { return ESP.getFlashChipSize(); }
+    uint32_t getFlashChipSpeed() { return ESP.getFlashChipSpeed(); }
+    uint32_t getFlashChipMode() { return (uint32_t)ESP.getFlashChipMode(); }
     uint32_t getFlashChipId() { return 0; }
-    
+
     uint32_t getFreeSketchSpace() { return ESP.getFreeSketchSpace(); }
-    uint32_t getSketchSize() { return 0; }
-    String getSketchMD5() { return "00000000000000000000000000000000"; }
-    
-    uint32_t getFreeContStack() { return uxTaskGetStackHighWaterMark(NULL); }
+    uint32_t getSketchSize() { return ESP.getSketchSize(); }
+    String getSketchMD5() { return ESP.getSketchMD5(); }
+
+    // High-water mark is returned in stack words by FreeRTOS; convert to bytes.
+    uint32_t getFreeContStack() { return uxTaskGetStackHighWaterMark(NULL) * sizeof(StackType_t); }
     
     void restart() { ESP.restart(); }
     bool eraseConfig() { return false; }
