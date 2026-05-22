@@ -1256,5 +1256,3 @@ void wsSetup() {
 }
 
 #endif // WEB_SUPPORT
-
-

@@ -457,7 +457,6 @@ String activeServer() {
     #endif
     }
 
-
     return server;
 }
 
@@ -892,6 +891,12 @@ void setup() {
     // in case dhcp sends out ntp settings
 #if defined(ESP8266)
     static auto track_active_server = WiFi.onStationModeGotIP(onStationModeGotIP);
+#elif defined(ESP32)
+    // TODO: ESP32 does not have an onStationModeGotIP equivalent here.
+    // If DHCP pushes a new NTP server (NTP_DHCP_SERVER=1), ESP-IDF's lwIP
+    // will update sntp internally, but our configure() won't re-run and
+    // internal::server won't reflect the change. Implement a wifiRegister
+    // callback (Event::StationConnected) that calls configure() on ESP32.
 #endif
 
     // generic configuration, always handled

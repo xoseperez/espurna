@@ -275,7 +275,7 @@ size_t channels() {
 void setup() {
     internal::resolution = settings::resolution();
     const auto max_duty = (1UL << internal::resolution) - 1;
-    
+
     const auto limit = settings::limit();
     internal::duty_limit = (limit < 100.f)
         ? (static_cast<float>(max_duty) / 100.f) * limit
@@ -317,6 +317,9 @@ bool init(const uint8_t* begin, const uint8_t* end) {
     }
 
     const auto freq = settings::frequency();
+    // TODO: ledcSetup() / ledcAttachPin() are deprecated in arduino-esp32 >= 3.x.
+    //       Migrate to the new pin-centric API: ledcAttach(pin, freq, res) +
+    //       ledcWrite(pin, duty) once espressif32 platform is bumped past 6.x.
     uint8_t next_channel = 0;
     for (auto it = begin; it != end; ++it) {
         const auto pin = *it;

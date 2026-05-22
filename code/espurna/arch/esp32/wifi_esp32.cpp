@@ -351,27 +351,41 @@ void _wifiLoop() {
     int scan_count = WiFi.scanComplete();
     if (scan_count >= 0 && internal::scan_active) {
         internal::scan_active = false;
-        int count = scan_count;
-        if (count > 10) count = 10; // Limit to 10 networks for stability
-        
+        const int count = std::min((int)scan_count, 10); // Limit to 10 networks
+
+        // Capture all data before the async wsPost runs so WiFi scan buffers
+        // are not accessed from a different task context later.
+        struct ScanEntry {
+            String bssid;
+            String ssid;
+            int rssi;
+            int channel;
+            bool encrypted;
+        };
+        std::vector<ScanEntry> entries;
+        entries.reserve(count);
         for (int i = 0; i < count; ++i) {
-            String bssid = WiFi.BSSIDstr(i);
-            String ssid = WiFi.SSID(i);
-            int rssi = WiFi.RSSI(i);
-            int channel = WiFi.channel(i);
-            String enc = (WiFi.encryptionType(i) != WIFI_AUTH_OPEN) ? "yes" : "no";
-            
-            wsPost([bssid, ssid, rssi, channel, enc](JsonObject& root) {
-                JsonArray& network = root.createNestedArray("scanResult");
-                network.add(bssid);
-                network.add(enc);
-                network.add(rssi);
-                network.add(channel);
-                network.add(ssid);
+            entries.push_back({
+                WiFi.BSSIDstr(i),
+                WiFi.SSID(i),
+                WiFi.RSSI(i),
+                WiFi.channel(i),
+                WiFi.encryptionType(i) != WIFI_AUTH_OPEN,
             });
-            yield(); // Give system time to handle background tasks and WDT
         }
         WiFi.scanDelete();
+
+        wsPost([entries](JsonObject& root) {
+            JsonArray& results = root.createNestedArray("scanResult");
+            for (const auto& e : entries) {
+                JsonArray& network = results.createNestedArray();
+                network.add(e.bssid);
+                network.add(e.encrypted ? "yes" : "no");
+                network.add(e.rssi);
+                network.add(e.channel);
+                network.add(e.ssid);
+            }
+        });
     }
 #endif
 }
@@ -466,10 +480,26 @@ void _wifiSetup() {
 
     espurnaRegisterReload([]() {
         if (WiFi.status() != WL_CONNECTED) {
-            DEBUG_MSG_P(PSTR("[WIFI] Reload: WiFi not connected, initiating connection...\n"));
+            DEBUG_MSG_P(PSTR("[WIFI] Reload: not connected, initiating connection...\n"));
+            action(Action::TurnOn);
+            return;
+        }
+
+        // Already connected: only reconnect if the active SSID no longer
+        // matches any of the configured networks (user changed WiFi settings).
+        const auto active_ssid = WiFi.SSID();
+        bool found = false;
+        for (size_t i = 0; i < WIFI_MAX_NETWORKS; ++i) {
+            if (sta::settings::ssid(i) == active_ssid) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            DEBUG_MSG_P(PSTR("[WIFI] Reload: active SSID not in config, reconnecting...\n"));
             action(Action::TurnOn);
         } else {
-            DEBUG_MSG_P(PSTR("[WIFI] Reload: WiFi already connected, skipping reconnect\n"));
+            DEBUG_MSG_P(PSTR("[WIFI] Reload: WiFi config unchanged, skipping reconnect\n"));
         }
     });
 

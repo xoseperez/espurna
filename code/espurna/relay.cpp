@@ -2819,7 +2819,8 @@ void _relaySettingsMigrate(int version) {
         // groups use a new set of keys
 #if MQTT_SUPPORT
         for (size_t index = 0; index < RelaysMax; ++index) {
-            auto group = getSetting(espurna::settings::Key{"mqttGroup", index});            if (!group.length()) {
+            auto group = getSetting(espurna::settings::Key{"mqttGroup", index});
+            if (!group.length()) {
                 break;
             }
 
