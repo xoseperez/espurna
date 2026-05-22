@@ -293,12 +293,7 @@ HeapStats systemHeapStats() {
 }
 
 uint16_t systemVcc() {
-    esp_adc_cal_characteristics_t adc_chars;
-    esp_adc_cal_value_t val_type = esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, 1100, &adc_chars);
-    if (val_type == ESP_ADC_CAL_VAL_EFUSE_VREF) {
-        return adc_chars.vref;
-    }
-    return 3300;
+    return 0;
 }
 uint32_t systemResetReason() { return (uint32_t) esp_reset_reason(); }
 espurna::duration::Seconds systemUptime() { return espurna::duration::Seconds(millis() / 1000); }

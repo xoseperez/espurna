@@ -62,6 +62,11 @@ namespace internal {
     std::atomic<bool> pending_connect_publish { false };
     std::atomic<bool> pending_disconnect_publish { false };
 
+    // The action queue is touched by the loop task (handle_action()/pop) and
+    // by callers on terminal / web / MQTT tasks (action()/push). std::queue
+    // is not thread-safe so we guard it with a portMUX critical section —
+    // cheap (couple of cycles) and FreeRTOS-blessed on ESP32.
+    portMUX_TYPE actions_mux = portMUX_INITIALIZER_UNLOCKED;
     ActionsQueue actions;
 
     State state { State::Boot };
@@ -80,15 +85,27 @@ namespace internal {
 } // namespace internal
 
 void action(Action value) {
+    portENTER_CRITICAL(&internal::actions_mux);
     internal::actions.push(value);
+    portEXIT_CRITICAL(&internal::actions_mux);
+}
+
+bool pop_action(Action& out) {
+    portENTER_CRITICAL(&internal::actions_mux);
+    if (internal::actions.empty()) {
+        portEXIT_CRITICAL(&internal::actions_mux);
+        return false;
+    }
+    out = internal::actions.front();
+    internal::actions.pop();
+    portEXIT_CRITICAL(&internal::actions_mux);
+    return true;
 }
 
 template <typename T>
 State handle_action(State state, T&& handler) {
-    if (!internal::actions.empty()) {
-        auto value = internal::actions.front();
-        internal::actions.pop();
-        
+    Action value;
+    if (pop_action(value)) {
         if (value == Action::TurnOn || value == Action::StationConnect) {
             WiFi.disconnect();
             internal::network_id = 0;
@@ -305,12 +322,23 @@ void _wifiLoop() {
     // Drain events that were latched by the WiFi system task. We dispatch
     // here so registered callbacks (MQTT publish, mDNS, Alexa, etc.) run on
     // the loop task with its larger stack and without racing internal state.
-    if (internal::pending_connect_publish.exchange(false, std::memory_order_acq_rel)) {
-        _wifiPublish(espurna::wifi::Event::StationConnected);
-    }
-    if (internal::pending_disconnect_publish.exchange(false, std::memory_order_acq_rel)) {
+    //
+    // Both flags use exchange(): rapid connect↔disconnect bursts collapse to
+    // at most one of each per loop tick. To preserve causality (avoid
+    // publishing "Connected" right after a real disconnect, or vice-versa)
+    // we cross-check against the current radio status before firing.
+    const bool pending_connect    = internal::pending_connect_publish.exchange(false, std::memory_order_acq_rel);
+    const bool pending_disconnect = internal::pending_disconnect_publish.exchange(false, std::memory_order_acq_rel);
+    const bool link_up            = (WiFi.status() == WL_CONNECTED);
+
+    if (pending_disconnect && !link_up) {
         _wifiPublish(espurna::wifi::Event::StationDisconnected);
     }
+    if (pending_connect && link_up) {
+        _wifiPublish(espurna::wifi::Event::StationConnected);
+    }
+    // If link_up disagrees with the pending flag (stale event), we silently
+    // drop it — the current state is authoritative.
 
     auto next_state = internal::state;
 
@@ -351,10 +379,14 @@ void _wifiLoop() {
     int scan_count = WiFi.scanComplete();
     if (scan_count >= 0 && internal::scan_active) {
         internal::scan_active = false;
-        const int count = std::min((int)scan_count, 10); // Limit to 10 networks
 
-        // Capture all data before the async wsPost runs so WiFi scan buffers
-        // are not accessed from a different task context later.
+        // Limit how many entries we surface to the UI — the table stays
+        // readable and we avoid blasting 50+ small WS frames in a row.
+        constexpr int kMaxScanResults = 20;
+        const int count = std::min((int)scan_count, kMaxScanResults);
+
+        // Snapshot scan data BEFORE delete so subsequent wsPost lambdas
+        // (executed later on the loop task) don't reach into freed buffers.
         struct ScanEntry {
             String bssid;
             String ssid;
@@ -375,17 +407,19 @@ void _wifiLoop() {
         }
         WiFi.scanDelete();
 
-        wsPost([entries](JsonObject& root) {
-            JsonArray& results = root.createNestedArray("scanResult");
-            for (const auto& e : entries) {
-                JsonArray& network = results.createNestedArray();
+        // One ws message per network — matches the ESP8266 contract that
+        // the WebUI in html/src/wifi.mjs expects (`scanResult: [bssid,
+        // authmode, rssi, channel, ssid]` flat array).
+        for (auto& e : entries) {
+            wsPost([e](JsonObject& root) {
+                JsonArray& network = root.createNestedArray("scanResult");
                 network.add(e.bssid);
                 network.add(e.encrypted ? "yes" : "no");
                 network.add(e.rssi);
                 network.add(e.channel);
                 network.add(e.ssid);
-            }
-        });
+            });
+        }
     }
 #endif
 }
@@ -403,7 +437,7 @@ void onConnected(JsonObject& root) {
 
     auto& networks = config.createNestedArray("networks");
     size_t active = sta::countNetworks();
-    size_t show = std::min(size_t(WIFI_MAX_NETWORKS), active + 1);
+    size_t show = active;
     for (size_t i = 0; i < show; ++i) {
         auto& net = networks.createNestedArray();
         net.add(sta::settings::ssid(i));
@@ -515,8 +549,11 @@ void _wifiSetup() {
 // ГЛОБАЛЬНЫЕ ФУНКЦИИ
 void wifiReload() { espurna::wifi::action(espurna::wifi::Action::TurnOn); }
 void wifiDisconnect() {
-    espurna::wifi::internal::wifi_connected.store(false, std::memory_order_relaxed);
-    WiFi.disconnect();
+    // Funnel through the action queue (mutex-guarded) so the FSM
+    // transition to Idle happens on the loop task — not whichever task
+    // (MQTT / terminal / web) the caller is on. Action::TurnOff handler
+    // already does WiFi.mode(WIFI_OFF) and parks state in Idle.
+    espurna::wifi::action(espurna::wifi::Action::TurnOff);
 }
 void wifiRegister(espurna::wifi::EventCallback callback) { espurna::wifi::internal::callbacks.push_back(callback); }
 bool wifiConnected() { return WiFi.status() == WL_CONNECTED; }

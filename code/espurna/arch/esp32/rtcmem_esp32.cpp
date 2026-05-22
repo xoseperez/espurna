@@ -31,6 +31,10 @@ void init() {
 // Treat RTC_NOINIT memory as dirty after cold boot, RST-pin, or brownout —
 // matches the ESP8266 path which discards REASON_EXT_SYS_RST/REASON_DEFAULT_RST.
 // RTC_NOINIT_ATTR retains values only across SW/WDT/panic resets and deep sleep.
+//
+// TODO: Warm-reset paths (SW/WDT/panic) still trust the 32-bit `magic` alone.
+// A CRC across RtcmemData would close the 1/2^32 collision window on first
+// boot when RTC RAM happens to hold our magic value by chance.
 bool status() {
     switch (esp_reset_reason()) {
         case ESP_RST_POWERON:

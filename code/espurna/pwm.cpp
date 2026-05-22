@@ -314,6 +314,15 @@ bool init(const uint8_t* begin, const uint8_t* end) {
         if (gpioLocked(*it)) {
             return false;
         }
+        // Reject duplicates within the same init() — otherwise we'd assign
+        // the pin to two LEDC channels (only one wins at the GPIO matrix,
+        // the other channel leaks).
+        for (auto prev = begin; prev != it; ++prev) {
+            if (*prev == *it) {
+                DEBUG_MSG_P(PSTR("[PWM] GPIO%u listed twice\n"), (unsigned)*it);
+                return false;
+            }
+        }
     }
 
     const auto freq = settings::frequency();

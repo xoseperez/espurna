@@ -10,7 +10,19 @@ import { notifyError } from './notify.mjs';
 const TASMOTA_GPIO_MAP = buildGpioMap();
 
 function buildGpioMap() {
-    /** @type {Map<number, {type: string, index: number, inverted: boolean}>} */
+    /**
+     * @type {Map<number, {
+     *   type: string,
+     *   index: number,
+     *   inverted: boolean,
+     *   activeHigh?: boolean,
+     *   internalPull?: boolean
+     * }>}
+     *
+     * For buttons we carry polarity (activeHigh) and internal-pull preference
+     * as two independent flags — Tasmota encodes both, and conflating them
+     * causes inverted buttons to register "release" as "press".
+     */
     const map = new Map();
 
     // -------------------------------------------------------------
@@ -29,33 +41,33 @@ function buildGpioMap() {
     // -------------------------------------------------------------
     // Buttons (up to 32)
     // -------------------------------------------------------------
-    // Standard Buttons (active low, pull-up): 32 to 63 (Button1 to Button32)
-    // Buttons no pull-up (active low): 64 to 95 (Button_n1 to Button_n32)
-    // Buttons inverted (active high, pull-up): 96 to 127 (Button_i1 to Button_i32)
-    // Buttons inverted no pull-up (active high): 128 to 159 (Button_in1 to Button_in32)
+    // 32–63   Button{N}    — active LOW,  internal pull-up
+    // 64–95   Button{N}n   — active LOW,  no internal pull (external pull-up wired)
+    // 96–127  Button{N}i   — active HIGH, internal pull-down
+    // 128–159 Button{N}in  — active HIGH, no internal pull (external pull-down wired)
     for (let i = 0; i < 32; i++) {
-        map.set(32 + i, { type: 'button', index: i, inverted: false });
-        map.set(64 + i, { type: 'button', index: i, inverted: false });
-        map.set(96 + i, { type: 'button', index: i, inverted: true });
-        map.set(128 + i, { type: 'button', index: i, inverted: true });
+        map.set(32 + i,  { type: 'button', index: i, inverted: false, activeHigh: false, internalPull: true  });
+        map.set(64 + i,  { type: 'button', index: i, inverted: false, activeHigh: false, internalPull: false });
+        map.set(96 + i,  { type: 'button', index: i, inverted: true,  activeHigh: true,  internalPull: true  });
+        map.set(128 + i, { type: 'button', index: i, inverted: true,  activeHigh: true,  internalPull: false });
     }
 
     // -------------------------------------------------------------
     // Switches (up to 32)
     // -------------------------------------------------------------
-    // Switches are also mapped to ESPurna buttons for input actions.
-    // Standard Switches (pull-up): 160 to 191 (Switch1 to Switch32)
-    // Switches no pull-up: 192 to 223 (Switch_n1 to Switch_n32)
+    // Mapped to ESPurna buttons for input actions.
+    // 160–191 Switch{N}   — internal pull-up,  active LOW
+    // 192–223 Switch{N}n  — no internal pull, active LOW (external pull-up expected)
     // Note: 223 is overridden above for Relay1i to support user's custom template.
     for (let i = 0; i < 32; i++) {
         const switchCode = 160 + i;
         const switchNoPullUpCode = 192 + i;
-        
+
         if (!map.has(switchCode)) {
-            map.set(switchCode, { type: 'button', index: i, inverted: false });
+            map.set(switchCode, { type: 'button', index: i, inverted: false, activeHigh: false, internalPull: true });
         }
         if (!map.has(switchNoPullUpCode)) {
-            map.set(switchNoPullUpCode, { type: 'button', index: i, inverted: false });
+            map.set(switchNoPullUpCode, { type: 'button', index: i, inverted: false, activeHigh: false, internalPull: false });
         }
     }
 
@@ -153,14 +165,22 @@ function tasmotaToEspurna(tmpl) {
                 settings[`relayProv${espurnaIndex}`] = 'gpio';
                 break;
 
-            case 'button':
+            case 'button': {
                 settings[`btnGpio${espurnaIndex}`] = gpioPin.toString();
                 settings[`btnMode${espurnaIndex}`] = 'pushbutton';
-                // Tasmota "inverted" button: idle-high (active-low), external pull-up wired.
-                // Non-inverted: idle-high but rely on MCU internal pull-up.
-                settings[`btnDefVal${espurnaIndex}`] = 'high';
-                settings[`btnPinMode${espurnaIndex}`] = inverted ? 'default' : 'pull-up';
+                // Polarity and internal-pull are independent in Tasmota.
+                // `btnDefVal` = idle level: active-low → 'high' (idle high, pressed pulls low);
+                //                          active-high → 'low'  (idle low,  pressed pulls high).
+                // `btnPinMode`: internal resistor used by the MCU.
+                const activeHigh = !!info.activeHigh;
+                const internalPull = info.internalPull !== false;
+                settings[`btnDefVal${espurnaIndex}`] = activeHigh ? 'low' : 'high';
+                settings[`btnPinMode${espurnaIndex}`] =
+                    !internalPull ? 'default'
+                    : activeHigh  ? 'pull-down'
+                                  : 'pull-up';
                 break;
+            }
 
             case 'led':
                 settings[`ledGpio${espurnaIndex}`] = gpioPin.toString();

@@ -9,6 +9,13 @@ BUILD INFO
 
 #include <cstring>
 
+// arduino-esp32 ≤ 2.0.4 does not auto-include this via Arduino.h.
+#if defined(ESP32) && defined(__has_include)
+#  if __has_include("esp_arduino_version.h")
+#    include "esp_arduino_version.h"
+#  endif
+#endif
+
 //--------------------------------------------------------------------------------
 
 namespace espurna {
@@ -31,12 +38,25 @@ espurna::StringView core_version() {
             out = String(ARDUINO_ESP8266_RELEASE);
         }
         out.replace('_', '.');
-#else
+#elif defined(ESP_ARDUINO_VERSION_STR)
+        // arduino-esp32 ≥ 2.0.10 exposes its release as a string literal.
+        out = ESP_ARDUINO_VERSION_STR;
+#elif defined(ESP_ARDUINO_VERSION_MAJOR)
+        // arduino-esp32 2.0.x older releases only expose the numeric triplet.
+        out.reserve(8);
+        out += String(ESP_ARDUINO_VERSION_MAJOR);
+        out += '.';
+        out += String(ESP_ARDUINO_VERSION_MINOR);
+        out += '.';
+        out += String(ESP_ARDUINO_VERSION_PATCH);
+#elif defined(ARDUINO_ESP8266_GIT_DESC)
 #define _GET_COREVERSION_STR(X) #X
 #define GET_COREVERSION_STR(X) _GET_COREVERSION_STR(X)
         out = GET_COREVERSION_STR(ARDUINO_ESP8266_GIT_DESC);
 #undef _GET_COREVERSION_STR
 #undef GET_COREVERSION_STR
+#else
+        out = "unknown";
 #endif
         return out;
     })();
@@ -48,8 +68,18 @@ espurna::StringView core_revision() {
     static const String out = ([]() {
 #ifdef ARDUINO_ESP8266_GIT_VER
         return String(ARDUINO_ESP8266_GIT_VER, 16);
+#elif defined(ESP_ARDUINO_VERSION)
+        // arduino-esp32 exposes a packed version int (MAJOR<<16 | MINOR<<8 | PATCH).
+        String out;
+        out.reserve(16);
+        out += String((ESP_ARDUINO_VERSION >> 16) & 0xFF);
+        out += '.';
+        out += String((ESP_ARDUINO_VERSION >> 8) & 0xFF);
+        out += '.';
+        out += String(ESP_ARDUINO_VERSION & 0xFF);
+        return out;
 #else
-        return PSTR("(unspecified)");
+        return String(PSTR("(unspecified)"));
 #endif
     })();
 

@@ -22,15 +22,41 @@ namespace {
     bool _eeprom_ready = false;
     bool _eeprom_dirty = false;       // a write happened since the last commit
     bool _eeprom_commit_pending = false; // request from eepromCommit() handled in loop
+
+    // Fallback buffer returned by data() when EEPROM.begin() failed. The
+    // settings/embedis layer dereferences data() unconditionally; without a
+    // sentinel a single early read after a boot-time NVS failure crashes.
+    // The buffer is filled with 0xFF (matches an uninitialized NVS region)
+    // so the kv-store reports "empty" instead of corrupting on a wild read.
+    uint8_t _eeprom_fallback[EEPROM_SIZE] = { /* zero-initialised; filled in setup */ };
+    bool _eeprom_fallback_ready = false;
+
+    uint8_t* _eepromBuffer() {
+        uint8_t* ptr = EEPROM.getDataPtr();
+        if (ptr) return ptr;
+        if (!_eeprom_fallback_ready) {
+            memset(_eeprom_fallback, 0xFF, EEPROM_SIZE);
+            _eeprom_fallback_ready = true;
+        }
+        return _eeprom_fallback;
+    }
 }
 
 unsigned char eepromRead(size_t address) {
     if (address >= EEPROM_SIZE) return 0xFF;
+    if (!_eeprom_ready) return _eepromBuffer()[address];
     return EEPROM.read(address);
 }
 
 void eepromWrite(size_t address, unsigned char value) {
     if (address >= EEPROM_SIZE) return;
+    // If NVS is unavailable, writes go to the fallback buffer so the
+    // session keeps working in-memory. They will not persist.
+    if (!_eeprom_ready) {
+        _eepromBuffer()[address] = value;
+        _eeprom_dirty = true;
+        return;
+    }
     if (EEPROM.read(address) != value) {
         EEPROM.write(address, value);
         _eeprom_dirty = true;
@@ -46,9 +72,9 @@ void _eepromCommit() {
         _eeprom_dirty = false;
         DEBUG_MSG_P(PSTR("[EEPROM] Settings saved successfully.\n"));
     } else {
-        // Leave _eeprom_dirty set so the next loop tick (or explicit
-        // commit request) retries. Otherwise a transient NVS failure
-        // would silently lose user settings.
+        // Leave _eeprom_dirty set; eepromLoop() will retry on a 5s backoff
+        // (see _next_retry_ms there) so a transient NVS failure doesn't
+        // silently lose user settings.
         DEBUG_MSG_P(PSTR("[EEPROM] Error: NVS commit failed, will retry.\n"));
     }
 }
@@ -67,12 +93,18 @@ void eepromForceCommit(StorageEEPROM_Rotate&) {
 
 StorageEEPROM_Rotate::StorageEEPROM_Rotate() {}
 
+// Note: settings/embedis writes go directly through this pointer (memmove_P)
+// and then mark the storage dirty. That works because the Arduino-ESP32
+// EEPROM library flushes its full RAM mirror on commit() regardless of how
+// it was mutated. If we ever migrate off EEPROM-on-NVS this contract must
+// be re-checked.
 const uint8_t* StorageEEPROM_Rotate::data() const {
-    return EEPROM.getDataPtr();
+    const uint8_t* ptr = EEPROM.getDataPtr();
+    return ptr ? ptr : _eepromBuffer();
 }
 
 uint8_t* StorageEEPROM_Rotate::data() {
-    return EEPROM.getDataPtr();
+    return _eepromBuffer();
 }
 
 void StorageEEPROM_Rotate::setDirty() {
@@ -80,11 +112,8 @@ void StorageEEPROM_Rotate::setDirty() {
 }
 
 void StorageEEPROM_Rotate::fill(uint8_t value) {
-    uint8_t* ptr = EEPROM.getDataPtr();
-    if (ptr) {
-        memset(ptr, value, EEPROM_SIZE);
-        _eeprom_dirty = true;
-    }
+    memset(_eepromBuffer(), value, EEPROM_SIZE);
+    _eeprom_dirty = true;
 }
 
 size_t StorageEEPROM_Rotate::size() const { return EEPROM_SIZE; }
@@ -115,11 +144,8 @@ String eepromSectors() {
 }
 
 void eepromClear() {
-    uint8_t* ptr = EEPROM.getDataPtr();
-    if (ptr) {
-        memset(ptr, 0xFF, EEPROM_SIZE);
-        _eeprom_dirty = true;
-    }
+    memset(_eepromBuffer(), 0xFF, EEPROM_SIZE);
+    _eeprom_dirty = true;
     _eepromCommit();
 }
 
@@ -153,9 +179,27 @@ static void _eepromCommandsSetup() {
 #endif
 
 void eepromLoop() {
+    static unsigned long _next_retry_ms = 0;
     if (_eeprom_commit_pending) {
         _eeprom_commit_pending = false;
         _eepromCommit();
+        if (_eeprom_dirty) {
+            // Commit just failed — schedule a backoff retry. NVS hammering
+            // on a busy flash bus only makes things worse.
+            _next_retry_ms = millis() + 5000;
+        }
+        return;
+    }
+    // Background retry: if a prior commit failed and the user hasn't
+    // triggered another save in a while, attempt it again with a
+    // 5-second cadence. Without this, transient NVS failures would
+    // silently lose user settings until the next write.
+    if (_eeprom_dirty && _next_retry_ms && (long)(millis() - _next_retry_ms) >= 0) {
+        _next_retry_ms = millis() + 5000;
+        _eepromCommit();
+        if (!_eeprom_dirty) {
+            _next_retry_ms = 0;
+        }
     }
 }
 

@@ -21,9 +21,9 @@
 
 // Missing ADC/UART/TZ constants/functions
 #define ADC_VCC 255
-#ifndef ADC_MODE_VALUE
-#define ADC_MODE_VALUE ADC_VCC
-#endif
+#define ADC_TOUT 254
+#undef ADC_MODE_VALUE
+#define ADC_MODE_VALUE ADC_TOUT
 inline void uart_set_debug(uint8_t) {}
 #define TZ_Etc_UTC "UTC0"
 
