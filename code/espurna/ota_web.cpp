@@ -105,7 +105,9 @@ void onFile(AsyncWebServerRequest *request, String filename, size_t index, uint8
         eepromRotate(false);
 
         DEBUG_MSG_P(PSTR("[UPGRADE] Start: %s\n"), filename.c_str());
+#if defined(ESP8266)
         Update.runAsync(true);
+#endif
 
         // Note: cannot use request->contentLength() for multipart/form-data
         if (!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000)) {
@@ -150,4 +152,5 @@ void otaWebSetup() {
 }
 
 #endif // OTA_WEB_SUPPORT
+
 

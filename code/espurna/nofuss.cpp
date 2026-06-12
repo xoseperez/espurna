@@ -13,7 +13,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "mdns.h"
 #include "nofuss.h"
 #include "terminal.h"
-#include "wifi.h"
+#include "wifi_orch.h"
 #include "ws.h"
 
 #include <NoFUSSClient.h>
@@ -198,3 +198,5 @@ void nofussSetup() {
 }
 
 #endif // NOFUSS_SUPPORT
+
+

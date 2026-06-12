@@ -200,3 +200,4 @@ constexpr size_t AnalogSensor::SamplesMax;
 constexpr AnalogSensor::Microseconds AnalogSensor::DelayMin;
 constexpr AnalogSensor::Microseconds AnalogSensor::DelayMax;
 #endif
+

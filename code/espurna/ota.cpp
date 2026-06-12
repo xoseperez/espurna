@@ -6,7 +6,7 @@ OTA MODULE COMMON FUNCTIONS
 
 #include "espurna.h"
 #include "ota.h"
-#include "system.h"
+#include "system_orch.h"
 #include "terminal.h"
 #include "utils.h"
 
@@ -105,3 +105,4 @@ void otaSetup() {
     otaClientSetup();
 #endif
 }
+

@@ -10,6 +10,30 @@
         <fieldset>
             <legend><span data-key="relayName"></span> (<span data-key="relayProv"></span>)</legend>
             <div class="pure-control-group">
+                <label>Name</label>
+                <input class="pure-input-2-3" name="relayName" type="text" placeholder="Switch name">
+            </div>
+            <div class="pure-control-group">
+                <label>Relay GPIO</label>
+                <select class="pure-input-2-3" name="relayGpio" data-enumerable="gpio-hardware" required></select>
+            </div>
+            <div class="pure-control-group">
+                <label>Relay Type</label>
+                <select class="pure-input-2-3" name="relayType">
+                    <option value="normal">Normal</option>
+                    <option value="inverse">Inverse</option>
+                    <option value="latched">Latched</option>
+                    <option value="latched-inverse">Latched Inverse</option>
+                </select>
+            </div>
+            <div class="pure-control-group">
+                <label>Relay Provider</label>
+                <select class="pure-input-2-3" name="relayProv">
+                    <option value="gpio">GPIO</option>
+                    <option value="dummy">Dummy</option>
+                </select>
+            </div>
+            <div class="pure-control-group">
                 <label>Boot mode</label>
                 <select class="pure-input-2-3" name="relayBoot">
                     <option value="off">Always OFF</option>
@@ -31,6 +55,10 @@
             <div class="pure-control-group">
                 <label>Pulse time (s)</label>
                 <input class="pure-input-2-3" name="relayTime" type="number" min="0" step="0.1" required>
+            </div>
+            <div class="pure-control-group">
+                <label>Button GPIO</label>
+                <select class="pure-input-2-3" name="relayBtnGpio" data-enumerable="gpio-hardware" required></select>
             </div>
             <div class="pure-control-group module module-mqtt">
                 <label>MQTT topic subscription</label>
@@ -55,6 +83,10 @@
                     <option value="on">Turn ON</option>
                     <option value="toggle">Toggle</option>
                 </select>
+            </div>
+            <div class="pure-control-group">
+                <label></label>
+                <button class="pure-button button-del-settings-group pure-input-2-3" type="button">Delete Relay</button>
             </div>
         </fieldset>
     </div>

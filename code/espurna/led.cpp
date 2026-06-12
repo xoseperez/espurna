@@ -423,7 +423,7 @@ size_t relay(size_t id) {
 #endif
 
 Pattern pattern(size_t id) {
-    auto result = parse(getSetting({keys::Pattern, id}));
+    auto result = parse(getSetting(espurna::settings::Key{keys::Pattern, id}));
     if (result.ok) {
         return result.value;
     }
@@ -503,6 +503,9 @@ uint8_t update;
 
 bool add(size_t index) {
     const auto pin = settings::pin(index);
+    if (!gpioValidForOutput(pin)) {
+        return false;
+    }
     if (gpioLock(pin)) {
         internal::leds.emplace_back(pin,
                 settings::inverse(index), settings::mode(index));
@@ -1101,3 +1104,4 @@ void ledSetupUnstable() {
 }
 
 #endif // LED_SUPPORT
+

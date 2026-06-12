@@ -6,9 +6,9 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#include "espurna.h"
+#include "../../espurna.h"
 
-#include "rtcmem.h"
+#include "../../rtcmem.h"
 
 #if WEB_SUPPORT
 #include "ws.h"
@@ -1202,7 +1202,7 @@ Type value() {
 
 void loop() {
     static Counter counter {
-        .last = (TimeSource::now() - build::Interval),
+        .last = TimeSource::now(),
         .count = 0,
         .value = 0,
         .max = 0
@@ -1837,3 +1837,4 @@ String systemDescription() {
 void systemSetup() {
     espurna::setup();
 }
+

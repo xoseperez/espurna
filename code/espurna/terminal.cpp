@@ -22,12 +22,12 @@ Copyright (C) 2020-2022 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include "crash.h"
 #include "mqtt.h"
 #include "settings.h"
-#include "system.h"
+#include "system_orch.h"
 #include "sensor.h"
 #include "telnet.h"
 #include "terminal.h"
 #include "utils.h"
-#include "wifi.h"
+#include "wifi_orch.h"
 
 #include "libs/PrintString.h"
 #include "libs/Delimiter.h"
@@ -35,7 +35,9 @@ Copyright (C) 2020-2022 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include <algorithm>
 #include <utility>
 
+#if defined(ESP8266)
 #include <Schedule.h>
+#endif
 #include <Stream.h>
 
 // FS 'range', declared at compile time via .ld script PROVIDE declarations
@@ -801,3 +803,5 @@ void terminalSetup() {
 }
 
 #endif // TERMINAL_SUPPORT
+
+

@@ -18,18 +18,24 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if TERMINAL_SUPPORT || OTA_MQTT_SUPPORT
 
+#if defined(ESP8266)
 #include <Schedule.h>
+#endif
 
 #include "mqtt.h"
-#include "system.h"
+#include "system_orch.h"
 #include "settings.h"
 #include "terminal.h"
 
 #include "libs/URL.h"
 
+#if defined(ESP8266)
 #include <Updater.h>
-
 #include <ESPAsyncTCP.h>
+#elif defined(ESP32)
+#include <Update.h>
+#include <AsyncTCP.h>
+#endif
 
 namespace espurna {
 namespace ota {
@@ -151,7 +157,9 @@ void onData(void* arg, AsyncClient* client, void* data, size_t len) {
 
             // XXX: In case of non-chunked response, really parse headers and specify size via content-length value
             // And make sure to use async mode, b/c it will yield() otherwise
+            #if defined(ESP8266)
             Update.runAsync(true);
+            #endif
             if (!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000)) {
                 otaPrintError();
                 client->close(true);
@@ -305,3 +313,4 @@ void otaClientSetup() {
 }
 
 #endif // OTA_CLIENT == OTA_CLIENT_ASYNCTCP
+

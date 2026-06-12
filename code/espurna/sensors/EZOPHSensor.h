@@ -148,3 +148,4 @@ class EZOPHSensor : public BaseSensor {
 };
 
 #endif // SENSOR_SUPPORT && EZOPH_SUPPORT
+

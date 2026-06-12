@@ -16,7 +16,7 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #include "mqtt.h"
 #include "ota.h"
-#include "system.h"
+#include "system_orch.h"
 #include "terminal.h"
 
 #include <ESP8266HTTPClient.h>
@@ -220,3 +220,4 @@ void otaClientSetup() {
 }
 
 #endif // OTA_CLIENT == OTA_CLIENT_HTTPUPDATE
+

@@ -13,7 +13,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <cstdint>
 #include <memory>
 
-#include "system.h"
+#include "system_orch.h"
 #include "rpc.h"
 
 constexpr size_t RelaysMax { 32ul };
@@ -58,6 +58,7 @@ bool relayStatus(size_t id, bool status);
 bool relayToggle(size_t id);
 
 size_t relayCount();
+int relayBtnGpio(size_t index);
 
 // globally used strings for payload parsing & report
 // is customizable, but for every relay at once
@@ -93,3 +94,4 @@ void relayOnReady(RelayStatusCallback);
 
 void relaySetupDummy(size_t size, bool reconfigure = false);
 void relaySetup();
+

@@ -7,13 +7,65 @@ EEPROM MODULE
 #pragma once
 
 #include <Arduino.h>
-#include <EEPROM_Rotate.h>
 
-class StorageEEPROM_Rotate : public EEPROM_Rotate {
+#if defined(ESP8266)
+#include <EEPROM_Rotate.h>
+#define STORAGE_EEPROM_BASE : public EEPROM_Rotate
+#else
+#define STORAGE_EEPROM_BASE
+#endif
+
+class StorageEEPROM_Rotate STORAGE_EEPROM_BASE {
 public:
+    StorageEEPROM_Rotate();
+
+#if defined(ARDUINO_ARCH_ESP32)
+    StorageEEPROM_Rotate(StorageEEPROM_Rotate&) = delete;
+    StorageEEPROM_Rotate& operator=(StorageEEPROM_Rotate&) = delete;
+
+    StorageEEPROM_Rotate(StorageEEPROM_Rotate&&) = delete;
+    StorageEEPROM_Rotate& operator=(StorageEEPROM_Rotate&&) = delete;
+
+    const uint8_t* data() const;
+    uint8_t* data();
+
+    void setDirty();
+    void fill(uint8_t value);
+
+    bool canRotate() const { return false; }
+
+    uint8_t read(size_t address);
+    void write(size_t address, uint8_t value);
+    bool commit();
+
+    void dump(Print& print) const;
+
+    // Compatibility methods for ESP32
+    void offset(size_t offset) {}
+    void begin(size_t size) {}
+    size_t size() const;
+    void backup(uint32_t sector) {}
+    uint32_t getSector(uint8_t index) const { return 0; }
+
+    template <typename T>
+    T &get(size_t address, T &data) {
+        auto *ptr = reinterpret_cast<uint8_t *>(&data);
+        for (size_t n = 0; n < sizeof(T); ++n) {
+            ptr[n] = read(address + n);
+        }
+        return data;
+    }
+
+    template <typename T>
+    void put(size_t address, const T &data) {
+        auto *ptr = reinterpret_cast<const uint8_t *>(&data);
+        for (size_t n = 0; n < sizeof(T); ++n) {
+            write(address + n, ptr[n]);
+        }
+    }
+#else
     // override original ctor to handle autosizing specific to the app
     // always using offset(OFFSET) -> begin(SIZE)
-    StorageEEPROM_Rotate();
 
     StorageEEPROM_Rotate(StorageEEPROM_Rotate&) = delete;
     StorageEEPROM_Rotate& operator=(StorageEEPROM_Rotate&) = delete;
@@ -91,7 +143,9 @@ private:
 
     using EEPROM_Rotate::begin;
     using EEPROMClass::begin;
+#endif
 };
+
 
 // "The library uses 3 bytes to track last valid sector, so there must be at least 3"
 constexpr auto EepromRotateReservedSize = size_t{ 3 };
@@ -124,3 +178,4 @@ void eepromCommit();
 void eepromSetup();
 
 StorageEEPROM_Rotate& eepromInstance();
+

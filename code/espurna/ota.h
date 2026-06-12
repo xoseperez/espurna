@@ -6,7 +6,7 @@ OTA MODULE
 
 #pragma once
 
-#include "system.h"
+#include "system_orch.h"
 
 // Main entrypoint for basic OTA methods
 // (like clients, arduinoota and basic web)
@@ -27,3 +27,4 @@ void otaProgress(size_t bytes);
 void otaPrintError();
 bool otaFinalize(size_t size, CustomResetReason reason, bool evenIfRemaining);
 bool otaFinalize(size_t size, CustomResetReason reason);
+

@@ -304,7 +304,9 @@ BasePortPtr hardware_port(
         tx, invert);
     if ((number == 0) && (build::uart0_swapped(tx, rx))) {
         ptr->flush();
+#if defined(ESP8266)
         ptr->swap();
+#endif
     }
 
     return std::make_unique<BasePort>(
@@ -587,7 +589,9 @@ void setup() {
     }
 
     if (disable_uart0_rx) {
+#if defined(ESP8266)
         ets_isr_mask(1 << ETS_UART_INUM);
+#endif
     }
 }
 
@@ -606,3 +610,4 @@ void uartSetup() {
 }
 
 #endif // UART_SUPPORT
+

@@ -15,10 +15,10 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "datetime.h"
 #include "ntp.h"
-#include "system.h"
+#include "system_orch.h"
 #include "utils.h"
 #include "web.h"
-#include "wifi.h"
+#include "wifi_orch.h"
 
 #include "ws.h"
 #include "ws_internal.h"
@@ -534,7 +534,10 @@ void _wsUpdateSta(JsonObject& root) {
 }
 
 void _wsUpdateStats(JsonObject& root) {
-    root[F("heap")] = systemFreeHeap();
+    const auto stats = systemHeapStats();
+    root[F("heap")] = stats.available;
+    root[F("heapUsable")] = stats.usable;
+    root[F("heapFrag")] = stats.fragmentation;
     root[F("uptime")] = prettyDuration(systemUptime());
     root[F("rssi")] = WiFi.RSSI();
     root[F("loadaverage")] = systemLoadAverage();
@@ -721,7 +724,7 @@ void _onAuth(AsyncWebServerRequest* request) {
 
     auto it = std::begin(_ws_tickets);
     while (it != std::end(_ws_tickets)) {
-        if (!(*it).ip.isSet()
+        if (!((*it).ip != IPAddress())
             || ((*it).ip == ip)
             || (now - (*it).timestamp > WsTimeout)) {
             break;

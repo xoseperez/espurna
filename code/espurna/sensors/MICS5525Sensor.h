@@ -82,3 +82,4 @@ class MICS5525Sensor : public AnalogSensor {
 };
 
 #endif // SENSOR_SUPPORT && MICS5525_SUPPORT
+

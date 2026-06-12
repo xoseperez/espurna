@@ -4530,7 +4530,7 @@ void setup() {
 PreInit::~PreInit() = default;
 
 bool ready() {
-    return State::Reading == internal::state;
+    return (State::Reading == internal::state) || (State::Ready == internal::state && magnitude::count() == 0);
 }
 
 void add_preinit(PreInitPtr ptr) {
@@ -4657,3 +4657,4 @@ void sensorSetup() {
 }
 
 #endif // SENSOR_SUPPORT
+

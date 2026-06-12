@@ -41,3 +41,4 @@ public:
     // Return filtered value
     virtual double value() const = 0;
 };
+

@@ -370,6 +370,19 @@ constexpr unsigned char pin(size_t index) {
     );
 }
 
+constexpr int relayBtnGpio(size_t index) {
+    return (
+        (index == 0) ? RELAY1_BTN_GPIO :
+        (index == 1) ? RELAY2_BTN_GPIO :
+        (index == 2) ? RELAY3_BTN_GPIO :
+        (index == 3) ? RELAY4_BTN_GPIO :
+        (index == 4) ? RELAY5_BTN_GPIO :
+        (index == 5) ? RELAY6_BTN_GPIO :
+        (index == 6) ? RELAY7_BTN_GPIO :
+        (index == 7) ? RELAY8_BTN_GPIO : GPIO_NONE
+    );
+}
+
 constexpr RelayType type(size_t index) {
     return (
         (index == 0) ? RELAY1_TYPE :
@@ -1114,6 +1127,7 @@ PROGMEM_STRING(ResetGpio, "relayResetGpio");
 PROGMEM_STRING(Boot, "relayBoot");
 PROGMEM_STRING(DelayOn, "relayDelayOn");
 PROGMEM_STRING(DelayOff, "relayDelayOff");
+PROGMEM_STRING(RelayBtnGpio, "relayBtnGpio");
 
 #if MQTT_SUPPORT
 PROGMEM_STRING(TopicPub, "relayTopicPub");
@@ -1146,7 +1160,7 @@ size_t dummyCount() {
 
 [[gnu::unused]]
 String name(size_t index) {
-    return getSetting({keys::Name, index});
+    return getSetting(espurna::settings::Key{keys::Name, index});
 }
 
 RelayProvider provider(size_t index) {
@@ -1167,6 +1181,10 @@ unsigned char pin(size_t index) {
 
 unsigned char resetPin(size_t index) {
     return getSetting({keys::ResetGpio, index}, build::resetPin(index));
+}
+
+int relayBtnGpio(size_t index) {
+    return getSetting({keys::RelayBtnGpio, index}, build::relayBtnGpio(index));
 }
 
 RelayBoot bootMode(size_t index) {
@@ -1280,6 +1298,7 @@ ID_VALUE(type, settings::type)
 ID_VALUE(pinType, settings::pinType)
 ID_VALUE(pin, settings::pin)
 ID_VALUE(resetPin, settings::resetPin)
+ID_VALUE(relayBtnGpio, settings::relayBtnGpio)
 ID_VALUE(bootMode, settings::bootMode)
 ID_VALUE(delayOn, settings::delayOn)
 ID_VALUE(delayOff, settings::delayOff)
@@ -1324,6 +1343,7 @@ static constexpr espurna::settings::query::IndexedSetting IndexedSettings[] PROG
     {keys::GpioType, internal::pinType},
     {keys::Gpio, internal::pin},
     {keys::ResetGpio, internal::resetPin},
+    {keys::RelayBtnGpio, internal::relayBtnGpio},
     {keys::Boot, internal::bootMode},
     {keys::DelayOn, internal::delayOn},
     {keys::DelayOff, internal::delayOff},
@@ -2764,6 +2784,10 @@ size_t relayCount() {
     return _relayCount();
 }
 
+int relayBtnGpio(size_t index) {
+    return espurna::relay::settings::relayBtnGpio(index);
+}
+
 PayloadStatus relayParsePayload(espurna::StringView payload) {
 #if MQTT_SUPPORT || API_SUPPORT
     return rpcParsePayload(
@@ -2795,7 +2819,7 @@ void _relaySettingsMigrate(int version) {
         // groups use a new set of keys
 #if MQTT_SUPPORT
         for (size_t index = 0; index < RelaysMax; ++index) {
-            auto group = getSetting({"mqttGroup", index});
+            auto group = getSetting(espurna::settings::Key{"mqttGroup", index});
             if (!group.length()) {
                 break;
             }
@@ -4006,6 +4030,17 @@ std::unique_ptr<GpioProvider> _relayGpioProvider(size_t index, RelayType type) {
         return nullptr;
     }
 
+    if (!gpioValidForOutput(*base, cfg.main)) {
+        DEBUG_MSG_P(PSTR("[RELAY] #%u: GPIO%u is not valid for output (flash-reserved or input-only)\n"),
+            (unsigned)index, (unsigned)cfg.main);
+        return nullptr;
+    }
+    if (cfg.reset != GPIO_NONE && !gpioValidForOutput(*base, cfg.reset)) {
+        DEBUG_MSG_P(PSTR("[RELAY] #%u: reset GPIO%u is not valid for output\n"),
+            (unsigned)index, (unsigned)cfg.reset);
+        return nullptr;
+    }
+
     auto main = gpioRegister(*base, cfg.main);
     if (!main) {
         return nullptr;
@@ -4209,3 +4244,4 @@ RelayAddResult relayAdd(RelayProviderBasePtr&& provider) {
 }
 
 #endif // RELAY_SUPPORT == 1
+

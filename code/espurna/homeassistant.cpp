@@ -1158,6 +1158,8 @@ private:
     State _state;
     Entities _entities;
 
+    bool _advance { false };
+
     Wait _wait_short { ShortDurations };
     Wait _wait_long { LongDurations };
 };
@@ -1180,6 +1182,17 @@ Result DiscoveryTask::prepare_all() {
 
 template <typename T>
 Result DiscoveryTask::try_send_one(T&& action) {
+    if (_advance) {
+        auto it = _entities.begin();
+        if (it != _entities.end()) {
+            if (!(*it)->next()) {
+                _entities.erase_after(_entities.before_begin());
+                _ctx.reset();
+            }
+        }
+        _advance = false;
+    }
+
     auto it = _entities.begin();
 
     while (it != _entities.end()) {
@@ -1196,12 +1209,7 @@ Result DiscoveryTask::try_send_one(T&& action) {
             : "";
 
         if (action(topic, msg)) {
-            if (!(*it)->next()) {
-                it = _entities.erase_after(
-                    _entities.before_begin());
-                _ctx.reset();
-            }
-
+            _advance = true;
             return next_send();
         }
 
@@ -1546,3 +1554,4 @@ void haSetup() {
 }
 
 #endif // HOMEASSISTANT_SUPPORT
+

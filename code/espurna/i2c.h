@@ -88,3 +88,4 @@ uint8_t i2cFindAndLock(const uint8_t* begin, const uint8_t* end);
 
 int i2cClearBus();
 void i2cSetup();
+

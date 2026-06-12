@@ -11,7 +11,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #if OTA_ARDUINOOTA_SUPPORT
 
 #include "ota.h"
-#include "system.h"
+#include "system_orch.h"
 #include "ws.h"
 
 #include <ArduinoOTA.h>
@@ -29,7 +29,11 @@ void configure() {
 #if USE_PASSWORD
     ArduinoOTA.setPassword(systemPassword().c_str());
 #endif
+#if defined(ESP8266)
     ArduinoOTA.begin(false);
+#else
+    ArduinoOTA.begin();
+#endif
 }
 
 void loop() {
@@ -98,7 +102,7 @@ void error(ota_error_t error) {
     case OTA_END_ERROR:
         reason = STRING_VIEW("End");
         break;
-#if !defined(ARDUINO_ESP8266_RELEASE_2_7_2) \
+#if defined(ESP8266) && !defined(ARDUINO_ESP8266_RELEASE_2_7_2) \
 && !defined(ARDUINO_ESP8266_RELEASE_2_7_3) \
 && !defined(ARDUINO_ESP8266_RELEASE_2_7_4) \
 && !defined(ARDUINO_ESP8266_RELEASE_3_0_0) \
@@ -143,3 +147,4 @@ void otaArduinoSetup() {
 }
 
 #endif // OTA_ARDUINOOTA_SUPPORT
+

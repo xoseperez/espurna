@@ -1810,7 +1810,11 @@
 #endif
 
 #ifndef PWM_PROVIDER
+#if defined(ESP32)
+#define PWM_PROVIDER                PWM_PROVIDER_ESP32
+#else
 #define PWM_PROVIDER                PWM_PROVIDER_GENERIC // Currently, two software PWM providers are supported
+#endif
                                                          // - PWM_PROVIDER_GENERIC (default)
                                                          // - PWM_PROVIDER_ARDUINO
 #endif
@@ -1870,3 +1874,4 @@
 #ifndef CURTAIN_SUPPORT
 #define CURTAIN_SUPPORT KINGART_CURTAIN_SUPPORT
 #endif
+

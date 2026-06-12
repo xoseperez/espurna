@@ -16,12 +16,19 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #if NTP_SUPPORT
 
 #include <Arduino.h>
+#if defined(ESP8266)
 #include <coredecls.h>
+#endif
 
 #include <ctime>
 #include <errno.h>
 #include <lwip/apps/sntp.h>
+#if defined(ESP8266)
 #include <TZ.h>
+#endif
+#if defined(ESP32)
+#include <esp_sntp.h>
+#endif
 
 #include <algorithm>
 #include <forward_list>
@@ -434,10 +441,20 @@ String activeServer() {
 
     server = sntp_getservername(0);
     if (!server.length()) {
+    #if defined(ESP8266)
         auto ip = IPAddress(sntp_getserver(0));
-        if (ip) {
+        if (ip.isSet()) {
             server = ip.toString();
         }
+    #elif defined(ESP32)
+        const ip_addr_t* addr = sntp_getserver(0);
+        if (addr) {
+            auto ip = IPAddress(addr->u_addr.ip4.addr);
+            if ((uint32_t)ip != 0) {
+                server = ip.toString();
+            }
+        }
+    #endif
     }
 
     return server;
@@ -642,6 +659,8 @@ void schedule_now() {
 } // namespace debug
 #endif
 
+void onSystemTimeSynced();
+
 namespace tick {
 
 // Never allow delays less than a second, or greater than a minute
@@ -663,6 +682,12 @@ void add(NtpTickCallback callback) {
 }
 
 void schedule(espurna::duration::Seconds offset);
+
+#if defined(ESP32)
+void sntp_sync_notification(struct timeval *tv) {
+    espurnaRegisterOnce(onSystemTimeSynced);
+}
+#endif
 
 void callback() {
     if (!synced()) {
@@ -716,6 +741,7 @@ void schedule(espurna::duration::Seconds offset) {
 
 void onSystemTimeSynced() {
     internal::status.update(::time(nullptr));
+    DEBUG_MSG_P(PSTR("[NTP] Time synchronized: %s\n"), format_datetime().c_str());
     tick::schedule_now();
 
 #if WEB_SUPPORT
@@ -823,6 +849,7 @@ void configure() {
     }
 }
 
+#if defined(ESP8266)
 void onStationModeGotIP(WiFiEventStationModeGotIP) {
     if (!sntp_enabled()) {
         return;
@@ -843,6 +870,7 @@ void onStationModeGotIP(WiFiEventStationModeGotIP) {
         settings::server(server);
     }
 }
+#endif
 
 void setup() {
     // Randomize both times to avoid simultaneous requests from multiple devices
@@ -852,16 +880,32 @@ void setup() {
         internal::start_delay.count(), internal::update_interval.count());
 
     // will be called every time after ntp syncs AND loop() finishes
+#if defined(ESP8266)
     settimeofday_cb(onSystemTimeSynced);
+#endif
+#if defined(ESP32)
+    sntp_set_time_sync_notification_cb(tick::sntp_sync_notification);
+#endif
 
     // make sure our logic does know about the actual server
     // in case dhcp sends out ntp settings
+#if defined(ESP8266)
     static auto track_active_server = WiFi.onStationModeGotIP(onStationModeGotIP);
+#elif defined(ESP32)
+    // TODO: ESP32 does not have an onStationModeGotIP equivalent here.
+    // If DHCP pushes a new NTP server (NTP_DHCP_SERVER=1), ESP-IDF's lwIP
+    // will update sntp internally, but our configure() won't re-run and
+    // internal::server won't reflect the change. Implement a wifiRegister
+    // callback (Event::StationConnected) that calls configure() on ESP32.
+#endif
 
     // generic configuration, always handled
     ::espurnaRegisterReload(configure);
     settings::convertLegacyOffsets();
     configure();
+
+    DEBUG_MSG_P(PSTR("[NTP] Current server: %s\n"), activeServer().c_str());
+    DEBUG_MSG_P(PSTR("[NTP] Current TZ: %s\n"), settings::tz().c_str());
 
     // optional modules, depends on the build flags
 #if TERMINAL_SUPPORT
@@ -961,3 +1005,4 @@ void ntpSetup() {
 }
 
 #endif // NTP_SUPPORT
+

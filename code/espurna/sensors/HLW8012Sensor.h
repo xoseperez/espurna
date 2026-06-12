@@ -394,3 +394,4 @@ constexpr BaseEmonSensor::Magnitude HLW8012Sensor::Magnitudes[];
 #endif
 
 #endif // SENSOR_SUPPORT && HLW8012_SUPPORT
+

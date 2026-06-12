@@ -47,3 +47,4 @@ private:
     double _value { 0.0 };
     bool _status { false };
 };
+

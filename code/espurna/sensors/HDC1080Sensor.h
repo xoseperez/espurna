@@ -156,3 +156,4 @@ class HDC1080Sensor : public I2CSensor<> {
 };
 
 #endif // SENSOR_SUPPORT && HDC1080_SUPPORT
+

@@ -4,7 +4,7 @@ EEPROM MODULE
 
 */
 
-#include "espurna.h"
+#include "../../espurna.h"
 #include "storage_eeprom.h"
 
 namespace {
@@ -272,3 +272,4 @@ void eepromSetup() {
     espurnaRegisterLoop(eepromLoop);
     _eeprom_ready = true;
 }
+

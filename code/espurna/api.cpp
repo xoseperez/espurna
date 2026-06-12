@@ -16,7 +16,9 @@ Copyright (C) 2020-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #endif
 
 #if WEB_SUPPORT
+#if defined(ESP8266)
 #include <ESPAsyncTCP.h>
+#endif
 #include <ArduinoJson.h>
 
 #include "web.h"
@@ -28,7 +30,7 @@ Copyright (C) 2020-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include <forward_list>
 #include <vector>
 
-#include "system.h"
+#include "system_orch.h"
 #include "rpc.h"
 
 #include "api_path.h"
@@ -818,3 +820,4 @@ bool apiError(ApiRequest& request) {
 }
 
 #endif // API_SUPPORT
+

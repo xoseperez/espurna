@@ -10,7 +10,7 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <Arduino.h>
 
-#include "types.h"
+#include "types_orch.h"
 
 String prettyDuration(espurna::duration::Seconds);
 
@@ -74,3 +74,4 @@ bool tryParseIdPath(espurna::StringView, size_t limit, size_t& out);
 espurna::StringView stripNewline(espurna::StringView);
 
 size_t consumeAvailable(Stream&);
+

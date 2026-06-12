@@ -20,7 +20,7 @@ Copyright (C) 2019-2024 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include "ntp.h"
 #include "ntp_timelib.h"
 #include "scheduler.h"
-#include "types.h"
+#include "types_orch.h"
 #include "ws.h"
 
 #if TERMINAL_SUPPORT == 0
@@ -2327,3 +2327,4 @@ void schSetup() {
 }
 
 #endif // SCHEDULER_SUPPORT
+
