@@ -534,7 +534,10 @@ void _wsUpdateSta(JsonObject& root) {
 }
 
 void _wsUpdateStats(JsonObject& root) {
-    root[F("heap")] = systemFreeHeap();
+    const auto stats = systemHeapStats();
+    root[F("heap")] = stats.available;
+    root[F("heapUsable")] = stats.usable;
+    root[F("heapFrag")] = stats.fragmentation;
     root[F("uptime")] = prettyDuration(systemUptime());
     root[F("rssi")] = WiFi.RSSI();
     root[F("loadaverage")] = systemLoadAverage();

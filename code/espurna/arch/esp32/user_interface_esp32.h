@@ -1,5 +1,4 @@
-#ifndef __USER_INTERFACE_ESP32_H__
-#define __USER_INTERFACE_ESP32_H__
+#pragma once
 
 #include <Arduino.h>
 #include <esp_system.h>
@@ -72,5 +71,3 @@ enum {
 #ifdef __cplusplus
 }
 #endif
-
-#endif // __USER_INTERFACE_ESP32_H__

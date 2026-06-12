@@ -110,7 +110,6 @@ PROGMEM_STRING(LongLongClickDelay, "btnLLclkDel");
 PROGMEM_STRING(RepeatDelay, "btnRepDel");
 
 PROGMEM_STRING(Relay, "btnRelay");
-PROGMEM_STRING(RelayBtnGpio, "relayBtnGpio");
 
 PROGMEM_STRING(MqttSendAll, "btnMqttSendAll");
 PROGMEM_STRING(MqttRetain, "btnMqttRetain");

@@ -141,12 +141,6 @@ function tasmotaToEspurna(tmpl) {
     // Counters per type to track assigned indices
     const counters = { relay: 0, button: 0, led: 0 };
 
-    /**
-     * Pin index (gpio number) → assigned espurna index for each type.
-     * @type {Map<string, number>}
-     */
-    const assigned = new Map();
-
     tmpl.GPIO.forEach((code, gpioPin) => {
         if (code === 0) return;
 
@@ -155,8 +149,6 @@ function tasmotaToEspurna(tmpl) {
 
         const { type, inverted } = info;
         const espurnaIndex = counters[type]++;
-        const key = `${type}:${gpioPin}`;
-        assigned.set(key, espurnaIndex);
 
         switch (type) {
             case 'relay':

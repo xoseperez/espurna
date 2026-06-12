@@ -60,6 +60,11 @@ void SystemTimer::stop() {
     if (_timer) {
         _timer->detach();
     }
+    reset();
+}
+
+void SystemTimer::reset() {
+    _callback = Callback();
 }
 
 void SystemTimer::schedule_once(Duration delay, Callback callback) {
@@ -69,6 +74,9 @@ void SystemTimer::schedule_once(Duration delay, Callback callback) {
 void SystemTimer::callback() {
     if (!_callback.isEmpty()) {
         _callback();
+    }
+    if (!_repeat) {
+        stop();
     }
 }
 

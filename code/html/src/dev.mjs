@@ -142,6 +142,8 @@ export function init() {
         sdk: 'WEB',
         core: 'WEB',
         heap: 999999,
+        heapUsable: 888888,
+        heapFrag: 12,
         loadaverage: 99,
         vcc: '3.3',
         mqttStatus: true,

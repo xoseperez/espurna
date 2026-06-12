@@ -67,6 +67,12 @@ void _eepromCommit() {
     if (!_eeprom_dirty) {
         return;
     }
+    // EEPROM.begin() never succeeded — writes live in the fallback buffer
+    // and there is no NVS handle to commit through. Without this guard the
+    // 5 s retry loop would call EEPROM.commit() forever on a dead handle.
+    if (!_eeprom_ready) {
+        return;
+    }
     DEBUG_MSG_P(PSTR("[EEPROM] Committing changes to NVS...\n"));
     if (EEPROM.commit()) {
         _eeprom_dirty = false;

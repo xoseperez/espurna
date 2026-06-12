@@ -11,8 +11,7 @@ GPIO MODULE FOR ESP32
 #include <Arduino.h>
 
 #include <algorithm>
-#include <vector>
-#include <map>
+#include <forward_list>
 
 #if WEB_SUPPORT
 #include "ws.h"
@@ -24,64 +23,21 @@ namespace espurna {
 namespace gpio {
 
 namespace origin {
+namespace internal {
 
-// We want to keep track of who locked which pin. 
-static std::vector<Origin> _origins;
+std::forward_list<Origin> origins;
 
-void add(const Origin& origin) {
-    _origins.push_back(origin);
-}
+} // namespace internal
 
-const std::vector<Origin>& all() {
-    return _origins;
+void add(Origin origin) {
+    internal::origins.remove_if(
+        [&](const Origin& other) {
+            return other == origin;
+        });
+    internal::origins.emplace_front(origin);
 }
 
 } // namespace origin
-
-namespace {
-
-struct Lock {
-    GpioBase* base;
-    unsigned char pin;
-    SourceLocation location;
-};
-
-static std::vector<Lock> _locks;
-
-} // namespace
-
-bool lock(GpioBase& base, unsigned char pin, const SourceLocation& location) {
-    for (const auto& lock : _locks) {
-        if ((lock.base == &base) && (lock.pin == pin)) {
-            return false;
-        }
-    }
-
-    _locks.push_back(Lock{&base, pin, location});
-    base.lock(pin, true);
-    return true;
-}
-
-void unlock(GpioBase& base, unsigned char pin) {
-    auto it = std::remove_if(_locks.begin(), _locks.end(), [&](const Lock& lock) {
-        return (lock.base == &base) && (lock.pin == pin);
-    });
-    if (it != _locks.end()) {
-        _locks.erase(it, _locks.end());
-        base.lock(pin, false);
-    }
-}
-
-bool locked(GpioBase& base, unsigned char pin) {
-    for (const auto& lock : _locks) {
-        if ((lock.base == &base) && (lock.pin == pin)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-// --------------------------------------------------------------------------
 
 class Hardware final : public GpioBase {
 public:
@@ -201,7 +157,7 @@ GpioBase* gpioBase(GpioType type) {
 
 BasePinPtr gpioRegister(GpioBase& base, unsigned char gpio, espurna::SourceLocation source_location) {
     BasePinPtr result;
-    if (espurna::gpio::lock(base, gpio, source_location)) {
+    if (gpioLock(base, gpio, source_location)) {
         result = base.pin(gpio);
     }
     return result;
@@ -247,7 +203,7 @@ void onVisible(JsonObject& root) {
     JsonObject& info = root.createNestedObject(F("gpioInfo"));
 
     JsonArray& locks = info.createNestedArray(F("failed-locks"));
-    for (const auto& origin : origin::all()) {
+    for (auto& origin : origin::internal::origins) {
         if (!origin.result) {
             JsonArray& entry = locks.createNestedArray();
             entry.add(origin.pin);
@@ -275,11 +231,13 @@ void gpioSetup() {
 }
 
 void hardwareGpioIgnore(unsigned char gpio) {
-    Rtcmem->gpio_ignore |= (1ULL << gpio);
+    if (gpio < 32) {
+        Rtcmem->gpio_ignore |= (uint32_t{1} << gpio);
+    }
 }
 
 void gpioLockOrigin(espurna::gpio::Origin origin) {
-    espurna::gpio::origin::add(origin);
+    espurna::gpio::origin::add(std::move(origin));
 }
 
 namespace espurna {

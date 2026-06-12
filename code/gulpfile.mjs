@@ -1117,9 +1117,9 @@ export async function eslint() {
                 log(formatted);
             }
 
-            const fatal = results.some((x) => x.errorCount > 0);
-            if (fatal) {
-                throw new Error('eslint failed');
+            const failing = results.filter((x) => x.errorCount > 0).map((x) => x.filePath);
+            if (failing.length) {
+                throw new Error(`eslint failed: ${failing.join(', ')}`);
             }
         },
     );

@@ -34,6 +34,15 @@ inline void uart_set_debug(uint8_t) {}
 inline String getResetReasonShim() { return "ESP32 Reset"; }
 inline String getResetInfoShim() { return "ESP32 Reset Info"; }
 
+// Xtensa cycle counter — exposed both as a free function (matches the
+// arduino-esp32 SDK name) and via EspCompat::getCycleCount() so existing
+// ESP.getCycleCount() callers keep working unchanged.
+inline uint32_t esp_get_cycle_count() {
+    uint32_t ccount;
+    __asm__ __volatile__("rsr %0, ccount" : "=a" (ccount));
+    return ccount;
+}
+
 // We use a macro for ESP to intercept reset calls without changing source code
 extern uint16_t systemVcc();
 struct EspCompat {
@@ -74,22 +83,11 @@ struct EspCompat {
         if (frag) *frag = 0;
     }
 
-    uint32_t getCycleCount() {
-        uint32_t ccount;
-        __asm__ __volatile__("rsr %0, ccount" : "=a" (ccount));
-        return ccount;
-    }
+    uint32_t getCycleCount() { return esp_get_cycle_count(); }
 };
 
 extern EspCompat ESP32_ESP;
 #define ESP ESP32_ESP
-
-// Missing cycle/time functions shimmed globally
-inline uint32_t esp_get_cycle_count() {
-    uint32_t ccount;
-    __asm__ __volatile__("rsr %0, ccount" : "=a" (ccount));
-    return ccount;
-}
 
 inline uint64_t micros64() {
     return (uint64_t)esp_timer_get_time();

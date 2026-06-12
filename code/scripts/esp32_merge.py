@@ -25,10 +25,14 @@ def merge_bin(source, target, env):
     flash_mode = env.BoardConfig().get("build.flash_mode", "dout")
     flash_freq = env.BoardConfig().get("build.f_flash", "40000000L")
     # f_flash is "40000000L" or "80000000L" — normalize to "40m" / "80m"
+    # Refuse to silently fall back to 40 MHz: the bootloader and the image must
+    # agree on speed or the chip won't boot, and a bad board config should
+    # surface here rather than producing a brick.
     try:
         freq_mhz = int(str(flash_freq).rstrip("L")) // 1000000
     except (TypeError, ValueError):
-        freq_mhz = 40
+        raise Exception(
+            "[POST-BUILD] Could not parse build.f_flash={!r} from board config".format(flash_freq))
     bootloader_suffix = "{}_{}m".format(flash_mode, freq_mhz)
 
     output = os.path.join(build_dir, "espurna-{}.bin".format(pio_env))

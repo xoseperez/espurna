@@ -107,7 +107,8 @@ State handle_action(State state, T&& handler) {
     Action value;
     if (pop_action(value)) {
         if (value == Action::TurnOn || value == Action::StationConnect) {
-            WiFi.disconnect();
+            // _wifiStateConnect already calls WiFi.disconnect() before
+            // WiFi.begin(); a second call here just thrashes the driver.
             internal::network_id = 0;
             internal::connection_retries = 0;
             return State::Connect;
@@ -272,25 +273,33 @@ State _wifiStateWaitConnected(State state) {
         return State::Connected;
     }
 
+    // Signed-delta arithmetic so wrap of millis() at ~49.7 days
+    // doesn't strand us in this state. (int32_t)(now - last) is the
+    // canonical Arduino idiom for monotonic-clock comparisons.
+    const auto now = millis();
+    const auto delta = static_cast<int32_t>(now - internal::last_connect);
+
     // If driver explicitly told us it failed
     if (internal::disconnect_triggered.exchange(false, std::memory_order_acq_rel)) {
         // Ignore disconnects that happen too soon after begin (likely transient or from disconnect() call)
-        if (millis() - internal::last_connect < 500) {
+        if (delta >= 0 && delta < 500) {
             return state;
         }
 
         DEBUG_MSG_P(PSTR("[WIFI] Connection failed (Reason: %d), retrying in 2s...\n"),
             internal::last_disconnect_reason.load(std::memory_order_relaxed));
-        internal::last_connect = millis() + 2000; // Small delay before next attempt
+        internal::last_connect = now + 2000; // Small delay before next attempt
         return State::WaitConnected;
     }
 
-    // Artificial delay handler
-    if (millis() < internal::last_connect) {
+    // Artificial-delay handler: last_connect can be in the future when set
+    // by the retry path above. delta < 0 means we haven't reached the
+    // deadline yet.
+    if (delta < 0) {
          return state;
     }
 
-    if (millis() - internal::last_connect > 30000) { 
+    if (delta > 30000) {
         DEBUG_MSG_P(PSTR("[WIFI] Connection timeout (status: %d)\n"), (int)WiFi.status());
         WiFi.disconnect();
         internal::connection_retries++;
@@ -376,49 +385,40 @@ void _wifiLoop() {
     }
 
 #if WEB_SUPPORT
-    int scan_count = WiFi.scanComplete();
-    if (scan_count >= 0 && internal::scan_active) {
-        internal::scan_active = false;
+    // Check scan_active first to skip the IDF call into esp_wifi when no
+    // scan has been requested — 99.9% of loop ticks.
+    if (internal::scan_active) {
+        int scan_count = WiFi.scanComplete();
+        if (scan_count >= 0) {
+            internal::scan_active = false;
 
-        // Limit how many entries we surface to the UI — the table stays
-        // readable and we avoid blasting 50+ small WS frames in a row.
-        constexpr int kMaxScanResults = 20;
-        const int count = std::min((int)scan_count, kMaxScanResults);
+            // Limit how many entries we surface to the UI — the table stays
+            // readable and we avoid blasting 50+ small WS frames in a row.
+            constexpr int kMaxScanResults = 20;
+            const int count = std::min((int)scan_count, kMaxScanResults);
 
-        // Snapshot scan data BEFORE delete so subsequent wsPost lambdas
-        // (executed later on the loop task) don't reach into freed buffers.
-        struct ScanEntry {
-            String bssid;
-            String ssid;
-            int rssi;
-            int channel;
-            bool encrypted;
-        };
-        std::vector<ScanEntry> entries;
-        entries.reserve(count);
-        for (int i = 0; i < count; ++i) {
-            entries.push_back({
-                WiFi.BSSIDstr(i),
-                WiFi.SSID(i),
-                WiFi.RSSI(i),
-                WiFi.channel(i),
-                WiFi.encryptionType(i) != WIFI_AUTH_OPEN,
-            });
-        }
-        WiFi.scanDelete();
-
-        // One ws message per network — matches the ESP8266 contract that
-        // the WebUI in html/src/wifi.mjs expects (`scanResult: [bssid,
-        // authmode, rssi, channel, ssid]` flat array).
-        for (auto& e : entries) {
-            wsPost([e](JsonObject& root) {
-                JsonArray& network = root.createNestedArray("scanResult");
-                network.add(e.bssid);
-                network.add(e.encrypted ? "yes" : "no");
-                network.add(e.rssi);
-                network.add(e.channel);
-                network.add(e.ssid);
-            });
+            // One WS frame per network — html/src/wifi.mjs scanResult()
+            // appends a single table row per message, so the wire format is
+            // a flat [bssid, authmode, rssi, channel, ssid] array.
+            for (int i = 0; i < count; ++i) {
+                // Snapshot per-entry values before scanDelete() so the
+                // captured lambda (run later on the loop task) doesn't
+                // reach into freed scan buffers.
+                String bssid = WiFi.BSSIDstr(i);
+                String ssid = WiFi.SSID(i);
+                int rssi = WiFi.RSSI(i);
+                int channel = WiFi.channel(i);
+                bool encrypted = WiFi.encryptionType(i) != WIFI_AUTH_OPEN;
+                wsPost([bssid, ssid, rssi, channel, encrypted](JsonObject& root) {
+                    JsonArray& network = root.createNestedArray("scanResult");
+                    network.add(bssid);
+                    network.add(encrypted ? "yes" : "no");
+                    network.add(rssi);
+                    network.add(channel);
+                    network.add(ssid);
+                });
+            }
+            WiFi.scanDelete();
         }
     }
 #endif
@@ -546,7 +546,7 @@ void _wifiSetup() {
 } // namespace wifi
 } // namespace espurna
 
-// ГЛОБАЛЬНЫЕ ФУНКЦИИ
+// Global API
 void wifiReload() { espurna::wifi::action(espurna::wifi::Action::TurnOn); }
 void wifiDisconnect() {
     // Funnel through the action queue (mutex-guarded) so the FSM

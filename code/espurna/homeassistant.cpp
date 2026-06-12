@@ -390,8 +390,7 @@ bool Discovery::ready() const {
 class RelayDiscovery : public Discovery {
 public:
     explicit RelayDiscovery(Context& ctx) :
-        _ctx(ctx),
-        _root(nullptr)
+        _ctx(ctx)
     {}
 
     JsonObject& root() {
@@ -538,8 +537,7 @@ static constexpr char Topic[] = MQTT_TOPIC_LIGHT_JSON;
 class LightDiscovery : public Discovery {
 public:
     explicit LightDiscovery(Context& ctx) :
-        _ctx(ctx),
-        _root(nullptr)
+        _ctx(ctx)
     {}
 
     JsonObject& root() {
@@ -812,8 +810,7 @@ void receiveLightJson(StringView payload) {
 class SensorDiscovery : public Discovery {
 public:
     explicit SensorDiscovery(Context& ctx) :
-        _ctx(ctx),
-        _root(nullptr)
+        _ctx(ctx)
     {}
 
     JsonObject& root() {
@@ -1111,8 +1108,7 @@ public:
 
     DiscoveryTask(Context ctx, State state) :
         _ctx(std::move(ctx)),
-        _state(state),
-        _advance(false)
+        _state(state)
     {}
 
     void add(Entity&& entity) {

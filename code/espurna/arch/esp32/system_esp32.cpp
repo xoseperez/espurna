@@ -292,6 +292,10 @@ HeapStats systemHeapStats() {
     return {(uint32_t)info.total_free_bytes, (uint32_t)info.largest_free_block, frag};
 }
 
+// Intentional stub. Callers (debug.cpp / influxdb.cpp / mqtt.cpp / ws.cpp) are
+// gated by `ADC_MODE_VALUE == ADC_VCC`; on ESP32 we force ADC_TOUT in
+// compat_esp32.h so those conditions fold to false and the body is dead. The
+// definition still has to exist for the linker to resolve EspCompat::getVcc().
 uint16_t systemVcc() {
     return 0;
 }

@@ -17,19 +17,12 @@ SYSTEM MODULE FOR ESP32
 #include <cstdint>
 #include <limits>
 
-// HeapStats is common but let's keep it here if not defined elsewhere
-#ifndef HEAP_STATS_DEFINED
-#define HEAP_STATS_DEFINED
 struct HeapStats {
     uint32_t available;
     uint32_t usable;
     uint8_t fragmentation;
 };
-#endif
 
-// CustomResetReason is also likely common
-#ifndef CUSTOM_RESET_REASON_DEFINED
-#define CUSTOM_RESET_REASON_DEFINED
 enum class CustomResetReason : uint8_t {
     None,
     Button,
@@ -44,7 +37,6 @@ enum class CustomResetReason : uint8_t {
     Web,
     Stability,
 };
-#endif
 
 namespace espurna {
 
