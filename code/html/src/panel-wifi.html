@@ -46,6 +46,15 @@
                         When scanning is enabled, also periodically check available networks when the currently connected network RSSI is below this value.
                     </span>
                 </div>
+
+                <div class="pure-control-group">
+                    <label>Roaming margin (dB)</label>
+                    <div><input type="number" name="wifiRoamDelta" min="1" max="40" required ></div>
+                    <span class="pure-form-message">
+                        (ESP32) Only switch to another access point when it is at least this much stronger than the current one.
+                        Checked every 3 minutes, gradually slowing down to 15 minutes while nothing changes.
+                    </span>
+                </div>
             </fieldset>
 
             <fieldset>

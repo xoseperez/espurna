@@ -41,7 +41,7 @@ void system_init_reset_info();
 #define system_restart() esp_restart()
 #define system_get_sdk_version() esp_get_idf_version()
 #define system_get_cpu_freq() ((uint8_t)getCpuFrequencyMhz())
-#define system_get_chip_id() ((uint32_t)ESP.getEfuseMac())
+#define system_get_chip_id() (ESP.getChipId())
 
 // --- Timer functions (removed redundant and conflicting definitions) ---
 

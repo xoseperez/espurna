@@ -11,10 +11,12 @@ Updated secure client support by Niek van der Maas < mail at niekvandermaas dot 
 
 #if MQTT_SUPPORT
 
+#include <atomic>
 #include <forward_list>
 #include <utility>
+#include <vector>
 
-#include "system_orch.h"
+#include "system.h"
 #include "mdns.h"
 #include "mqtt.h"
 #include "ntp.h"
@@ -1766,6 +1768,115 @@ void _mqttOnMessageAsync(char* raw_topic, char* raw_payload, AsyncMqttClientMess
     _mqttProcessMessage(topic, message);
 }
 
+void _mqttOnDisconnectAsync(AsyncMqttClientDisconnectReason reason) {
+    switch (reason) {
+        case AsyncMqttClientDisconnectReason::TCP_DISCONNECTED:
+            DEBUG_MSG_P(PSTR("[MQTT] TCP Disconnected\n"));
+            break;
+
+        case AsyncMqttClientDisconnectReason::MQTT_IDENTIFIER_REJECTED:
+            DEBUG_MSG_P(PSTR("[MQTT] Identifier Rejected\n"));
+            break;
+
+        case AsyncMqttClientDisconnectReason::MQTT_SERVER_UNAVAILABLE:
+            DEBUG_MSG_P(PSTR("[MQTT] Server unavailable\n"));
+            break;
+
+        case AsyncMqttClientDisconnectReason::MQTT_MALFORMED_CREDENTIALS:
+            DEBUG_MSG_P(PSTR("[MQTT] Malformed credentials\n"));
+            break;
+
+        case AsyncMqttClientDisconnectReason::MQTT_NOT_AUTHORIZED:
+            DEBUG_MSG_P(PSTR("[MQTT] Not authorized\n"));
+            break;
+
+        case AsyncMqttClientDisconnectReason::TLS_BAD_FINGERPRINT:
+            #if ASYNC_TCP_SSL_ENABLED
+                DEBUG_MSG_P(PSTR("[MQTT] Bad fingerprint\n"));
+            #endif
+            break;
+
+        case AsyncMqttClientDisconnectReason::MQTT_UNACCEPTABLE_PROTOCOL_VERSION:
+            // This is never used by the AsyncMqttClient source
+            #if 0
+                DEBUG_MSG_P(PSTR("[MQTT] Unacceptable protocol version\n"));
+            #endif
+            break;
+
+        case AsyncMqttClientDisconnectReason::ESP8266_NOT_ENOUGH_SPACE:
+            DEBUG_MSG_P(PSTR("[MQTT] Connect packet too big\n"));
+            break;
+
+    }
+
+    _mqttOnDisconnect();
+}
+
+// On ESP32 AsyncMqttClient callbacks run in the AsyncTCP task. When the loop lock could not be
+// taken in time (ref. AsyncGuard), the event is handed over to loop() instead of racing with it.
+// Once anything was deferred, every following event is deferred too until the queue drains,
+// so a later event handled right away could never overtake an earlier deferred one.
+// (pending counter is only checked either unlocked, which always defers, or under the loop lock,
+// which loop() also holds while running the deferred callbacks)
+// On esp8266 the guard is always locked and nothing is ever deferred.
+#if defined(ARDUINO_ARCH_ESP32)
+std::atomic<size_t> _mqtt_async_pending { 0 };
+
+bool _mqttAsyncDefer(const espurna::system::AsyncGuard& guard) {
+    return !guard.locked() || (_mqtt_async_pending.load() > 0);
+}
+
+template <typename T>
+struct MqttAsyncDeferred {
+    void operator()() {
+        callback();
+        --_mqtt_async_pending;
+    }
+
+    T callback;
+};
+
+template <typename T>
+void _mqttAsyncRunInLoop(T&& callback) {
+    ++_mqtt_async_pending;
+    systemRunInLoop(MqttAsyncDeferred<typename std::decay<T>::type>{
+        std::forward<T>(callback) });
+}
+#else
+constexpr bool _mqttAsyncDefer(const espurna::system::AsyncGuard&) {
+    return false;
+}
+
+template <typename T>
+void _mqttAsyncRunInLoop(T&& callback) {
+    systemRunInLoop(std::forward<T>(callback));
+}
+#endif
+
+// Library buffers are only valid while inside of the callback, deferred message owns a copy
+struct MqttDeferredMessage {
+    MqttDeferredMessage(const char* raw_topic, const char* raw_payload, AsyncMqttClientMessageProperties raw_properties, size_t len, size_t raw_index, size_t raw_total) :
+        topic(raw_topic),
+        payload(raw_payload, raw_payload + len),
+        properties(raw_properties),
+        index(raw_index),
+        total(raw_total)
+    {}
+
+    void operator()() {
+        _mqttOnMessageAsync(
+            const_cast<char*>(topic.c_str()),
+            payload.data(), properties,
+            payload.size(), index, total);
+    }
+
+    String topic;
+    std::vector<char> payload;
+    AsyncMqttClientMessageProperties properties;
+    size_t index;
+    size_t total;
+};
+
 #else
 
 // Sync client already implements buffering. Also assuming it modifies topic to include '\0', otherwise 'topic' conversion into StringView would not work properly.
@@ -2201,63 +2312,62 @@ void mqttSetup() {
         }
         #endif // SECURE_CLIENT != SECURE_CLIENT_NONE
 
-        _mqtt.onMessage(_mqttOnMessageAsync);
+        _mqtt.onMessage([](char* topic, char* payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total) {
+            espurna::system::AsyncGuard guard;
+            if (_mqttAsyncDefer(guard)) {
+                _mqttAsyncRunInLoop(MqttDeferredMessage(topic, payload, properties, len, index, total));
+                return;
+            }
+
+            _mqttOnMessageAsync(topic, payload, properties, len, index, total);
+        });
 
         _mqtt.onConnect([](bool) {
+            espurna::system::AsyncGuard guard;
+            if (_mqttAsyncDefer(guard)) {
+                _mqttAsyncRunInLoop([]() {
+                    _mqttOnConnect();
+                });
+                return;
+            }
+
             _mqttOnConnect();
         });
 
         _mqtt.onSubscribe([](uint16_t pid, int) {
+            espurna::system::AsyncGuard guard;
+            if (_mqttAsyncDefer(guard)) {
+                _mqttAsyncRunInLoop([pid]() {
+                    _mqttPidCallback(_mqtt_subscribe_callbacks, pid);
+                });
+                return;
+            }
+
             _mqttPidCallback(_mqtt_subscribe_callbacks, pid);
         });
 
         _mqtt.onPublish([](uint16_t pid) {
+            espurna::system::AsyncGuard guard;
+            if (_mqttAsyncDefer(guard)) {
+                _mqttAsyncRunInLoop([pid]() {
+                    _mqttPidCallback(_mqtt_publish_callbacks, pid);
+                });
+                return;
+            }
+
             _mqttPidCallback(_mqtt_publish_callbacks, pid);
         });
 
         _mqtt.onDisconnect([](AsyncMqttClientDisconnectReason reason) {
-            switch (reason) {
-                case AsyncMqttClientDisconnectReason::TCP_DISCONNECTED:
-                    DEBUG_MSG_P(PSTR("[MQTT] TCP Disconnected\n"));
-                    break;
-
-                case AsyncMqttClientDisconnectReason::MQTT_IDENTIFIER_REJECTED:
-                    DEBUG_MSG_P(PSTR("[MQTT] Identifier Rejected\n"));
-                    break;
-
-                case AsyncMqttClientDisconnectReason::MQTT_SERVER_UNAVAILABLE:
-                    DEBUG_MSG_P(PSTR("[MQTT] Server unavailable\n"));
-                    break;
-
-                case AsyncMqttClientDisconnectReason::MQTT_MALFORMED_CREDENTIALS:
-                    DEBUG_MSG_P(PSTR("[MQTT] Malformed credentials\n"));
-                    break;
-
-                case AsyncMqttClientDisconnectReason::MQTT_NOT_AUTHORIZED:
-                    DEBUG_MSG_P(PSTR("[MQTT] Not authorized\n"));
-                    break;
-
-                case AsyncMqttClientDisconnectReason::TLS_BAD_FINGERPRINT:
-                    #if ASYNC_TCP_SSL_ENABLED
-                        DEBUG_MSG_P(PSTR("[MQTT] Bad fingerprint\n"));
-                    #endif
-                    break;
-
-                case AsyncMqttClientDisconnectReason::MQTT_UNACCEPTABLE_PROTOCOL_VERSION:
-                    // This is never used by the AsyncMqttClient source
-                    #if 0
-                        DEBUG_MSG_P(PSTR("[MQTT] Unacceptable protocol version\n"));
-                    #endif
-                    break;
-
-                case AsyncMqttClientDisconnectReason::ESP8266_NOT_ENOUGH_SPACE:
-                    DEBUG_MSG_P(PSTR("[MQTT] Connect packet too big\n"));
-                    break;
-
+            espurna::system::AsyncGuard guard;
+            if (_mqttAsyncDefer(guard)) {
+                _mqttAsyncRunInLoop([reason]() {
+                    _mqttOnDisconnectAsync(reason);
+                });
+                return;
             }
 
-            _mqttOnDisconnect();
-
+            _mqttOnDisconnectAsync(reason);
         });
 
     #elif MQTT_LIBRARY == MQTT_LIBRARY_ARDUINOMQTT

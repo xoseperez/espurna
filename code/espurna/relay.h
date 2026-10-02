@@ -13,7 +13,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <cstdint>
 #include <memory>
 
-#include "system_orch.h"
+#include "system.h"
 #include "rpc.h"
 
 constexpr size_t RelaysMax { 32ul };

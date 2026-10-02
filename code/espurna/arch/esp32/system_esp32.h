@@ -2,6 +2,8 @@
 
 SYSTEM MODULE FOR ESP32
 
+Chip specific part, included by the common system.h
+
 */
 
 #pragma once
@@ -13,52 +15,81 @@ SYSTEM MODULE FOR ESP32
 #include "../../settings.h"
 #include "../../types_orch.h"
 
+#include <esp_timer.h>
+
+#include <atomic>
 #include <chrono>
 #include <cstdint>
-#include <limits>
-
-struct HeapStats {
-    uint32_t available;
-    uint32_t usable;
-    uint8_t fragmentation;
-};
-
-enum class CustomResetReason : uint8_t {
-    None,
-    Button,
-    Factory,
-    Hardware,
-    Mqtt,
-    Ota,
-    Rpc,
-    Rule,
-    Scheduler,
-    Terminal,
-    Web,
-    Stability,
-};
+#include <memory>
 
 namespace espurna {
-
 namespace sleep {
-// Microseconds is in types_esp32.h as duration::Microseconds
-constexpr auto FpmSleepMin = std::chrono::microseconds(1000);
-constexpr auto FpmSleepIndefinite = std::chrono::microseconds(0xFFFFFFF);
 
-enum class Interrupt { Low, High };
+using Microseconds = std::chrono::microseconds;
+
+constexpr auto FpmSleepMin = Microseconds{ 1000 };
+constexpr auto FpmSleepIndefinite = Microseconds{ 0xFFFFFFF };
+
 } // namespace sleep
 
 namespace system {
-struct RandomDevice {
-    using result_type = uint32_t;
-    static constexpr result_type min() { return std::numeric_limits<result_type>::min(); }
-    static constexpr result_type max() { return std::numeric_limits<result_type>::max(); }
-    uint32_t operator()() const;
+
+// Common code is written for the esp8266 cooperative model, where network
+// callbacks never overlap with loop(). On ESP32 AsyncTCP runs them in its own
+// task, possibly on the other core. The loop task holds this lock for the
+// whole iteration and releases it only while sleeping (see delay_unlocked()),
+// async entry points take it before touching any shared state.
+void lock();
+bool lock(duration::Milliseconds timeout);
+void unlock();
+
+// esp8266 ESP.restart() only happens once the SDK gets to run again, esp_restart() is immediate.
+// Network modules report whether some of their output did not reach the peer yet (e.g. +OK of
+// the RESET command, still queued or not acknowledged), restart() keeps waiting for it for a bit.
+// Checks are called from the loop task, with the loop lock held.
+using PendingOutput = bool (*)();
+void registerPendingOutput(PendingOutput);
+
+// loop() / setup() side, waits indefinitely
+struct LoopGuard {
+    LoopGuard() { lock(); }
+    ~LoopGuard() { unlock(); }
+
+    LoopGuard(const LoopGuard&) = delete;
+    LoopGuard& operator=(const LoopGuard&) = delete;
 };
+
+// AsyncTCP side. Waiting is bounded: AsyncTCP task stalling for too long lets
+// its event queue fill up, which blocks the tcpip task and whoever is waiting
+// on it. On timeout, handler should hand the work over to loop() instead
+// (ref. systemRunInLoop()), or reject it (e.g. HTTP 503). Proceeding unlocked
+// races with loop() and is only acceptable when nothing shared is touched.
+struct AsyncGuard {
+    AsyncGuard();
+    ~AsyncGuard();
+
+    AsyncGuard(const AsyncGuard&) = delete;
+    AsyncGuard& operator=(const AsyncGuard&) = delete;
+
+    bool locked() const {
+        return _locked;
+    }
+
+private:
+    bool _locked;
+};
+
 } // namespace system
 
 namespace timer {
 
+// esp_timer based, callbacks always run from loop() (ref. dispatch()), same as esp8266 os_timer
+// callbacks never overlapping with loop(). esp_timer handle is created once, on the first
+// start(), and only deleted by the destructor. (Arduino Ticker re-creates the handle on every
+// attach and deletes it on every detach, IDF frees deleted handles later in the esp_timer task,
+// so any stale copy of the handle ends up pointing to freed memory)
+// All state is guarded by the dispatcher mutex, so methods are also safe to call from other
+// tasks (e.g. AsyncTCP handlers running without the loop lock), callbacks still run from loop().
 struct SystemTimer {
     using TimeSource = time::CoreClock;
     using Duration = TimeSource::duration;
@@ -71,10 +102,11 @@ struct SystemTimer {
     SystemTimer(const SystemTimer&) = delete;
     SystemTimer& operator=(const SystemTimer&) = delete;
 
-    SystemTimer(SystemTimer&&) = default;
-    SystemTimer& operator=(SystemTimer&&) = default;
+    // esp_timer is bound to the timer id, an armed timer is not transferred (both are stopped)
+    SystemTimer(SystemTimer&&);
+    SystemTimer& operator=(SystemTimer&&);
 
-    bool armed() const { return _armed != nullptr; }
+    bool armed() const { return _armed.load(std::memory_order_acquire); }
     explicit operator bool() const { return armed(); }
 
     void once(Duration duration, Callback callback);
@@ -82,176 +114,32 @@ struct SystemTimer {
     void schedule_once(Duration, Callback);
     void stop();
 
-    void callback();
+    // esp_timer task only queues the timer id, callback runs here (from loop())
+    static void dispatch();
 
 private:
     static constexpr Duration DurationMax = Duration(6870947);
 
-    void reset();
     void start(Duration, Callback, bool repeat);
 
-    struct Tick {
-        size_t total;
-        size_t count;
-    };
+    // esp_timer callback, runs in the esp_timer task
+    static void post(void* arg);
 
+    // everything below is only touched with the dispatcher mutex held
     Callback _callback;
-
-    os_timer_t* _armed { nullptr };
+    esp_timer_handle_t _handle { nullptr };
+    uint32_t _id { 0 };
     bool _repeat { false };
 
-    std::unique_ptr<Tick> _tick;
-    std::unique_ptr<os_timer_t> _timer;
+    // esp_timer_get_time() based, us
+    int64_t _period { 0 };
+    int64_t _due { 0 };
+
+    // bumped on every start() / stop() / one-shot dispatch, so already queued dispatches are dropped
+    uint32_t _generation { 0 };
+
+    std::atomic<bool> _armed { false };
 };
 
 } // namespace timer
-
-struct ReadyFlag {
-    bool wait(duration::Milliseconds);
-    void stop();
-    bool stop_wait(duration::Milliseconds duration) { stop(); return wait(duration); }
-    bool ready() const { return _ready; }
-    explicit operator bool() const { return ready(); }
-private:
-    bool _ready { true };
-    timer::SystemTimer _timer;
-};
-
-struct PolledReadyFlag {
-    bool wait(duration::Milliseconds);
-    void stop();
-    bool stop_wait(duration::Milliseconds duration) { stop(); return wait(duration); }
-    bool ready();
-    explicit operator bool() { return ready(); }
-private:
-    bool _ready { true };
-    time::SystemClock::time_point _until{};
-};
-
-namespace heartbeat {
-using Mask = int32_t;
-using Callback = bool(*)(Mask);
-
-enum class Mode {
-    None,
-    Once,
-    Repeat
-};
-
-enum class Report : Mask {
-    Status = 1 << 1,
-    Ssid = 1 << 2,
-    Ip = 1 << 3,
-    Mac = 1 << 4,
-    Rssi = 1 << 5,
-    Uptime = 1 << 6,
-    Datetime = 1 << 7,
-    Freeheap = 1 << 8,
-    Vcc = 1 << 9,
-    Relay = 1 << 10,
-    Light = 1 << 11,
-    Hostname = 1 << 12,
-    App = 1 << 13,
-    Version = 1 << 14,
-    Board = 1 << 15,
-    Loadavg = 1 << 16,
-    Interval = 1 << 17,
-    Description = 1 << 18,
-    Range = 1 << 19,
-    RemoteTemp = 1 << 20,
-    Bssid = 1 << 21
-};
-
-constexpr Mask operator*(Report lhs, Mask rhs) { return static_cast<Mask>(lhs) * rhs; }
-constexpr Mask operator*(Mask lhs, Report rhs) { return lhs * static_cast<Mask>(rhs); }
-constexpr Mask operator|(Report lhs, Report rhs) { return static_cast<Mask>(lhs) | static_cast<Mask>(rhs); }
-constexpr Mask operator|(Report lhs, Mask rhs) { return static_cast<Mask>(lhs) | rhs; }
-constexpr Mask operator|(Mask lhs, Report rhs) { return lhs | static_cast<Mask>(rhs); }
-constexpr Mask operator&(Report lhs, Mask rhs) { return static_cast<Mask>(lhs) & rhs; }
-constexpr Mask operator&(Mask lhs, Report rhs) { return lhs & static_cast<Mask>(rhs); }
-constexpr Mask operator&(Report lhs, Report rhs) { return static_cast<Mask>(lhs) & static_cast<Mask>(rhs); }
-
-espurna::duration::Seconds currentInterval();
-espurna::duration::Milliseconds currentIntervalMs();
-Mask currentValue();
-Mode currentMode();
-} // namespace heartbeat
-
-namespace settings {
-namespace internal {
-
-template <>
-heartbeat::Mode convert(const String&);
-
-String serialize(heartbeat::Mode);
-
-} // namespace internal
-} // namespace settings
 } // namespace espurna
-
-uint32_t randomNumber(uint32_t minimum, uint32_t maximum);
-uint32_t randomNumber();
-
-unsigned long systemFreeStack();
-HeapStats systemHeapStats();
-size_t systemFreeHeap();
-size_t systemInitialFreeHeap();
-
-[[noreturn]] void forceEraseSDKConfig();
-bool eraseSDKConfig();
-void factoryReset();
-
-uint32_t systemResetReason();
-uint8_t systemStabilityCounter();
-void systemStabilityCounter(uint8_t count);
-
-void systemForceStable();
-void systemForceUnstable();
-bool systemCheck();
-
-void customResetReason(CustomResetReason);
-CustomResetReason customResetReason();
-String customResetReasonToPayload(CustomResetReason);
-
-void deferredReset(espurna::duration::Milliseconds, CustomResetReason);
-void prepareReset(CustomResetReason);
-bool pendingDeferredReset();
-
-bool wakeupModemForcedSleep();
-bool prepareModemForcedSleep();
-
-using SleepCallback = void (*)();
-void systemBeforeSleep(SleepCallback);
-void systemAfterSleep(SleepCallback);
-
-bool instantLightSleep();
-bool instantLightSleep(std::chrono::microseconds);
-bool instantLightSleep(uint8_t pin, espurna::sleep::Interrupt);
-bool instantDeepSleep(std::chrono::microseconds);
-
-unsigned long systemLoadAverage();
-
-espurna::duration::Seconds systemHeartbeatInterval();
-void systemScheduleHeartbeat();
-
-void systemStopHeartbeat(espurna::heartbeat::Callback);
-void systemHeartbeat(espurna::heartbeat::Callback, espurna::heartbeat::Mode, espurna::duration::Seconds interval);
-void systemHeartbeat(espurna::heartbeat::Callback, espurna::heartbeat::Mode);
-void systemHeartbeat(espurna::heartbeat::Callback);
-bool systemHeartbeat();
-
-espurna::duration::Seconds systemUptime();
-
-espurna::StringView systemDevice();
-espurna::StringView systemIdentifier();
-espurna::StringView systemChipId();
-espurna::StringView systemShortChipId();
-espurna::StringView systemDefaultPassword();
-
-String systemPassword();
-bool systemPasswordEquals(espurna::StringView);
-String systemHostname();
-String systemDescription();
-
-void systemSetup();
-void systemSetupUnstable();

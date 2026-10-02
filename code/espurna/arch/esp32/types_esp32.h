@@ -20,6 +20,7 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include "compat.h"
 #if defined(ESP32)
 #include "compat_esp32.h"
+#include <esp_timer.h>
 #endif
 
 namespace espurna {
@@ -96,15 +97,16 @@ using ClockCycles = std::chrono::duration<uint32_t, std::ratio<1, 240000000>>;
 
 namespace time {
 
+// Same as esp8266, 64bit microseconds (never overflows in practice)
 struct SystemClock {
-    using rep = uint32_t;
-    using period = std::milli;
-    using duration = std::chrono::duration<rep, period>;
-    using time_point = std::chrono::time_point<SystemClock>;
+    using duration = espurna::duration::Microseconds;
+    using rep = duration::rep;
+    using period = duration::period;
+    using time_point = std::chrono::time_point<SystemClock, duration>;
     static constexpr bool is_steady = true;
 
     static time_point now() noexcept {
-        return time_point(duration(millis()));
+        return time_point(duration(esp_timer_get_time()));
     }
 };
 
@@ -120,14 +122,50 @@ struct CoreClock {
     }
 };
 
-using CpuClock = CoreClock;
+// Same as esp8266, CPU cycles (32bit, wraps every ~18s at 240MHz)
+struct CpuClock {
+    using duration = espurna::duration::ClockCycles;
+    using rep = duration::rep;
+    using period = duration::period;
+    using time_point = std::chrono::time_point<CpuClock, duration>;
+    static constexpr bool is_steady = true;
 
-bool blockingDelay(CoreClock::duration timeout, CoreClock::duration interval, std::function<bool()> callback);
+    static time_point now() noexcept {
+        return time_point(duration(esp_get_cycle_count()));
+    }
+};
+
+inline CpuClock::time_point ccount() {
+    return CpuClock::now();
+}
+
+inline SystemClock::time_point micros() {
+    return SystemClock::now();
+}
+
+} // namespace time
+
+namespace system {
+
+// Sleep with the loop lock released, so AsyncTCP handlers can run in the
+// meantime (same as esp8266 servicing SYS tasks inside delay())
+void delay_unlocked(uint32_t ms);
+
+} // namespace system
+
+namespace time {
+
+bool tryDelay(CoreClock::time_point start, CoreClock::duration timeout, CoreClock::duration interval);
+
+// Same semantics as esp8266: keep waiting while `blocked()` returns true,
+// returns the last `blocked()` result (i.e. true on timeout)
+bool blockingDelay(CoreClock::duration timeout, CoreClock::duration interval, std::function<bool()> blocked);
 bool blockingDelay(CoreClock::duration timeout, CoreClock::duration interval);
 bool blockingDelay(CoreClock::duration timeout);
 
 inline void delay(CoreClock::duration duration) {
-    ::delay(std::chrono::duration_cast<std::chrono::milliseconds>(duration).count());
+    system::delay_unlocked(
+        std::chrono::duration_cast<std::chrono::milliseconds>(duration).count());
 }
 
 inline CoreClock::time_point millis() {
@@ -135,36 +173,6 @@ inline CoreClock::time_point millis() {
 }
 
 } // namespace time
-
-namespace sleep {
-    using Microseconds = duration::Microseconds;
-}
-
-// -----------------------------------------------------------------------------
-// POLLED FLAG
-// -----------------------------------------------------------------------------
-
-template <typename TimeSource>
-struct PolledFlag {
-    using time_point = typename TimeSource::time_point;
-    using duration = typename TimeSource::duration;
-
-    void reset() {
-        _last = TimeSource::now();
-    }
-
-    bool wait(duration timeout) {
-        auto now = TimeSource::now();
-        if (now - _last >= timeout) {
-            _last = now;
-            return true;
-        }
-        return false;
-    }
-
-private:
-    time_point _last {};
-};
 
 // -----------------------------------------------------------------------------
 // CALLBACKS
@@ -366,7 +374,6 @@ using espurna::StringView;
 using espurna::SourceLocation;
 using espurna::make_source_location;
 using espurna::ReentryLock;
-using espurna::PolledFlag;
 
 // Global settings helpers
 String getSetting(StringView key);

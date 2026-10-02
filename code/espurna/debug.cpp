@@ -31,6 +31,13 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <WiFiUdp.h>
 #endif
 
+#if defined(ARDUINO_ARCH_ESP32)
+#include <mutex>
+
+// Arduino core main.cpp
+extern TaskHandle_t loopTaskHandle;
+#endif
+
 namespace espurna {
 namespace debug {
 namespace settings {
@@ -375,6 +382,11 @@ void sendBytes(const uint8_t* bytes, size_t size) {
 // Longer recording of all log data. Stops when storage is filled, requires manual flushing.
 
 void add(const DebugPrefix& prefix, const char* data, size_t len) {
+    // also keeps dump() from seeing the storage modified while it is being printed
+    if (!internal::enabled) {
+        return;
+    }
+
     if (len > std::numeric_limits<uint16_t>::max()) {
         return;
     }
@@ -393,7 +405,8 @@ void add(const DebugPrefix& prefix, const char* data, size_t len) {
     internal::storage.push_back(total & 0xff);
 
     if (prefixLen) {
-        internal::storage.insert(internal::storage.end(), prefix, prefix + sizeof(prefix));
+        // record length only accounts for the visible prefix chars, not the trailing '\0'
+        internal::storage.insert(internal::storage.end(), prefix, prefix + prefixLen);
     }
     internal::storage.insert(internal::storage.end(), data, data + len);
 }
@@ -405,14 +418,19 @@ void dump(Print& out) {
             break;
         }
 
-        size_t len = internal::storage[index] << 8;
-        len = len | internal::storage[index + 1];
+        if ((index + 2) > internal::storage.size()) {
+            break;
+        }
+
+        size_t len = static_cast<uint8_t>(internal::storage[index]) << 8;
+        len = len | static_cast<uint8_t>(internal::storage[index + 1]);
         index += 2;
 
-        auto value = internal::storage[index + len];
-        internal::storage[index + len] = '\0';
-        out.print(internal::storage.data() + index);
-        internal::storage[index + len] = value;
+        if ((index + len) > internal::storage.size()) {
+            break;
+        }
+
+        out.write(internal::storage.data() + index, len);
 
         index += len;
     } while (true);
@@ -543,11 +561,81 @@ bool output(const char* message, size_t len) {
 } // namespace syslog
 #endif
 
+void send_now(const char* message, size_t len, Timestamp timestamp);
+
+#if defined(ARDUINO_ARCH_ESP32)
+// Outputs (telnet clients, websocket buffer, log buffer) belong to the loop task.
+// On ESP32 messages also come from AsyncTCP, WiFi events and other tasks running in
+// parallel, and writing into the same buffers from two tasks corrupts the heap.
+// Queue those messages instead and let loop() send them out, like everything else.
+namespace deferred {
+
+struct Message {
+    String text;
+    Timestamp timestamp;
+};
+
+constexpr size_t BytesMax { 4096 };
+
+std::mutex mutex;
+std::vector<Message> messages;
+size_t bytes { 0 };
+
+bool loop_task() {
+    return xTaskGetCurrentTaskHandle() == loopTaskHandle;
+}
+
+void push(const char* message, size_t len, Timestamp timestamp) {
+    std::lock_guard<std::mutex> lock(mutex);
+    if ((bytes + len) > BytesMax) {
+        return;
+    }
+
+    String text;
+    text.concat(message, len);
+    messages.push_back(Message{std::move(text), timestamp});
+    bytes += len;
+}
+
+void flush() {
+    std::vector<Message> ready;
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        if (messages.empty()) {
+            return;
+        }
+
+        ready.swap(messages);
+        bytes = 0;
+    }
+
+    for (const auto& message : ready) {
+        send_now(message.text.c_str(), message.text.length(), message.timestamp);
+    }
+}
+
+} // namespace deferred
+#endif
+
 void send(const char* message, size_t len, Timestamp timestamp) {
     if (!message || !len) {
         return;
     }
 
+#if defined(ARDUINO_ARCH_ESP32)
+    if (!deferred::loop_task()) {
+        deferred::push(message, len, timestamp);
+        return;
+    }
+
+    // keep the order, anything queued by other tasks goes out first
+    deferred::flush();
+#endif
+
+    send_now(message, len, timestamp);
+}
+
+void send_now(const char* message, size_t len, Timestamp timestamp) {
     char prefix[10] = {0};
     static bool continue_timestamp = true;
     if (timestamp && continue_timestamp) {
@@ -761,6 +849,10 @@ void debugSetup() {
     ets_install_putc1(debugIgnoreChar);
 #endif
 #if DEBUG_SUPPORT
+#if defined(ARDUINO_ARCH_ESP32)
+    // messages queued by other tasks, when loop itself has nothing to print
+    espurnaRegisterLoop(espurna::debug::deferred::flush);
+#endif
 #if DEBUG_UDP_SUPPORT
     if (espurna::debug::syslog::build::enabled()) {
         espurna::debug::syslog::configure();

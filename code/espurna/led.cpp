@@ -987,6 +987,8 @@ void led(::terminal::CommandContext&& ctx) {
                 espurna::settings::internal::serialize(led.mode()).c_str(),
                 led.pattern().toString().c_str());
     }
+
+    terminalOK(ctx);
 }
 
 static constexpr ::terminal::Command Commands[] PROGMEM {

@@ -2357,6 +2357,7 @@ void wifi(::terminal::CommandContext&& ctx) {
         auto id = espurna::settings::internal::convert<size_t>(ctx.argv[1]);
         if (id < sta::build::NetworksMax) {
             settingsDump(ctx, sta::settings::query::Settings, id);
+            terminalOK(ctx);
             return;
         }
 

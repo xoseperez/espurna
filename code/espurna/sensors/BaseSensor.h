@@ -75,6 +75,12 @@ public:
         }
 
         void detach() {
+            // Nothing attached yet. ESP32 Core does not check the pin number and
+            // writes past the end of its handlers array otherwise
+            if (_current == GPIO_NONE) {
+                return;
+            }
+
             ::gpioUnlock(_current);
             ::detachInterrupt(_current);
             _current = GPIO_NONE;

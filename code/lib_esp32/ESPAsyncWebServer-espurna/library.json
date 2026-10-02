@@ -1,0 +1,26 @@
+{
+  "name":"ESPAsyncWebServer-espurna",
+  "description":"ESPHome ESPAsyncWebServer 3.4.0 with thread-safe AsyncWebSocket for ESP32 (ESPurna fork, see src/AsyncWebSocket.h)",
+  "keywords":"http,async,websocket,webserver",
+  "authors":
+  {
+    "name": "ESPHome Team",
+    "maintainer": true
+  },
+  "repository":
+  {
+    "type": "git",
+    "url": "https://github.com/esphome/ESPAsyncWebServer.git"
+  },
+  "version": "3.4.0-espurna.1",
+  "license": "LGPL-3.0",
+  "frameworks": "arduino",
+  "platforms": ["espressif32"],
+  "dependencies": [
+    {
+      "owner": "esphome",
+      "name": "AsyncTCP-esphome",
+      "platforms": ["espressif32"]
+    }
+  ]
+}

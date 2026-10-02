@@ -327,6 +327,7 @@ void config(::terminal::CommandContext&& ctx) {
     JsonObject& root = jsonBuffer.createObject();
     settingsGetJson(root);
     root.prettyPrintTo(ctx.output);
+    ctx.output.print('\n');
     terminalOK(ctx);
 }
 

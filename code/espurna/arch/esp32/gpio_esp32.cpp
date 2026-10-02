@@ -9,6 +9,7 @@ GPIO MODULE FOR ESP32
 #include "rtcmem.h"
 
 #include <Arduino.h>
+#include <driver/gpio.h>
 
 #include <algorithm>
 #include <forward_list>
@@ -51,23 +52,23 @@ public:
         return Pins;
     }
 
-    bool valid(unsigned char pin) const override {
-        return pin < Pins;
-    }
-
     // Classic ESP32 wiring constraints:
-    //   GPIO 6..11: bonded to the on-chip SPI flash; driving them = boot crash.
-    //   GPIO 20, 24, 28..31: not bonded on most packages.
+    //   GPIO 6..11: bonded to the on-chip SPI flash; touching them = boot crash.
+    //   GPIO 20, 24, 28..31: do not exist.
     //   GPIO 34..39: input-only, no output driver and no pull resistors.
-    // Strapping pins (0, 2, 5, 12, 15) remain valid for output — they only
-    // need attention at reset time.
-    bool validForOutput(unsigned char pin) const override {
-        if (!valid(pin)) return false;
+    // Strapping pins (0, 2, 5, 12, 15) remain valid — they only need
+    // attention at reset time.
+    // Same as esp8266, flash pins are not valid for anything (incl. buttons and sensors).
+    bool valid(unsigned char pin) const override {
+        if (pin >= Pins) return false;
         if (pin >= 6 && pin <= 11) return false;
-        if (pin >= 34) return false;
         if (pin == 20 || pin == 24) return false;
         if (pin >= 28 && pin <= 31) return false;
         return true;
+    }
+
+    bool validForOutput(unsigned char pin) const override {
+        return valid(pin) && (pin < 34);
     }
 
     bool lock(unsigned char pin) const override {
@@ -99,12 +100,19 @@ public:
         return _pin;
     }
 
+    // Relay pads may still be latched from before the software reset (ref. system_esp32.cpp
+    // deferred reset). While held, pad ignores any configuration change, so the output stays
+    // as it was until the first write sets the output register and the hold is released.
     void pinMode(int8_t mode) override {
         ::pinMode(_pin, mode);
+        if (mode != OUTPUT) {
+            gpio_hold_dis(static_cast<gpio_num_t>(_pin));
+        }
     }
 
     void digitalWrite(int8_t val) override {
         ::digitalWrite(_pin, val);
+        gpio_hold_dis(static_cast<gpio_num_t>(_pin));
     }
 
     int digitalRead() override {
@@ -228,6 +236,24 @@ void gpioSetup() {
 #if WEB_SUPPORT
     espurna::gpio::web::setup();
 #endif
+
+    // Pads latched before the software reset (ref. system_esp32.cpp deferred reset).
+    // Relay module marks its pins again during setup, anything that is no longer used
+    // after the first loop() is released right away instead of staying latched.
+    static uint32_t previous;
+    previous = Rtcmem->gpio_ignore;
+    Rtcmem->gpio_ignore = 0;
+
+    if (previous) {
+        espurnaRegisterOnce([]() {
+            const auto unused = previous & ~Rtcmem->gpio_ignore;
+            for (uint8_t pin = 0; pin < 32; ++pin) {
+                if (unused & (uint32_t{1} << pin)) {
+                    gpio_hold_dis(static_cast<gpio_num_t>(pin));
+                }
+            }
+        });
+    }
 }
 
 void hardwareGpioIgnore(unsigned char gpio) {
@@ -239,25 +265,3 @@ void hardwareGpioIgnore(unsigned char gpio) {
 void gpioLockOrigin(espurna::gpio::Origin origin) {
     espurna::gpio::origin::add(std::move(origin));
 }
-
-namespace espurna {
-namespace settings {
-namespace internal {
-
-String serialize_gpio_type(GpioType type) {
-    switch (type) {
-        case GpioType::Hardware: return "hardware";
-        case GpioType::Mcp23s08: return "mcp23s08";
-        default: return "none";
-    }
-}
-
-GpioType convert_gpio_type(const String& value) {
-    if (value.equalsIgnoreCase("hardware")) return GpioType::Hardware;
-    if (value.equalsIgnoreCase("mcp23s08")) return GpioType::Mcp23s08;
-    return GpioType::None;
-}
-
-} // namespace internal
-} // namespace settings
-} // namespace espurna

@@ -19,7 +19,7 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include "lightfox.h"
 #include "mqtt.h"
 #include "relay.h"
-#include "system_orch.h"
+#include "system.h"
 #include "thermostat.h"
 
 #if WEB_SUPPORT
@@ -937,6 +937,8 @@ void button(::terminal::CommandContext&& ctx) {
                 ? (button.event_emitter->pin()->description().c_str())
                 : PSTR("Virtual"));
     }
+
+    terminalOK(ctx);
 }
 
 PROGMEM_STRING(Button, "BUTTON");

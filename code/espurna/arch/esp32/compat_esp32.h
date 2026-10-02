@@ -11,6 +11,8 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
+#include <esp_system.h>
+
 // ESP8266-specific memory functions
 #define memmove_P memmove
 #define memcpy_P memcpy
@@ -30,9 +32,28 @@ inline void uart_set_debug(uint8_t) {}
 // Stack info — uxTaskGetStackHighWaterMark returns words; convert to bytes for ESP8266 parity.
 #define getFreeStack() (uxTaskGetStackHighWaterMark(NULL) * sizeof(StackType_t))
 
-// ESP class shim helper
-inline String getResetReasonShim() { return "ESP32 Reset"; }
-inline String getResetInfoShim() { return "ESP32 Reset Info"; }
+// ESP class shim helper, same role as ESP.getResetReason() / getResetInfo() on esp8266
+inline String getResetReasonShim() {
+    switch (esp_reset_reason()) {
+    case ESP_RST_POWERON: return F("Power On");
+    case ESP_RST_EXT: return F("External System");
+    case ESP_RST_SW: return F("Software/System restart");
+    case ESP_RST_PANIC: return F("Exception");
+    case ESP_RST_INT_WDT: return F("Interrupt Watchdog");
+    case ESP_RST_TASK_WDT: return F("Task Watchdog");
+    case ESP_RST_WDT: return F("Watchdog");
+    case ESP_RST_DEEPSLEEP: return F("Deep-Sleep Wake");
+    case ESP_RST_BROWNOUT: return F("Brownout");
+    case ESP_RST_SDIO: return F("SDIO");
+    case ESP_RST_UNKNOWN:
+        break;
+    }
+    return F("Unknown");
+}
+
+inline String getResetInfoShim() {
+    return String(F("Reset reason: ")) + String(static_cast<int>(esp_reset_reason()), 10);
+}
 
 // Xtensa cycle counter — exposed both as a free function (matches the
 // arduino-esp32 SDK name) and via EspCompat::getCycleCount() so existing
@@ -54,7 +75,12 @@ struct EspCompat {
     operator EspClass&() { return ESP; }
     
     uint32_t getFreeHeap() { return ESP.getFreeHeap(); }
-    uint32_t getChipId() { return (uint32_t)ESP.getEfuseMac(); }
+    // Same as esp8266, last 3 bytes of the STA MAC (efuse value starts with the vendor OUI)
+    uint32_t getChipId() {
+        uint8_t mac[6] {};
+        esp_read_mac(mac, ESP_MAC_WIFI_STA);
+        return (uint32_t{mac[3]} << 16) | (uint32_t{mac[4]} << 8) | uint32_t{mac[5]};
+    }
     uint32_t getEfuseMac() { return (uint32_t)ESP.getEfuseMac(); }
 
     // OTA and Flash related — delegate to Arduino-ESP32 core (which reads efuse / SPI flash).

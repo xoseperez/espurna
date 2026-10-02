@@ -1389,7 +1389,7 @@ void configure() {
     internal::enabled = settings::enabled();
 
     if (mqttConnected() && (current != internal::enabled)) {
-        publishDiscoveryForState(current);
+        publishDiscoveryForState(internal::enabled);
     }
 }
 
@@ -1485,6 +1485,7 @@ STRING_VIEW_INLINE(Dump, "HA");
 
 void dump(::terminal::CommandContext&& ctx) {
     settingsDump(ctx, settings::query::Settings);
+    terminalOK(ctx);
 }
 
 STRING_VIEW_INLINE(Send, "HA.SEND");

@@ -18,7 +18,7 @@ Copyright (C) 2019-2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #if DEBUG_SUPPORT
 
 #include "crash.h"
-#include "system_orch.h"
+#include "system.h"
 #include "rtcmem.h"
 #include "storage_eeprom.h"
 
@@ -146,6 +146,18 @@ void dump(Print& print, bool check) {
     if (check && crash_time_erased) {
         return;
     }
+
+#if defined(ARDUINO_ARCH_ESP32)
+    // Nothing writes crash data to EEPROM on ESP32 (esp8266 custom_crash_callback() is never called),
+    // stored bytes are meaningless. Panic info is saved in the core dump partition instead
+    if (crash_time_erased) {
+        snprintf_P(buffer, sizeof(buffer),
+            PSTR("Reason of restart: %s\nCrash details (if any) are in the core dump, see COREDUMP\n"),
+            ESP.getResetReason().c_str());
+        print.print(buffer);
+        return;
+    }
+#endif
 
     uint8_t reason = instance.read(EepromCrashBegin + SAVE_CRASH_RESTART_REASON);
     if (!crash_time_erased) {

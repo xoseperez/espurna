@@ -12,6 +12,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <ESPAsyncWebServer.h>
 
+#include <atomic>
 #include <functional>
 #include <list>
 #include <vector>
@@ -57,6 +58,7 @@ public:
     size_t write(uint8_t) final override;
     size_t write(const uint8_t *buffer, size_t size) final override;
 
+    // On ESP32 also changed from the async_tcp task, ref. _onDisconnect()
     State state() const {
         return _state;
     }
@@ -74,7 +76,11 @@ private:
 
     std::list<BufferType> _buffers;
     AsyncWebServerRequest* const _request;
+#if defined(ARDUINO_ARCH_ESP32)
+    std::atomic<State> _state;
+#else
     State _state;
+#endif
 
     RequestPrint(Config config, AsyncWebServerRequest* request) :
         _config(config),

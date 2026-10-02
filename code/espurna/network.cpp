@@ -197,6 +197,7 @@ void host(::terminal::CommandContext&& ctx) {
     }
 
     ctx.output.printf_P(PSTR("%s not found\n"), ctx.argv[1].c_str());
+    terminalError(ctx, F("Host not found"));
 }
 
 PROGMEM_STRING(Netstat, "NETSTAT");
@@ -220,7 +221,8 @@ void netstat(::terminal::CommandContext&& ctx) {
         }
     }
 #else
-    ctx.output.println(F("NETSTAT not implemented for ESP32"));
+    // lwIP pcb lists belong to the tcpip task here, can't be walked from loop() safely
+    terminalError(ctx, F("NETSTAT is not implemented for ESP32"));
 #endif
 }
 

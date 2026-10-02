@@ -4030,6 +4030,12 @@ std::unique_ptr<GpioProvider> _relayGpioProvider(size_t index, RelayType type) {
         return nullptr;
     }
 
+    // Not configured, e.g. relaySetup() probing the next index. Same as gpioRegister() failing below,
+    // and nothing to complain about
+    if (cfg.main == GPIO_NONE) {
+        return nullptr;
+    }
+
     if (!gpioValidForOutput(*base, cfg.main)) {
         DEBUG_MSG_P(PSTR("[RELAY] #%u: GPIO%u is not valid for output (flash-reserved or input-only)\n"),
             (unsigned)index, (unsigned)cfg.main);

@@ -58,6 +58,8 @@ void setStatus(AsyncWebServerRequest *request, int code, const String& payload =
 }
 
 void onUpgrade(AsyncWebServerRequest *request) {
+    // not in onFile(), holding up AsyncTCP for every uploaded chunk only slows the upload down
+    ::espurna::system::AsyncGuard guard;
     if (!webAuthenticate(request)) {
         return request->requestAuthentication(systemHostname().c_str());
     }
@@ -134,7 +136,27 @@ void onFile(AsyncWebServerRequest *request, String filename, size_t index, uint8
     }
 
     if (final) {
-        otaFinalize(index + len, CustomResetReason::Ota, true);
+        ::espurna::system::AsyncGuard guard;
+        if (guard.locked()) {
+            otaFinalize(index + len, CustomResetReason::Ota, true);
+            return;
+        }
+
+        // Update belongs to this upload and is finished right here, so that onUpgrade() still
+        // reports the actual result. What otaFinalize() does after that (reset, EEPROM rotation,
+        // debug output) belongs to loop() and happens there. Never the case on esp8266.
+        const auto size = index + len;
+        const auto success = Update.isRunning() && Update.end(true);
+        systemRunInLoop([size, success]() {
+            if (success) {
+                DEBUG_MSG_P(PSTR("[OTA] Success: %7u bytes\n"), size);
+                prepareReset(CustomResetReason::Ota);
+                return;
+            }
+
+            otaPrintError();
+            eepromRotate(true);
+        });
     } else {
         otaProgress(index + len);
     }

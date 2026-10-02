@@ -28,6 +28,7 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #endif
 #if defined(ESP32)
 #include <esp_sntp.h>
+#include <lwip/tcpip.h>
 #endif
 
 #include <algorithm>
@@ -504,6 +505,8 @@ Datetime make_datetime() {
     return out;
 }
 
+void onSystemTimeSynced();
+
 #if TERMINAL_SUPPORT
 namespace terminal {
 
@@ -577,6 +580,11 @@ void set_simple(::terminal::CommandContext&& ctx) {
     auto value = parse::timestamp(ctx.argv[1]);
     if (value && setTimestamp(value.timestamp())) {
         internal::status.update(value.timestamp());
+#if defined(ESP32)
+        // esp8266 settimeofday_cb() fires for any settimeofday(), ESP32 sync notification is
+        // SNTP-only. Without this ticks (and scheduler) never start when time is set manually
+        ::espurnaRegisterOnce(onSystemTimeSynced);
+#endif
         terminalOK(ctx);
         return;
     }
@@ -816,6 +824,12 @@ void configure() {
     // When enabled, it is possible that lwip will replace the NTP server pointer from under us
     sntp_servermode_dhcp(espurna::ntp::settings::dhcp());
 
+#if defined(ESP32)
+    // esp8266 lwip asks sntp_update_delay_MS_rfc_not_less_than_15000() every time, IDF has its
+    // own interval instead (3 hours by default) and ntpUpdateIntvl would be ignored otherwise
+    sntp_set_sync_interval(espurna::ntp::update_interval());
+#endif
+
     // Reduce the number of times we call `tzset()` when timezone remains the same
     const auto cfg_tz = espurna::ntp::settings::tz();
 
@@ -849,8 +863,26 @@ void configure() {
     }
 }
 
-#if defined(ESP8266)
-void onStationModeGotIP(WiFiEventStationModeGotIP) {
+#if defined(ESP32)
+// esp8266 lwip2 glue restarts SNTP every time the netif gets a valid address (sntp_stop + sntp_init
+// from the netif status callback), IDF does not. sntp_init() from setup() runs before the station is
+// up, the first request fails and lwip falls back to its retry backoff (15s, 30s, ...), so the first
+// sync used to happen up to ~30s after the IP was assigned. MQTT heartbeat (and relay status reports)
+// are held back until NTP syncs, at most 10s after MQTT connects, and are then postponed until the
+// next heartbeat interval. Kick SNTP from the tcpip thread, same as esp8266 does.
+void restartOnGotIP() {
+    tcpip_callback(
+        [](void*) {
+            if (sntp_enabled()) {
+                sntp_stop();
+                sntp_init();
+            }
+        }, nullptr);
+}
+#endif
+
+#if defined(ESP8266) || defined(ESP32)
+void onStationModeGotIP() {
     if (!sntp_enabled()) {
         return;
     }
@@ -890,13 +922,18 @@ void setup() {
     // make sure our logic does know about the actual server
     // in case dhcp sends out ntp settings
 #if defined(ESP8266)
-    static auto track_active_server = WiFi.onStationModeGotIP(onStationModeGotIP);
+    static auto track_active_server = WiFi.onStationModeGotIP(
+        [](WiFiEventStationModeGotIP) {
+            onStationModeGotIP();
+        });
 #elif defined(ESP32)
-    // TODO: ESP32 does not have an onStationModeGotIP equivalent here.
-    // If DHCP pushes a new NTP server (NTP_DHCP_SERVER=1), ESP-IDF's lwIP
-    // will update sntp internally, but our configure() won't re-run and
-    // internal::server won't reflect the change. Implement a wifiRegister
-    // callback (Event::StationConnected) that calls configure() on ESP32.
+    // StationConnected is published from the loop once the IP is assigned
+    wifiRegister([](espurna::wifi::Event event) {
+        if (event == espurna::wifi::Event::StationConnected) {
+            onStationModeGotIP();
+            restartOnGotIP();
+        }
+    });
 #endif
 
     // generic configuration, always handled

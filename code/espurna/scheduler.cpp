@@ -1148,6 +1148,7 @@ void entrypoint(CommandContext&& ctx) {
 
     if (ctx.argv.size() != 2) {
         settingsDump(ctx, settings::Settings);
+        terminalOK(ctx);
         return;
     }
 

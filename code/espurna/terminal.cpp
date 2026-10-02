@@ -22,7 +22,7 @@ Copyright (C) 2020-2022 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include "crash.h"
 #include "mqtt.h"
 #include "settings.h"
-#include "system_orch.h"
+#include "system.h"
 #include "sensor.h"
 #include "telnet.h"
 #include "terminal.h"
@@ -37,6 +37,10 @@ Copyright (C) 2020-2022 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 
 #if defined(ESP8266)
 #include <Schedule.h>
+#endif
+#if defined(ARDUINO_ARCH_ESP32)
+#include <esp_ota_ops.h>
+#include <esp_partition.h>
 #endif
 #include <Stream.h>
 
@@ -196,8 +200,14 @@ void info(CommandContext&& ctx) {
 
     ctx.output.printf_P(PSTR("device: %s\n"),
             systemDevice().c_str());
+#if defined(ARDUINO_ARCH_ESP32)
+    ctx.output.printf_P(PSTR("mcu: %s rev%u chipid: %s freq: %hhumhz\n"),
+            ESP->getChipModel(), ESP->getChipRevision(),
+            systemChipId().c_str(), system_get_cpu_freq());
+#else
     ctx.output.printf_P(PSTR("mcu: esp8266 chipid: %s freq: %hhumhz\n"),
             systemChipId().c_str(), system_get_cpu_freq());
+#endif
 
     const auto sdk = buildSdk();
     ctx.output.printf_P(PSTR("sdk: %s core: %s\n"),
@@ -349,6 +359,30 @@ StringView flash_chip_mode() {
 
 PROGMEM_STRING(Storage, "STORAGE");
 
+#if defined(ARDUINO_ARCH_ESP32)
+// Flash is split into partitions (ref. board_build.partitions), unlike esp8266 fixed layout
+void storage(CommandContext&& ctx) {
+    ctx.output.printf_P(PSTR("speed: %u\n"), ESP.getFlashChipSpeed());
+    ctx.output.printf_P(PSTR("mode: %s\n"), flash_chip_mode().c_str());
+    ctx.output.printf_P(PSTR("size: %u\n"), ESP.getFlashChipSize());
+
+    const auto* running = esp_ota_get_running_partition();
+
+    auto it = esp_partition_find(ESP_PARTITION_TYPE_ANY, ESP_PARTITION_SUBTYPE_ANY, nullptr);
+    for (; it != nullptr; it = esp_partition_next(it)) {
+        const auto* part = esp_partition_get(it);
+        ctx.output.printf_P(PSTR("%-8s [%08X...%08X) (%u bytes)%s\n"),
+            part->label, part->address, part->address + part->size, part->size,
+            (part == running) ? PSTR(" running") : PSTR(""));
+    }
+    esp_partition_iterator_release(it);
+
+    ctx.output.printf_P(PSTR("app: %u bytes, free for OTA: %u bytes\n"),
+        ESP.getSketchSize(), ESP.getFreeSketchSpace());
+
+    terminalOK(ctx);
+}
+#else
 void storage(CommandContext&& ctx) {
     ctx.output.printf_P(PSTR("flash chip ID: 0x%06X\n"), ESP.getFlashChipId());
     ctx.output.printf_P(PSTR("speed: %u\n"), ESP.getFlashChipSpeed());
@@ -387,6 +421,7 @@ void storage(CommandContext&& ctx) {
 
     terminalOK(ctx);
 }
+#endif
 
 PROGMEM_STRING(Adc, "ADC");
 

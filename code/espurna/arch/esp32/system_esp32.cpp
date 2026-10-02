@@ -1,295 +1,63 @@
 /*
 
-Part of the SYSTEM module for ESP32
+SYSTEM MODULE FOR ESP32
+
+Chip specific part, common part is in system.cpp
 
 */
 
 #include <Arduino.h>
-#include <atomic>
-#include <vector>
+
 #include <algorithm>
+#include <atomic>
+#include <forward_list>
+#include <mutex>
+#include <vector>
 
 #include <esp_system.h>
 #include <esp_task_wdt.h>
 #include <esp_heap_caps.h>
-#include <nvs_flash.h>
+#include <esp_netif.h>
 #include <esp_wifi.h>
 #include <esp_sleep.h>
-#include <soc/rtc_cntl_reg.h>
-
-#include <esp_adc_cal.h>
+#include <esp_phy_init.h>
+#include <driver/gpio.h>
 
 #include "espurna.h"
 #include "rtcmem.h"
 #include "storage_eeprom.h"
-#include "system_orch.h"
-#include "terminal.h"
 
-#if WEB_SUPPORT
-#include "ws.h"
+// Arduino core main.cpp, loop task and whether it is watched by the task WDT
+extern TaskHandle_t loopTaskHandle;
+extern bool loopTaskWDTEnabled;
+
+#if TERMINAL_SUPPORT
+void coredumpSetup();
 #endif
 
-// --- INTERNAL ---
-namespace {
-    static size_t _system_initial_heap = 0;
+// -----------------------------------------------------------------------------
+// MEMORY, CHIP ID, RANDOM
+// -----------------------------------------------------------------------------
+
+size_t systemFreeHeap() {
+    return esp_get_free_heap_size();
 }
 
-// --- FORWARD DECLARATIONS ---
-namespace load_average { void loop(); unsigned long value(); }
-
-// --- SETTINGS KEYS ---
-namespace espurna {
-namespace heartbeat {
-namespace {
-
-namespace build {
-
-constexpr Mode mode() {
-    return HEARTBEAT_MODE;
-}
-
-constexpr espurna::duration::Seconds interval() {
-    return espurna::duration::Seconds { HEARTBEAT_INTERVAL };
-}
-
-constexpr Mask value() {
-    return (Report::Status * (HEARTBEAT_REPORT_STATUS))
-        | (Report::Ssid * (HEARTBEAT_REPORT_SSID))
-        | (Report::Ip * (HEARTBEAT_REPORT_IP))
-        | (Report::Mac * (HEARTBEAT_REPORT_MAC))
-        | (Report::Rssi * (HEARTBEAT_REPORT_RSSI))
-        | (Report::Uptime * (HEARTBEAT_REPORT_UPTIME))
-        | (Report::Datetime * (HEARTBEAT_REPORT_DATETIME))
-        | (Report::Freeheap * (HEARTBEAT_REPORT_FREEHEAP))
-        | (Report::Vcc * (HEARTBEAT_REPORT_VCC))
-        | (Report::Relay * (HEARTBEAT_REPORT_RELAY))
-        | (Report::Light * (HEARTBEAT_REPORT_LIGHT))
-        | (Report::Hostname * (HEARTBEAT_REPORT_HOSTNAME))
-        | (Report::Description * (HEARTBEAT_REPORT_DESCRIPTION))
-        | (Report::App * (HEARTBEAT_REPORT_APP))
-        | (Report::Version * (HEARTBEAT_REPORT_VERSION))
-        | (Report::Board * (HEARTBEAT_REPORT_BOARD))
-        | (Report::Loadavg * (HEARTBEAT_REPORT_LOADAVG))
-        | (Report::Interval * (HEARTBEAT_REPORT_INTERVAL))
-        | (Report::Range * (HEARTBEAT_REPORT_RANGE))
-        | (Report::RemoteTemp * (HEARTBEAT_REPORT_REMOTE_TEMP))
-        | (Report::Bssid * (HEARTBEAT_REPORT_BSSID));
-}
-
-} // namespace build
-
-namespace settings {
-namespace keys {
-
-PROGMEM_STRING(Mode, "hbMode");
-PROGMEM_STRING(Interval, "hbInterval");
-PROGMEM_STRING(Report, "hbReport");
-
-} // namespace keys
-
-Mode mode() {
-    return getSetting(keys::Mode, build::mode());
-}
-
-espurna::duration::Seconds interval() {
-    return getSetting(keys::Interval, build::interval());
-}
-
-Mask value() {
-    static constexpr Mask MaskAll { 1 };
-
-    auto value = getSetting(keys::Report, build::value());
-    if (value == MaskAll) {
-        value = std::numeric_limits<Mask>::max();
-    }
-
+// Same as esp8266, cached on the first call (which is the first thing setup() does)
+size_t systemInitialFreeHeap() {
+    static const size_t value = esp_get_free_heap_size();
     return value;
 }
-
-} // namespace settings
-
-using TimeSource = espurna::time::CoreClock;
-
-struct CallbackRunner {
-    Callback callback;
-    Mode mode;
-    TimeSource::duration interval;
-    TimeSource::time_point last;
-};
-
-namespace internal {
-
-timer::SystemTimer timer;
-std::vector<CallbackRunner> runners;
-std::atomic<bool> scheduled { false };
-
-} // namespace internal
-
-void schedule() {
-    internal::scheduled.store(true, std::memory_order_release);
-}
-
-bool scheduled() {
-    return internal::scheduled.exchange(false, std::memory_order_acq_rel);
-}
-
-void run() {
-    static constexpr duration::Milliseconds BeatMin { duration::Seconds(1) };
-    static constexpr duration::Milliseconds BeatMax { BeatMin * 10 };
-
-    auto next = duration::Milliseconds(settings::interval());
-
-    if (internal::runners.size()) {
-        auto mask = settings::value();
-
-        auto it = internal::runners.begin();
-        auto end = internal::runners.end();
-
-        auto ts = TimeSource::now();
-        while (it != end) {
-            auto diff = ts - (*it).last;
-            if (diff > (*it).interval) {
-                auto result = (*it).callback(mask);
-                if (result && ((*it).mode == Mode::Once)) {
-                    it = internal::runners.erase(it);
-                    end = internal::runners.end();
-                    continue;
-                }
-
-                if (result) {
-                    (*it).last = ts;
-                } else if (diff < ((*it).interval + BeatMax)) {
-                    next = BeatMin;
-                }
-
-                next = std::min(next, (*it).interval);
-            } else {
-                next = std::min(next, (*it).interval - diff);
-            }
-            ++it;
-        }
-    }
-
-    if (next < BeatMin) {
-        next = BeatMin;
-    }
-
-    internal::timer.once(next, schedule);
-}
-
-void stop(Callback callback) {
-    auto found = std::remove_if(
-        internal::runners.begin(),
-        internal::runners.end(),
-        [&](const CallbackRunner& runner) {
-            return callback == runner.callback;
-        });
-    internal::runners.erase(found, internal::runners.end());
-}
-
-void push(Callback callback, Mode mode, duration::Seconds interval) {
-    if (mode == Mode::None) {
-        return;
-    }
-
-    auto msec = duration::Milliseconds(interval);
-    if ((mode != Mode::Once) && !msec.count()) {
-        return;
-    }
-
-    auto offset = TimeSource::now() - TimeSource::duration(1);
-    internal::runners.push_back({
-        callback, mode,
-        msec,
-        offset - msec
-    });
-
-    internal::timer.stop();
-    schedule();
-}
-
-[[gnu::unused]]
-void push_once(Callback callback) {
-    push(callback, Mode::Once, espurna::duration::Seconds::min());
-}
-
-duration::Seconds interval() {
-    TimeSource::duration result { settings::interval() };
-
-    for (auto& runner : internal::runners) {
-        if (runner.mode != Mode::Once) {
-            result = std::min(result, runner.interval);
-        }
-    }
-
-    return std::chrono::duration_cast<duration::Seconds>(result);
-}
-
-void reschedule() {
-    static constexpr TimeSource::duration Offset { 1 };
-
-    const auto ts = TimeSource::now();
-    for (auto& runner : internal::runners) {
-        runner.last = ts - runner.interval - Offset;
-    }
-
-    schedule();
-}
-
-void loop() {
-    if (scheduled()) {
-        run();
-    }
-}
-
-void init() {
-#if DEBUG_SUPPORT
-    push_once([](Mask) {
-        const auto mode = settings::mode();
-        if (mode != Mode::None) {
-            DEBUG_MSG_P(PSTR("[MAIN] Heartbeat \"%s\", every %u (seconds)\n"),
-                espurna::settings::internal::serialize(mode).c_str(),
-                settings::interval().count());
-        } else {
-            DEBUG_MSG_P(PSTR("[MAIN] Heartbeat disabled\n"));
-        }
-        return true;
-    });
-#endif
-    schedule();
-}
-
-} // namespace
-
-espurna::duration::Milliseconds currentIntervalMs() {
-    return settings::interval();
-}
-
-espurna::duration::Seconds currentInterval() {
-    return settings::interval();
-}
-
-Mask currentValue() {
-    return settings::value();
-}
-
-Mode currentMode() {
-    return settings::mode();
-}
-
-} // namespace heartbeat
-} // namespace espurna
-
-// --- SYSTEM API ---
-
-size_t systemFreeHeap() { return esp_get_free_heap_size(); }
-size_t systemInitialFreeHeap() { return _system_initial_heap; }
 
 HeapStats systemHeapStats() {
     multi_heap_info_t info;
     heap_caps_get_info(&info, MALLOC_CAP_8BIT);
     uint8_t frag = info.total_free_bytes ? (100 - (info.largest_free_block * 100 / info.total_free_bytes)) : 0;
     return {(uint32_t)info.total_free_bytes, (uint32_t)info.largest_free_block, frag};
+}
+
+unsigned long systemFreeStack() {
+    return uxTaskGetStackHighWaterMark(NULL) * sizeof(StackType_t);
 }
 
 // Intentional stub. Callers (debug.cpp / influxdb.cpp / mqtt.cpp / ws.cpp) are
@@ -299,10 +67,6 @@ HeapStats systemHeapStats() {
 uint16_t systemVcc() {
     return 0;
 }
-uint32_t systemResetReason() { return (uint32_t) esp_reset_reason(); }
-espurna::duration::Seconds systemUptime() { return espurna::duration::Seconds(millis() / 1000); }
-unsigned long systemLoadAverage() { return load_average::value(); }
-unsigned long systemFreeStack() { return uxTaskGetStackHighWaterMark(NULL) * sizeof(StackType_t); }
 
 espurna::StringView systemChipId() {
     static String _chipid;
@@ -320,349 +84,491 @@ espurna::StringView systemShortChipId() {
     return _shortid;
 }
 
-espurna::StringView systemDevice() { return DEVICE; }
-espurna::StringView systemIdentifier() {
-    static String _identifier;
-    if (!_identifier.length()) {
-        _identifier = String("ESPURNA-") + systemShortChipId().c_str();
+uint32_t espurna::system::RandomDevice::operator()() const {
+    return esp_random();
+}
+
+// -----------------------------------------------------------------------------
+// SLEEP
+// -----------------------------------------------------------------------------
+
+// Same API as esp8266. Radio is powered down during both light and deep sleep,
+// WiFi is stopped before and restarted after light sleep (and the FSM reconnects)
+namespace sleep_impl {
+namespace internal {
+
+std::forward_list<SleepCallback> before;
+std::forward_list<SleepCallback> after;
+
+} // namespace internal
+
+void run(const std::forward_list<SleepCallback>& callbacks) {
+    for (auto callback : callbacks) {
+        callback();
     }
-    return _identifier;
 }
-String systemHostname() { return getSetting("hostname", systemIdentifier().c_str()); }
-String systemDescription() { return getSetting("desc", DEVICE); }
-String systemPassword() { return getSetting("adminPass", ADMIN_PASS); }
-bool systemPasswordEquals(espurna::StringView password) { return systemPassword().equals(password.c_str()); }
-espurna::StringView systemDefaultPassword() { return ADMIN_PASS; }
 
-uint32_t randomNumber(uint32_t min, uint32_t max) { return min + (esp_random() % (max - min + 1)); }
-uint32_t randomNumber() { return esp_random(); }
+bool light_sleep(bool timer, espurna::sleep::Microseconds time, int pin, espurna::sleep::Interrupt interrupt) {
+    if (timer) {
+        if ((time <= espurna::sleep::FpmSleepMin) || (time >= espurna::sleep::FpmSleepIndefinite)) {
+            return false;
+        }
+        esp_sleep_enable_timer_wakeup(time.count());
+    }
 
-void systemSetupUnstable() {}
-bool systemCheck() { return true; }
-void systemForceStable() {}
-void systemForceUnstable() {}
-uint8_t systemStabilityCounter() { return 0; }
+    if (pin >= 0) {
+        if (!GPIO_IS_VALID_GPIO(pin)) {
+            return false;
+        }
 
+        const auto level = (interrupt == espurna::sleep::Interrupt::Low)
+            ? GPIO_INTR_LOW_LEVEL
+            : GPIO_INTR_HIGH_LEVEL;
+        gpio_wakeup_enable(static_cast<gpio_num_t>(pin), level);
+        esp_sleep_enable_gpio_wakeup();
+    }
+
+    run(internal::before);
+    esp_wifi_stop();
+
+    const auto result = esp_light_sleep_start();
+
+    esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
+    if (pin >= 0) {
+        gpio_wakeup_disable(static_cast<gpio_num_t>(pin));
+    }
+
+    esp_wifi_start();
+    wifiReload();
+
+    run(internal::after);
+
+    return result == ESP_OK;
+}
+
+bool deep_sleep(espurna::sleep::Microseconds time) {
+    if (!time.count()) {
+        return false;
+    }
+
+    run(internal::before);
+
+    // same as esp8266, sleep starts once the caller returns (so e.g. terminal
+    // can still respond), with a short delay for the network buffers to flush
+    const uint64_t us = time.count();
+    espurnaRegisterOnce([us]() {
+        espurna::time::blockingDelay(espurna::duration::Milliseconds(100));
+        customResetReason(CustomResetReason::None);
+        esp_sleep_enable_timer_wakeup(us);
+        esp_deep_sleep_start();
+    });
+
+    return true;
+}
+
+} // namespace sleep_impl
+
+void systemBeforeSleep(SleepCallback callback) {
+    sleep_impl::internal::before.push_front(callback);
+}
+
+void systemAfterSleep(SleepCallback callback) {
+    sleep_impl::internal::after.push_front(callback);
+}
+
+// Same as esp8266, wakeup pin is not configured by default
+bool instantLightSleep() {
+    const auto pin = espurna::sleep::settings::pin();
+    if (pin == GPIO_NONE) {
+        return false;
+    }
+
+    return sleep_impl::light_sleep(false, {}, pin,
+        espurna::sleep::settings::interrupt());
+}
+
+bool instantLightSleep(espurna::sleep::Microseconds time) {
+    return sleep_impl::light_sleep(true, time, -1, espurna::sleep::Interrupt::Low);
+}
+
+bool instantLightSleep(uint8_t pin, espurna::sleep::Interrupt interrupt) {
+    return sleep_impl::light_sleep(false, {}, pin, interrupt);
+}
+
+bool instantDeepSleep(espurna::sleep::Microseconds time) {
+    return sleep_impl::deep_sleep(time);
+}
+
+// -----------------------------------------------------------------------------
+// SDK CONFIG
+// -----------------------------------------------------------------------------
+
+// esp8266 erases the SDK area, i.e. stored WiFi config and RF calibration.
+// ESP32 keeps both in NVS, separately from our settings.
+bool eraseSDKConfig() {
+    const auto wifi = esp_wifi_restore();
+    const auto phy = esp_phy_erase_cal_data_in_nvs();
+    return (wifi == ESP_OK) && (phy == ESP_OK);
+}
+
+[[noreturn]] void forceEraseSDKConfig() {
+    eraseSDKConfig();
+    customResetReason(CustomResetReason::Terminal);
+    espurna::system::arch::restart();
+}
+
+// -----------------------------------------------------------------------------
+// DEFERRED CALLBACKS (ref. system.h systemRunInLoop())
+// -----------------------------------------------------------------------------
+
+// Network handlers that could not take the loop lock in time (ref. AsyncGuard) hand
+// their work over to the loop task. Queue is only ever touched under the mutex,
+// callbacks themselves run outside of it, in the order they were queued.
+namespace run_in_loop {
 namespace {
-// Custom reset reason is stored in byte 1 of Rtcmem->sys, matching the layout
-// the ESP8266 path uses. Byte 0 holds the stability counter (unused on ESP32 today),
-// bytes 2/3 are reserved.
-constexpr uint32_t ResetReasonMask  { 0x0000FFFFu };
-constexpr uint32_t ResetReasonByte  { 0x0000FF00u };
-constexpr uint32_t ResetReasonShift { 8u };
 
-void persistCustomResetReason(CustomResetReason reason) {
-    if (!Rtcmem) return;
-    uint32_t sys = Rtcmem->sys;
-    sys = (sys & ~ResetReasonByte)
-        | ((static_cast<uint32_t>(reason) << ResetReasonShift) & ResetReasonByte);
-    Rtcmem->sys = sys;
-}
+std::mutex mutex;
+std::vector<std::function<void()>> queue;
+
+// Normally only a few callbacks are queued between two loop() iterations. A lot more means
+// loop() is not keeping up with the network (or is stuck), which is reported once per burst.
+constexpr size_t QueueWarning { 32 };
+bool warned { false };
+
 } // namespace
 
-void prepareReset(CustomResetReason reason) {
-    persistCustomResetReason(reason);
-    esp_restart();
-}
-void factoryReset() {
-    persistCustomResetReason(CustomResetReason::Factory);
-    ::resetSettings();
-    esp_restart();
-}
-void deferredReset(espurna::duration::Milliseconds delay, CustomResetReason reason) {
-    persistCustomResetReason(reason);
-    static espurna::timer::SystemTimer timer;
-    timer.once(delay, []() { esp_restart(); });
-}
-
-String customResetReasonToPayload(CustomResetReason reason) {
-    switch (reason) {
-        case CustomResetReason::Button: return "button";
-        case CustomResetReason::Factory: return "factory";
-        case CustomResetReason::Hardware: return "hardware";
-        case CustomResetReason::Mqtt: return "mqtt";
-        case CustomResetReason::Ota: return "ota";
-        case CustomResetReason::Rpc: return "rpc";
-        case CustomResetReason::Rule: return "rule";
-        case CustomResetReason::Scheduler: return "scheduler";
-        case CustomResetReason::Terminal: return "terminal";
-        case CustomResetReason::Web: return "web";
-        case CustomResetReason::Stability: return "stability";
-        case CustomResetReason::None: return "unknown";
-    }
-    return "unknown";
-}
-void customResetReason(CustomResetReason reason) {
-    persistCustomResetReason(reason);
-}
-CustomResetReason customResetReason() {
-    // Cached one-shot — first read returns the persisted value, then prunes it
-    // so subsequent boots without an explicit cause report None.
-    static const CustomResetReason cached = ([]() {
-        if (!rtcmemStatus() || !Rtcmem) {
-            return CustomResetReason::None;
+void push(std::function<void()> callback) {
+    size_t size;
+    bool warn { false };
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        queue.push_back(std::move(callback));
+        size = queue.size();
+        if (!warned && (size > QueueWarning)) {
+            warned = true;
+            warn = true;
         }
-        const uint32_t sys = Rtcmem->sys;
-        const auto value = static_cast<CustomResetReason>(
-            (sys & ResetReasonByte) >> ResetReasonShift);
-        Rtcmem->sys = sys & ~ResetReasonByte;
-        return value;
-    })();
-    return cached;
-}
+    }
 
-void systemBeforeSleep(SleepCallback) {}
-void systemAfterSleep(SleepCallback) {}
-void systemStopHeartbeat(espurna::heartbeat::Callback callback) {
-    espurna::heartbeat::stop(callback);
-}
-
-void systemHeartbeat(espurna::heartbeat::Callback callback, espurna::heartbeat::Mode mode, espurna::duration::Seconds interval) {
-    espurna::heartbeat::push(callback, mode, interval);
-}
-
-void systemHeartbeat(espurna::heartbeat::Callback callback, espurna::heartbeat::Mode mode) {
-    espurna::heartbeat::push(callback, mode,
-        espurna::heartbeat::settings::interval());
-}
-
-void systemHeartbeat(espurna::heartbeat::Callback callback) {
-    espurna::heartbeat::push(callback,
-        espurna::heartbeat::settings::mode(),
-        espurna::heartbeat::settings::interval());
-}
-
-espurna::duration::Seconds systemHeartbeatInterval() {
-    return espurna::heartbeat::interval();
-}
-
-void systemScheduleHeartbeat() {
-    espurna::heartbeat::reschedule();
-}
-
-[[noreturn]] void forceEraseSDKConfig() { esp_restart(); while(1); }
-
-// --- SETTINGS QUERY ---
-namespace system_query {
-    static constexpr std::array<espurna::settings::query::Setting, 3> Settings PROGMEM {{
-         {"desc", systemDescription},
-         {"hostname", systemHostname},
-         {"adminPass", systemPassword},
-    }};
-    void setup() {
-        settingsRegisterQueryHandler({
-            .check = nullptr,
-            .get = [](espurna::StringView key) {
-                return espurna::settings::query::findFrom(Settings, key);
-            },
-        });
+    // outside of the queue mutex, debug output from other tasks is queued as well
+    if (warn) {
+        DEBUG_MSG_P(PSTR("[MAIN] Loop is falling behind, %u deferred callbacks queued\n"), size);
     }
 }
 
+void drain() {
+    std::vector<std::function<void()>> current;
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        if (queue.empty()) {
+            return;
+        }
+        current.swap(queue);
+        if (current.size() <= QueueWarning) {
+            warned = false;
+        }
+    }
+
+    // anything queued while running goes into the next loop() iteration
+    for (auto& callback : current) {
+        callback();
+    }
+}
+
+} // namespace run_in_loop
+
+void systemRunInLoop(std::function<void()> callback) {
+    if (callback) {
+        run_in_loop::push(std::move(callback));
+    }
+}
+
+// -----------------------------------------------------------------------------
+// COMMON SYSTEM MODULE HOOKS (ref. system.h)
+// -----------------------------------------------------------------------------
+
+namespace espurna {
+namespace system {
+namespace {
+namespace pending_output {
+
+// ws + telnet, only registered once from their setup()
+constexpr size_t ChecksMax { 4 };
+PendingOutput checks[ChecksMax] {};
+
+bool any() {
+    for (const auto& check : checks) {
+        if (check && check()) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+} // namespace pending_output
+} // namespace
+
+void registerPendingOutput(PendingOutput check) {
+    for (auto& slot : pending_output::checks) {
+        if (!slot || (slot == check)) {
+            slot = check;
+            return;
+        }
+    }
+}
+
+namespace arch {
+
+void pre_setup() {
+    // AsyncTCP servers are started before WiFi is, make sure the TCP/IP stack is up
+    esp_netif_init();
+
+    // Same range as esp8266 ADC (0...1023), analog buttons and sensors expect it
+    analogReadResolution(10);
+}
+
+void setup() {
 #if TERMINAL_SUPPORT
-namespace terminal {
-    void info(::terminal::CommandContext&& ctx) {
-        ctx.output.printf_P(PSTR("Device: %s\n"), systemDevice().begin());
-        terminalOK(ctx);
-    }
-    void reboot_cmd(::terminal::CommandContext&& ctx) {
-        terminalOK(ctx);
-        esp_restart();
-    }
-    void setup() {
-        static constexpr ::terminal::Command List[] PROGMEM {
-            {"INFO", info},
-            {"REBOOT", reboot_cmd},
-        };
-        espurna::terminal::add(List);
-    }
-}
+    // COREDUMP / COREDUMP.ERASE terminal commands, ref. coredump_esp32.cpp
+    coredumpSetup();
 #endif
 
-// --- WEB INTERFACE ---
-#if WEB_SUPPORT
-namespace web {
-    void onConnected(JsonObject& root) {
-        root[FPSTR(espurna::heartbeat::settings::keys::Report)] = espurna::heartbeat::settings::value();
-        root[FPSTR(espurna::heartbeat::settings::keys::Interval)] = espurna::heartbeat::settings::interval().count();
-        root[FPSTR(espurna::heartbeat::settings::keys::Mode)] = espurna::settings::internal::serialize(espurna::heartbeat::settings::mode());
-    }
-
-    bool onKeyCheck(espurna::StringView key, const JsonVariant& value) {
-        return true;
-    }
-
-    void setup() {
-        wsRegister()
-            .onConnected(onConnected)
-            .onKeyCheck(onKeyCheck, ::espurna::web::ws::Callbacks::Prepend{});
-    }
-}
-#endif
-
-namespace load_average {
-
-using TimeSource = espurna::time::SystemClock;
-using Type = unsigned long;
-
-struct Counter {
-    TimeSource::time_point last;
-    Type count;
-    Type value;
-    Type max;
-};
-
-namespace internal {
-    Type load_average { 0 };
-}
-
-Type value() {
-    return internal::load_average;
+    // Same as esp8266 soft WDT, reset when loop() gets stuck (CONFIG_ESP_TASK_WDT_TIMEOUT_S, 5s).
+    // Enabled from the first loop(), since the rest of setup() is allowed to take its time.
+    espurnaRegisterOnce([]() {
+        enableLoopWDT();
+    });
 }
 
 void loop() {
-    static Counter counter {
-        .last = TimeSource::now(),
-        .count = 0,
-        .value = 0,
-        .max = 0
-    };
+    timer::SystemTimer::dispatch();
+    run_in_loop::drain();
+}
 
-    ++counter.count;
+// Same values as esp8266, common code (e.g. the stability check) relies on them
+uint32_t reset_reason() {
+    switch (esp_reset_reason()) {
+    case ESP_RST_EXT:
+        return REASON_EXT_SYS_RST;
+    case ESP_RST_SW:
+        return REASON_SOFT_RESTART;
+    case ESP_RST_PANIC:
+        return REASON_EXCEPTION_RST;
+    case ESP_RST_INT_WDT:
+    case ESP_RST_WDT:
+        return REASON_WDT_RST;
+    case ESP_RST_TASK_WDT:
+        return REASON_SOFT_WDT_RST;
+    case ESP_RST_DEEPSLEEP:
+        return REASON_DEEP_SLEEP_AWAKE;
+    // power related, not the firmware's fault
+    case ESP_RST_POWERON:
+    case ESP_RST_BROWNOUT:
+    case ESP_RST_SDIO:
+    case ESP_RST_UNKNOWN:
+        break;
+    }
 
-    const auto timestamp = TimeSource::now();
-    if (timestamp - counter.last < espurna::duration::Seconds(LOADAVG_INTERVAL)) {
+    return REASON_DEFAULT_RST;
+}
+
+[[noreturn]] void restart() {
+    // esp8266 ESP.restart() only takes effect once the SDK gets to run again, so network output
+    // queued right before it (e.g. +OK of the RESET command) still has a chance to be sent.
+    // esp_restart() is immediate, give the network tasks a moment to flush when called from loop().
+    // Output may also be stuck waiting for a TCP retransmission (reply sent right after the WS
+    // connection was opened), keep waiting until the peers acknowledged everything, but not forever
+    if (xTaskGetCurrentTaskHandle() == loopTaskHandle) {
+        constexpr uint32_t FlushMin { 250 };
+        constexpr uint32_t FlushMax { 3000 };
+        constexpr uint32_t FlushInterval { 50 };
+
+        delay_unlocked(FlushMin);
+        for (uint32_t waited = FlushMin; (waited < FlushMax) && pending_output::any(); waited += FlushInterval) {
+            delay_unlocked(FlushInterval);
+        }
+    }
+
+    // settings are committed by the loop, make sure the last change is not lost
+    eepromForceCommit();
+
+    // Same as esp8266 hardwareGpioIgnore(), relay outputs keep their state through the software
+    // reset instead of dropping for the whole boot. Pads are latched here and released on the
+    // first write after the boot, when the relay module already restored the same state.
+    // (ref. gpio_esp32.cpp HardwarePin)
+    if (Rtcmem) {
+        const uint32_t ignore = Rtcmem->gpio_ignore;
+        for (uint8_t pin = 0; pin < 32; ++pin) {
+            if (ignore & (uint32_t{1} << pin)) {
+                gpio_hold_en(static_cast<gpio_num_t>(pin));
+            }
+        }
+    }
+
+    esp_restart();
+    __builtin_unreachable();
+}
+
+} // namespace arch
+} // namespace system
+} // namespace espurna
+
+// -----------------------------------------------------------------------------
+// LOOP / ASYNCTCP SERIALIZATION (ref. system_esp32.h)
+// -----------------------------------------------------------------------------
+
+namespace espurna {
+namespace system {
+namespace {
+namespace lock_impl {
+
+constexpr auto AsyncTimeout = duration::Milliseconds{ 100 };
+
+SemaphoreHandle_t mutex { nullptr };
+std::atomic<TaskHandle_t> owner { nullptr };
+size_t depth { 0 };
+
+// First lock() happens from the loop task in setup(), before any network task is running
+SemaphoreHandle_t handle() {
+    if (!mutex) {
+        mutex = xSemaphoreCreateMutex();
+    }
+
+    return mutex;
+}
+
+bool take(TickType_t ticks) {
+    const auto self = xTaskGetCurrentTaskHandle();
+    if (owner.load() == self) {
+        ++depth;
+        return true;
+    }
+
+    if (xSemaphoreTake(handle(), ticks) != pdTRUE) {
+        return false;
+    }
+
+    owner.store(self);
+    depth = 1;
+
+    return true;
+}
+
+void give() {
+    if (owner.load() != xTaskGetCurrentTaskHandle()) {
         return;
     }
 
-    counter.last = timestamp;
-    counter.value = counter.count;
-    counter.count = 0;
-    counter.max = std::max(counter.max, counter.value);
-
-    internal::load_average = counter.max
-        ? (100 - (100 * counter.value / counter.max))
-        : 0;
-}
-
-} // namespace load_average
-
-void systemSetup() {
-    _system_initial_heap = esp_get_free_heap_size();
-    esp_err_t err = nvs_flash_init();
-    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-        ESP_ERROR_CHECK(nvs_flash_erase());
-        err = nvs_flash_init();
+    if (--depth == 0) {
+        owner.store(nullptr);
+        xSemaphoreGive(handle());
     }
-    ESP_ERROR_CHECK(err);
-    tcpip_adapter_init();
-    // WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); // Enable brownout detector for better diagnostics
-    Serial.begin(115200);
-    rtcmemSetup();
-#if WEB_SUPPORT
-    web::setup();
-#endif
-#if TERMINAL_SUPPORT
-    terminal::setup();
-#endif
-    system_query::setup();
-
-    espurnaRegisterLoop([]() {
-        load_average::loop();
-        espurna::heartbeat::loop();
-    });
-    espurna::heartbeat::init();
 }
 
-// --- Other stubs ---
+} // namespace lock_impl
+} // namespace
+
+void lock() {
+    lock_impl::take(portMAX_DELAY);
+}
+
+bool lock(duration::Milliseconds timeout) {
+    return lock_impl::take(pdMS_TO_TICKS(timeout.count()));
+}
+
+void unlock() {
+    lock_impl::give();
+}
+
+void delay_unlocked(uint32_t ms) {
+    const auto self = xTaskGetCurrentTaskHandle();
+
+    // Same as esp8266 delay(), sleeping in the loop task keeps the watchdog happy
+    // (loopTask itself only feeds it between loop() calls)
+    if (loopTaskWDTEnabled && (self == loopTaskHandle)) {
+        esp_task_wdt_reset();
+    }
+
+    if (lock_impl::owner.load() != self) {
+        ::delay(ms);
+        return;
+    }
+
+    const auto depth = lock_impl::depth;
+    lock_impl::depth = 0;
+    lock_impl::owner.store(nullptr);
+    xSemaphoreGive(lock_impl::handle());
+
+    ::delay(ms);
+
+    xSemaphoreTake(lock_impl::handle(), portMAX_DELAY);
+    lock_impl::owner.store(self);
+    lock_impl::depth = depth;
+}
+
+AsyncGuard::AsyncGuard() :
+    _locked(lock(lock_impl::AsyncTimeout))
+{
+    // Safe from any task, debug output coming from outside of the loop task is queued
+    // (ref. debug.cpp deferred::push()) and sent out by loop() later
+    if (!_locked) {
+        DEBUG_MSG_P(PSTR("[MAIN] Loop is busy, network handler could not take the lock\n"));
+    }
+}
+
+AsyncGuard::~AsyncGuard() {
+    if (_locked) {
+        unlock();
+    }
+}
+
+} // namespace system
+} // namespace espurna
+
+// -----------------------------------------------------------------------------
+// SETTINGS HELPERS
+// -----------------------------------------------------------------------------
+
 namespace espurna {
-    bool ReadyFlag::wait(duration::Milliseconds interval) {
-        if (_ready) {
-            _ready = false;
-            _timer.schedule_once(
-                interval,
-                [&]() {
-                    _ready = true;
-                });
+namespace settings {
+namespace internal {
 
-            return true;
-        }
-
-        return false;
+// Same names as esp8266 ('hardware', 'mcp23s08', 'none'). Numbers are still accepted,
+// since earlier ESP32 builds stored them
+template <>
+GpioType convert(const String& v) {
+    if (v.equalsIgnoreCase("hardware")) return GpioType::Hardware;
+    if (v.equalsIgnoreCase("mcp23s08")) return GpioType::Mcp23s08;
+    if (v.equalsIgnoreCase("none")) return GpioType::None;
+    if (v.length() && isdigit(static_cast<unsigned char>(v[0]))) {
+        return static_cast<GpioType>(v.toInt());
     }
-
-    void ReadyFlag::stop() {
-        _timer.stop();
-        _ready = true;
-    }
-
-    constexpr auto PolledReadFlagHalfInterval = time::SystemClock::duration::max() / 2;
-
-    bool PolledReadyFlag::wait(duration::Milliseconds interval) {
-        if (_ready) {
-            const auto now = time::SystemClock::now();
-            _ready = false;
-            _until = now + interval;
-            return true;
-        }
-
-        return false;
-    }
-
-    void PolledReadyFlag::stop() {
-        _ready = true;
-    }
-
-    bool PolledReadyFlag::ready() {
-        if (!_ready) {
-            const auto now = time::SystemClock::now();
-            _ready = (now - _until) < PolledReadFlagHalfInterval;
-        }
-
-        return _ready;
-    }
-
-    namespace system {
-    namespace settings {
-    namespace options {
-
-    PROGMEM_STRING(None, "none");
-    PROGMEM_STRING(Once, "once");
-    PROGMEM_STRING(Repeat, "repeat");
-
-    template <typename T>
-    using Enumeration = espurna::settings::options::Enumeration<T>;
-
-    static constexpr Enumeration<heartbeat::Mode> HeartbeatModeOptions[] PROGMEM {
-        {heartbeat::Mode::None, None},
-        {heartbeat::Mode::Once, Once},
-        {heartbeat::Mode::Repeat, Repeat},
-    };
-
-    } // namespace options
-    } // namespace settings
-    } // namespace system
-
-    namespace settings { namespace internal {
-        template <> heartbeat::Mode convert(const String& value) {
-            return convert(system::settings::options::HeartbeatModeOptions, value, heartbeat::Mode::Repeat);
-        }
-        String serialize(heartbeat::Mode mode) {
-            return serialize(system::settings::options::HeartbeatModeOptions, mode);
-        }
-        template <> GpioType convert(const String& v) { return static_cast<GpioType>(v.toInt()); }
-        String serialize(GpioType v) { return String(static_cast<int>(v)); }
-        String serialize(std::array<unsigned char, 6u> mac) { return hexEncode(mac); }
-        template <> StringSumHelper convert(const String& v) { return StringSumHelper(v); }
-    }}
-    namespace time {
-        // blockingDelay(duration) is defined in compat_esp32.cpp.
-        bool tryDelay(time::CoreClock::time_point s, time::CoreClock::duration t, time::CoreClock::duration i) { return true; }
-    }
+    return GpioType::None;
 }
-bool instantLightSleep() { return true; }
-bool instantLightSleep(std::chrono::microseconds) { return true; }
-bool instantDeepSleep(std::chrono::microseconds) { esp_deep_sleep(0); return true; }
+
+String serialize(GpioType v) {
+    switch (v) {
+    case GpioType::Hardware: return F("hardware");
+    case GpioType::Mcp23s08: return F("mcp23s08");
+    case GpioType::None: break;
+    }
+    return F("none");
+}
+
+String serialize(std::array<unsigned char, 6u> mac) {
+    return hexEncode(mac);
+}
+
+template <>
+StringSumHelper convert(const String& v) {
+    return StringSumHelper(v);
+}
+
+} // namespace internal
+} // namespace settings
+} // namespace espurna
+
 // espurnaRegisterOnce / espurnaLoopDelay defined in main.cpp.
 // migrateVersion / delSettingPrefix defined in migrate.cpp.
 String getSetting(espurna::StringView key) { return ::getSetting(key.toString()); }

@@ -629,6 +629,11 @@
 #define WIFI_SCAN_RSSI_CHECK_INTERVAL   60000              // Time (ms) between RSSI checks
 #endif
 
+#ifndef WIFI_ROAM_RSSI_DELTA
+#define WIFI_ROAM_RSSI_DELTA            4                  // (ESP32) Only switch to another AP when it is at least this much (dB)
+                                                           // stronger than the current one, to avoid bouncing between similar APs
+#endif
+
 // ref: https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/kconfig.html#config-lwip-esp-gratuitous-arp
 // ref: https://github.com/xoseperez/espurna/pull/1877#issuecomment-525612546
 //
