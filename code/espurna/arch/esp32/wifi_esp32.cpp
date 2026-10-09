@@ -757,6 +757,9 @@ unsigned long sample_last { 0 };
 uint8_t pending_bssid[6] {};
 uint8_t pending_count { 0 };
 
+// AP the interval and the stable scans refer to, another one means the link changed
+uint8_t bssid[6] {};
+
 // switch to another AP in progress, checked when the FSM is connected again
 bool switching { false };
 uint8_t switch_bssid[6] {};
@@ -911,26 +914,49 @@ void backoff_forget(const uint8_t* bssid) {
     }
 }
 
-// (re)connected, or signal got better than the threshold. Start over with short interval
-void reset() {
+void remember_bssid() {
+    const auto* current = WiFi.BSSID();
+    if (current) {
+        std::memcpy(internal::bssid, current, sizeof(internal::bssid));
+    } else {
+        std::memset(internal::bssid, 0, sizeof(internal::bssid));
+    }
+}
+
+// Connected to another AP than the one the counters refer to (e.g. driver reconnected by itself)
+bool bssid_changed() {
+    const auto* current = WiFi.BSSID();
+    return current && (std::memcmp(internal::bssid, current, sizeof(internal::bssid)) != 0);
+}
+
+// Something actually changed (new candidate, switch, reconnect, another BSSID): short interval again
+void unsettle() {
     internal::interval = build::IntervalMin;
     internal::stable = 0;
+}
+
+// (re)connected. Start over with short interval
+void reset() {
+    unsettle();
     internal::last = millis();
     internal::scanning = false;
     clear_samples();
     clear_pending();
+    remember_bssid();
 }
 
-// Scan did not find anything better, slowly back off
+// Scan decided to stay (nothing better, nothing pending), slowly back off. Every such scan
+// counts, after StableScans in a row each one adds IntervalStep, up to IntervalMax
 void settled() {
     clear_pending();
 
     if (internal::stable < build::StableScans) {
         ++internal::stable;
-        return;
     }
 
-    internal::interval = std::min(internal::interval + build::IntervalStep, build::IntervalMax);
+    if (internal::stable >= build::StableScans) {
+        internal::interval = std::min(internal::interval + build::IntervalStep, build::IntervalMax);
+    }
 }
 
 // FSM is connected (again). After a roaming switch, check that we ended up on the chosen AP.
@@ -966,10 +992,12 @@ void connected() {
     internal::last = millis();
     internal::scanning = false;
     clear_samples();
+    remember_bssid();
     settled();
 
-    DEBUG_MSG_P(PSTR("[WIFI] Roaming: next check in %u min\n"),
-        (unsigned)(internal::interval / (60ul * 1000ul)));
+    DEBUG_MSG_P(PSTR("[WIFI] Roaming: next check in %u min (stable %u/%u)\n"),
+        (unsigned)(internal::interval / (60ul * 1000ul)),
+        internal::stable, build::StableScans);
 }
 
 // Connection was restarted by an action (reload, terminal, web), not a roaming failure
@@ -1093,6 +1121,7 @@ int better(int count) {
         } else {
             std::memcpy(internal::pending_bssid, best_bssid, sizeof(internal::pending_bssid));
             internal::pending_count = 1;
+            unsettle();
         }
 
         if (internal::pending_count >= build::ConfirmScans) {
@@ -1155,6 +1184,14 @@ State loop(State state) {
             return state;
         }
 
+        const bool moved = bssid_changed();
+        if (moved) {
+            DEBUG_MSG_P(PSTR("[WIFI] Roaming: AP changed to %s, starting over\n"),
+                WiFi.BSSIDstr().c_str());
+            remember_bssid();
+            unsettle();
+        }
+
         const auto target = better(count);
         uint8_t target_bssid[6] {};
         if (target >= 0) {
@@ -1177,9 +1214,12 @@ State loop(State state) {
             DEBUG_MSG_P(PSTR("[WIFI] Roaming: next check in %u s\n"),
                 (unsigned)(build::ConfirmInterval / 1000ul));
         } else {
-            settled();
-            DEBUG_MSG_P(PSTR("[WIFI] Roaming: next check in %u min\n"),
-                (unsigned)(internal::interval / (60ul * 1000ul)));
+            if (!moved) {
+                settled();
+            }
+            DEBUG_MSG_P(PSTR("[WIFI] Roaming: next check in %u min (stable %u/%u)\n"),
+                (unsigned)(internal::interval / (60ul * 1000ul)),
+                internal::stable, build::StableScans);
         }
 
 #if WEB_SUPPORT
@@ -1211,9 +1251,13 @@ State loop(State state) {
         return state;
     }
 
+    // Good enough, nothing to look for. The link itself did not change, so the interval and
+    // the stable scans are kept (resetting them here restarted the backoff every time the
+    // RSSI crossed the threshold back and forth)
     const auto rssi = link_rssi();
     if (rssi >= settings::threshold()) {
-        reset();
+        internal::last = millis();
+        clear_pending();
         return state;
     }
 
