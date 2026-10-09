@@ -15,6 +15,62 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 
 ---
 
+## ESP32 port (this fork)
+
+[![esp32 release](https://img.shields.io/github/v/release/igorufox/espurna?label=esp32%20build)](https://github.com/igorufox/espurna/releases/latest)
+[![esp32 ci](https://github.com/igorufox/espurna/actions/workflows/esp32.yml/badge.svg?branch=esp32-port)](https://github.com/igorufox/espurna/actions/workflows/esp32.yml)
+[![branch](https://img.shields.io/badge/branch-esp32--port-orange.svg)](https://github.com/igorufox/espurna/tree/esp32-port/)
+
+This fork ports ESPurna to the **ESP32** (Arduino-ESP32 via PlatformIO `espressif32 @ 6.3.2`), living in the [`esp32-port`](https://github.com/igorufox/espurna/tree/esp32-port) branch. ESP32-specific code is under [`code/espurna/arch/esp32`](code/espurna/arch/esp32).
+
+Builds (same features, they differ only in the default GPIO assignment):
+
+| Build | Board |
+|-------|-------|
+| `esp32-generic` | any ESP32 with 4 MB flash; no relays, buttons or LEDs pre-assigned, configure them from the WebUI or a Tasmota template |
+| `esp32-relay-x2` | **LC-Tech ESP32 2-relay**: relays on GPIO16 / GPIO17, button on GPIO0, LED on GPIO23 (inverted) |
+
+Enabled modules: WebUI, API, MQTT, terminal, Home Assistant, Domoticz, Alexa, sensors, PWM.
+
+### Other ESP32 boards: Tasmota templates
+
+Relays, buttons and LEDs are configured at runtime, so any ESP32 device can run the `esp32-generic` build and be set up from a [Tasmota template](https://templates.blakadder.com/) - no rebuild needed. The generic image drives no GPIOs until configured, so it is safe to flash on unknown hardware. The import also works on `esp32-relay-x2`, to re-purpose that board.
+
+1. Flash `espurna-esp32-generic-full.bin` and connect to the device WebUI.
+2. Go to **Admin → Tasmota Profile Import** and paste the template JSON, e.g.
+   `{"NAME":"MyDevice","GPIO":[0,0,0,0,0,0,0,0,0,0,0,0,224,225,0,0,0,0,0,544,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"FLAG":0,"BASE":1}`
+3. Check the preview (number of relays / buttons / LEDs found), press **Import Tasmota Template** and reboot.
+
+Supported GPIO functions (current Tasmota numbering): `Relay1..32` / `Relay_i` (224-287), `Button1..32` with `n` / `i` / `in` variants (32-159), `Switch1..32` / `Switch_n` (160-223, imported as buttons), `Led1..32` / `Led_i` (288-351), `PWM1..32` / `PWM_i` (416-479, as LEDs), `LedLink` / `LedLinki` (544, 576). Template `NAME` becomes the device description. Other functions (sensors, serial, etc.) are skipped, and the import overwrites existing relay, button and LED settings.
+
+### Download
+
+Every push to `esp32-port` is built by [GitHub Actions](https://github.com/igorufox/espurna/actions/workflows/esp32.yml) and published as a [release](https://github.com/igorufox/espurna/releases/latest), with two files per build:
+
+| File | Use |
+|------|-----|
+| `espurna-<build>-full.bin` | merged image (bootloader + partitions + app), first flash over serial at `0x0` |
+| `espurna-<build>-ota.bin` | application only, OTA upgrade from the WebUI |
+
+First flash over serial:
+
+```
+esptool.py --chip esp32 --baud 460800 write_flash 0x0 espurna-esp32-generic-full.bin
+```
+
+### Build from source
+
+```
+cd code
+pio run -c platformio_esp32.ini -e esp32-generic
+```
+
+The merged image is written to `code/.pio/build/<build>/espurna-<build>.bin` by [`scripts/esp32_merge.py`](code/scripts/esp32_merge.py).
+
+Everything below is the original upstream README and describes ESP8266 builds.
+
+---
+
 ## Collaborators
 
 Since November 2018, Max Prokhorov (**@mcspr**) is also actively working as a collaborator of the project. 
