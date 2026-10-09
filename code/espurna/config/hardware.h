@@ -47,37 +47,63 @@
 // ESPurna Core
 // -----------------------------------------------------------------------------
 
-#elif defined(GENERIC_ESP32)
+#elif defined(ESP32_GENERIC)
+
+    // Any ESP32 board. No relays, buttons or LEDs are pre-assigned, so the image is
+    // safe to flash on unknown hardware; GPIOs are configured at runtime
+    // (WebUI, terminal or Tasmota template import)
 
     // Info
     #define MANUFACTURER            "GENERIC"
     #define DEVICE                  "ESP32"
 
-    // Buttons
-    #define BUTTON1_PIN             0
-    #define BUTTON1_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
-    #define BUTTON1_RELAY           1
-
-    // Relays
-    #define RELAY1_PIN              12
-    #define RELAY1_TYPE             RELAY_TYPE_NORMAL
-
-    // LEDs
-    #define LED1_PIN                2
-    #define LED1_PIN_INVERSE        0
-
+    #ifndef MDNS_SERVER_SUPPORT
     #define MDNS_SERVER_SUPPORT     0
+    #endif
+
+    #ifndef ALEXA_SUPPORT
     #define ALEXA_SUPPORT           0
+    #endif
+
+    #ifndef FAUXMO_SUPPORT
     #define FAUXMO_SUPPORT          0
+    #endif
+
+    #ifndef MY92XX_SUPPORT
     #define MY92XX_SUPPORT          0
+    #endif
+
+    #ifndef HLW8012_SUPPORT
     #define HLW8012_SUPPORT         0
+    #endif
+
+    #ifndef RCSWITCH_SUPPORT
     #define RCSWITCH_SUPPORT        0
+    #endif
+
+    #ifndef NEWPING_SUPPORT
     #define NEWPING_SUPPORT         0
+    #endif
+
+    #ifndef RFM69_SUPPORT
     #define RFM69_SUPPORT           0
+    #endif
+
+    #ifndef NOFUSS_SUPPORT
     #define NOFUSS_SUPPORT          0
+    #endif
+
+    #ifndef LLMNR_SUPPORT
     #define LLMNR_SUPPORT           0
+    #endif
+
+    #ifndef NETBIOS_SUPPORT
     #define NETBIOS_SUPPORT         0
+    #endif
+
+    #ifndef SSDP_SUPPORT
     #define SSDP_SUPPORT            0
+    #endif
 
 #elif defined(ESP12F_RELAY_X2)
 
