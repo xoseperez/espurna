@@ -1,0 +1,70 @@
+name: ESP32 Build
+
+on:
+  push:
+    branches: [esp32-port]
+    tags: ['esp32-*']
+  pull_request:
+    branches: [esp32-port]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: esp32-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        env: [esp32-relay-x2]
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+    - name: Cache pip
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-platformio
+    - name: Cache PlatformIO
+      uses: actions/cache@v4
+      with:
+        path: ~/.platformio
+        key: ${{ runner.os }}-pio-${{ matrix.env }}-${{ hashFiles('code/platformio_esp32.ini') }}
+        restore-keys: |
+          ${{ runner.os }}-pio-${{ matrix.env }}-
+    - name: Install PlatformIO
+      run: |
+        pip install -U platformio
+    - name: Build
+      working-directory: code
+      run: |
+        # pio libs sometimes use raw hash instead of version, avoid useless warnings
+        git config --global advice.detachedHead false
+        pio run -c platformio_esp32.ini -e ${{ matrix.env }}
+    - name: Collect binaries
+      run: |
+        build=code/.pio/build/${{ matrix.env }}
+        mkdir -p dist
+        # merged image (bootloader + partitions + boot_app0 + app), flash at 0x0
+        cp ${build}/espurna-${{ matrix.env }}.bin dist/espurna-${{ matrix.env }}-full.bin
+        # app only, for OTA
+        cp ${build}/firmware.bin dist/espurna-${{ matrix.env }}-ota.bin
+        cp ${build}/firmware.elf dist/espurna-${{ matrix.env }}.elf
+        ls -l dist
+    - uses: actions/upload-artifact@v4
+      with:
+        name: espurna-${{ matrix.env }}-${{ github.sha }}
+        path: dist/
+    - if: startsWith(github.ref, 'refs/tags/esp32-')
+      uses: softprops/action-gh-release@v2
+      with:
+        prerelease: true
+        files: |
+          dist/espurna-${{ matrix.env }}-full.bin
+          dist/espurna-${{ matrix.env }}-ota.bin
