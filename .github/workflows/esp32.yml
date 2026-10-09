@@ -61,10 +61,30 @@ jobs:
       with:
         name: espurna-${{ matrix.env }}-${{ github.sha }}
         path: dist/
-    - if: startsWith(github.ref, 'refs/tags/esp32-')
+    - name: Release variables
+      id: release
+      if: github.event_name != 'pull_request'
+      run: |
+        if [[ "${GITHUB_REF}" == refs/tags/esp32-* ]]; then
+          tag="${GITHUB_REF_NAME}"
+        else
+          tag="esp32-$(date +'%y%m%d')-${GITHUB_SHA::7}"
+        fi
+        echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+    # every push to esp32-port (or esp32-* tag, or manual run) becomes a release,
+    # same as upstream snapshot builds, so binaries are reachable from the repo page
+    - if: github.event_name != 'pull_request'
       uses: softprops/action-gh-release@v2
       with:
-        prerelease: true
+        tag_name: ${{ steps.release.outputs.tag }}
+        target_commitish: ${{ github.sha }}
+        name: ESP32 build (${{ steps.release.outputs.tag }})
+        body: |
+          Automatic build of ${{ github.ref_name }} @ ${{ github.sha }}
+
+          - `*-full.bin` - merged image (bootloader + partitions + app), flash at 0x0
+          - `*-ota.bin` - application only, for OTA upgrade from the WebUI
+        make_latest: true
         files: |
           dist/espurna-${{ matrix.env }}-full.bin
           dist/espurna-${{ matrix.env }}-ota.bin
