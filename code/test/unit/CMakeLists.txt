@@ -228,6 +228,7 @@ endfunction()
 
 build_tests(
     basic
+    datetime
     embedis
     filters
     led
