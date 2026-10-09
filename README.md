@@ -1,7 +1,8 @@
 # ESPurna Firmware
 
-ESPurna ("spark" in Catalan) is a custom firmware for ESP8285/ESP8266 based smart switches, lights and sensors.
-It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
+ESPurna ("spark" in Catalan) is a custom firmware for ESP32 and ESP8285/ESP8266 based smart switches, lights and sensors.
+It uses the Arduino Core for ESP32 / ESP8266 frameworks and a number of 3rd party libraries.
+This fork adds the [ESP32 port](#esp32-port-this-fork); the badges right below refer to the original upstream project.
 
 [![latest snapshot build](https://img.shields.io/github/v/release/xoseperez/espurna?include_prereleases&label=latest%20snapshot%20build)](https://github.com/xoseperez/espurna/releases?expanded=true)
 [![branch](https://img.shields.io/badge/branch-dev-orange.svg)](https://github.com/xoseperez/espurna/tree/dev/)
@@ -20,6 +21,8 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 [![esp32 release](https://img.shields.io/github/v/release/igorufox/espurna?label=esp32%20build)](https://github.com/igorufox/espurna/releases/latest)
 [![esp32 ci](https://github.com/igorufox/espurna/actions/workflows/esp32.yml/badge.svg?branch=esp32-port)](https://github.com/igorufox/espurna/actions/workflows/esp32.yml)
 [![branch](https://img.shields.io/badge/branch-esp32--port-orange.svg)](https://github.com/igorufox/espurna/tree/esp32-port/)
+
+ESP32 port is maintained by **@igorufox**. ESPurna itself is the work of Xose Pérez (**@xoseperez**), Max Prokhorov (**@mcspr**) and the upstream contributors, credited below.
 
 This fork ports ESPurna to the **ESP32** (Arduino-ESP32 via PlatformIO `espressif32 @ 6.3.2`), living in the [`esp32-port`](https://github.com/igorufox/espurna/tree/esp32-port) branch. ESP32-specific code is under [`code/espurna/arch/esp32`](code/espurna/arch/esp32).
 
@@ -67,15 +70,17 @@ pio run -c platformio_esp32.ini -e esp32-generic
 
 The merged image is written to `code/.pio/build/<build>/espurna-<build>.bin` by [`scripts/esp32_merge.py`](code/scripts/esp32_merge.py).
 
-Everything below is the original upstream README and describes ESP8266 builds.
-
 ---
 
-## Collaborators
+# Original ESPurna README
+
+Everything below is the upstream [xoseperez/espurna](https://github.com/xoseperez/espurna) README and describes ESP8266 builds.
+
+## Collaborators (upstream)
 
 Since November 2018, Max Prokhorov (**@mcspr**) is also actively working as a collaborator of the project. 
 
-## Contributors
+## Contributors (upstream)
 
 **Without your help this project would not be possible**. I (**@xoseperez**) simply can't spend all the time I wish on ESPurna but luckily I receive a lot of contributions, bug fixes, enhancement suggestions,... from people all around the world. I would like to thank each and every one of you. The [contributors](https://github.com/xoseperez/espurna/graphs/contributors) page shows the ones that have done a PR in the past, but I also get contributions in the issues, by email or via the [gitter ESPurna channel](https://gitter.im/tinkerman-cat/espurna), those I also want to thank.
 
