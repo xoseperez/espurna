@@ -52,11 +52,11 @@ jobs:
       matrix:
         id: [0, 1, 2, 3]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           path: espurna
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.x'
 
@@ -65,13 +65,13 @@ jobs:
           node-version: 'lts/*'
 
       - name: Cache Node
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.npm
           key: ${{ runner.os }}-npm-${{ hashFiles('espurna/code/package-lock.json', 'espurna/code/package.json') }}
 
       - name: Cache PlatformIO
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.platformio
           key: ${{ runner.os }}-platformio-${{ hashFiles('espurna/code/platformio.ini') }}
@@ -117,7 +117,7 @@ jobs:
             ../Build_${{ matrix.id }}.zip ./
           popd
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: Build_${{ matrix.id }}
           path: Build_${{ matrix.id }}.zip
@@ -126,11 +126,11 @@ jobs:
     needs: [variables, build]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.x'
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           merge-multiple: true
           path: artifacts/
