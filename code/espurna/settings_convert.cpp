@@ -137,3 +137,4 @@ String serialize(duration::Hours value) {
 } // namespace internal
 } // namespace settings
 } // namespace espurna
+

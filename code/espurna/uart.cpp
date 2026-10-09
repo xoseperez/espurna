@@ -267,6 +267,42 @@ bool used_hardware_ports[2] = {false, false};
 
 } // namespace internal
 
+#if defined(ARDUINO_ARCH_ESP32)
+// Any pins are routed through the GPIO matrix. UART0 keeps its default pins (1 & 3, serial
+// console / debug), UART2 is used for everything else (UART1 default pins are the flash ones).
+// Unlike esp8266, HardwareSerial::begin() takes (baud, config, rx, tx, invert) and there is no
+// separate mode or swap(). -1 leaves the pin unused.
+BasePortPtr hardware_port(
+        uint32_t baudrate, uint8_t tx, uint8_t rx, Config config, bool invert)
+{
+    if ((tx == GPIO_NONE) && (rx == GPIO_NONE)) {
+        return nullptr;
+    }
+
+    const int number = build::uart0_normal(tx, rx) ? 0 : 2;
+    const int slot = (number == 0) ? 0 : 1;
+    if (internal::used_hardware_ports[slot]) {
+        return nullptr;
+    }
+
+    internal::used_hardware_ports[slot] = true;
+
+    auto* ptr = new HardwareSerial(number);
+    ptr->begin(baudrate,
+        from_config<types::HardwareConfig>(config),
+        (rx == GPIO_NONE) ? -1 : static_cast<int8_t>(rx),
+        (tx == GPIO_NONE) ? -1 : static_cast<int8_t>(tx),
+        invert);
+
+    return std::make_unique<BasePort>(
+        BasePort{
+            .type = (number == 0) ? Type::Uart0 : Type::Uart1,
+            .tx = (tx != GPIO_NONE),
+            .rx = (rx != GPIO_NONE),
+            .stream = StreamPtr(ptr),
+        });
+}
+#else
 BasePortPtr hardware_port(
         uint32_t baudrate, uint8_t tx, uint8_t rx, Config config, bool invert)
 {
@@ -304,7 +340,9 @@ BasePortPtr hardware_port(
         tx, invert);
     if ((number == 0) && (build::uart0_swapped(tx, rx))) {
         ptr->flush();
+#if defined(ESP8266)
         ptr->swap();
+#endif
     }
 
     return std::make_unique<BasePort>(
@@ -315,6 +353,7 @@ BasePortPtr hardware_port(
             .stream = StreamPtr(ptr),
         });
 }
+#endif
 
 // based on the values in v6 of the lib. still, return bits instead of the octal notation used there
 #if UART_SOFTWARE_SUPPORT
@@ -587,7 +626,9 @@ void setup() {
     }
 
     if (disable_uart0_rx) {
+#if defined(ESP8266)
         ets_isr_mask(1 << ETS_UART_INUM);
+#endif
     }
 }
 
@@ -606,3 +647,4 @@ void uartSetup() {
 }
 
 #endif // UART_SUPPORT
+

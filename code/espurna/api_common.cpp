@@ -168,3 +168,4 @@ void apiCommonSetup() {
     espurna::api::web::setup();
 #endif
 }
+

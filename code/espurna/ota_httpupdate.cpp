@@ -220,3 +220,4 @@ void otaClientSetup() {
 }
 
 #endif // OTA_CLIENT == OTA_CLIENT_HTTPUPDATE
+

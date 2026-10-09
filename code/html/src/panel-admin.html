@@ -82,6 +82,31 @@
                 </div>
             </fieldset>
 
+            <fieldset>
+                <legend>Tasmota Profile Import</legend>
+
+                <div class="pure-control-group">
+                    <label>Template JSON</label>
+                    <textarea id="tasmota-template" class="pure-input-2-3"
+                        rows="4"
+                        placeholder='{"NAME":"MyDevice","GPIO":[0,0,0,0,0,0,0,0,0,0,0,0,224,225,0,0,0,0,0,544,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"FLAG":0,"BASE":1}'
+                        style="font-family: monospace; font-size: 0.85em; resize: vertical;"></textarea>
+                    <span class="pure-form-message">
+                        Paste a Tasmota device template JSON to automatically configure relays, buttons and LEDs.
+                        GPIO function codes will be mapped to ESPurna settings.
+                    </span>
+                </div>
+
+                <div class="pure-control-group">
+                    <label>&nbsp;</label>
+                    <span id="tasmota-preview" style="font-family: monospace; font-size: 0.9em;"></span>
+                </div>
+
+                <div class="pure-controls">
+                    <button type="button" id="button-tasmota-import" class="pure-button">Import Tasmota Template</button>
+                </div>
+            </fieldset>
+
         </div>
     </div>
 </form>

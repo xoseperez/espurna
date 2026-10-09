@@ -113,3 +113,4 @@ class Palette {
     std::vector<Color> _colors;
     std::vector<Color> _cache;
 };
+

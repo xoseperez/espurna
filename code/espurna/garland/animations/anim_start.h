@@ -39,3 +39,4 @@ class AnimStart : public Anim {
     }
 };
 #endif  // GARLAND_SUPPORT
+

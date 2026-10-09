@@ -2,6 +2,7 @@ import { sendAction } from './connection.mjs';
 
 import {
     NumberInput,
+    addFromTemplate,
     addOriginalsFromTemplateWithPreparedSchema,
     fromSchema,
     prepareFromSchema,
@@ -9,6 +10,7 @@ import {
 
 import { addEnumerables, listenEnumerableTarget } from './settings/enumerable.mjs';
 import { setOriginalsFromValuesForNode } from './settings/dataset.mjs';
+import { groupSettingsOnAddElem } from './settings/group.mjs';
 
 import { variableListeners } from './settings.mjs';
 
@@ -73,8 +75,11 @@ function initToggle(id) {
  */
 function updateFromState(states, schema) {
     states.forEach((state, id) => {
-        const elem = /** @type {!HTMLInputElement} */
+        const elem = /** @type {HTMLInputElement} */
             (document.querySelector(`input[name='relay'][data-id='${id}']`));
+        if (!elem) {
+            return;
+        }
 
         const relay = fromSchema(state, schema);
 
@@ -120,7 +125,7 @@ function updateFromConfig(configs, schema) {
         }
 
         names[id.toString()] =
-            `${cfg.relayName} (${cfg.relayProv})`;
+            `${cfg.relayName} (GPIO${cfg.relayGpio})`;
 
         initToggle(id);
     });
@@ -167,5 +172,19 @@ function listeners() {
 }
 
 export function init() {
+    const container = document.getElementById("relayConfig");
+    if (container) {
+        groupSettingsOnAddElem(container, () => {
+            addFromTemplate(container, "relay-config", {
+                relayProv: "gpio",
+                relayType: "normal",
+                relayBoot: "off",
+                relayPulse: "none",
+                relayTime: 0,
+                relayGpio: "153", // NONE
+                relayBtnGpio: "153" // NONE
+            });
+        });
+    }
     variableListeners(listeners());
 }

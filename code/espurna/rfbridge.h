@@ -11,7 +11,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <Arduino.h>
 #include <cstdint>
 
-#include "types.h"
+#include "types_orch.h"
 
 using RfbCodeHandler = void(*)(unsigned char protocol, espurna::StringView code);
 void rfbOnCode(RfbCodeHandler);
@@ -26,3 +26,4 @@ void rfbStore(size_t id, bool status, String code);
 
 void rfbForget(size_t id, bool status);
 void rfbSetup();
+

@@ -109,3 +109,4 @@ class VL53L1XSensor : public I2CSensor<> {
 };
 
 #endif // SENSOR_SUPPORT && VL53L1X_SUPPORT
+

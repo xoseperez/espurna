@@ -32,7 +32,11 @@ bool webApModeRequest(AsyncWebServerRequest*);
 bool webAuthenticate(AsyncWebServerRequest*);
 void webLog(AsyncWebServerRequest*);
 
+// 503 + Retry-After, for handlers that could not take the loop lock in time (ref. AsyncGuard)
+void webSendBusy(AsyncWebServerRequest*);
+
 void webBodyRegister(web_body_callback_f);
 void webRequestRegister(web_request_callback_f);
 
 void webSetup();
+

@@ -8,7 +8,7 @@ Part of MQTT and API modules
 
 #include <Arduino.h>
 
-#include "types.h"
+#include "types_orch.h"
 
 // --------------------------------------------------------------------------
 
@@ -24,3 +24,4 @@ using RpcPayloadCheck = PayloadStatus(*)(espurna::StringView);
 bool rpcHandleAction(espurna::StringView);
 PayloadStatus rpcParsePayload(espurna::StringView, RpcPayloadCheck);
 PayloadStatus rpcParsePayload(espurna::StringView);
+

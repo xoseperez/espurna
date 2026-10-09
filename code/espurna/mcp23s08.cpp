@@ -215,3 +215,4 @@ GpioBase& mcp23s08Gpio() {
 }
 
 #endif // MCP23S08_SUPPORT
+

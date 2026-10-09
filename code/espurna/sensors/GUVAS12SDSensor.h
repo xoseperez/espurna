@@ -167,3 +167,4 @@ class GUVAS12SDSensor : public BaseSensor {
 };
 
 #endif // SENSOR_SUPPORT && GUVAS12SD_SUPPORT
+

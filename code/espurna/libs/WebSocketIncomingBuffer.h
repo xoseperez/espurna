@@ -82,3 +82,4 @@ private:
     bool _cb_on_fragments;
     bool _terminate_string;
 };
+

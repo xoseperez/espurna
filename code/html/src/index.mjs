@@ -74,6 +74,7 @@ import { init as initThermostat } from './thermostat.mjs';
 import { init as initThingspeak } from './thingspeak.mjs';
 
 import { init as initDev } from './dev.mjs';
+import { init as initTasmota } from './tasmota.mjs';
 
 /** @type {number | null} */
 let KeepTime = null;
@@ -390,6 +391,7 @@ async function init() {
     initWiFi();
     initGpio();
     initNtp();
+    initTasmota();
 
     if (MODULE_OTA) {
         initOta();

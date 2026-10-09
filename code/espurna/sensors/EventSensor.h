@@ -218,3 +218,4 @@ class EventSensor : public BaseSensor {
 };
 
 #endif // SENSOR_SUPPORT && EVENTS_SUPPORT
+

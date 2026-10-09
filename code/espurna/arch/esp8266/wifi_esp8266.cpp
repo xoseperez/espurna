@@ -10,9 +10,9 @@ Copyright (C) 2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 */
 
-#include "espurna.h"
+#include "../../espurna.h"
 
-#include "wifi.h"
+#include "wifi_esp8266.h"
 
 #include <IPAddress.h>
 #include <AddrList.h>
@@ -2357,6 +2357,7 @@ void wifi(::terminal::CommandContext&& ctx) {
         auto id = espurna::settings::internal::convert<size_t>(ctx.argv[1]);
         if (id < sta::build::NetworksMax) {
             settingsDump(ctx, sta::settings::query::Settings, id);
+            terminalOK(ctx);
             return;
         }
 
@@ -3137,3 +3138,4 @@ IPAddress wifiApIp() {
 void wifiSetup() {
     espurna::wifi::setup();
 }
+

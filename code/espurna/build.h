@@ -8,7 +8,7 @@ BUILD INFO
 
 #include <Arduino.h>
 
-#include "types.h"
+#include "types_orch.h"
 
 namespace espurna {
 namespace build {
@@ -49,3 +49,4 @@ espurna::build::Hardware buildHardware();
 espurna::build::App buildApp();
 
 espurna::StringView buildModules();
+

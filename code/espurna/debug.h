@@ -42,3 +42,4 @@ void debugSendRaw(const char* line, bool timestamp = false);
 void debugSendBytes(const uint8_t* bytes, size_t size);
 
 void debugSend(const char* format, ...);
+

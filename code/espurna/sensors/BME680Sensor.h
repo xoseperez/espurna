@@ -385,3 +385,4 @@ constexpr BaseSensor::Magnitude BME680Sensor::Magnitudes[];
 #endif
 
 #endif // SENSOR_SUPPORT && BME680_SUPPORT
+

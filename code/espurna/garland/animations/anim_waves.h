@@ -110,3 +110,4 @@ class AnimWaves : public Anim {
 };
 
 #endif  // GARLAND_SUPPORT
+

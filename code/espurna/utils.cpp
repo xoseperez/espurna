@@ -503,7 +503,8 @@ size_t consumeAvailableReadBytes(Stream& stream, size_t available) {
 size_t consumeAvailableImpl(Stream& stream, size_t size) {
 #if defined(ARDUINO_ESP8266_RELEASE_2_7_2) \
 || defined(ARDUINO_ESP8266_RELEASE_2_7_3) \
-|| defined(ARDUINO_ESP8266_RELEASE_2_7_4)
+|| defined(ARDUINO_ESP8266_RELEASE_2_7_4) \
+|| defined(ESP32)
     return consumeAvailableReadBytes(stream, size);
 #else
     if (stream.hasPeekBufferAPI()) {
@@ -525,3 +526,4 @@ size_t consumeAvailable(Stream& stream) {
 
     return consumeAvailableImpl(stream, static_cast<size_t>(result));
 }
+

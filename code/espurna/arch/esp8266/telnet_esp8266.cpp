@@ -22,7 +22,7 @@ Updated to use WiFiServer and support reverse connections by Niek van der Maas <
 
 */
 
-#include "espurna.h"
+#include "../../espurna.h"
 
 #if TELNET_SUPPORT
 
@@ -35,7 +35,7 @@ Updated to use WiFiServer and support reverse connections by Niek van der Maas <
 #include "mqtt.h"
 #include "telnet.h"
 #include "terminal.h"
-#include "wifi.h"
+#include "../../wifi_orch.h"
 
 #include "libs/URL.h"
 #include "libs/Delimiter.h"
@@ -1184,3 +1184,4 @@ void telnetSetup() {
 }
 
 #endif
+

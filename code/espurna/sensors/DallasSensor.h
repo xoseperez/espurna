@@ -940,3 +940,4 @@ inline void load() {
 } // namespace espurna
 
 #endif // SENSOR_SUPPORT && DALLAS_SUPPORT
+

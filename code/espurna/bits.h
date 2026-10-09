@@ -10,7 +10,7 @@ Part of BITS MODULE
 #include <limits>
 #include <bitset>
 
-#include "types.h"
+#include "types_orch.h"
 
 namespace espurna {
 namespace bits {
@@ -174,3 +174,4 @@ inline constexpr int last_set_u64(uint64_t value) {
 } // namespace espurna
 
 #undef CONSTEXPR17
+

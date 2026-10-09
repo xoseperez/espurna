@@ -16,7 +16,9 @@ Copyright (C) 2020-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #endif
 
 #if WEB_SUPPORT
+#if defined(ESP8266)
 #include <ESPAsyncTCP.h>
+#endif
 #include <ArduinoJson.h>
 
 #include "web.h"
@@ -529,10 +531,19 @@ public:
             return;
         }
 
+        // buffer belongs to the request, only the setter itself needs the lock
         auto& helper = *reinterpret_cast<RequestHelper*>(request->_tempObject);
         if (total != (len + index)) {
             auto& buffer = helper.reserved_buffer(BufferSize);
             buffer.append(data, len);
+            return;
+        }
+
+        // Setters are bound to the request (params, path, response), they cannot run later
+        // from loop(). Without the lock, nothing is changed and the client should retry.
+        espurna::system::AsyncGuard guard;
+        if (!guard.locked()) {
+            webSendBusy(request);
             return;
         }
 
@@ -545,6 +556,7 @@ public:
     }
 
     void handleRequest(AsyncWebServerRequest* request) override {
+        espurna::system::AsyncGuard guard;
         if (!accepts_json(request)) {
             request->send(406,
                 content_type::Text.toString(),
@@ -560,6 +572,12 @@ public:
             return;
 
         case HTTP_GET: {
+            // getters read module state and settings, 503 when busy
+            if (!guard.locked()) {
+                webSendBusy(request);
+                return;
+            }
+
             auto apireq = helper.request();
             _handleGet(request, apireq);
             return;
@@ -630,6 +648,14 @@ public:
     }
 
     void handleRequest(AsyncWebServerRequest* request) override {
+        // Authentication reads settings, and both setters and getters are bound to the request,
+        // so they cannot be handed over to loop(). 503 when busy, client should retry.
+        espurna::system::AsyncGuard guard;
+        if (!guard.locked()) {
+            webSendBusy(request);
+            return;
+        }
+
         if (!apiAuthenticate(request)) {
             request->send(403);
             return;
@@ -818,3 +844,4 @@ bool apiError(ApiRequest& request) {
 }
 
 #endif // API_SUPPORT
+
