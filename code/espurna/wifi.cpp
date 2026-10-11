@@ -2378,12 +2378,11 @@ void wifi(::terminal::CommandContext&& ctx) {
     if (mode & OpmodeAp) {
         auto current = ap::current();
 
-        ctx.output.printf_P(PSTR("SoftAP: bssid %s channel %hhu auth %s\n"),
+        ctx.output.printf_P(PSTR("SoftAP: bssid %s channel %hhu auth %s ssid \"%s\"\n"),
             debug::mac(current.bssid).c_str(),
             current.channel,
             debug::authmode(current.authmode).c_str(),
-            current.ssid.c_str(),
-            current.passphrase.c_str());
+            current.ssid.c_str());
 
         if (ap::fallback::enabled() && ap::fallback::internal::timer) {
             ctx.output.printf_P(PSTR("fallback check every %u ms\n"),
