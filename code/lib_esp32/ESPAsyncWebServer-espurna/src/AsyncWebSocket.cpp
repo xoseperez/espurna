@@ -693,7 +693,11 @@ void AsyncWebSocketClient::_onData(void *pbuf, size_t plen){
     }
 
     const size_t datalen = std::min((size_t)(_pinfo.len - _pinfo.index), plen);
-    const auto datalast = data[datalen];
+    // ESPurna: data[datalen] is not touched. Byte right after the frame may be outside of the
+    // received buffer (when the frame ends at the end of the payload), and saving it here and
+    // writing it back after the event handler ran would overwrite whatever was changed there
+    // in the meantime (e.g. heap block header). Handlers get (data, len) and must not expect
+    // a NUL-terminated string (ref. espurna WebSocketIncomingBuffer, which copies the data)
 
     if(_pinfo.masked){
       for(size_t i=0;i<datalen;i++)
@@ -719,7 +723,7 @@ void AsyncWebSocketClient::_onData(void *pbuf, size_t plen){
           uint16_t reasonCode = (uint16_t)(data[0] << 8) + data[1];
           char * reasonString = (char*)(data+2);
           if(reasonCode > 1001){
-            _server->_handleEvent(this, WS_EVT_ERROR, (void *)&reasonCode, (uint8_t*)reasonString, strlen(reasonString));
+            _server->_handleEvent(this, WS_EVT_ERROR, (void *)&reasonCode, (uint8_t*)reasonString, (datalen > 2) ? (datalen - 2) : 0);
           }
         }
         bool closeNow = false;
@@ -738,8 +742,6 @@ void AsyncWebSocketClient::_onData(void *pbuf, size_t plen){
         // ESPurna: outside of the lock, ends up in _onDisconnect() -> user event handler.
         // Connection is gone afterwards, nothing else to parse
         if(closeNow){
-          if (datalen > 0)
-            data[datalen] = datalast;
           if(_client)
             _client->close(true);
           return;
@@ -757,10 +759,6 @@ void AsyncWebSocketClient::_onData(void *pbuf, size_t plen){
       //what should we do?
       break;
     }
-
-    // restore byte as _handleEvent may have added a null terminator i.e., data[len] = 0;
-    if (datalen > 0)
-      data[datalen] = datalast;
 
     data += datalen;
     plen -= datalen;

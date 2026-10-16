@@ -1922,7 +1922,9 @@ String mqttTopicSetter(const String& magnitude, size_t index) {
 
 // -----------------------------------------------------------------------------
 
-uint16_t mqttSendRaw(const char* topic, const char* message, bool retain, int qos) {
+namespace {
+
+uint16_t _mqttSendRaw(const char* topic, const char* message, bool retain, int qos, MqttPidCallback* on_publish) {
     if (_mqtt.connected()) {
         const unsigned int packetId {
 #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
@@ -1933,6 +1935,14 @@ uint16_t mqttSendRaw(const char* topic, const char* message, bool retain, int qo
             _mqtt.publish(topic, message, retain)
 #endif
         };
+
+#if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
+        if (packetId && on_publish && *on_publish) {
+            mqttOnPublish(packetId, std::move(*on_publish));
+        }
+#else
+        (void)on_publish;
+#endif
 
 #if DEBUG_SUPPORT
         {
@@ -1957,6 +1967,18 @@ uint16_t mqttSendRaw(const char* topic, const char* message, bool retain, int qo
 
     return false;
 }
+
+} // namespace
+
+uint16_t mqttSendRaw(const char* topic, const char* message, bool retain, int qos) {
+    return _mqttSendRaw(topic, message, retain, qos, nullptr);
+}
+
+#if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
+uint16_t mqttSendRaw(const char* topic, const char* message, bool retain, int qos, MqttPidCallback on_publish) {
+    return _mqttSendRaw(topic, message, retain, qos, &on_publish);
+}
+#endif
 
 uint16_t mqttSendRaw(const char* topic, const char* message, bool retain) {
     return mqttSendRaw(topic, message, retain, _mqtt_settings.qos);

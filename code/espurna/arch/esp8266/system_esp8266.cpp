@@ -481,16 +481,23 @@ void SystemTimer::callback() {
         }
     }
 
-    _callback();
-
     if (_repeat) {
         if (_tick) {
             _tick->count = 0;
         }
+
+        _callback();
         return;
     }
 
+    // One-shot is no longer armed by the time its callback runs (same as esp32).
+    // Callback is allowed to stop() / re-arm / destroy its own timer, including the
+    // callable itself, so work on a local copy and never touch `this` after it returns.
+    Callback callback;
+    callback.swap(_callback);
     stop();
+
+    callback();
 }
 
 void SystemTimer::schedule_once(Duration duration, Callback callback) {

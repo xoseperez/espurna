@@ -110,6 +110,60 @@ def install_libraries(specs, storage, verbose=False):
             pass
 
 
+# ESPAsyncWebServer (me-no-dev, pinned in shared_lib_deps) AsyncWebSocketClient::_onData() saves the byte
+# right *after* the received frame data (`datalast = data[datalen]`) and writes it back after the event
+# handler returns. When the frame ends at the end of the pbuf payload, that byte is outside of the buffer,
+# usually the header of the next heap block. Anything the handler allocates or frees in the meantime may
+# change that header, and the 'restore' then writes the stale byte back and corrupts the heap.
+# Nothing in our handlers writes into the frame data (ws.cpp copies it into WebSocketIncomingBuffer),
+# so there is nothing to restore. Reason string of the close frame is also not NUL-terminated, use its length.
+# Same change is in lib_esp32/ESPAsyncWebServer-espurna (ESP32 builds).
+ASYNC_WEBSOCKET_PATCHES = (
+    ("    const auto datalast = data[datalen];\n", ""),
+    (
+        "    // restore byte as _handleEvent may have added a null terminator i.e., data[len] = 0;\n"
+        "    if (datalen > 0)\n"
+        "      data[datalen] = datalast;\n",
+        "",
+    ),
+    (
+        "(uint8_t*)reasonString, strlen(reasonString));",
+        "(uint8_t*)reasonString, (datalen > 2) ? (datalen - 2) : 0);",
+    ),
+)
+
+ASYNC_WEBSOCKET_PATCHED = "// ESPURNA: patched, no out-of-bounds frame data restore\n"
+
+
+def patch_async_websocket(storage):
+    path = os.path.join(
+        env.subst("$PROJECT_DIR"), storage, "ESP Async WebServer", "src", "AsyncWebSocket.cpp"
+    )
+    if not os.path.exists(path):
+        return
+
+    with open(path, "r", encoding="utf-8", newline="") as f:
+        source = f.read()
+
+    if ASYNC_WEBSOCKET_PATCHED.rstrip("\n") in source:
+        return
+
+    crlf = "\r\n" in source
+    for old, new in ASYNC_WEBSOCKET_PATCHES:
+        if crlf:
+            old = old.replace("\n", "\r\n")
+            new = new.replace("\n", "\r\n")
+        if source.count(old) != 1:
+            raise ExtraScriptError(f"{path}: cannot apply patch, unexpected source")
+        source = source.replace(old, new)
+
+    source = ASYNC_WEBSOCKET_PATCHED.replace("\n", "\r\n" if crlf else "\n") + source
+    with open(path, "w", encoding="utf-8", newline="") as f:
+        f.write(source)
+
+    log(f"patched {path}", verbose=True)
+
+
 def ensure_platform_updated():
     try:
         if PIO_PLATFORM.are_outdated_packages():
@@ -153,6 +207,7 @@ if CI:
 SHARED_LIBDIR = get_shared_libdir(CONFIG)
 migrate_libraries(SHARED_LIBDIR)
 install_libraries(get_shared_libdeps(CONFIG), SHARED_LIBDIR, verbose=VERBOSE)
+patch_async_websocket(SHARED_LIBDIR)
 
 
 # tweak build system to ignore espurna.ino, but include user code

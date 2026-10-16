@@ -376,6 +376,26 @@ bool _isAPModeRequest(AsyncWebServerRequest* request) {
     return false;
 }
 
+// 404 with implicit "Connection: close", and the connection is closed right after
+// Not doing so will cause memory exhaustion, because the connection will linger
+// ref: https://github.com/xoseperez/espurna/issues/1660
+void _webSendNotFound(AsyncWebServerRequest* request) {
+    request->send(404);
+#if defined(ARDUINO_ARCH_ESP32)
+    // AsyncTCP close() runs the disconnect callback right away, deleting both the request and
+    // the client while the server is still parsing the request (and the body) using them.
+    // Close is delayed instead. RX timeout (reset by send()) closes it from the async_tcp poll
+    // callback, unless client does it first. Request is also marked as answered, so that neither
+    // the following body chunks nor the _onRequest() answer it once again (see _onBody())
+    request->client()->setRxTimeout(3);
+    if (!request->_tempObject) {
+        request->_tempObject = malloc(sizeof(bool));
+    }
+#else
+    request->client()->close();
+#endif
+}
+
 // Allow only requests that use our hostname or IP
 bool _onAPModeRequest(AsyncWebServerRequest* request) {
     if (wifiConnectable()) {
@@ -383,10 +403,7 @@ bool _onAPModeRequest(AsyncWebServerRequest* request) {
             return true;
         }
 
-        // Immediately close the connection, ref: https://github.com/xoseperez/espurna/issues/1660
-        // Not doing so will cause memory exhaustion, because the connection will linger
-        request->send(404);
-        request->client()->close();
+        _webSendNotFound(request);
 
         return false;
     }
@@ -753,14 +770,14 @@ int _onCertificate(void * arg, const char *filename, uint8_t **buf) {
 void _onRequest(AsyncWebServerRequest *request){
     espurna::system::AsyncGuard guard;
 
-    if (!_onAPModeRequest(request)) return;
-
 #if defined(ARDUINO_ARCH_ESP32)
     // already answered by _onBody()
     if (request->_tempObject) {
         return;
     }
 #endif
+
+    if (!_onAPModeRequest(request)) return;
 
     // subscribers (alexa, prometheus, terminal) use module state, 503 when busy
     if (!guard.locked()) {
@@ -775,28 +792,26 @@ void _onRequest(AsyncWebServerRequest *request){
         }
     }
 
-    // No subscriber handled the request, return a 404 with implicit "Connection: close"
-    request->send(404);
-
-    // And immediately close the connection, ref: https://github.com/xoseperez/espurna/issues/1660
-    // Not doing so will cause memory exhaustion, because the connection will linger
-    request->client()->close();
+    // No subscriber handled the request
+    _webSendNotFound(request);
 
 }
 
 void _onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
     espurna::system::AsyncGuard guard;
 
-    if (!_onAPModeRequest(request)) return;
-
 #if defined(ARDUINO_ARCH_ESP32)
     // subscribers (alexa) use module state, 503 when busy. Request is then marked as answered
     // (same as ota_web.cpp, freed by the request itself), so that neither the following chunks
-    // nor _onRequest() answer it once again
+    // nor _onRequest() answer it once again. Same for the 404, see _webSendNotFound()
     if (request->_tempObject) {
         return;
     }
+#endif
 
+    if (!_onAPModeRequest(request)) return;
+
+#if defined(ARDUINO_ARCH_ESP32)
     if (!guard.locked()) {
         _webSendBusy(request);
         request->_tempObject = malloc(sizeof(bool));
@@ -811,8 +826,7 @@ void _onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t i
     }
 
     // Same as _onAPModeRequest(...)
-    request->send(404);
-    request->client()->close();
+    _webSendNotFound(request);
 
 }
 

@@ -990,11 +990,11 @@ struct Wait {
     }
 
     __CONSTEXPR Value last() const {
-        return *_end;
+        return *(_end - 1);
     }
 
     bool is_last() const {
-        return _it == _end;
+        return (_it + 1) == _end;
     }
 
     __CONSTEXPR size_t count() const {
@@ -1278,29 +1278,31 @@ void send(DiscoveryPtr discovery, FlagPtr flag_ptr) {
         return;
     }
 
-    uint16_t pid { 0u };
     const auto sent = discovery->try_send_one(
         [&](const char* topic, const char* message) {
-            pid = ::mqttSendRaw(topic, message, internal::retain, 1);
+#if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
+            // Receive acknowledgement from the broker before continuing.
+            // Usually a good idea in general, to avoid filling network buffers too quickly.
+            //
+            // Callback is registered by mqttSendRaw() right after publishing. Registering it afterwards
+            // would race with the PUBACK, which may already be handled while the publish is being logged
+            // (debug output may yield), and the discovery would then wait for it forever.
+            //
+            // Not needed with LWMQTT, as it is already handled and wrapped in Result
+            // Not supported by PubSubClient
+            flag = false;
+            const auto pid = ::mqttSendRaw(topic, message, internal::retain, 1,
+                [flag_ptr]() {
+                    (*flag_ptr) = true;
+                });
+            if (!pid) {
+                flag = true;
+            }
+#else
+            const auto pid = ::mqttSendRaw(topic, message, internal::retain, 1);
+#endif
             return pid > 0;
         });
-
-#if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
-    // Receive acknowledgement from the broker before continuing.
-    // Usually a good idea in general, to avoid filling network buffers too quickly.
-    //
-    // Not needed with LWMQTT, as it is already handled and wrapped in Result
-    // Not supported by PubSubClient
-
-    if (sent) {
-        flag = false;
-        mqttOnPublish(
-            pid,
-            [flag_ptr]() {
-                (*flag_ptr) = true;
-            });
-    }
-#endif
 
     if (sent.ok() || sent.retry()) {
         schedule(sent.wait(), discovery, flag_ptr);

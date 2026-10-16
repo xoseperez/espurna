@@ -739,7 +739,13 @@ void cancel(size_t id) {
 }
 
 void cancel(const BulkTimer& timer) {
-    internal::timers.remove(timer);
+    // `timer` is usually an element of the list itself. remove() would keep comparing
+    // the rest of the list against it after it was already destroyed, match by address instead
+    const auto* ptr = std::addressof(timer);
+    internal::timers.remove_if(
+        [ptr](const BulkTimer& other) {
+            return std::addressof(other) == ptr;
+        });
 }
 
 bool is_pulse(const BulkTimer& timer) {
@@ -792,7 +798,11 @@ void BulkTimer::start() {
     _timer.once(
         _duration,
         [pair, flags]() {
-            _relayStatusPair(pair, flags);
+            // relay status notification may cancel (and destroy) this timer,
+            // never refer to the captured values while the relay status is being changed
+            const auto local_pair = pair;
+            const auto local_flags = flags;
+            _relayStatusPair(local_pair, local_flags);
         });
 }
 
@@ -3459,10 +3469,21 @@ void _relayMqttHandleCustomTopic(espurna::StringView topic, espurna::StringView 
     }
 }
 
+// Delayed action is not one of the relay timers, it is never shared with any relay
+// and is cancelled when MQTT connects again before it fires
+espurna::timer::SystemTimer _relay_mqtt_disconnect_timer;
+
+// relayMqttDisc#=none (or unset) means nothing should happen on disconnection
+bool _relayMqttDisconnectAction(size_t id) {
+    using namespace espurna::relay::settings;
+    return _relays_ready[id]
+        && (mqttDisconnectionStatus(id) != PayloadStatus::Unknown);
+}
+
 void _relayMqttHandleDisconnectImmediate() {
     using namespace espurna::relay::settings;
     for (size_t id = 0; id < _relays.size(); ++id) {
-        if (_relays_ready[id]) {
+        if (_relayMqttDisconnectAction(id)) {
             _relayHandleStatus(id, mqttDisconnectionStatus(id));
         }
     }
@@ -3470,24 +3491,37 @@ void _relayMqttHandleDisconnectImmediate() {
 
 void _relayMqttHandleDisconnect() {
     using namespace espurna::relay::settings;
-    const auto duration = mqttDisconnectionDelay();
 
+    bool action = false;
+    for (size_t id = 0; id < _relays.size(); ++id) {
+        if (_relayMqttDisconnectAction(id)) {
+            action = true;
+            break;
+        }
+    }
+
+    if (!action) {
+        return;
+    }
+
+    const auto duration = mqttDisconnectionDelay();
     if (duration == decltype(duration)::zero()) {
         _relayMqttHandleDisconnectImmediate();
         return;
     }
 
-    RelayMaskPair pair;
-    pair.off = _relays_ready;
-
-    if (pair.off.any()) {
-        espurna::relay::timer::schedule_and_start(
-            pair, duration,
-            RelayCommonStatusFlags | RelayFlagTimerDelay);
-    }
+    _relay_mqtt_disconnect_timer.schedule_once(
+        std::chrono::duration_cast<espurna::timer::SystemTimer::Duration>(duration),
+        []() {
+            // (esp8266) timer may have already fired and queued this, right before MQTT connected again
+            if (!mqttConnected()) {
+                _relayMqttHandleDisconnectImmediate();
+            }
+        });
 }
 
 void _relayMqttHandleConnect() {
+    _relay_mqtt_disconnect_timer.stop();
     _relayMqttSubscribeBaseTopics();
     _relayMqttSubscribeCustomTopics();
 }
