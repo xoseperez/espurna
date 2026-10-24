@@ -59,6 +59,7 @@
 #define BUTTON_DEFAULT_BOOT         ButtonMask::DefaultBoot
 #define BUTTON_SET_PULLUP           ButtonMask::SetPullup
 #define BUTTON_SET_PULLDOWN         ButtonMask::SetPulldown
+#define BUTTON_FREQUENCY            ButtonMask::Frequency
 
 // configure where do we get the button events
 #define BUTTON_PROVIDER_NONE        ButtonProvider::None

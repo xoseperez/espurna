@@ -2379,12 +2379,11 @@ void wifi(::terminal::CommandContext&& ctx) {
     if (mode & OpmodeAp) {
         auto current = ap::current();
 
-        ctx.output.printf_P(PSTR("SoftAP: bssid %s channel %hhu auth %s\n"),
+        ctx.output.printf_P(PSTR("SoftAP: bssid %s channel %hhu auth %s ssid \"%s\"\n"),
             debug::mac(current.bssid).c_str(),
             current.channel,
             debug::authmode(current.authmode).c_str(),
-            current.ssid.c_str(),
-            current.passphrase.c_str());
+            current.ssid.c_str());
 
         if (ap::fallback::enabled() && ap::fallback::internal::timer) {
             ctx.output.printf_P(PSTR("fallback check every %u ms\n"),
@@ -2995,7 +2994,52 @@ void init() {
 
 } // namespace internal
 
+// SDK keeps its own softAP config in the last flash sectors and applies it as soon as AP mode is enabled,
+// before WiFi.softAP() sets ours. When these sectors hold garbage (e.g. overwritten by an OTA image),
+// beacon allocation fails inside wifi_softap_start() and every fallback to AP mode is a crash. Board
+// may not be reachable by wire, so wipe the SDK config (ESPurna settings are not there) and restart
+bool sdk_terminated(const uint8_t* data, size_t size) {
+    return memchr(data, '\0', size) != nullptr;
+}
+
+// Persistent mode is off, so this is never our config. Only the SDK defaults (ESP_XXXXXX, channel 1,
+// open, 4 connections, 100ms beacon) are expected here; random garbage easily passes the documented
+// API limits though, so check the strings too and keep ranges tight
+bool sdk_softap_config_valid() {
+    softap_config config{};
+    if (!wifi_softap_get_config_default(&config)) {
+        return false;
+    }
+
+    const bool ssid = (config.ssid_len > 0)
+        ? (config.ssid_len <= sizeof(config.ssid))
+        : sdk_terminated(config.ssid, sizeof(config.ssid));
+
+    return ssid
+        && sdk_terminated(config.password, sizeof(config.password))
+        && (config.channel >= 1) && (config.channel <= 13)
+        && (config.authmode < AUTH_MAX) && (config.authmode != AUTH_WEP)
+        && (config.ssid_hidden <= 1)
+        && (config.max_connection >= 1) && (config.max_connection <= 4)
+        && (config.beacon_interval >= 100) && (config.beacon_interval <= 1000);
+}
+
+// Erased sectors mean defaults are used. Never erase twice, restarting again would not change anything
+bool sdk_config_erased() {
+    uint32_t word { 0 };
+    const auto address = ESP.getFlashChipSize() - 0x3000;
+    return ESP.flashRead(address, &word, sizeof(word))
+        && (word == 0xffffffff);
+}
+
 void setup() {
+    if (!sdk_softap_config_valid() && !sdk_config_erased()) {
+        DEBUG_MSG_P(PSTR("[WIFI] SDK config is corrupted, erasing it and restarting\n"));
+        ESP.eraseConfig();
+        ESP.restart();
+        return;
+    }
+
     internal::init();
 
     migrateVersion(settings::migrate);

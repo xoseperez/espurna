@@ -12,6 +12,7 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #if BUTTON_SUPPORT
 
 #include "button.h"
+#include "ac_switch.h"
 #include "compat.h"
 #include "fan.h"
 #include "gpio.h"
@@ -36,6 +37,10 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include <vector>
 
 // -----------------------------------------------------------------------------
+
+#ifndef BUTTON_AC_FREQ
+#define BUTTON_AC_FREQ 0
+#endif
 
 static constexpr auto ButtonsPresetMax [[gnu::unused]] = size_t(8);
 
@@ -62,6 +67,7 @@ struct ButtonEventDelays {
     unsigned long repeat;
     unsigned long lngclick;
     unsigned long lnglngclick;
+    unsigned long min_pulses;
 };
 
 namespace espurna {
@@ -77,13 +83,15 @@ struct Button {
     Button(BasePinPtr&& pin, const debounce_event::types::Config& config,
         ButtonActions&& actions, ButtonEventDelays&& delays);
 
-    bool state();
     ButtonEvent loop();
 
     ButtonEventEmitterPtr event_emitter;
 
     ButtonActions actions;
     ButtonEventDelays event_delays;
+
+    // non-owning, set when event_emitter pin is an AcSwitch (owned by the emitter)
+    AcSwitch* ac_switch { nullptr };
 };
 
 namespace settings {
@@ -113,6 +121,13 @@ PROGMEM_STRING(Relay, "btnRelay");
 
 PROGMEM_STRING(MqttSendAll, "btnMqttSendAll");
 PROGMEM_STRING(MqttRetain, "btnMqttRetain");
+
+PROGMEM_STRING(Frequency, "btnFreq");
+PROGMEM_STRING(MinPulses, "btnMinPulses");
+PROGMEM_STRING(MinDuty, "btnMinDuty");
+PROGMEM_STRING(AcConfirm, "btnAcConfirm");
+PROGMEM_STRING(AcFreq, "btnAcFreq");
+PROGMEM_STRING(AcDebug, "btnAcDbg");
 
 [[gnu::unused]] PROGMEM_STRING(AnalogLevel, "btnLevel");
 
@@ -336,6 +351,7 @@ constexpr int DefaultHigh { 1 << 3 };
 constexpr int DefaultBoot { 1 << 4 };
 constexpr int SetPullup { 1 << 5 };
 constexpr int SetPulldown { 1 << 6 };
+constexpr int Frequency { 1 << 7 };
 
 } // namespace ButtonMask
 
@@ -565,6 +581,10 @@ constexpr unsigned long longLongClickDelay(size_t index) {
     );
 }
 
+constexpr int acFreq() {
+    return BUTTON_AC_FREQ;
+}
+
 constexpr bool mqttSendAllEvents() {
     return (1 == BUTTON_MQTT_SEND_ALL_EVENTS);
 }
@@ -768,6 +788,34 @@ unsigned long longLongClickDelay(size_t index) {
     return internal::indexedThenGlobal(keys::LongLongClickDelay, index, build::longLongClickDelay(index));
 }
 
+bool isFrequency(size_t index) {
+    // nb. default must be bool, otherwise stored "true" would be converted as int (i.e. 0)
+    return getSetting({keys::Frequency, index},
+        (build::internal::configBitmask(index) & build::internal::ButtonMask::Frequency) != 0);
+}
+
+unsigned long minPulses(size_t index) {
+    return internal::indexedThenGlobal(keys::MinPulses, index, 5ul);
+}
+
+// Percentage of the window spent in the active (LOW) level, 0 to only count pulses
+unsigned long minDuty(size_t index) {
+    return internal::indexedThenGlobal(keys::MinDuty, index, 0ul);
+}
+
+// Consecutive counting windows that must agree before an AC switch changes state
+unsigned long acConfirm(size_t index) {
+    return internal::indexedThenGlobal(keys::AcConfirm, index, 2ul);
+}
+
+int acFreq() {
+    return getSetting(keys::AcFreq, build::acFreq());
+}
+
+bool acDebug() {
+    return getSetting(keys::AcDebug, false);
+}
+
 [[gnu::unused]]
 unsigned long repeatDelay() {
     return getSetting(keys::RepeatDelay, build::repeatDelay());
@@ -831,6 +879,10 @@ ID_VALUE(longLongClick, settings::longLongClick)
 ID_VALUE(debounceDelay, settings::debounceDelay)
 ID_VALUE(longClickDelay, settings::longClickDelay)
 ID_VALUE(longLongClickDelay, settings::longLongClickDelay)
+ID_VALUE(isFrequency, settings::isFrequency)
+ID_VALUE(minPulses, settings::minPulses)
+ID_VALUE(minDuty, settings::minDuty)
+ID_VALUE(acConfirm, settings::acConfirm)
 
 #if RELAY_SUPPORT
 ID_VALUE(relay, settings::relay)
@@ -862,6 +914,10 @@ static constexpr espurna::settings::query::IndexedSetting IndexedSettings[] PROG
     {keys::DebounceDelay, internal::debounceDelay},
     {keys::LongClickDelay, internal::longClickDelay},
     {keys::LongLongClickDelay, internal::longLongClickDelay},
+    {keys::Frequency, internal::isFrequency},
+    {keys::MinPulses, internal::minPulses},
+    {keys::MinDuty, internal::minDuty},
+    {keys::AcConfirm, internal::acConfirm},
 #if RELAY_SUPPORT
     {keys::Relay, internal::relay},
 #endif
@@ -1160,10 +1216,33 @@ void _buttonWebSocketOnVisible(JsonObject& root) {
     wsPayloadModule(root, espurna::button::settings::Prefix);
 }
 
+// Only what the WebUI button panel knows how to edit, see html/src/button.mjs
+static constexpr espurna::settings::query::IndexedSetting WebSocketSettings[] PROGMEM {
+    {espurna::button::settings::keys::Gpio, espurna::button::settings::query::internal::pin},
+    {espurna::button::settings::keys::Frequency, espurna::button::settings::query::internal::isFrequency},
+    {espurna::button::settings::keys::MinPulses, espurna::button::settings::query::internal::minPulses},
+    {espurna::button::settings::keys::MinDuty, espurna::button::settings::query::internal::minDuty},
+    {espurna::button::settings::keys::AcConfirm, espurna::button::settings::query::internal::acConfirm},
+    {espurna::button::settings::keys::DebounceDelay, espurna::button::settings::query::internal::debounceDelay},
+#if RELAY_SUPPORT
+    // AC options are shown in the card of the relay this button controls
+    {espurna::button::settings::keys::Relay, espurna::button::settings::query::internal::relay},
+#endif
+};
+
 void _buttonWebSocketOnConnected(JsonObject& root) {
-    if (buttonCount()) {
-        root["btnRepDel"] = espurna::button::settings::repeatDelay();
+    const auto buttons = buttonCount();
+    if (!buttons) {
+        return;
     }
+
+    root["btnRepDel"] = espurna::button::settings::repeatDelay();
+
+    root[FPSTR(espurna::button::settings::keys::AcFreq)] = espurna::button::settings::acFreq();
+    root[FPSTR(espurna::button::settings::keys::AcDebug)] = espurna::button::settings::acDebug();
+
+    espurna::web::ws::EnumerableConfig config{root, STRING_VIEW("btnConfig")};
+    config(STRING_VIEW("values"), buttons, WebSocketSettings);
 }
 
 bool _buttonWebSocketOnKeyCheck(espurna::StringView key, const JsonVariant&) {
@@ -1356,8 +1435,29 @@ void buttonEvent(size_t id, ButtonEvent event) {
 
 namespace {
 
+espurna::AcSwitch::Config _buttonAcConfig(size_t index) {
+    const auto window = espurna::button::settings::debounceDelay(index);
+    return espurna::AcSwitch::Config{
+        // zero window would never see any pulses
+        .timeout_ms = window ? window : 100ul,
+        .min_pulses = espurna::button::settings::minPulses(index),
+        .min_duty = espurna::button::settings::minDuty(index),
+        .confirm = espurna::button::settings::acConfirm(index),
+        .frequency = espurna::button::settings::acFreq(),
+        .debug = espurna::button::settings::acDebug(),
+    };
+}
+
 void _buttonConfigure() {
     auto buttons = espurna::button::internal::buttons.size();
+
+    // AC filter settings apply right away, only the button type needs a reboot
+    for (decltype(buttons) id = 0; id < buttons; ++id) {
+        auto& button = espurna::button::internal::buttons[id];
+        if (button.ac_switch) {
+            button.ac_switch->configure(_buttonAcConfig(id));
+        }
+    }
 
     for (decltype(buttons) id = 0; id < buttons; ++id) {
 #if RELAY_SUPPORT
@@ -1582,7 +1682,8 @@ ButtonEventDelays _buttonDelays(size_t index) {
         .debounce = espurna::button::settings::debounceDelay(index),
         .repeat = espurna::button::settings::repeatDelay(index),
         .lngclick = espurna::button::settings::longClickDelay(index),
-        .lnglngclick = espurna::button::settings::longLongClickDelay(index)};
+        .lnglngclick = espurna::button::settings::longLongClickDelay(index),
+        .min_pulses = espurna::button::settings::minPulses(index)};
 }
 
 template <typename T>
@@ -1590,18 +1691,80 @@ void _buttonAdd(T&& button) {
     espurna::button::internal::buttons.emplace_back(std::forward<T>(button));
 }
 
-espurna::button::Button _buttonWithPin(size_t index, BasePinPtr&& pin) {
-    return espurna::button::Button(
-        std::move(pin),
-        espurna::button::runtime_config(index),
-        _buttonActions(index),
-        _buttonDelays(index));
+// AC mains switch input. Wraps on-chip GPIO pin, which is still used for the pin mode setup.
+// When pin cannot generate interrupts (e.g. ESP8266 GPIO16, MCP23S08, analog) or it is
+// already used by another AcSwitch, nullptr is returned and the button stays without a pin.
+espurna::AcSwitch* _buttonMakeAcSwitch(size_t index, BasePinPtr& pin) {
+    const auto gpio = pin->pin();
+    if ((espurna::button::settings::provider(index) != ButtonProvider::Gpio)
+        || (espurna::button::settings::pinType(index) != GpioType::Hardware)
+        || !espurna::AcSwitch::available(gpio))
+    {
+        DEBUG_MSG_P(PSTR("[BUTTON] Button #%u GPIO%hhu cannot be used for AC detection, button disabled\n"),
+            index, gpio);
+        return nullptr;
+    }
+
+    auto* out = new espurna::AcSwitch(std::move(pin), _buttonAcConfig(index));
+    pin.reset(out);
+
+    return out;
 }
 
 espurna::button::Button _buttonWithoutPin(size_t index) {
     return espurna::button::Button(
             _buttonActions(index),
             _buttonDelays(index));
+}
+
+espurna::button::Button _buttonWithPin(size_t index, BasePinPtr&& pin) {
+    auto delays = _buttonDelays(index);
+
+    auto config = espurna::button::runtime_config(index);
+    auto actions = _buttonActions(index);
+
+    espurna::AcSwitch* ac_switch { nullptr };
+    if (pin && espurna::button::settings::isFrequency(index)) {
+        ac_switch = _buttonMakeAcSwitch(index, pin);
+
+        // Plain pin would read mains pulses as a stream of presses and releases
+        // and toggle the relay every few hundred ms. Keep the button, without a pin
+        if (!ac_switch) {
+            return _buttonWithoutPin(index);
+        }
+    }
+
+    if (ac_switch) {
+        // Maintained wall switch, only position changes (press / release) are meaningful.
+        // AcSwitch reads LOW while AC is present, idle (no AC) is HIGH.
+        config.mode = debounce_event::types::Mode::Switch;
+        config.default_value = debounce_event::types::PinValue::High;
+
+        // Switch never generates clicks. Still, make sure nothing like reset or
+        // factory reset could ever be triggered by a wall switch
+        actions.click = ButtonAction::None;
+        actions.dblclick = ButtonAction::None;
+        actions.trplclick = ButtonAction::None;
+        actions.lngclick = ButtonAction::None;
+        actions.lnglngclick = ButtonAction::None;
+
+        // AcSwitch already uses debounce delay as its counting window,
+        // do not block the loop() in the EventEmitter for another one
+        delays.debounce = 0;
+    }
+
+    auto out = espurna::button::Button(
+        std::move(pin), config,
+        std::move(actions),
+        std::move(delays));
+    out.ac_switch = ac_switch;
+
+    // Switch position at boot is the starting point, not an event
+    if (ac_switch && out.event_emitter) {
+        out.event_emitter->sync();
+    }
+
+    return out;
 }
 
 bool _buttonSetupProvider(size_t index, ButtonProvider provider) {
@@ -1721,6 +1884,11 @@ void buttonSetupUnstable() {
 #endif
 
     for (auto& button : espurna::button::internal::buttons) {
+        // dummy buttons have no pin. AC wall switches must never trigger reset or AP
+        if (!button.event_emitter || button.ac_switch) {
+            continue;
+        }
+
         const auto mode = button.event_emitter->config().mode;
         switch (mode) {
         case debounce_event::types::Mode::Pushbutton:

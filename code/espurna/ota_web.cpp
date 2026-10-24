@@ -57,6 +57,19 @@ void setStatus(AsyncWebServerRequest *request, int code, const String& payload =
     request->_tempObject = malloc(sizeof(bool));
 }
 
+// Last chunk of the file arrives before the body is fully parsed. When some of the upload never
+// reached the HTTP parser, the request does not fail. Instead, contentLength() is quietly lowered
+// to what did arrive and the request finishes as usual. Only commit the update after parsing is
+// done, and only when the body is the size the client said it is
+size_t pending_size { 0 };
+bool pending { false };
+
+bool complete(AsyncWebServerRequest *request) {
+    const auto& header = request->header(F("Content-Length"));
+    return header.length()
+        && (static_cast<size_t>(header.toInt()) == request->contentLength());
+}
+
 void onUpgrade(AsyncWebServerRequest *request) {
     // not in onFile(), holding up AsyncTCP for every uploaded chunk only slows the upload down
     ::espurna::system::AsyncGuard guard;
@@ -66,6 +79,39 @@ void onUpgrade(AsyncWebServerRequest *request) {
 
     if (request->_tempObject) {
         return;
+    }
+
+    if (pending) {
+        pending = false;
+
+        if (!complete(request)) {
+            DEBUG_MSG_P(PSTR("[UPGRADE] Incomplete upload, received %u of %s bytes\n"),
+                request->contentLength(), request->header(F("Content-Length")).c_str());
+            Update.end();
+            eepromRotate(true);
+            sendResponse(request, 400, F("ERROR: Incomplete upload"));
+            return;
+        }
+
+        if (guard.locked()) {
+            otaFinalize(pending_size, CustomResetReason::Ota, true);
+        } else {
+            // Update belongs to this upload and is finished right here, so that the response
+            // reports the actual result. What otaFinalize() does after that (reset, EEPROM rotation,
+            // debug output) belongs to loop() and happens there. Never the case on esp8266.
+            const auto size = pending_size;
+            const auto success = Update.isRunning() && Update.end(true);
+            systemRunInLoop([size, success]() {
+                if (success) {
+                    DEBUG_MSG_P(PSTR("[OTA] Success: %7u bytes\n"), size);
+                    prepareReset(CustomResetReason::Ota);
+                    return;
+                }
+
+                otaPrintError();
+                eepromRotate(true);
+            });
+        }
     }
 
     sendResponse(request, 200);
@@ -86,6 +132,8 @@ void onFile(AsyncWebServerRequest *request, String filename, size_t index, uint8
     }
 
     if (!index) {
+        pending = false;
+
         // TODO: stop network activity completely when handling Update through ArduinoOTA or `ota` command?
         if (Update.isRunning()) {
             setStatus(request, 400, F("ERROR: Upgrade in progress"));
@@ -136,27 +184,9 @@ void onFile(AsyncWebServerRequest *request, String filename, size_t index, uint8
     }
 
     if (final) {
-        ::espurna::system::AsyncGuard guard;
-        if (guard.locked()) {
-            otaFinalize(index + len, CustomResetReason::Ota, true);
-            return;
-        }
-
-        // Update belongs to this upload and is finished right here, so that onUpgrade() still
-        // reports the actual result. What otaFinalize() does after that (reset, EEPROM rotation,
-        // debug output) belongs to loop() and happens there. Never the case on esp8266.
-        const auto size = index + len;
-        const auto success = Update.isRunning() && Update.end(true);
-        systemRunInLoop([size, success]() {
-            if (success) {
-                DEBUG_MSG_P(PSTR("[OTA] Success: %7u bytes\n"), size);
-                prepareReset(CustomResetReason::Ota);
-                return;
-            }
-
-            otaPrintError();
-            eepromRotate(true);
-        });
+        // committed in onUpgrade(), see above
+        pending_size = index + len;
+        pending = true;
     } else {
         otaProgress(index + len);
     }

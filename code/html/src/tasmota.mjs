@@ -16,7 +16,8 @@ function buildGpioMap() {
      *   index: number,
      *   inverted: boolean,
      *   activeHigh?: boolean,
-     *   internalPull?: boolean
+     *   internalPull?: boolean,
+     *   switch?: boolean
      * }>}
      *
      * For buttons we carry polarity (activeHigh) and internal-pull preference
@@ -64,10 +65,10 @@ function buildGpioMap() {
         const switchNoPullUpCode = 192 + i;
 
         if (!map.has(switchCode)) {
-            map.set(switchCode, { type: 'button', index: i, inverted: false, activeHigh: false, internalPull: true });
+            map.set(switchCode, { type: 'button', index: i, inverted: false, activeHigh: false, internalPull: true, switch: true });
         }
         if (!map.has(switchNoPullUpCode)) {
-            map.set(switchNoPullUpCode, { type: 'button', index: i, inverted: false, activeHigh: false, internalPull: false });
+            map.set(switchNoPullUpCode, { type: 'button', index: i, inverted: false, activeHigh: false, internalPull: false, switch: true });
         }
     }
 
@@ -126,13 +127,46 @@ function parseTasmotaTemplate(text) {
 }
 
 /**
+ * Tasmota templates cannot express AC mains (optocoupler) switch inputs, Tasmota itself
+ * enables AC detection with `SwitchDebounce` ending with 9 (e.g. `SwitchDebounce 69`).
+ * - `ac` marks inputs imported from Switch codes (160..223) as AC mains switches
+ * - `acButtons` also marks inputs imported from Button codes (32..159)
+ * - `freq` is the mains frequency, 50 or 60 Hz (global `btnAcFreq`)
+ * @typedef {{ac: boolean, acButtons: boolean, freq: number}} ImportOptions
+ */
+
+/** @type {ImportOptions} */
+const DEFAULT_OPTIONS = { ac: false, acButtons: false, freq: 50 };
+
+/**
+ * Detect AC switch mode from pasted Tasmota commands, e.g. `SwitchDebounce 69`
+ * @param {string} text
+ * @returns {boolean}
+ */
+export function acFromCommands(text) {
+    const match = text.match(/SwitchDebounce\s+(\d+)/i);
+    if (!match) {
+        return false;
+    }
+
+    return (parseInt(match[1], 10) % 10) === 9;
+}
+
+/**
  * Convert Tasmota template to ESPurna settings key-value pairs.
  * @param {TasmotaTemplate} tmpl
+ * @param {ImportOptions} options
  * @returns {{[key: string]: string}}
  */
-function tasmotaToEspurna(tmpl) {
+export function tasmotaToEspurna(tmpl, options = DEFAULT_OPTIONS) {
     /** @type {{[key: string]: string}} */
     const settings = {};
+
+    /** @type {{button: number, tasmota: number}[]} */
+    const acInputs = [];
+
+    /** @type {Map<number, number>} Tasmota RelayN number to the ESPurna relay index */
+    const relays = new Map();
 
     if (tmpl.NAME) {
         settings['desc'] = tmpl.NAME;
@@ -155,6 +189,7 @@ function tasmotaToEspurna(tmpl) {
                 settings[`relayGpio${espurnaIndex}`] = gpioPin.toString();
                 settings[`relayType${espurnaIndex}`] = inverted ? 'inverse' : 'normal';
                 settings[`relayProv${espurnaIndex}`] = 'gpio';
+                relays.set(info.index, espurnaIndex);
                 break;
 
             case 'button': {
@@ -171,6 +206,19 @@ function tasmotaToEspurna(tmpl) {
                     !internalPull ? 'default'
                     : activeHigh  ? 'pull-down'
                                   : 'pull-up';
+
+                // AC mains wall switch. Input sees mains-frequency pulses while ON,
+                // which are counted within the debounce window (100ms).
+                // Maintained switch, every change of position toggles the relay.
+                if (options.ac && (info.switch || options.acButtons)) {
+                    settings[`btnFreq${espurnaIndex}`] = '1';
+                    settings[`btnMode${espurnaIndex}`] = 'switch';
+                    settings[`btnDefVal${espurnaIndex}`] = 'high';
+                    settings[`btnPress${espurnaIndex}`] = 'relay-toggle';
+                    settings[`btnRlse${espurnaIndex}`] = 'relay-toggle';
+                    settings[`btnDebDel${espurnaIndex}`] = '100';
+                    acInputs.push({button: espurnaIndex, tasmota: info.index});
+                }
                 break;
             }
 
@@ -181,23 +229,42 @@ function tasmotaToEspurna(tmpl) {
         }
     });
 
+    // Tasmota default is SwitchN / ButtonN controlling RelayN.
+    // nb. ESPurna indices are assigned in GPIO order, not by the Tasmota number
+    if (acInputs.length) {
+        settings['btnAcFreq'] = (options.freq === 60) ? '60' : '50';
+        for (const input of acInputs) {
+            const relay = relays.get(input.tasmota);
+            if (relay !== undefined) {
+                settings[`btnRelay${input.button}`] = relay.toString();
+            }
+        }
+    }
+
     return settings;
 }
 
 /**
  * @param {string} json
+ * @param {ImportOptions} options
  * @returns {string} Human readable summary of what was imported
  */
-function importSummary(json) {
+export function importSummary(json, options = DEFAULT_OPTIONS) {
     try {
         const tmpl = parseTasmotaTemplate(json);
-        const settings = tasmotaToEspurna(tmpl);
+        const settings = tasmotaToEspurna(tmpl, options);
 
         const relays = Object.keys(settings).filter(k => k.startsWith('relayGpio')).length;
         const buttons = Object.keys(settings).filter(k => k.startsWith('btnGpio')).length;
         const leds = Object.keys(settings).filter(k => k.startsWith('ledGpio')).length;
+        const ac = Object.keys(settings).filter(k => k.startsWith('btnFreq')).length;
 
-        return `"${tmpl.NAME}": ${relays} relay(s), ${buttons} button(s), ${leds} LED(s)`;
+        let out = `"${tmpl.NAME}": ${relays} relay(s), ${buttons} button(s), ${leds} LED(s)`;
+        if (ac) {
+            out += `, ${ac} of them AC mains switch(es) @ ${settings['btnAcFreq']} Hz`;
+        }
+
+        return out;
     } catch {
         return '';
     }
@@ -206,17 +273,18 @@ function importSummary(json) {
 /**
  * Import Tasmota template and send settings to the device.
  * @param {string} json
+ * @param {ImportOptions} options
  */
-function doImport(json) {
+function doImport(json, options) {
     const tmpl = parseTasmotaTemplate(json);
-    const settings = tasmotaToEspurna(tmpl);
+    const settings = tasmotaToEspurna(tmpl, options);
 
     if (Object.keys(settings).length === 0) {
         window.alert('No supported GPIO functions found in this Tasmota template.');
         return;
     }
 
-    const summary = importSummary(json);
+    const summary = importSummary(json, options);
     const msg = `Import Tasmota template?\n\n${summary}\n\nNote: existing relay/button/LED settings will be overwritten.`;
     if (!window.confirm(msg)) return;
 
@@ -242,20 +310,48 @@ export function init() {
 
     if (!textarea || !button || !preview) return;
 
-    textarea.addEventListener('input', () => {
+    const ac = /** @type {HTMLInputElement | null} */
+        (document.getElementById('tasmota-ac'));
+    const acButtons = /** @type {HTMLInputElement | null} */
+        (document.getElementById('tasmota-ac-buttons'));
+    const acFreq = /** @type {HTMLSelectElement | null} */
+        (document.getElementById('tasmota-ac-freq'));
+    const commands = /** @type {HTMLInputElement | null} */
+        (document.getElementById('tasmota-commands'));
+
+    /** @returns {ImportOptions} */
+    const options = () => ({
+        ac: !!ac?.checked,
+        acButtons: !!acButtons?.checked,
+        freq: parseInt(acFreq?.value ?? '50', 10),
+    });
+
+    const updatePreview = () => {
         const val = textarea.value.trim();
         if (!val) {
             preview.textContent = '';
             return;
         }
         try {
-            const summary = importSummary(val);
+            const summary = importSummary(val, options());
             preview.textContent = summary ? `✓ ${summary}` : '⚠ No recognized functions';
             preview.style.color = summary ? '#2a7' : '#c80';
         } catch {
             preview.textContent = '✗ Invalid JSON';
             preview.style.color = '#c22';
         }
+    };
+
+    textarea.addEventListener('input', updatePreview);
+    for (const elem of [ac, acButtons, acFreq]) {
+        elem?.addEventListener('change', updatePreview);
+    }
+
+    commands?.addEventListener('input', () => {
+        if (ac && acFromCommands(commands.value)) {
+            ac.checked = true;
+        }
+        updatePreview();
     });
 
     button.addEventListener('click', () => {
@@ -265,7 +361,7 @@ export function init() {
             return;
         }
         try {
-            doImport(val);
+            doImport(val, options());
         } catch (e) {
             notifyError(/** @type {Error} */(e));
         }

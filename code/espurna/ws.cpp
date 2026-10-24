@@ -604,14 +604,41 @@ AsyncWebSocket _ws("/ws");
 std::queue<espurna::web::ws::PostponedCallback> _ws_queue;
 espurna::web::ws::Callbacks _ws_callbacks;
 
+// Every post waits on the heap until the client drains it. With a slow client and something changing fast
+// (e.g. a flapping input toggling a relay several times a second) the queue would grow until allocation
+// fails inside std::queue, which has no way to report it and crashes. Losing an update is the lesser evil
+constexpr size_t QueueMax { 32 };
+bool _ws_queue_dropping { false };
+
+bool _wsQueueFull() {
+    if (_ws_queue.size() < QueueMax) {
+        if (_ws_queue.size() < (QueueMax / 2)) {
+            _ws_queue_dropping = false;
+        }
+        return false;
+    }
+
+    // set before logging, debug output may be posted here as well
+    if (!_ws_queue_dropping) {
+        _ws_queue_dropping = true;
+        DEBUG_MSG_P(PSTR("[WEBSOCKET] Queue is full, dropping updates\n"));
+    }
+
+    return true;
+}
+
 template <typename T>
 void _wsPostCallbacks(uint32_t client_id, T&& cbs) {
-    _ws_queue.emplace(client_id, espurna::web::ws::PostponedCallback::Storage(std::forward<T>(cbs)));
+    if (!_wsQueueFull()) {
+        _ws_queue.emplace(client_id, espurna::web::ws::PostponedCallback::Storage(std::forward<T>(cbs)));
+    }
 }
 
 template <typename T>
 void _wsPostCallbacks(uint32_t client_id, T&& cbs, espurna::web::ws::PostponedCallback::Mode mode) {
-    _ws_queue.emplace(client_id, espurna::web::ws::PostponedCallback::Storage(std::forward<T>(cbs)), mode);
+    if (!_wsQueueFull()) {
+        _ws_queue.emplace(client_id, espurna::web::ws::PostponedCallback::Storage(std::forward<T>(cbs)), mode);
+    }
 }
 
 void _wsBufferHint(size_t buffer_hint) {
@@ -621,8 +648,11 @@ void _wsBufferHint(size_t buffer_hint) {
 } // namespace
 
 void wsPost(uint32_t client_id, espurna::web::ws::OnSend&& cb, size_t buffer_hint) {
+    const auto size = _ws_queue.size();
     wsPost(client_id, std::move(cb));
-    _wsBufferHint(buffer_hint);
+    if (_ws_queue.size() != size) {
+        _wsBufferHint(buffer_hint);
+    }
 }
 
 void wsPost(uint32_t client_id, espurna::web::ws::OnSend&& cb) {
@@ -634,8 +664,11 @@ void wsPost(espurna::web::ws::OnSend&& cb) {
 }
 
 void wsPost(uint32_t client_id, const espurna::web::ws::OnSend& cb, size_t buffer_hint) {
+    const auto size = _ws_queue.size();
     wsPost(client_id, cb);
-    _wsBufferHint(buffer_hint);
+    if (_ws_queue.size() != size) {
+        _wsBufferHint(buffer_hint);
+    }
 }
 
 void wsPost(uint32_t client_id, const espurna::web::ws::OnSend& cb) {
@@ -655,8 +688,11 @@ void wsPostManual(espurna::web::ws::OnSend&& cb) {
 }
 
 void wsPostManual(uint32_t client_id, espurna::web::ws::OnSend&& cb, size_t buffer_hint) {
+    const auto size = _ws_queue.size();
     wsPostManual(client_id, std::move(cb));
-    _wsBufferHint(buffer_hint);
+    if (_ws_queue.size() != size) {
+        _wsBufferHint(buffer_hint);
+    }
 }
 
 void wsPostManual(uint32_t client_id, const espurna::web::ws::OnSend& cb) {
@@ -668,8 +704,11 @@ void wsPostManual(const espurna::web::ws::OnSend& cb) {
 }
 
 void wsPostManual(uint32_t client_id, const espurna::web::ws::OnSend& cb, size_t buffer_hint) {
+    const auto size = _ws_queue.size();
     wsPostManual(client_id, cb);
-    _wsBufferHint(buffer_hint);
+    if (_ws_queue.size() != size) {
+        _wsBufferHint(buffer_hint);
+    }
 }
 
 void wsPostAll(uint32_t client_id, espurna::web::ws::Callbacks::OnSendContainer&& cbs) {

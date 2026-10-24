@@ -89,8 +89,7 @@
                     <label>Template JSON</label>
                     <textarea id="tasmota-template" class="pure-input-2-3"
                         rows="4"
-                        placeholder='{"NAME":"MyDevice","GPIO":[0,0,0,0,0,0,0,0,0,0,0,0,224,225,0,0,0,0,0,544,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"FLAG":0,"BASE":1}'
-                        style="font-family: monospace; font-size: 0.85em; resize: vertical;"></textarea>
+                        placeholder='{"NAME":"MyDevice","GPIO":[0,0,0,0,0,0,0,0,0,0,0,0,224,225,0,0,0,0,0,544,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"FLAG":0,"BASE":1}'></textarea>
                     <span class="pure-form-message">
                         Paste a Tasmota device template JSON to automatically configure relays, buttons and LEDs.
                         GPIO function codes will be mapped to ESPurna settings.
@@ -98,8 +97,43 @@
                 </div>
 
                 <div class="pure-control-group">
+                    <label>AC mains switches</label>
+                    <input id="tasmota-ac" class="checkbox-toggle" type="checkbox" data-action="none">
+                    <span class="pure-form-message">
+                        Switch inputs are AC mains wall switches connected through an optocoupler (frequency detection).
+                        Tasmota templates cannot express this, in Tasmota it is enabled with <code>SwitchDebounce</code> ending with 9.
+                        Inputs imported from <em>Switch</em> codes become ESPurna buttons in <code>switch</code> mode with AC detection,
+                        100 ms debounce and relay toggle on every position change, controlling the relay with the same number (like Tasmota Switch1 &rarr; Relay1).
+                    </span>
+                </div>
+
+                <div class="pure-control-group">
+                    <label>AC frequency</label>
+                    <select id="tasmota-ac-freq" class="pure-input-1-4" data-action="none">
+                        <option value="50" selected>50 Hz</option>
+                        <option value="60">60 Hz</option>
+                    </select>
+                </div>
+
+                <div class="pure-control-group">
+                    <label>Buttons are AC too</label>
+                    <input id="tasmota-ac-buttons" class="checkbox-toggle" type="checkbox" data-action="none">
+                    <span class="pure-form-message">
+                        Also treat inputs imported from <em>Button</em> codes as AC mains switches. Some templates use Button codes for the wall switch inputs.
+                    </span>
+                </div>
+
+                <div class="pure-control-group">
+                    <label>Tasmota commands</label>
+                    <input id="tasmota-commands" class="pure-input-2-3" type="text" data-action="none" placeholder="SwitchDebounce 69" spellcheck="false">
+                    <span class="pure-form-message">
+                        Optional. When <code>SwitchDebounce</code> ending with 9 is found here, AC mains switches option is enabled automatically.
+                    </span>
+                </div>
+
+                <div class="pure-control-group">
                     <label>&nbsp;</label>
-                    <span id="tasmota-preview" style="font-family: monospace; font-size: 0.9em;"></span>
+                    <span id="tasmota-preview"></span>
                 </div>
 
                 <div class="pure-controls">
