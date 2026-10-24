@@ -498,6 +498,24 @@
 #define BUTTON_LNGLNGCLICK_DELAY    10000       // Time in ms holding the button down to get a long-long click
 #endif
 
+// AC mains switch inputs (BUTTON_FREQUENCY, btnFreq#), see ac_switch.h
+#ifndef BUTTON_AC_FREQ
+#define BUTTON_AC_FREQ              0           // Expected mains frequency, 50 or 60 (Hz). 0 counts every edge
+#endif
+
+#ifndef BUTTON_AC_MIN_PULSES
+#define BUTTON_AC_MIN_PULSES        5           // Minimum number of pulses within the counting window (debounce delay) for the ON state
+#endif
+
+#ifndef BUTTON_AC_MIN_DUTY
+#define BUTTON_AC_MIN_DUTY          0           // Minimum % of the counting window spent in the active (LOW) level
+                                                // for the ON state. 0 disables the check
+#endif
+
+#ifndef BUTTON_AC_CONFIRM
+#define BUTTON_AC_CONFIRM           2           // Consecutive counting windows that must agree before the state changes (2..10)
+#endif
+
 #ifndef BUTTON_MQTT_SEND_ALL_EVENTS
 #define BUTTON_MQTT_SEND_ALL_EVENTS     0           // 0 - to send only events the are bound to actions
                                                     // 1 - to send all button events to MQTT
