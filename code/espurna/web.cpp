@@ -14,9 +14,13 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <functional>
 #include <memory>
 
+#if defined(ESP8266)
 #include <Schedule.h>
+#endif
 #include <Print.h>
+#if defined(ESP8266)
 #include <Hash.h>
+#endif
 #include <FS.h>
 
 #include <ArduinoJson.h>
@@ -318,6 +322,10 @@ AsyncWebServer* server;
 std::unique_ptr<std::vector<uint8_t>> config_buffer;
 bool config_success = false;
 
+// Upload was dropped because the loop lock could not be taken, ref. _onPostConfigFile()
+// (only touched by the async handlers, never set on esp8266)
+bool config_busy = false;
+
 // TODO server may not cache the full body
 std::vector<web_request_callback_f> request_callbacks;
 std::vector<web_body_callback_f> body_callbacks;
@@ -368,6 +376,26 @@ bool _isAPModeRequest(AsyncWebServerRequest* request) {
     return false;
 }
 
+// 404 with implicit "Connection: close", and the connection is closed right after
+// Not doing so will cause memory exhaustion, because the connection will linger
+// ref: https://github.com/xoseperez/espurna/issues/1660
+void _webSendNotFound(AsyncWebServerRequest* request) {
+    request->send(404);
+#if defined(ARDUINO_ARCH_ESP32)
+    // AsyncTCP close() runs the disconnect callback right away, deleting both the request and
+    // the client while the server is still parsing the request (and the body) using them.
+    // Close is delayed instead. RX timeout (reset by send()) closes it from the async_tcp poll
+    // callback, unless client does it first. Request is also marked as answered, so that neither
+    // the following body chunks nor the _onRequest() answer it once again (see _onBody())
+    request->client()->setRxTimeout(3);
+    if (!request->_tempObject) {
+        request->_tempObject = malloc(sizeof(bool));
+    }
+#else
+    request->client()->close();
+#endif
+}
+
 // Allow only requests that use our hostname or IP
 bool _onAPModeRequest(AsyncWebServerRequest* request) {
     if (wifiConnectable()) {
@@ -375,10 +403,7 @@ bool _onAPModeRequest(AsyncWebServerRequest* request) {
             return true;
         }
 
-        // Immediately close the connection, ref: https://github.com/xoseperez/espurna/issues/1660
-        // Not doing so will cause memory exhaustion, because the connection will linger
-        request->send(404);
-        request->client()->close();
+        _webSendNotFound(request);
 
         return false;
     }
@@ -390,7 +415,27 @@ void _webRequestAuth(AsyncWebServerRequest* request) {
     request->requestAuthentication(systemHostname().c_str(), true);
 }
 
+// On ESP32 handlers run in the async_tcp task (ref. AsyncGuard). Without the loop lock, settings
+// (incl. the password used for authentication) and module state cannot be safely read or changed.
+// Request also cannot be handed over to loop(), it has to be answered while it is still alive and
+// the authentication itself needs the lock. Such handlers ask the client to retry instead.
+// Never happens on esp8266, where the guard is always locked.
+void _webSendBusy(AsyncWebServerRequest* request) {
+    auto* response = request->beginResponse(503,
+        STRING_VIEW("text/plain").toString(),
+        STRING_VIEW("Busy, retry\n").toString());
+    _addHeader(*response, STRING_VIEW("Retry-After"), STRING_VIEW("1"));
+    request->send(response);
+}
+
 void _onReset(AsyncWebServerRequest *request) {
+    // auth and prepareReset() both need the lock, 503 when busy
+    espurna::system::AsyncGuard guard;
+    if (!guard.locked()) {
+        _webSendBusy(request);
+        return;
+    }
+
     if (!_authenticateRequest(request)) {
         _webRequestAuth(request);
         return;
@@ -401,6 +446,13 @@ void _onReset(AsyncWebServerRequest *request) {
 }
 
 void _onDiscover(AsyncWebServerRequest *request) {
+    // read-only, but hostname and device name are read from settings, 503 when busy
+    espurna::system::AsyncGuard guard;
+    if (!guard.locked()) {
+        _webSendBusy(request);
+        return;
+    }
+
     StaticJsonBuffer<JSON_OBJECT_SIZE(5) + 128> buffer;
     JsonObject& root = buffer.createObject();
 
@@ -431,6 +483,13 @@ void _setupAccessControlHeaders() {
 }
 
 void _onGetConfig(AsyncWebServerRequest *request) {
+    // iterates over the whole settings storage, 503 when busy
+    espurna::system::AsyncGuard guard;
+    if (!guard.locked()) {
+        _webSendBusy(request);
+        return;
+    }
+
     if (!_authenticateRequest(request)) {
         _webRequestAuth(request);
         return;
@@ -506,6 +565,14 @@ void _onGetConfig(AsyncWebServerRequest *request) {
 }
 
 void _onPostConfig(AsyncWebServerRequest *request) {
+    // 503 when this or any of the upload chunks could not take the lock (nothing was restored then)
+    espurna::system::AsyncGuard guard;
+    if (!guard.locked() || espurna::web::config_busy) {
+        espurna::web::config_busy = false;
+        _webSendBusy(request);
+        return;
+    }
+
     if (!_authenticateRequest(request)) {
         _webRequestAuth(request);
         return;
@@ -514,6 +581,21 @@ void _onPostConfig(AsyncWebServerRequest *request) {
 }
 
 void _onPostConfigFile(AsyncWebServerRequest *request, String, size_t index, uint8_t *data, size_t len, bool final) {
+    espurna::system::AsyncGuard guard;
+
+    // Every chunk is authenticated and the last one restores the settings, both need the lock.
+    // Deferring the restore would not help, since the authentication cannot be deferred.
+    // Without the lock, drop the upload and let _onPostConfig() answer with 503.
+    auto& busy = espurna::web::config_busy;
+    if (index == 0) {
+        busy = false;
+    }
+
+    if (busy || !guard.locked()) {
+        busy = true;
+        espurna::web::config_buffer.reset(nullptr);
+        return;
+    }
 
     if (!_authenticateRequest(request)) {
         _webRequestAuth(request);
@@ -566,6 +648,9 @@ String _apCaptiveLocation() {
 }
 
 void _onAPCaptiveRequest(AsyncWebServerRequest* request) {
+    // no settings and no module state, only WiFi mode and AP address (thread-safe IDF calls),
+    // proceeds without the lock when busy
+    espurna::system::AsyncGuard guard;
     if (wifiConnectable()) {
         auto* response = request->beginResponse(302);
 
@@ -584,9 +669,18 @@ void _onAPCaptiveRequest(AsyncWebServerRequest* request) {
 #if WEB_EMBEDDED
 
 void _onHome(AsyncWebServerRequest *request) {
-    if (!_isAPModeRequest(request) && !_authenticateRequest(request)) {
-        _webRequestAuth(request);
-        return;
+    // only the authentication needs the lock (503 when busy), page itself is static data
+    espurna::system::AsyncGuard guard;
+    if (!_isAPModeRequest(request)) {
+        if (!guard.locked()) {
+            _webSendBusy(request);
+            return;
+        }
+
+        if (!_authenticateRequest(request)) {
+            _webRequestAuth(request);
+            return;
+        }
     }
 
     const auto* modified = request->getHeader(
@@ -674,8 +768,22 @@ int _onCertificate(void * arg, const char *filename, uint8_t **buf) {
 #endif // WEB_SSL_ENABLED
 
 void _onRequest(AsyncWebServerRequest *request){
+    espurna::system::AsyncGuard guard;
+
+#if defined(ARDUINO_ARCH_ESP32)
+    // already answered by _onBody()
+    if (request->_tempObject) {
+        return;
+    }
+#endif
 
     if (!_onAPModeRequest(request)) return;
+
+    // subscribers (alexa, prometheus, terminal) use module state, 503 when busy
+    if (!guard.locked()) {
+        _webSendBusy(request);
+        return;
+    }
 
     // Send request to subscribers, break when request is 'handled' by the callback
     for (auto& callback : espurna::web::request_callbacks) {
@@ -684,18 +792,32 @@ void _onRequest(AsyncWebServerRequest *request){
         }
     }
 
-    // No subscriber handled the request, return a 404 with implicit "Connection: close"
-    request->send(404);
-
-    // And immediately close the connection, ref: https://github.com/xoseperez/espurna/issues/1660
-    // Not doing so will cause memory exhaustion, because the connection will linger
-    request->client()->close();
+    // No subscriber handled the request
+    _webSendNotFound(request);
 
 }
 
 void _onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+    espurna::system::AsyncGuard guard;
+
+#if defined(ARDUINO_ARCH_ESP32)
+    // subscribers (alexa) use module state, 503 when busy. Request is then marked as answered
+    // (same as ota_web.cpp, freed by the request itself), so that neither the following chunks
+    // nor _onRequest() answer it once again. Same for the 404, see _webSendNotFound()
+    if (request->_tempObject) {
+        return;
+    }
+#endif
 
     if (!_onAPModeRequest(request)) return;
+
+#if defined(ARDUINO_ARCH_ESP32)
+    if (!guard.locked()) {
+        _webSendBusy(request);
+        request->_tempObject = malloc(sizeof(bool));
+        return;
+    }
+#endif
 
     // Send request to subscribers
     for (unsigned char i = 0; i < espurna::web::body_callbacks.size(); i++) {
@@ -704,8 +826,7 @@ void _onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t i
     }
 
     // Same as _onAPModeRequest(...)
-    request->send(404);
-    request->client()->close();
+    _webSendNotFound(request);
 
 }
 
@@ -729,6 +850,10 @@ bool webApModeRequest(AsyncWebServerRequest* request) {
 
 bool webAuthenticate(AsyncWebServerRequest *request) {
     return _authenticateRequest(request);
+}
+
+void webSendBusy(AsyncWebServerRequest* request) {
+    _webSendBusy(request);
 }
 
 uint16_t webPort() {
@@ -833,3 +958,4 @@ void webSetup() {
 }
 
 #endif // WEB_SUPPORT
+

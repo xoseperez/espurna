@@ -6,7 +6,7 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 */
 
-#include "espurna.h"
+#include "../../espurna.h"
 
 // --------------------------------------------------------------------------
 
@@ -15,7 +15,7 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "mcp23s08_pin.h"
 
-#include "rtcmem.h"
+#include "../../rtcmem.h"
 #include "terminal.h"
 
 #if WEB_SUPPORT
@@ -1072,3 +1072,4 @@ void resetPins() {
 }
 
 } // extern "C"
+

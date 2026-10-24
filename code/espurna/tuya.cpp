@@ -679,3 +679,4 @@ error:
 }
 
 #endif // TUYA_SUPPORT
+

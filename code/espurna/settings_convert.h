@@ -157,3 +157,4 @@ String serialize(const Container& options, T value) {
 } // namespace internal
 } // namespace settings
 } // namespace espurna
+

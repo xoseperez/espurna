@@ -78,6 +78,11 @@ String mqttTopicSetter(const String& magnitude, size_t index);
 espurna::StringView mqttMagnitude(espurna::StringView topic);
 
 uint16_t mqttSendRaw(const char * topic, const char * message, bool retain, int qos);
+#if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
+// Same as above, plus a PUBACK callback that is registered right after publishing,
+// before anything else (e.g. debug output, which may yield) gives the broker reply a chance to be handled
+uint16_t mqttSendRaw(const char * topic, const char * message, bool retain, int qos, MqttPidCallback on_publish);
+#endif
 uint16_t mqttSendRaw(const char * topic, const char * message, bool retain);
 uint16_t mqttSendRaw(const char * topic, const char * message);
 
@@ -114,3 +119,4 @@ bool mqttConnected();
 
 void mqttDisconnect();
 void mqttSetup();
+

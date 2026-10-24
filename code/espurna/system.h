@@ -4,20 +4,28 @@ SYSTEM MODULE
 
 Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 
+Common part, shared by every architecture. Chip specific parts (timers, sleep,
+memory, reset) are declared in arch/<arch>/system_<arch>.h and implemented in
+arch/<arch>/system_<arch>.cpp
+
 */
 
 #pragma once
 
-#include "system_time.h"
-
+#include "system_time_orch.h"
 #include "settings.h"
-#include "types.h"
+#include "types_orch.h"
+
+#if defined(ESP8266)
+#include "arch/esp8266/system_esp8266.h"
+#elif defined(ESP32)
+#include "arch/esp32/system_esp32.h"
+#endif
 
 #include <chrono>
 #include <cstdint>
+#include <functional>
 #include <limits>
-
-#include <user_interface.h>
 
 struct HeapStats {
     uint32_t available;
@@ -41,17 +49,6 @@ enum class CustomResetReason : uint8_t {
 };
 
 namespace espurna {
-namespace sleep {
-
-// Both LIGHT and DEEP sleep accept microseconds as input
-// Effective limit is ~31bit - 1 in size
-using Microseconds = std::chrono::duration<uint32_t, std::micro>;
-
-constexpr auto FpmSleepMin = Microseconds{ 1000 };
-constexpr auto FpmSleepIndefinite = Microseconds{ 0xFFFFFFF };
-
-} // namespace sleep
-
 namespace system {
 
 struct RandomDevice {
@@ -68,73 +65,26 @@ struct RandomDevice {
     uint32_t operator()() const;
 };
 
+// Implemented by arch/<arch>/system_<arch>.cpp, used by the common system module
+namespace arch {
+
+// first thing in systemSetup(), before anything else is initialized
+void pre_setup();
+
+// last thing in systemSetup()
+void setup();
+
+// every loop(), before the common part
+void loop();
+
+// reason of the current boot, as REASON_* value
+uint32_t reset_reason();
+
+// actual reboot, custom reason is already stored at this point
+[[noreturn]] void restart();
+
+} // namespace arch
 } // namespace system
-
-namespace timer {
-
-struct SystemTimer {
-    using TimeSource = time::CoreClock;
-    using Duration = TimeSource::duration;
-
-    static constexpr Duration DurationMin = Duration(5);
-
-    SystemTimer();
-    ~SystemTimer() {
-        stop();
-    }
-
-    SystemTimer(const SystemTimer&) = delete;
-    SystemTimer& operator=(const SystemTimer&) = delete;
-
-    SystemTimer(SystemTimer&&) = default;
-    SystemTimer& operator=(SystemTimer&&) = default;
-
-    bool armed() const {
-        return _armed != nullptr;
-    }
-
-    explicit operator bool() const {
-        return armed();
-    }
-
-    void once(Duration duration, Callback callback) {
-        start(duration, std::move(callback), false);
-    }
-
-    void repeat(Duration duration, Callback callback) {
-        start(duration, std::move(callback), true);
-    }
-
-    void schedule_once(Duration, Callback);
-    void stop();
-
-private:
-    // limit is per https://www.espressif.com/sites/default/files/documentation/2c-esp8266_non_os_sdk_api_reference_en.pdf
-    // > 3.1.1 os_timer_arm
-    // > with `system_timer_reinit()`, the timer value allowed ranges from 100 to 0x0x689D0.
-    // > otherwise, the timer value allowed ranges from 5 to 0x68D7A3.
-    // with current implementation we use division by 2 until we reach value less than this one
-    static constexpr Duration DurationMax = Duration(6870947);
-
-    void reset();
-    void start(Duration, Callback, bool repeat);
-    void callback();
-
-    struct Tick {
-        size_t total;
-        size_t count;
-    };
-
-    Callback _callback;
-
-    os_timer_t* _armed { nullptr };
-    bool _repeat { false };
-
-    std::unique_ptr<Tick> _tick;
-    std::unique_ptr<os_timer_t> _timer;
-};
-
-} // namespace timer
 
 struct ReadyFlag {
     bool wait(duration::Milliseconds);
@@ -283,6 +233,13 @@ enum class Interrupt {
     High,
 };
 
+namespace settings {
+
+// wakeup source of instantLightSleep(), GPIO_NONE when not configured
+uint8_t pin();
+Interrupt interrupt();
+
+} // namespace settings
 } // namespace sleep
 
 namespace settings {
@@ -292,7 +249,11 @@ template <>
 heartbeat::Mode convert(const String&);
 
 String serialize(heartbeat::Mode);
-String serialize(duration::ClockCycles);
+
+template <>
+sleep::Interrupt convert(const String&);
+
+String serialize(sleep::Interrupt);
 
 } // namespace internal
 } // namespace settings
@@ -368,6 +329,10 @@ bool systemPasswordEquals(espurna::StringView);
 
 String systemHostname();
 String systemDescription();
+
+// Run the callback from loop(), in the order of calls. Safe to call from any task, e.g. from
+// network handlers on ESP32 when the loop lock could not be taken in time (ref. AsyncGuard)
+void systemRunInLoop(std::function<void()>);
 
 void systemSetup();
 void systemSetupUnstable();

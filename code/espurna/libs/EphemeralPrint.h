@@ -20,3 +20,4 @@ struct EphemeralPrint : public Print {
         return 0;
     }
 };
+

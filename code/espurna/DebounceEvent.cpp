@@ -80,6 +80,12 @@ bool EventEmitter::isPressed() {
     return (_value != _default_value);
 }
 
+void EventEmitter::sync() {
+    if (_pin) {
+        _value = (_pin->digitalRead() == (HIGH));
+    }
+}
+
 const BasePinPtr& EventEmitter::pin() const {
     return _pin;
 }
@@ -155,3 +161,4 @@ types::Event EventEmitter::loop() {
 }
 
 } // namespace debounce_event
+

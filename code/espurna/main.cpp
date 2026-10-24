@@ -23,6 +23,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <algorithm>
 #include <utility>
 
+#if defined(ARDUINO_ARCH_ESP32)
+#include <mutex>
+#endif
+
 #include "main.h"
 #include "ota.h"
 #include "rtcmem.h"
@@ -73,7 +77,19 @@ espurna::duration::Milliseconds loop_delay { build::LoopDelayMin };
 
 std::forward_list<Callback> once_callbacks;
 
+#if defined(ARDUINO_ARCH_ESP32)
+// once callbacks are also scheduled from other tasks (e.g. SNTP notification in tcpip task)
+std::mutex once_mutex;
+#endif
+
 } // namespace internal
+
+#if defined(ARDUINO_ARCH_ESP32)
+using OnceLock = std::lock_guard<std::mutex>;
+#define ONCE_LOCK() OnceLock once_lock(internal::once_mutex)
+#else
+#define ONCE_LOCK()
+#endif
 
 void flag_reload() {
     internal::reload_flag = true;
@@ -105,10 +121,12 @@ void loop_delay(duration::Milliseconds value) {
 }
 
 void push_once(Callback callback) {
+    ONCE_LOCK();
     internal::once_callbacks.push_front(std::move(callback));
 }
 
 void push_once_unique(Callback::Type callback) {
+    ONCE_LOCK();
     auto& callbacks = internal::once_callbacks;
 
     auto it = std::find_if(
@@ -123,29 +141,36 @@ void push_once_unique(Callback::Type callback) {
         return;
     }
 
-    push_once(Callback(callback));
+    callbacks.push_front(Callback(callback));
 }
 
 void loop() {
-    // Reload config before running any callbacks
-    if (check_reload()) {
-        for (const auto& callback : internal::reload_callbacks) {
+    {
+        // network callbacks (ESP32) are handled while we are in delay()
+        system::LoopGuard guard;
+
+        // Reload config before running any callbacks
+        if (check_reload()) {
+            DEBUG_MSG_P(PSTR("[MAIN] Reloading configuration...\n"));
+            for (const auto& callback : internal::reload_callbacks) {
+                callback();
+            }
+        }
+
+        // Loop callbacks, registered some time in setup()
+        // Notice that everything is in order of registration
+        for (const auto& callback : internal::loop_callbacks) {
             callback();
         }
-    }
 
-    // Loop callbacks, registered some time in setup()
-    // Notice that everything is in order of registration
-    for (const auto& callback : internal::loop_callbacks) {
-        callback();
-    }
-
-    // One-time callbacks, registered some time during runtime
-    // Notice that callback container is LIFO, most recently added
-    // callback is called first. Copy to allow container modifications.
-    if (!internal::once_callbacks.empty()) {
+        // One-time callbacks, registered some time during runtime
+        // Notice that callback container is LIFO, most recently added
+        // callback is called first. Copy to allow container modifications.
         decltype(internal::once_callbacks) once_callbacks;
-        once_callbacks.swap(internal::once_callbacks);
+        {
+            ONCE_LOCK();
+            once_callbacks.swap(internal::once_callbacks);
+        }
 
         for (const auto& callback : once_callbacks) {
             callback();
@@ -156,6 +181,8 @@ void loop() {
 }
 
 void setup() {
+    system::LoopGuard guard;
+
     // -------------------------------------------------------------------------
     // Basic modules, will always run
     // -------------------------------------------------------------------------
@@ -423,3 +450,4 @@ void setup() {
 void loop() {
     espurna::main::loop();
 }
+

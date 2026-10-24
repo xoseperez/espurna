@@ -25,9 +25,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "config/all.h"
 
 #include "compat.h"
+#if defined(ESP32)
+#include "compat_esp32.h"
+#endif
 
 #include "build.h"
-#include "types.h"
+#include "types_orch.h"
 #include "debug.h"
 #include "gpio.h"
 #include "storage_eeprom.h"
@@ -37,7 +40,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "uart.h"
 #include "utils.h"
 #include "network.h"
-#include "wifi.h"
+#include "wifi_orch.h"
 
 #include <functional>
 #include <algorithm>
@@ -69,3 +72,4 @@ espurna::duration::Milliseconds espurnaLoopDelay();
 void espurnaLoopDelay(espurna::duration::Milliseconds);
 
 void extraSetup();
+

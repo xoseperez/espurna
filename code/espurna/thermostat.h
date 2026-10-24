@@ -70,3 +70,4 @@ void thermostatSetup();
 void displayOn();
 void displaySetup();
 void displayLoop();
+

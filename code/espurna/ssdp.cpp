@@ -125,6 +125,7 @@ String response() {
 
 void setup() {
     webServer().on("/description.xml", HTTP_GET, [](AsyncWebServerRequest* request) {
+        ::espurna::system::AsyncGuard guard;
         request->send(200, "text/xml", response());
     });
 
@@ -157,3 +158,4 @@ void ssdpSetup() {
 }
 
 #endif // SSDP_SUPPORT
+

@@ -139,3 +139,4 @@ class NTCSensor : public AnalogSensor {
         double _temperature { 0 };
 
 };
+

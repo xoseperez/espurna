@@ -293,3 +293,4 @@ constexpr BaseEmonSensor::Magnitude ECH1560Sensor::Magnitudes[];
 #endif
 
 #endif // SENSOR_SUPPORT && ECH1560_SUPPORT
+

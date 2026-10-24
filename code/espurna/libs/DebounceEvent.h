@@ -88,6 +88,10 @@ class EventEmitter {
         types::Event loop();
         bool isPressed();
 
+        // Take the current pin value as the starting point, without generating any events.
+        // (only makes sense for the switch mode, e.g. when pin value is known only after a while)
+        void sync();
+
         const BasePinPtr& pin() const;
         const types::Config& config() const;
 
@@ -119,3 +123,4 @@ class EventEmitter {
 
 
 } // namespace debounce_event
+

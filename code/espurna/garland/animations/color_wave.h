@@ -100,3 +100,4 @@ class ColorWave {
     float head;
     byte fade_step;
 };
+

@@ -8,7 +8,7 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #pragma once
 
-#include "types.h"
+#include "types_orch.h"
 #include "libs/BasePin.h"
 
 #include <cstddef>
@@ -62,6 +62,9 @@ public:
     virtual bool lock(unsigned char index) const = 0;
     virtual void lock(unsigned char index, bool value) = 0;
     virtual bool valid(unsigned char index) const = 0;
+    // Default: anything generally valid may also drive output. Architectures with
+    // input-only or flash-reserved pins (ESP32) override this.
+    virtual bool validForOutput(unsigned char index) const { return valid(index); }
     virtual BasePinPtr pin(unsigned char index) = 0;
 };
 
@@ -88,6 +91,14 @@ inline bool gpioValid(const GpioBase& base, unsigned char gpio) {
 
 inline bool gpioValid(unsigned char gpio) {
     return gpioValid(hardwareGpio(), gpio);
+}
+
+inline bool gpioValidForOutput(const GpioBase& base, unsigned char gpio) {
+    return base.validForOutput(gpio);
+}
+
+inline bool gpioValidForOutput(unsigned char gpio) {
+    return gpioValidForOutput(hardwareGpio(), gpio);
 }
 
 inline bool gpioLock(GpioBase& base, unsigned char pin, bool value,
@@ -152,3 +163,4 @@ BasePinPtr gpioRegister(GpioBase& base, unsigned char gpio,
         espurna::SourceLocation source_location = espurna::make_source_location());
 BasePinPtr gpioRegister(unsigned char gpio,
         espurna::SourceLocation source_location = espurna::make_source_location());
+

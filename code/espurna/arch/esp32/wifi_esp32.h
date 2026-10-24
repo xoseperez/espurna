@@ -1,8 +1,6 @@
 /*
 
-WIFI MODULE
-
-Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
+WIFI MODULE FOR ESP32
 
 */
 
@@ -10,34 +8,10 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <Arduino.h>
 
-#include <lwip/init.h>
-#if LWIP_VERSION_MAJOR == 1
-#include <netif/etharp.h>
-#elif LWIP_VERSION_MAJOR >= 2
-#include <lwip/etharp.h>
-#endif
+#include <WiFi.h>
+#include <esp_wifi.h>
 
-// (HACK) allow us to use internal lwip struct.
-// esp8266 re-defines enum values from tcp header... include them first
-#define LWIP_INTERNAL
-#include <ESP8266WiFi.h>
-#undef LWIP_INTERNAL
-
-extern "C" {
-  #include <lwip/opt.h>
-  #include <lwip/ip.h>
-  #include <lwip/tcp.h>
-  #include <lwip/inet.h> // ip_addr_t
-  #include <lwip/err.h> // ERR_x
-  #include <lwip/dns.h> // dns_getserver, dns_gethostbyname
-  #include <lwip/ip_addr.h> // ip4/ip6 helpers
-};
-
-// ref: https://github.com/me-no-dev/ESPAsyncTCP/pull/115/files#diff-e2e636049095cc1ff920c1bfabf6dcacR8
-// This is missing with Core 2.3.0 and is sometimes missing from the build flags. Assume HIGH_BANDWIDTH version.
-#ifndef TCP_MSS
-#define TCP_MSS (1460)
-#endif
+using AUTH_MODE = wifi_auth_mode_t;
 
 namespace espurna {
 namespace wifi {
@@ -59,6 +33,7 @@ struct SoftApNetwork {
     uint8_t channel;
     AUTH_MODE authmode;
 };
+
 
 enum class Event {
     Initial,              // aka boot
@@ -91,7 +66,11 @@ enum class ApMode {
 };
 
 } // namespace wifi
+} // namespace espurna
 
+void wifiReload();
+
+namespace espurna {
 namespace settings {
 namespace internal {
 

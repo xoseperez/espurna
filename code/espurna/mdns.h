@@ -17,3 +17,4 @@ bool mdnsServiceQuery(const String& service, const String& protocol, MdnsServerQ
 
 bool mdnsRunning();
 void mdnsServerSetup();
+

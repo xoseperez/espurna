@@ -59,8 +59,11 @@ void RequestPrint::scheduleFromRequest(Config config, AsyncWebServerRequest* req
         new RequestPrint(config, request));
 
     // attach one ptr to onDisconnect capture, so we can detect disconnection before scheduled function runs
+    // On ESP32 this runs in the async_tcp task. It cannot be handed over to loop(), request is deleted
+    // right after this returns. Lock is still taken when possible, and the state is atomic either way
     request->onDisconnect(
         [print]() {
+            ::espurna::system::AsyncGuard guard;
             print->_onDisconnect();
         });
 

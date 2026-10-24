@@ -835,6 +835,182 @@
 #define RELAY8_PIN            GPIO_NONE
 #endif
 
+#ifndef RELAY1_BTN_GPIO
+#if defined(BUTTON1_PIN) && defined(BUTTON1_RELAY) && (BUTTON1_RELAY == 1)
+#define RELAY1_BTN_GPIO       BUTTON1_PIN
+#elif defined(BUTTON2_PIN) && defined(BUTTON2_RELAY) && (BUTTON2_RELAY == 1)
+#define RELAY1_BTN_GPIO       BUTTON2_PIN
+#elif defined(BUTTON3_PIN) && defined(BUTTON3_RELAY) && (BUTTON3_RELAY == 1)
+#define RELAY1_BTN_GPIO       BUTTON3_PIN
+#elif defined(BUTTON4_PIN) && defined(BUTTON4_RELAY) && (BUTTON4_RELAY == 1)
+#define RELAY1_BTN_GPIO       BUTTON4_PIN
+#elif defined(BUTTON5_PIN) && defined(BUTTON5_RELAY) && (BUTTON5_RELAY == 1)
+#define RELAY1_BTN_GPIO       BUTTON5_PIN
+#elif defined(BUTTON6_PIN) && defined(BUTTON6_RELAY) && (BUTTON6_RELAY == 1)
+#define RELAY1_BTN_GPIO       BUTTON6_PIN
+#elif defined(BUTTON7_PIN) && defined(BUTTON7_RELAY) && (BUTTON7_RELAY == 1)
+#define RELAY1_BTN_GPIO       BUTTON7_PIN
+#elif defined(BUTTON8_PIN) && defined(BUTTON8_RELAY) && (BUTTON8_RELAY == 1)
+#define RELAY1_BTN_GPIO       BUTTON8_PIN
+#else
+#define RELAY1_BTN_GPIO       GPIO_NONE
+#endif
+#endif
+
+#ifndef RELAY2_BTN_GPIO
+#if defined(BUTTON1_PIN) && defined(BUTTON1_RELAY) && (BUTTON1_RELAY == 2)
+#define RELAY2_BTN_GPIO       BUTTON1_PIN
+#elif defined(BUTTON2_PIN) && defined(BUTTON2_RELAY) && (BUTTON2_RELAY == 2)
+#define RELAY2_BTN_GPIO       BUTTON2_PIN
+#elif defined(BUTTON3_PIN) && defined(BUTTON3_RELAY) && (BUTTON3_RELAY == 2)
+#define RELAY2_BTN_GPIO       BUTTON3_PIN
+#elif defined(BUTTON4_PIN) && defined(BUTTON4_RELAY) && (BUTTON4_RELAY == 2)
+#define RELAY2_BTN_GPIO       BUTTON4_PIN
+#elif defined(BUTTON5_PIN) && defined(BUTTON5_RELAY) && (BUTTON5_RELAY == 2)
+#define RELAY2_BTN_GPIO       BUTTON5_PIN
+#elif defined(BUTTON6_PIN) && defined(BUTTON6_RELAY) && (BUTTON6_RELAY == 2)
+#define RELAY2_BTN_GPIO       BUTTON6_PIN
+#elif defined(BUTTON7_PIN) && defined(BUTTON7_RELAY) && (BUTTON7_RELAY == 2)
+#define RELAY2_BTN_GPIO       BUTTON7_PIN
+#elif defined(BUTTON8_PIN) && defined(BUTTON8_RELAY) && (BUTTON8_RELAY == 2)
+#define RELAY2_BTN_GPIO       BUTTON8_PIN
+#else
+#define RELAY2_BTN_GPIO       GPIO_NONE
+#endif
+#endif
+
+#ifndef RELAY3_BTN_GPIO
+#if defined(BUTTON1_PIN) && defined(BUTTON1_RELAY) && (BUTTON1_RELAY == 3)
+#define RELAY3_BTN_GPIO       BUTTON1_PIN
+#elif defined(BUTTON2_PIN) && defined(BUTTON2_RELAY) && (BUTTON2_RELAY == 3)
+#define RELAY3_BTN_GPIO       BUTTON2_PIN
+#elif defined(BUTTON3_PIN) && defined(BUTTON3_RELAY) && (BUTTON3_RELAY == 3)
+#define RELAY3_BTN_GPIO       BUTTON3_PIN
+#elif defined(BUTTON4_PIN) && defined(BUTTON4_RELAY) && (BUTTON4_RELAY == 3)
+#define RELAY3_BTN_GPIO       BUTTON4_PIN
+#elif defined(BUTTON5_PIN) && defined(BUTTON5_RELAY) && (BUTTON5_RELAY == 3)
+#define RELAY3_BTN_GPIO       BUTTON5_PIN
+#elif defined(BUTTON6_PIN) && defined(BUTTON6_RELAY) && (BUTTON6_RELAY == 3)
+#define RELAY3_BTN_GPIO       BUTTON6_PIN
+#elif defined(BUTTON7_PIN) && defined(BUTTON7_RELAY) && (BUTTON7_RELAY == 3)
+#define RELAY3_BTN_GPIO       BUTTON7_PIN
+#elif defined(BUTTON8_PIN) && defined(BUTTON8_RELAY) && (BUTTON8_RELAY == 3)
+#define RELAY3_BTN_GPIO       BUTTON8_PIN
+#else
+#define RELAY3_BTN_GPIO       GPIO_NONE
+#endif
+#endif
+
+#ifndef RELAY4_BTN_GPIO
+#if defined(BUTTON1_PIN) && defined(BUTTON1_RELAY) && (BUTTON1_RELAY == 4)
+#define RELAY4_BTN_GPIO       BUTTON1_PIN
+#elif defined(BUTTON2_PIN) && defined(BUTTON2_RELAY) && (BUTTON2_RELAY == 4)
+#define RELAY4_BTN_GPIO       BUTTON2_PIN
+#elif defined(BUTTON3_PIN) && defined(BUTTON3_RELAY) && (BUTTON3_RELAY == 4)
+#define RELAY4_BTN_GPIO       BUTTON3_PIN
+#elif defined(BUTTON4_PIN) && defined(BUTTON4_RELAY) && (BUTTON4_RELAY == 4)
+#define RELAY4_BTN_GPIO       BUTTON4_PIN
+#elif defined(BUTTON5_PIN) && defined(BUTTON5_RELAY) && (BUTTON5_RELAY == 4)
+#define RELAY4_BTN_GPIO       BUTTON5_PIN
+#elif defined(BUTTON6_PIN) && defined(BUTTON6_RELAY) && (BUTTON6_RELAY == 4)
+#define RELAY4_BTN_GPIO       BUTTON6_PIN
+#elif defined(BUTTON7_PIN) && defined(BUTTON7_RELAY) && (BUTTON7_RELAY == 4)
+#define RELAY4_BTN_GPIO       BUTTON7_PIN
+#elif defined(BUTTON8_PIN) && defined(BUTTON8_RELAY) && (BUTTON8_RELAY == 4)
+#define RELAY4_BTN_GPIO       BUTTON8_PIN
+#else
+#define RELAY4_BTN_GPIO       GPIO_NONE
+#endif
+#endif
+
+#ifndef RELAY5_BTN_GPIO
+#if defined(BUTTON1_PIN) && defined(BUTTON1_RELAY) && (BUTTON1_RELAY == 5)
+#define RELAY5_BTN_GPIO       BUTTON1_PIN
+#elif defined(BUTTON2_PIN) && defined(BUTTON2_RELAY) && (BUTTON2_RELAY == 5)
+#define RELAY5_BTN_GPIO       BUTTON2_PIN
+#elif defined(BUTTON3_PIN) && defined(BUTTON3_RELAY) && (BUTTON3_RELAY == 5)
+#define RELAY5_BTN_GPIO       BUTTON3_PIN
+#elif defined(BUTTON4_PIN) && defined(BUTTON4_RELAY) && (BUTTON4_RELAY == 5)
+#define RELAY5_BTN_GPIO       BUTTON4_PIN
+#elif defined(BUTTON5_PIN) && defined(BUTTON5_RELAY) && (BUTTON5_RELAY == 5)
+#define RELAY5_BTN_GPIO       BUTTON5_PIN
+#elif defined(BUTTON6_PIN) && defined(BUTTON6_RELAY) && (BUTTON6_RELAY == 5)
+#define RELAY5_BTN_GPIO       BUTTON6_PIN
+#elif defined(BUTTON7_PIN) && defined(BUTTON7_RELAY) && (BUTTON7_RELAY == 5)
+#define RELAY5_BTN_GPIO       BUTTON7_PIN
+#elif defined(BUTTON8_PIN) && defined(BUTTON8_RELAY) && (BUTTON8_RELAY == 5)
+#define RELAY5_BTN_GPIO       BUTTON8_PIN
+#else
+#define RELAY5_BTN_GPIO       GPIO_NONE
+#endif
+#endif
+
+#ifndef RELAY6_BTN_GPIO
+#if defined(BUTTON1_PIN) && defined(BUTTON1_RELAY) && (BUTTON1_RELAY == 6)
+#define RELAY6_BTN_GPIO       BUTTON1_PIN
+#elif defined(BUTTON2_PIN) && defined(BUTTON2_RELAY) && (BUTTON2_RELAY == 6)
+#define RELAY6_BTN_GPIO       BUTTON2_PIN
+#elif defined(BUTTON3_PIN) && defined(BUTTON3_RELAY) && (BUTTON3_RELAY == 6)
+#define RELAY6_BTN_GPIO       BUTTON3_PIN
+#elif defined(BUTTON4_PIN) && defined(BUTTON4_RELAY) && (BUTTON4_RELAY == 6)
+#define RELAY6_BTN_GPIO       BUTTON4_PIN
+#elif defined(BUTTON5_PIN) && defined(BUTTON5_RELAY) && (BUTTON5_RELAY == 6)
+#define RELAY6_BTN_GPIO       BUTTON5_PIN
+#elif defined(BUTTON6_PIN) && defined(BUTTON6_RELAY) && (BUTTON6_RELAY == 6)
+#define RELAY6_BTN_GPIO       BUTTON6_PIN
+#elif defined(BUTTON7_PIN) && defined(BUTTON7_RELAY) && (BUTTON7_RELAY == 6)
+#define RELAY6_BTN_GPIO       BUTTON7_PIN
+#elif defined(BUTTON8_PIN) && defined(BUTTON8_RELAY) && (BUTTON8_RELAY == 6)
+#define RELAY6_BTN_GPIO       BUTTON8_PIN
+#else
+#define RELAY6_BTN_GPIO       GPIO_NONE
+#endif
+#endif
+
+#ifndef RELAY7_BTN_GPIO
+#if defined(BUTTON1_PIN) && defined(BUTTON1_RELAY) && (BUTTON1_RELAY == 7)
+#define RELAY7_BTN_GPIO       BUTTON1_PIN
+#elif defined(BUTTON2_PIN) && defined(BUTTON2_RELAY) && (BUTTON2_RELAY == 7)
+#define RELAY7_BTN_GPIO       BUTTON2_PIN
+#elif defined(BUTTON3_PIN) && defined(BUTTON3_RELAY) && (BUTTON3_RELAY == 7)
+#define RELAY7_BTN_GPIO       BUTTON3_PIN
+#elif defined(BUTTON4_PIN) && defined(BUTTON4_RELAY) && (BUTTON4_RELAY == 7)
+#define RELAY7_BTN_GPIO       BUTTON4_PIN
+#elif defined(BUTTON5_PIN) && defined(BUTTON5_RELAY) && (BUTTON5_RELAY == 7)
+#define RELAY7_BTN_GPIO       BUTTON5_PIN
+#elif defined(BUTTON6_PIN) && defined(BUTTON6_RELAY) && (BUTTON6_RELAY == 7)
+#define RELAY7_BTN_GPIO       BUTTON6_PIN
+#elif defined(BUTTON7_PIN) && defined(BUTTON7_RELAY) && (BUTTON7_RELAY == 7)
+#define RELAY7_BTN_GPIO       BUTTON7_PIN
+#elif defined(BUTTON8_PIN) && defined(BUTTON8_RELAY) && (BUTTON8_RELAY == 7)
+#define RELAY7_BTN_GPIO       BUTTON8_PIN
+#else
+#define RELAY7_BTN_GPIO       GPIO_NONE
+#endif
+#endif
+
+#ifndef RELAY8_BTN_GPIO
+#if defined(BUTTON1_PIN) && defined(BUTTON1_RELAY) && (BUTTON1_RELAY == 8)
+#define RELAY8_BTN_GPIO       BUTTON1_PIN
+#elif defined(BUTTON2_PIN) && defined(BUTTON2_RELAY) && (BUTTON2_RELAY == 8)
+#define RELAY8_BTN_GPIO       BUTTON2_PIN
+#elif defined(BUTTON3_PIN) && defined(BUTTON3_RELAY) && (BUTTON3_RELAY == 8)
+#define RELAY8_BTN_GPIO       BUTTON3_PIN
+#elif defined(BUTTON4_PIN) && defined(BUTTON4_RELAY) && (BUTTON4_RELAY == 8)
+#define RELAY8_BTN_GPIO       BUTTON4_PIN
+#elif defined(BUTTON5_PIN) && defined(BUTTON5_RELAY) && (BUTTON5_RELAY == 8)
+#define RELAY8_BTN_GPIO       BUTTON5_PIN
+#elif defined(BUTTON6_PIN) && defined(BUTTON6_RELAY) && (BUTTON6_RELAY == 8)
+#define RELAY8_BTN_GPIO       BUTTON6_PIN
+#elif defined(BUTTON7_PIN) && defined(BUTTON7_RELAY) && (BUTTON7_RELAY == 8)
+#define RELAY8_BTN_GPIO       BUTTON7_PIN
+#elif defined(BUTTON8_PIN) && defined(BUTTON8_RELAY) && (BUTTON8_RELAY == 8)
+#define RELAY8_BTN_GPIO       BUTTON8_PIN
+#else
+#define RELAY8_BTN_GPIO       GPIO_NONE
+#endif
+#endif
+
 #ifndef RELAY1_TYPE
 #define RELAY1_TYPE           RELAY_TYPE_NORMAL
 #endif
@@ -1500,3 +1676,4 @@
 #ifndef HOSTNAME
 #define HOSTNAME                ""
 #endif
+

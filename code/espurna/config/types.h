@@ -59,6 +59,7 @@
 #define BUTTON_DEFAULT_BOOT         ButtonMask::DefaultBoot
 #define BUTTON_SET_PULLUP           ButtonMask::SetPullup
 #define BUTTON_SET_PULLDOWN         ButtonMask::SetPulldown
+#define BUTTON_FREQUENCY            ButtonMask::Frequency
 
 // configure where do we get the button events
 #define BUTTON_PROVIDER_NONE        ButtonProvider::None
@@ -261,6 +262,7 @@
 #define PWM_PROVIDER_NONE           0
 #define PWM_PROVIDER_GENERIC        1
 #define PWM_PROVIDER_ARDUINO        2
+#define PWM_PROVIDER_ESP32          3
 
 //------------------------------------------------------------------------------
 // ENVIRONMENTAL
@@ -441,3 +443,4 @@
 
 #define WIFI_DISABLED               BootMode::Disabled
 #define WIFI_ENABLED                BootMode::Enabled
+

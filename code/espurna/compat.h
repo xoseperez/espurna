@@ -15,6 +15,7 @@ COMPATIBILITY BETWEEN 2.3.0 and latest versions
 // https://github.com/esp8266/Arduino/commit/0e0e34c614fe8a47544c9998201b1d9b3c24eb18
 // -----------------------------------------------------------------------------
 
+#if defined(ESP8266)
 extern "C" {
     #include <cont.h>
 #if defined(ARDUINO_ESP8266_RELEASE_2_3_0) \
@@ -29,6 +30,7 @@ extern "C" {
     #define getFreeStack() ESP.getFreeContStack()
 #endif
 }
+#endif
 
 #include <pgmspace.h>
 
@@ -203,3 +205,4 @@ constexpr Type to_underlying(Enum value) {
 #if defined(ESP8266) and not defined(INPUT_PULLDOWN)
 #define INPUT_PULLDOWN 0x3
 #endif
+

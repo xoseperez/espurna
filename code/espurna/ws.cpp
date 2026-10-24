@@ -10,6 +10,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if WEB_SUPPORT
 
+#include <atomic>
 #include <queue>
 #include <vector>
 
@@ -18,7 +19,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "system.h"
 #include "utils.h"
 #include "web.h"
-#include "wifi.h"
+#include "wifi_orch.h"
 
 #include "ws.h"
 #include "ws_internal.h"
@@ -534,7 +535,10 @@ void _wsUpdateSta(JsonObject& root) {
 }
 
 void _wsUpdateStats(JsonObject& root) {
-    root[F("heap")] = systemFreeHeap();
+    const auto stats = systemHeapStats();
+    root[F("heap")] = stats.available;
+    root[F("heapUsable")] = stats.usable;
+    root[F("heapFrag")] = stats.fragmentation;
     root[F("uptime")] = prettyDuration(systemUptime());
     root[F("rssi")] = WiFi.RSSI();
     root[F("loadaverage")] = systemLoadAverage();
@@ -600,14 +604,41 @@ AsyncWebSocket _ws("/ws");
 std::queue<espurna::web::ws::PostponedCallback> _ws_queue;
 espurna::web::ws::Callbacks _ws_callbacks;
 
+// Every post waits on the heap until the client drains it. With a slow client and something changing fast
+// (e.g. a flapping input toggling a relay several times a second) the queue would grow until allocation
+// fails inside std::queue, which has no way to report it and crashes. Losing an update is the lesser evil
+constexpr size_t QueueMax { 32 };
+bool _ws_queue_dropping { false };
+
+bool _wsQueueFull() {
+    if (_ws_queue.size() < QueueMax) {
+        if (_ws_queue.size() < (QueueMax / 2)) {
+            _ws_queue_dropping = false;
+        }
+        return false;
+    }
+
+    // set before logging, debug output may be posted here as well
+    if (!_ws_queue_dropping) {
+        _ws_queue_dropping = true;
+        DEBUG_MSG_P(PSTR("[WEBSOCKET] Queue is full, dropping updates\n"));
+    }
+
+    return true;
+}
+
 template <typename T>
 void _wsPostCallbacks(uint32_t client_id, T&& cbs) {
-    _ws_queue.emplace(client_id, espurna::web::ws::PostponedCallback::Storage(std::forward<T>(cbs)));
+    if (!_wsQueueFull()) {
+        _ws_queue.emplace(client_id, espurna::web::ws::PostponedCallback::Storage(std::forward<T>(cbs)));
+    }
 }
 
 template <typename T>
 void _wsPostCallbacks(uint32_t client_id, T&& cbs, espurna::web::ws::PostponedCallback::Mode mode) {
-    _ws_queue.emplace(client_id, espurna::web::ws::PostponedCallback::Storage(std::forward<T>(cbs)), mode);
+    if (!_wsQueueFull()) {
+        _ws_queue.emplace(client_id, espurna::web::ws::PostponedCallback::Storage(std::forward<T>(cbs)), mode);
+    }
 }
 
 void _wsBufferHint(size_t buffer_hint) {
@@ -617,8 +648,11 @@ void _wsBufferHint(size_t buffer_hint) {
 } // namespace
 
 void wsPost(uint32_t client_id, espurna::web::ws::OnSend&& cb, size_t buffer_hint) {
+    const auto size = _ws_queue.size();
     wsPost(client_id, std::move(cb));
-    _wsBufferHint(buffer_hint);
+    if (_ws_queue.size() != size) {
+        _wsBufferHint(buffer_hint);
+    }
 }
 
 void wsPost(uint32_t client_id, espurna::web::ws::OnSend&& cb) {
@@ -630,8 +664,11 @@ void wsPost(espurna::web::ws::OnSend&& cb) {
 }
 
 void wsPost(uint32_t client_id, const espurna::web::ws::OnSend& cb, size_t buffer_hint) {
+    const auto size = _ws_queue.size();
     wsPost(client_id, cb);
-    _wsBufferHint(buffer_hint);
+    if (_ws_queue.size() != size) {
+        _wsBufferHint(buffer_hint);
+    }
 }
 
 void wsPost(uint32_t client_id, const espurna::web::ws::OnSend& cb) {
@@ -651,8 +688,11 @@ void wsPostManual(espurna::web::ws::OnSend&& cb) {
 }
 
 void wsPostManual(uint32_t client_id, espurna::web::ws::OnSend&& cb, size_t buffer_hint) {
+    const auto size = _ws_queue.size();
     wsPostManual(client_id, std::move(cb));
-    _wsBufferHint(buffer_hint);
+    if (_ws_queue.size() != size) {
+        _wsBufferHint(buffer_hint);
+    }
 }
 
 void wsPostManual(uint32_t client_id, const espurna::web::ws::OnSend& cb) {
@@ -664,8 +704,11 @@ void wsPostManual(const espurna::web::ws::OnSend& cb) {
 }
 
 void wsPostManual(uint32_t client_id, const espurna::web::ws::OnSend& cb, size_t buffer_hint) {
+    const auto size = _ws_queue.size();
     wsPostManual(client_id, cb);
-    _wsBufferHint(buffer_hint);
+    if (_ws_queue.size() != size) {
+        _wsBufferHint(buffer_hint);
+    }
 }
 
 void wsPostAll(uint32_t client_id, espurna::web::ws::Callbacks::OnSendContainer&& cbs) {
@@ -712,6 +755,7 @@ constexpr espurna::duration::Seconds WsTimeout { WS_TIMEOUT };
 WsTicket _ws_tickets[WsMaxClients];
 
 void _onAuth(AsyncWebServerRequest* request) {
+    espurna::system::AsyncGuard guard;
     if (!webApModeRequest(request) && !webAuthenticate(request)) {
         return request->requestAuthentication();
     }
@@ -721,7 +765,7 @@ void _onAuth(AsyncWebServerRequest* request) {
 
     auto it = std::begin(_ws_tickets);
     while (it != std::end(_ws_tickets)) {
-        if (!(*it).ip.isSet()
+        if (!((*it).ip != IPAddress())
             || ((*it).ip == ip)
             || (now - (*it).timestamp > WsTimeout)) {
             break;
@@ -842,7 +886,7 @@ void _wsPostParse(uint32_t client_id, bool save, bool reload) {
     });
 }
 
-void _wsParse(AsyncWebSocketClient* client, uint8_t* payload, size_t length) {
+void _wsParseImpl(AsyncWebSocketClient* client, uint8_t* payload, size_t length) {
     //DEBUG_MSG_P(PSTR("[WEBSOCKET] Parsing: %.*s\n"),
     //    length, reinterpret_cast<cont char*>(payload));
 
@@ -947,6 +991,42 @@ void _wsParse(AsyncWebSocketClient* client, uint8_t* payload, size_t length) {
     _wsPostParse(client_id, save, reload);
 }
 
+#if defined(ARDUINO_ARCH_ESP32)
+// ESP32 runs WS events in the AsyncTCP task. When _wsEvent() could not take the loop
+// lock in time (ref. AsyncGuard), parsing (which touches settings and _ws_queue) is
+// handed over to loop() instead. Once anything was deferred, following messages are
+// deferred too until loop() catches up, so they are still handled in order.
+// Flag is only ever touched by the AsyncTCP task, counter is shared with loop().
+bool _ws_parse_unlocked { false };
+std::atomic<size_t> _ws_parse_deferred { 0 };
+
+void _wsParse(AsyncWebSocketClient* client, uint8_t* payload, size_t length) {
+    if (!_ws_parse_unlocked && (_ws_parse_deferred.load() == 0)) {
+        _wsParseImpl(client, payload, length);
+        return;
+    }
+
+    // payload is only valid during this call, loop() gets a (null-terminated) copy
+    std::vector<uint8_t> copy(payload, payload + length);
+    copy.push_back('\0');
+
+    const auto client_id = client->id();
+
+    ++_ws_parse_deferred;
+    systemRunInLoop([client_id, copy]() mutable {
+        auto* client = _ws.client(client_id);
+        if (client) {
+            _wsParseImpl(client, copy.data(), copy.size() - 1);
+        }
+        --_ws_parse_deferred;
+    });
+}
+#else
+void _wsParse(AsyncWebSocketClient* client, uint8_t* payload, size_t length) {
+    _wsParseImpl(client, payload, length);
+}
+#endif
+
 bool _wsOnKeyCheck(espurna::StringView key, const JsonVariant&) {
     return key.startsWith(espurna::web::ws::settings::keys::Prefix);
 }
@@ -1001,6 +1081,7 @@ void _wsConnected(uint32_t client_id) {
 }
 
 void _wsEvent(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType type, void* arg, uint8_t* data, size_t len) {
+    espurna::system::AsyncGuard guard;
     switch (type) {
     case WS_EVT_CONNECT:
     {
@@ -1017,8 +1098,17 @@ void _wsEvent(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType
         DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u connected, ip: %s, url: %s\n"),
             client->id(), ip.c_str(), server->url());
 
-        _wsConnected(client->id());
-        _wsResetUpdateTimer();
+        // _ws_queue and the update timer belong to loop(), don't touch them unlocked
+        if (guard.locked()) {
+            _wsConnected(client->id());
+            _wsResetUpdateTimer();
+        } else {
+            const auto client_id = client->id();
+            systemRunInLoop([client_id]() {
+                _wsConnected(client_id);
+                _wsResetUpdateTimer();
+            });
+        }
 
         client->_tempObject = new WebSocketIncomingBuffer(_wsParse);
         break;
@@ -1031,7 +1121,11 @@ void _wsEvent(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType
             delete ptr;
             client->_tempObject = nullptr;
         }
-        wifiApCheck();
+        if (guard.locked()) {
+            wifiApCheck();
+        } else {
+            systemRunInLoop(wifiApCheck);
+        }
         break;
 
     case WS_EVT_ERROR:
@@ -1049,7 +1143,13 @@ void _wsEvent(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType
         if (client->_tempObject) {
             auto *buffer = reinterpret_cast<WebSocketIncomingBuffer*>(client->_tempObject);
             AwsFrameInfo * info = (AwsFrameInfo*)arg;
+#if defined(ARDUINO_ARCH_ESP32)
+            _ws_parse_unlocked = !guard.locked();
+#endif
             buffer->data_event(client, info, data, len);
+#if defined(ARDUINO_ARCH_ESP32)
+            _ws_parse_unlocked = false;
+#endif
         }
         break;
 
@@ -1129,6 +1229,11 @@ void _wsHandlePostponedCallbacks(bool connected) {
 }
 
 void _wsLoop() {
+#if defined(ARDUINO_ARCH_ESP32)
+    // disconnected clients are only freed here, so client pointers used by loop()
+    // stay valid while AsyncTCP task drops the connection (ref. lib_esp32/ESPAsyncWebServer-espurna)
+    _ws.cleanupDisconnected();
+#endif
     const auto connected = wsConnected();
     _wsDoUpdate(connected);
     _wsHandlePostponedCallbacks(connected);
@@ -1251,6 +1356,13 @@ void wsSetup() {
         .onConnected(_wsOnConnected)
         .onVisible(_wsOnVisible)
         .onKeyCheck(_wsOnKeyCheck);
+
+#if defined(ARDUINO_ARCH_ESP32)
+    // e.g. RESET command reply, don't restart before it reaches the client
+    espurna::system::registerPendingOutput([]() {
+        return _ws.outputPending();
+    });
+#endif
 
     espurnaRegisterLoop(_wsLoop);
 }

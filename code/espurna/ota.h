@@ -27,3 +27,4 @@ void otaProgress(size_t bytes);
 void otaPrintError();
 bool otaFinalize(size_t size, CustomResetReason reason, bool evenIfRemaining);
 bool otaFinalize(size_t size, CustomResetReason reason);
+

@@ -501,3 +501,4 @@ void curtainUpdate(unsigned char id, int value) {
 }
 
 #endif // KINGART_CURTAIN_SUPPORT
+

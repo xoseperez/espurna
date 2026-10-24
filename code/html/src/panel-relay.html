@@ -44,6 +44,44 @@
 
                 <div id="relayConfig" class="settings-group">
                 </div>
+
+                <button type="button" class="pure-button button-add-settings-group pure-input-1" data-settings-group="relayConfig">Add Relay</button>
+            </fieldset>
+
+            <fieldset id="buttonOther" hidden>
+                <legend>Other buttons and wall switches</legend>
+
+                <span class="pure-form-message">
+                    Inputs that do not control any of the relays above.
+                </span>
+
+                <div id="buttonConfig">
+                </div>
+            </fieldset>
+
+            <fieldset id="buttonAcGlobal" hidden>
+                <legend>AC mains switches</legend>
+
+                <div class="pure-control-group">
+                    <label>AC frequency</label>
+                    <select name="btnAcFreq" class="pure-input-1-4">
+                        <option value="0">Any</option>
+                        <option value="50">50 Hz</option>
+                        <option value="60">60 Hz</option>
+                    </select>
+                    <span class="pure-form-message">
+                        Mains frequency for the inputs with <em>AC mains switch</em> button type. With 50 or 60 Hz, only edges with the matching period are counted (filters out noise),
+                        <em>Any</em> counts every edge.
+                    </span>
+                </div>
+
+                <div class="pure-control-group">
+                    <label>AC debug log</label>
+                    <input class="checkbox-toggle" type="checkbox" name="btnAcDbg">
+                    <span class="pure-form-message">
+                        Periodically log pulse count and measured period of every AC input, as well as its state changes.
+                    </span>
+                </div>
             </fieldset>
 
         </div>

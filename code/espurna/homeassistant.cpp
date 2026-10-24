@@ -990,11 +990,11 @@ struct Wait {
     }
 
     __CONSTEXPR Value last() const {
-        return *_end;
+        return *(_end - 1);
     }
 
     bool is_last() const {
-        return _it == _end;
+        return (_it + 1) == _end;
     }
 
     __CONSTEXPR size_t count() const {
@@ -1158,6 +1158,8 @@ private:
     State _state;
     Entities _entities;
 
+    bool _advance { false };
+
     Wait _wait_short { ShortDurations };
     Wait _wait_long { LongDurations };
 };
@@ -1180,6 +1182,17 @@ Result DiscoveryTask::prepare_all() {
 
 template <typename T>
 Result DiscoveryTask::try_send_one(T&& action) {
+    if (_advance) {
+        auto it = _entities.begin();
+        if (it != _entities.end()) {
+            if (!(*it)->next()) {
+                _entities.erase_after(_entities.before_begin());
+                _ctx.reset();
+            }
+        }
+        _advance = false;
+    }
+
     auto it = _entities.begin();
 
     while (it != _entities.end()) {
@@ -1196,12 +1209,7 @@ Result DiscoveryTask::try_send_one(T&& action) {
             : "";
 
         if (action(topic, msg)) {
-            if (!(*it)->next()) {
-                it = _entities.erase_after(
-                    _entities.before_begin());
-                _ctx.reset();
-            }
-
+            _advance = true;
             return next_send();
         }
 
@@ -1270,29 +1278,31 @@ void send(DiscoveryPtr discovery, FlagPtr flag_ptr) {
         return;
     }
 
-    uint16_t pid { 0u };
     const auto sent = discovery->try_send_one(
         [&](const char* topic, const char* message) {
-            pid = ::mqttSendRaw(topic, message, internal::retain, 1);
+#if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
+            // Receive acknowledgement from the broker before continuing.
+            // Usually a good idea in general, to avoid filling network buffers too quickly.
+            //
+            // Callback is registered by mqttSendRaw() right after publishing. Registering it afterwards
+            // would race with the PUBACK, which may already be handled while the publish is being logged
+            // (debug output may yield), and the discovery would then wait for it forever.
+            //
+            // Not needed with LWMQTT, as it is already handled and wrapped in Result
+            // Not supported by PubSubClient
+            flag = false;
+            const auto pid = ::mqttSendRaw(topic, message, internal::retain, 1,
+                [flag_ptr]() {
+                    (*flag_ptr) = true;
+                });
+            if (!pid) {
+                flag = true;
+            }
+#else
+            const auto pid = ::mqttSendRaw(topic, message, internal::retain, 1);
+#endif
             return pid > 0;
         });
-
-#if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
-    // Receive acknowledgement from the broker before continuing.
-    // Usually a good idea in general, to avoid filling network buffers too quickly.
-    //
-    // Not needed with LWMQTT, as it is already handled and wrapped in Result
-    // Not supported by PubSubClient
-
-    if (sent) {
-        flag = false;
-        mqttOnPublish(
-            pid,
-            [flag_ptr]() {
-                (*flag_ptr) = true;
-            });
-    }
-#endif
 
     if (sent.ok() || sent.retry()) {
         schedule(sent.wait(), discovery, flag_ptr);
@@ -1381,7 +1391,7 @@ void configure() {
     internal::enabled = settings::enabled();
 
     if (mqttConnected() && (current != internal::enabled)) {
-        publishDiscoveryForState(current);
+        publishDiscoveryForState(internal::enabled);
     }
 }
 
@@ -1477,6 +1487,7 @@ STRING_VIEW_INLINE(Dump, "HA");
 
 void dump(::terminal::CommandContext&& ctx) {
     settingsDump(ctx, settings::query::Settings);
+    terminalOK(ctx);
 }
 
 STRING_VIEW_INLINE(Send, "HA.SEND");
@@ -1546,3 +1557,4 @@ void haSetup() {
 }
 
 #endif // HOMEASSISTANT_SUPPORT
+

@@ -125,3 +125,4 @@ private:
 
     std::vector<uint8_t> _data;
 };
+

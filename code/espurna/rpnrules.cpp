@@ -24,7 +24,7 @@ Copyright (C) 2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include "rtcmem.h"
 #include "sensor.h"
 #include "terminal.h"
-#include "wifi.h"
+#include "wifi_orch.h"
 #include "ws.h"
 
 #include <forward_list>
@@ -1394,3 +1394,5 @@ void rpnSetup() {
 }
 
 #endif // RPN_RULES_SUPPORT
+
+

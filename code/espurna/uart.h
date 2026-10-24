@@ -38,3 +38,4 @@ using PortPtr = std::unique_ptr<Port>;
 
 espurna::driver::uart::PortPtr uartPort(size_t index);
 void uartSetup();
+

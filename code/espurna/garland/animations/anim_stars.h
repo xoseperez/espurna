@@ -51,3 +51,4 @@ class AnimStars : public Anim {
 };
 
 #endif  // GARLAND_SUPPORT
+

@@ -75,3 +75,4 @@ class AnimSpread : public Anim {
 };
 
 #endif  // GARLAND_SUPPORT
+

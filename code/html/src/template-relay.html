@@ -5,10 +5,93 @@
     </div>
 </template>
 
+<template id="template-button-config">
+    <div class="button-config">
+        <div class="pure-control-group">
+            <label>Button type</label>
+            <select class="pure-input-2-3" name="btnFreq" data-action="reboot">
+                <option value="0">Button</option>
+                <option value="1">AC mains switch</option>
+            </select>
+            <span class="pure-form-message">
+                <em>AC mains switch</em> is a wall switch on mains (AC) connected through an optocoupler: it is ON while mains-frequency pulses are detected.
+                It always works as a <code>switch</code> (no click actions). You will have to <code>Reboot</code> to apply this setting.
+            </span>
+        </div>
+        <div class="button-ac-filter" hidden>
+            <div class="pure-control-group">
+                <label>AC switch filter</label>
+                <span class="pure-form-message-inline">applied on save, no reboot needed</span>
+            </div>
+            <div class="pure-control-group">
+                <label>Min pulses</label>
+                <input class="pure-input-1-4" name="btnMinPulses" type="number" min="1" max="100" required>
+                <span class="pure-form-message">
+                    Minimum number of pulses within one counting window for the input to be considered ON (default 5).
+                </span>
+            </div>
+            <div class="pure-control-group">
+                <label>Min duty, %</label>
+                <input class="pure-input-1-4" name="btnMinDuty" type="number" min="0" max="100" required>
+                <span class="pure-form-message">
+                    Minimum share of the counting window the input spends active (LOW) to be considered ON, 0 disables the check.
+                    Long wires pick up short pulses while the switch is OFF; compare <code>low=</code> in the AC debug log for both positions and pick a value in between, 30% is a good start.
+                </span>
+            </div>
+            <div class="pure-control-group">
+                <label>Confirm, windows</label>
+                <input class="pure-input-1-4" name="btnAcConfirm" type="number" min="2" max="10" required>
+                <span class="pure-form-message">
+                    Consecutive counting windows that must agree before the switch changes state (default 2). Raise it if switching another lamp briefly shows this input as ON.
+                </span>
+            </div>
+            <div class="pure-control-group">
+                <label>Window, ms</label>
+                <input class="pure-input-1-4" name="btnDebDel" type="number" min="20" max="1000" required>
+                <span class="pure-form-message">
+                    Pulse counting window (debounce delay of this button), 100 ms is recommended.
+                </span>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="template-button-fallback">
+    <div class="pure-form pure-form-aligned">
+        <fieldset>
+            <legend>Button #<span class="button-id"></span> (GPIO<span class="button-gpio"></span>)</legend>
+        </fieldset>
+    </div>
+</template>
+
 <template id="template-relay-config">
     <div class="pure-form pure-form-aligned">
         <fieldset>
             <legend><span data-key="relayName"></span> (<span data-key="relayProv"></span>)</legend>
+            <div class="pure-control-group">
+                <label>Name</label>
+                <input class="pure-input-2-3" name="relayName" type="text" placeholder="Switch name">
+            </div>
+            <div class="pure-control-group">
+                <label>Relay GPIO</label>
+                <select class="pure-input-2-3" name="relayGpio" data-enumerable="gpio-hardware" required></select>
+            </div>
+            <div class="pure-control-group">
+                <label>Relay Type</label>
+                <select class="pure-input-2-3" name="relayType">
+                    <option value="normal">Normal</option>
+                    <option value="inverse">Inverse</option>
+                    <option value="latched">Latched</option>
+                    <option value="latched-inverse">Latched Inverse</option>
+                </select>
+            </div>
+            <div class="pure-control-group">
+                <label>Relay Provider</label>
+                <select class="pure-input-2-3" name="relayProv">
+                    <option value="gpio">GPIO</option>
+                    <option value="dummy">Dummy</option>
+                </select>
+            </div>
             <div class="pure-control-group">
                 <label>Boot mode</label>
                 <select class="pure-input-2-3" name="relayBoot">
@@ -31,6 +114,10 @@
             <div class="pure-control-group">
                 <label>Pulse time (s)</label>
                 <input class="pure-input-2-3" name="relayTime" type="number" min="0" step="0.1" required>
+            </div>
+            <div class="pure-control-group">
+                <label>Button GPIO</label>
+                <select class="pure-input-2-3" name="relayBtnGpio" data-enumerable="gpio-hardware" required></select>
             </div>
             <div class="pure-control-group module module-mqtt">
                 <label>MQTT topic subscription</label>
@@ -55,6 +142,10 @@
                     <option value="on">Turn ON</option>
                     <option value="toggle">Toggle</option>
                 </select>
+            </div>
+            <div class="pure-control-group">
+                <label></label>
+                <button class="pure-button button-del-settings-group pure-input-2-3" type="button">Delete Relay</button>
             </div>
         </fieldset>
     </div>

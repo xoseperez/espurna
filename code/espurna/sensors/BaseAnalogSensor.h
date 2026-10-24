@@ -47,3 +47,4 @@ protected:
     unsigned long _Rl;            // RL, load resistance
     unsigned long _Rs;            // cached resistance
 };
+

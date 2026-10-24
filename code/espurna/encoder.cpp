@@ -161,3 +161,4 @@ void encoderSetup() {
 }
 
 #endif // ENCODER_SUPPORT && (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE)
+

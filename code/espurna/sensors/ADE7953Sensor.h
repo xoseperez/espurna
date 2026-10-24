@@ -750,3 +750,4 @@ constexpr BaseSensor::Magnitude Channel::Magnitudes[];
 } // namespace espurna
 
 #endif // SENSOR_SUPPORT && ADE7953_SUPPORT
+

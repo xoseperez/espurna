@@ -236,3 +236,4 @@
 )
 #warning "Sensor serial port configuration should be using UART_... (see general.h) and UART[1-3]_... (see defaults.h)"
 #endif
+

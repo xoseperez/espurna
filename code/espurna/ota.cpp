@@ -16,6 +16,11 @@ OTA MODULE COMMON FUNCTIONS
 
 #include "libs/PrintString.h"
 
+#if defined(ARDUINO_ARCH_ESP32)
+#include <esp_app_format.h>
+#include <sdkconfig.h>
+#endif
+
 void otaPrintError() {
 #if DEBUG_SUPPORT
     if (Update.hasError()) {
@@ -46,6 +51,21 @@ bool otaFinalize(size_t size, CustomResetReason reason) {
 // Helper methods from UpdaterClass that need to be called manually for async mode,
 // because we are not using Stream interface to feed it data.
 bool otaVerifyHeader(uint8_t* data, size_t len) {
+#if defined(ARDUINO_ARCH_ESP32)
+    // ESP32 Update does not unpack gzip, and flash size is not encoded the same way.
+    // Instead, check the app image header (esp_image_header_t): magic byte, and that the
+    // image was built for this chip. esp8266 image fails here as well, instead of at the end.
+    if (len < sizeof(esp_image_header_t)) {
+        return false;
+    }
+
+    const auto* header = reinterpret_cast<const esp_image_header_t*>(data);
+    if (header->magic != ESP_IMAGE_HEADER_MAGIC) {
+        return false;
+    }
+
+    return header->chip_id == CONFIG_IDF_FIRMWARE_CHIP_ID;
+#else
     if (len < 4) {
         return false;
     }
@@ -68,6 +88,7 @@ bool otaVerifyHeader(uint8_t* data, size_t len) {
     }
 
     return true;
+#endif
 }
 
 void otaProgress(size_t bytes, size_t each) {
@@ -105,3 +126,4 @@ void otaSetup() {
     otaClientSetup();
 #endif
 }
+

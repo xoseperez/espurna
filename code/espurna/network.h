@@ -16,7 +16,7 @@ Copyright (C) 2022 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include <lwip/init.h>
 #include <lwip/err.h>
 
-#include "types.h"
+#include "types_orch.h"
 
 namespace espurna {
 namespace network {
@@ -49,3 +49,4 @@ IPAddress gethostbyname(String);
 } // namespace espurna
 
 void networkSetup();
+
