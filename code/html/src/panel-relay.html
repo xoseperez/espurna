@@ -46,6 +46,36 @@
                 </div>
             </fieldset>
 
+            <fieldset hidden>
+                <legend>Buttons and wall switches</legend>
+
+                <div id="buttonAcGlobal" hidden>
+                    <div class="pure-control-group">
+                        <label>AC frequency</label>
+                        <select name="btnAcFreq" class="pure-input-1-4">
+                            <option value="0">Any</option>
+                            <option value="50">50 Hz</option>
+                            <option value="60">60 Hz</option>
+                        </select>
+                        <span class="pure-form-message">
+                            Mains frequency for the inputs marked as <em>AC mains switch</em>. With 50 or 60 Hz, only edges with the matching period are counted (filters out noise),
+                            <em>Any</em> counts every edge.
+                        </span>
+                    </div>
+
+                    <div class="pure-control-group">
+                        <label>AC debug log</label>
+                        <input class="checkbox-toggle" type="checkbox" name="btnAcDbg">
+                        <span class="pure-form-message">
+                            Periodically log pulse count and measured period of every AC input, as well as its state changes.
+                        </span>
+                    </div>
+                </div>
+
+                <div id="buttonConfig" class="settings-group">
+                </div>
+            </fieldset>
+
         </div>
     </div>
 </form>

@@ -5,6 +5,56 @@
     </div>
 </template>
 
+<template id="template-button-config">
+    <div class="pure-form pure-form-aligned">
+        <fieldset>
+            <legend>Button #<span data-key="template-id"></span> (GPIO<span data-key="btnGpio"></span>)</legend>
+            <div class="pure-control-group">
+                <label>AC mains switch</label>
+                <input class="checkbox-toggle" name="btnFreq" type="checkbox" data-action="reboot">
+                <span class="pure-form-message">
+                    Input is a mains (AC) wall switch connected through an optocoupler. Instead of reading the pin level, the button is pressed while mains-frequency pulses are detected.
+                    Such button always works as a <code>switch</code> (position at boot is not an event, click actions are disabled), usually with toggle on both press and release.
+                    You will have to <code>Reboot</code> to apply this setting.
+                </span>
+            </div>
+            <div class="button-ac-filter" hidden>
+                <div class="pure-control-group">
+                    <label>Min pulses</label>
+                    <input class="pure-input-1-4" name="btnMinPulses" type="number" min="1" max="100" required>
+                    <span class="pure-form-message">
+                        Minimum number of pulses within one counting window for the input to be considered ON (default 5).
+                    </span>
+                </div>
+                <div class="pure-control-group">
+                    <label>Min duty, %</label>
+                    <input class="pure-input-1-4" name="btnMinDuty" type="number" min="0" max="100" required>
+                    <span class="pure-form-message">
+                        Minimum share of the counting window the input spends active (LOW) for it to be considered ON, 0 disables the check (default).
+                        Long switch wires pick up mains even while the switch is OFF, and the optocoupler then sees short pulses at the very same frequency, while a closed switch keeps it on for most of the cycle.
+                        Compare <code>low=</code> in the AC debug log for both switch positions and pick a value in between, 30% is a good start.
+                    </span>
+                </div>
+                <div class="pure-control-group">
+                    <label>Confirm, windows</label>
+                    <input class="pure-input-1-4" name="btnAcConfirm" type="number" min="2" max="10" required>
+                    <span class="pure-form-message">
+                        Consecutive counting windows that must agree before the switch changes state (default 2). Raise it if switching another lamp briefly shows this input as ON.
+                    </span>
+                </div>
+                <div class="pure-control-group">
+                    <label>Window, ms</label>
+                    <input class="pure-input-1-4" name="btnDebDel" type="number" min="20" max="1000" required>
+                    <span class="pure-form-message">
+                        Pulse counting window (debounce delay of this button), 100 ms is recommended.
+                        Filter options are applied on save, no reboot needed.
+                    </span>
+                </div>
+            </div>
+        </fieldset>
+    </div>
+</template>
+
 <template id="template-relay-config">
     <div class="pure-form pure-form-aligned">
         <fieldset>
