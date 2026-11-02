@@ -1026,6 +1026,13 @@ static constexpr std::array<Enumeration<RelaySync>, 5> RelaySyncOptions PROGMEM 
 } // namespace relay
 } // namespace espurna
 
+namespace {
+
+// Provider of a relay that is already set up, empty when there is no such relay
+espurna::StringView _relayProviderId(size_t id);
+
+} // namespace
+
 namespace espurna {
 namespace settings {
 namespace internal {
@@ -1303,7 +1310,17 @@ EXACT_VALUE(syncId, settings::syncId)
 EXACT_VALUE(delayOn, settings::delayOn)
 EXACT_VALUE(delayOff, settings::delayOff)
 
-ID_VALUE(provider, settings::provider)
+// Relays added through relayDummy have no relayProv key, the default for their index is gpio.
+// Report the provider that actually runs, so the WebUI does not show them as GPIO relays
+String provider(size_t id) {
+    const auto running = _relayProviderId(id);
+    if (running.length()) {
+        return running.toString();
+    }
+
+    return espurna::settings::internal::serialize(settings::provider(id));
+}
+
 ID_VALUE(type, settings::type)
 ID_VALUE(pinType, settings::pinType)
 ID_VALUE(pin, settings::pin)
@@ -1561,6 +1578,14 @@ Relays _relays;
 
 size_t _relayCount() {
     return _relays.size();
+}
+
+espurna::StringView _relayProviderId(size_t id) {
+    if (id < _relays.size()) {
+        return _relays[id].provider->id();
+    }
+
+    return espurna::StringView();
 }
 
 RelayMaskHelper _relayMaskCurrent(size_t relays) {

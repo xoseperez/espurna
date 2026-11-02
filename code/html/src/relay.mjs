@@ -124,8 +124,12 @@ function updateFromConfig(configs, schema) {
             cfg.relayName = `Switch #${id}`;
         }
 
+        // only GPIO relays have a pin to show, e.g. 'Switch #1 (dummy)' otherwise
+        const where = (cfg.relayProv === "gpio")
+            ? `GPIO${cfg.relayGpio}`
+            : cfg.relayProv;
         names[id.toString()] =
-            `${cfg.relayName} (GPIO${cfg.relayGpio})`;
+            `${cfg.relayName} (${where})`;
 
         initToggle(id);
     });

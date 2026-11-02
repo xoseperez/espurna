@@ -2,7 +2,7 @@
 
 ESPurna ("spark" in Catalan) is a custom firmware for ESP32 and ESP8285/ESP8266 based smart switches, lights and sensors.
 It uses the Arduino Core for ESP32 / ESP8266 frameworks and a number of 3rd party libraries.
-This fork adds the [ESP32 port](#esp32-port-this-fork); the badges right below refer to the original upstream project.
+This fork adds the [ESP32 port](#esp32-port-this-fork) and a [Beken BK7231N (Tuya CB3S) port](#tuya-cb3s-beken-bk7231n); the badges right below refer to the original upstream project.
 
 [![latest snapshot build](https://img.shields.io/github/v/release/xoseperez/espurna?include_prereleases&label=latest%20snapshot%20build)](https://github.com/xoseperez/espurna/releases?expanded=true)
 [![branch](https://img.shields.io/badge/branch-dev-orange.svg)](https://github.com/xoseperez/espurna/tree/dev/)
@@ -79,6 +79,24 @@ Tested on a real MINIR4 (stock eWeLink firmware `FWSW-E32R4-MINIR4`, no Matter i
 |---|---|
 |![MINIR4 daughter board serial pads](images/devices/itead-sonoff-minir4-serial-esp32.webp)|![MINIR4 3V3 at the U2 pad](images/devices/itead-sonoff-minir4-serial-3v3.webp)|
 |serial wires on the ESP32 daughter board|3V3 at the U2 pad, bottom of the main board|
+
+### Tuya CB3S (Beken BK7231N)
+
+Most new Tuya devices carry a Beken BK72xx module (CB2S, CB3S, WB2S) instead of an ESP8266. ESPurna runs on them through
+[LibreTiny](https://docs.libretiny.eu/), from the same source: Beken code is under [`code/espurna/arch/beken`](code/espurna/arch/beken),
+the builds are in [`code/platformio_beken.ini`](code/platformio_beken.ini).
+
+- `cb3s-generic`: any CB3S board, pins set in the web UI;
+- `tuya-cb3s-relay-rf`: Tuya 1-channel 5 V relay with a 433 MHz receiver (relay P24, buttons P14 / P6, LED P8, RF on P26),
+  remote buttons learnt per relay on the RFBRIDGE tab, any number of extra Dummy relays for more remote buttons;
+- first flash over UART1 with `ltchiptool`, then OTA of `firmware.uf2` from the web UI.
+
+|||
+|---|---|
+|![CB3S pads for flashing](beken/img/cb3s-pads.webp)|![CB3S board wired to a USB-UART adapter](beken/img/cb3s-wired.webp)|
+|TX1, RX1, GND and CEN pads|wired to a CP2102, powered from micro-USB|
+
+Wiring, backup, flashing, the 433 MHz remote and the known limitations: [beken/README.md](beken/README.md).
 
 ### AC mains wall-switch inputs
 
