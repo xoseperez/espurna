@@ -1,5 +1,7 @@
-import { listenAppConnected } from './connection.mjs';
+import { listenAppConnected, sendAction } from './connection.mjs';
 import { styleInject } from './core.mjs';
+import { variableListeners } from './settings.mjs';
+import { DESIGN, Screen } from './nspanel-screen.mjs';
 
 // <link> stylesheets are not stripped per-module by the build, keep the rules
 // here so that only the variant(s) built with MODULE_NSPANEL carry them
@@ -55,6 +57,11 @@ const STYLE = [
         padding: 2px 4px; height: auto; }`,
     ".nspanel-field textarea { white-space: pre; overflow-x: auto; resize: vertical; font-family: 'Courier New', monospace; }",
     ".nspanel-selected { outline: 2px solid #1f8dd6; outline-offset: 1px; }",
+    // the NSPanel EU's frame hides the rightmost 30 px of the 480x320 display
+    `.nspanel-screen-frame { width: 100%; max-width: 675px; aspect-ratio: 450 / 320; overflow: hidden;
+        border: 10px solid #222; border-radius: 12px; background: #000; }`,
+    ".nspanel-screen { display: block; width: 106.667%; aspect-ratio: 3 / 2; touch-action: none; cursor: pointer; }",
+    ".nspanel-screen-note { color: #777; font-size: 12px; margin: 4px 0 0; }",
 ];
 
 // tiles per screen, OHpanel and Lovelace TFT >= 51 (a 4x2 grid of slots)
@@ -1973,6 +1980,7 @@ async function updateStatus() {
         }
 
         const status = await response.json();
+        __status = status;
         elem.textContent = formatStatus(status);
         if (Array.isArray(status?.icons)) {
             __icons = status.icons.map(String);
@@ -1988,8 +1996,78 @@ async function updateStatus() {
     }
 }
 
+// -----------------------------------------------------------------------------
+// Screen mirror (nspanel-screen.mjs): what the display shows, touched like the display
+// -----------------------------------------------------------------------------
+
+/** @type {any} */
+let __status = null;
+
+/** @type {Screen | null} */
+let __screen = null;
+
+/** @type {Promise<void> | null} */
+let __screen_loading = null;
+
+/** @param {string} text */
+function screenNote(text) {
+    const note = document.querySelector("#panel-nspanel .nspanel-screen-note");
+    if (note instanceof HTMLElement) {
+        note.textContent = text;
+    }
+}
+
+/**
+ * whether the mirror can draw the panel's display: the OHpanel driver on the stock design it knows
+ * @param {any} status
+ * @returns {string} empty when it can, else why not
+ */
+export function screenUnsupported(status) {
+    if (status?.driver !== "ohpanel") {
+        return "The screen mirror needs the OHpanel display driver.";
+    }
+    if (status?.version !== DESIGN) {
+        return `The screen mirror knows the stock OHpanel design ${DESIGN}, the display has ${status?.version ?? "?"}.`;
+    }
+    return "";
+}
+
+async function screenStart() {
+    const canvas = document.querySelector("#panel-nspanel .nspanel-screen");
+    if (!(canvas instanceof HTMLCanvasElement) || !(canvas.parentElement instanceof HTMLElement) || !__status) {
+        return;
+    }
+
+    const why = screenUnsupported(__status);
+    canvas.parentElement.style.display = why ? "none" : "";
+    screenNote(why);
+    if (why) {
+        return;
+    }
+
+    if (!__screen) {
+        __screen = new Screen(canvas, sendAction);
+        __screen_loading = __screen.load().catch((e) => {
+            screenNote(`The design's pictures and fonts could not be loaded: ${(e instanceof Error) ? e.message : String(e)}`);
+        });
+    }
+
+    await __screen_loading;
+    sendAction("nspanelScreen");
+}
+
+/**
+ * @param {string} _
+ * @param {any} value
+ */
+function onScreenCommands(_, value) {
+    if (__screen && (typeof value === "string")) {
+        __screen.feed(value);
+    }
+}
+
 function onPanelShown() {
-    updateStatus();
+    updateStatus().then(screenStart);
     if (!__loaded) {
         onLoad();
     }
@@ -2037,6 +2115,10 @@ export function init() {
         ?.addEventListener("click", onSave);
 
     buildPalette();
+
+    variableListeners({
+        nspanelTft: onScreenCommands,
+    });
 
     editor()?.addEventListener("keydown", onEditorKey);
     editor()?.addEventListener("input", onEditorInput);

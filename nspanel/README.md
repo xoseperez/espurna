@@ -383,6 +383,25 @@ Backdrop); a tap on a tile switches to the next choice. A choice made there is k
 - **Size**: at most 16 KB, spaces and line breaks included. *Save* in the web UI sends the JSON without the indentation (a
   pretty-printed config is about twice the size); from a script, minify it before the upload.
 
+### The screen in the browser
+
+<p>
+  <img src="img/webui-screen-house.png" width="49%" alt="Web UI: the panel's screen mirrored, a drawn 2x2 page">
+  <img src="img/webui-screen-thermostat.png" width="49%" alt="Web UI: the panel's screen mirrored, a thermostat">
+</p>
+
+**Web UI → NSPANEL → Screen** shows what the display shows right now, picture for picture: the same background, tiles,
+icons, the thermostat ring and the charts. Click and swipe it like the display; the panel on the wall follows, there is one
+screen. A mouse drag of 100 px or more is a swipe.
+
+- It works with the OHpanel display on the stock design `bc629e1e` (what `nspanel.info` calls *stock OHpanel v0.9.2*); with
+  another design or the Lovelace display the block says why it is empty.
+- The design's pictures and fonts are loaded from the OHpanel repository on GitHub (via jsDelivr), so the browser needs
+  internet access; nothing of it is stored on the panel.
+- Opening the block redraws the current screen on the wall too (a blink). The panel stops sending once no browser is
+  connected.
+- The thermostat ring cannot be dragged here; use − / +.
+
 Terminal commands (web UI DEBUG or telnet):
 
 | Command | |

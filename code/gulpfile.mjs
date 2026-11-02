@@ -759,6 +759,18 @@ function makeInlineSource(options, stats) {
                     ],
                 });
 
+                // every module the bundle read counts for Last-Modified, not only the entrypoint:
+                // a change in an imported module alone must not be answered with 304 by the device
+                for (const id of result.watchFiles) {
+                    if (path.isAbsolute(id)) {
+                        try {
+                            stats[id] = await fs.promises.stat(id);
+                        } catch {
+                            // virtual and generated ids have no file
+                        }
+                    }
+                }
+
                 const bundle = await result.generate({
                     sourcemap: 'inline',
                 });

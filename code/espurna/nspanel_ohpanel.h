@@ -708,6 +708,40 @@ std::vector<String> lines;
 
 } // namespace capture
 
+// WebUI screen mirror: the commands sent to the TFT go to the browsers too ("nspanelTft", newline separated),
+// which draw them on the design's geometry. One message in flight at a time; when the browsers fall behind
+// the buffer is dropped and the screen drawn again in full (ref. mirrorLoop())
+namespace mirror {
+
+constexpr size_t FlushBytes { 768 };
+constexpr size_t BufferMax { 4096 };
+constexpr uint32_t FlushMs { 40 };
+
+bool active { false };
+bool posted { false };
+bool overflow { false };
+bool redraw { false };
+uint32_t since { 0 };
+String out;
+
+void add(const String& command) {
+    if (overflow) {
+        return;
+    }
+    if ((out.length() + command.length() + 1) > BufferMax) {
+        overflow = true;
+        out = String();
+        return;
+    }
+    if (!out.length()) {
+        since = millis();
+    }
+    out += command;
+    out += '\n';
+}
+
+} // namespace mirror
+
 void write(const String& command) {
     auto& port = uart::port();
     port.write(reinterpret_cast<const uint8_t*>(command.c_str()), command.length());
@@ -715,6 +749,9 @@ void write(const String& command) {
     port.write(end, sizeof(end));
     if (capture::on && (capture::lines.size() < capture::Max)) {
         capture::lines.push_back(command);
+    }
+    if (mirror::active && (command != F("sendme"))) {
+        mirror::add(command);
     }
     ++state.tx_commands;
     state.tx_bytes += command.length() + 3;
@@ -3537,12 +3574,12 @@ void onTouchXY(int x, int y, bool press) {
         : drawn::tileAt(card.grid, std::min<size_t>(card.count, gridTiles(card.grid)), down_x, down_y);
     const auto now = millis();
     if (!hit || (now - state.last_swipe < SwipeGuardMs)) {
+        DEBUG_MSG_P(PSTR("[NSPANEL] %s tap %d,%d dropped (hit %u, swipe %u ms ago)\n"),
+            card.list ? "list" : "tile", down_x, down_y, hit, now - state.last_swipe);
         return;
     }
 
-    if (config.debug) {
-        DEBUG_MSG_P(PSTR("[NSPANEL] %s tap %d,%d: %u\n"), card.list ? "list" : "tile", down_x, down_y, hit);
-    }
+    DEBUG_MSG_P(PSTR("[NSPANEL] %s tap %d,%d: %u\n"), card.list ? "list" : "tile", down_x, down_y, hit);
     state.release_pending = true;
     state.release_component = String(card.list ? F("row") : F("tile")) + hit;
     state.release_at = now;
@@ -3812,8 +3849,15 @@ bool lost() {
     return state.lost;
 }
 
+#if WEB_SUPPORT
+void mirrorLoop();
+#endif
+
 void loop() {
     rxLoop();
+#if WEB_SUPPORT
+    mirrorLoop();
+#endif
 
     const auto now = millis();
     switch (state.link) {
@@ -3888,6 +3932,81 @@ void reload() {
         setLevel(state.dimmed ? config.dim : config.brightness);
     }
 }
+
+#if WEB_SUPPORT
+// the browsers get the current screen in full: the theme, the page and the brightness, after a reset marker
+void mirrorRedraw() {
+    mirror::overflow = false;
+    if (!connected()) {
+        mirror::out = F("#offline\n");
+        mirror::since = millis();
+        return;
+    }
+
+    mirror::out = F("#reset\n");
+    mirror::since = millis();
+    sendTheme();
+    state.level = -1;
+    // sent on a change only: the browsers must learn whether this page takes touches as coordinates
+    state.sendxy = -1;
+    showCurrent();
+    setLevel(state.dimmed ? config.dim : config.brightness);
+}
+
+void mirrorStart() {
+    mirror::active = true;
+    mirror::redraw = true;
+}
+
+constexpr uint32_t MirrorPostMs { 3000 };
+uint32_t mirror_posted_at { 0 };
+
+void mirrorSend(JsonObject& root) {
+    root["nspanelTft"] = mirror::out;
+    mirror::out = String();
+    mirror::posted = false;
+}
+
+void mirrorLoop() {
+    if (!mirror::active) {
+        return;
+    }
+
+    if (!wsConnected()) {
+        mirror::active = false;
+        mirror::posted = false;
+        mirror::overflow = false;
+        mirror::out = String();
+        return;
+    }
+
+    const auto now = millis();
+    // a message dropped by the WS queue never calls back
+    if (mirror::posted && (now - mirror_posted_at >= MirrorPostMs)) {
+        mirror::posted = false;
+        mirror::overflow = true;
+    }
+    if (mirror::posted) {
+        return;
+    }
+
+    if (mirror::overflow) {
+        mirror::redraw = true;
+    }
+    if (mirror::redraw && !mirror::out.length()) {
+        mirror::redraw = false;
+        mirrorRedraw();
+    }
+
+    if (mirror::out.length()
+        && ((mirror::out.length() >= mirror::FlushBytes) || (now - mirror::since >= mirror::FlushMs)))
+    {
+        mirror::posted = true;
+        mirror_posted_at = now;
+        wsPost(0, mirrorSend, mirror::out.length() + 128);
+    }
+}
+#endif
 
 void weatherChanged() {
     if (connected() && ((state.screen == Screen::Home) || (state.screen == Screen::Weather))) {

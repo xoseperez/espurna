@@ -2977,10 +2977,23 @@ namespace buzzer {
 bool active { false };
 uint32_t until { 0 };
 
+// core 3.x: ledcWrite() takes the pin, the channel API is ledcAttachChannel() / ledcWriteChannel()
+void duty(uint32_t value) {
+#if ESP_ARDUINO_VERSION_MAJOR >= 3
+    ledcWriteChannel(build::BuzzerChannel, value);
+#else
+    ledcWrite(build::BuzzerChannel, value);
+#endif
+}
+
 void setup() {
+#if ESP_ARDUINO_VERSION_MAJOR >= 3
+    ledcAttachChannel(build::BuzzerPin, 2700, 8, build::BuzzerChannel);
+#else
     ledcSetup(build::BuzzerChannel, 2700, 8);
     ledcAttachPin(build::BuzzerPin, build::BuzzerChannel);
-    ledcWrite(build::BuzzerChannel, 0);
+#endif
+    duty(0);
 }
 
 void beep() {
@@ -2988,14 +3001,14 @@ void beep() {
         return;
     }
 
-    ledcWrite(build::BuzzerChannel, 128);
+    duty(128);
     active = true;
     until = millis() + 40;
 }
 
 void loop() {
     if (active && (static_cast<int32_t>(millis() - until) >= 0)) {
-        ledcWrite(build::BuzzerChannel, 0);
+        duty(0);
         active = false;
     }
 }
@@ -5190,13 +5203,46 @@ void onStatus(AsyncWebServerRequest* request) {
     request->send(200, "application/json", out);
 }
 
+// the WebUI screen mirror (OHpanel only): "nspanelScreen" starts it, touches come back as the TFT's own events
+void onWsAction(uint32_t client_id, const char* action, JsonObject& data) {
+    if (!strcmp_P(action, PSTR("nspanelScreen"))) {
+        if ((link::active == Driver::Ohpanel) && !flash::busy()) {
+            ohpanel::mirrorStart();
+        } else {
+            wsPost(client_id, [](JsonObject& root) {
+                root["nspanelTft"] = F("#unsupported\n");
+            });
+        }
+        return;
+    }
+
+    if ((link::active != Driver::Ohpanel) || flash::busy()) {
+        return;
+    }
+
+    if (!strcmp_P(action, PSTR("nspanelTouch"))) {
+        const char* page = data["page"] | "";
+        const char* component = data["component"] | "";
+        const char* value = data["value"] | "";
+        if (*page && *component && *value) {
+            ohpanel::onEvent(page, component, value);
+        }
+    } else if (!strcmp_P(action, PSTR("nspanelXY"))) {
+        if (data.is<int>("x") && data.is<int>("y")) {
+            ohpanel::onTouchXY(data["x"].as<int>(), data["y"].as<int>(), (data["press"] | 0) != 0);
+        }
+    }
+}
+
 // shows the NSPANEL section of the WebUI
 void onWsVisible(JsonObject& root) {
     wsPayloadModule(root, STRING_VIEW("nspanel"));
 }
 
 void setupWeb() {
-    wsRegister().onVisible(onWsVisible);
+    wsRegister()
+        .onVisible(onWsVisible)
+        .onAction(onWsAction);
 
     auto& server = webServer();
     server.on("/nspanel-status", HTTP_GET, onStatus);

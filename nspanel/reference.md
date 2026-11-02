@@ -423,6 +423,35 @@ after a TFT restart, or ≥ 32 bytes outside 55 BB frames (another TFT talking a
 - `<panel root>/temperature`: room temperature, published by the ESPurna sensor module like on any ESPurna device (every
   `snsRead` x `snsReport` seconds, 6 x 10 by default; units `tmpUnits0`, °C by default; correction `tmpCorrection0`).
 
+## WebUI screen mirror (OHpanel)
+
+The NSPANEL section draws the display in a `<canvas>` (`code/html/src/nspanel-screen.mjs`, a small Nextion emulator) from
+the commands the firmware sends to the TFT, and sends touches back as the TFT's own events.
+
+- **Start**: WS action `nspanelScreen`. With the OHpanel driver (and no TFT upload running) the firmware
+  (`nspanel_ohpanel.h`, `mirror::`) sends `#reset`, the theme (`th_*`, `bg_pic`, `bg_close`), `sendxy` and the current screen
+  in full (`showCurrent()`, the wall redraws too), then every command `write()` puts on the UART. Otherwise it answers
+  `#unsupported` (`#offline` when the TFT does not answer).
+- **Stream**: `{"nspanelTft": "<command>\n<command>\n..."}` to every WS client, `sendme` left out. Flushed at 768 bytes or
+  40 ms, one message in flight; a buffer over 4 KB, or a message the WS queue dropped (no callback within 3 s), is thrown
+  away and the screen sent again in full. The mirror stops when no WS client is connected.
+- **Touches**: `nspanelTouch` `{"page", "component", "value"}` goes to `ohpanel::onEvent()` like a `92 nspanelevent` frame
+  (hotspot `press` / `release`, `swipe` left / right / up / down for a drag of 100 px or more, `wake` on `blank`);
+  `nspanelXY` `{"x", "y", "press"}` goes to `onTouchXY()` like a `67` frame, on pages with `sendxy=1` (list rows, drawn grids).
+  The firmware's own tap / swipe disambiguation applies; the buzzer beeps as for a finger.
+- **Emulator**: one 480x320 canvas painted as the TFT paints: `page` loads the page's objects with what the page itself does
+  on load (OHpanel `ohpanel_hmi.py`: `vis 255,0` and the title / close cross, theme colours from `th_*`), an attribute
+  (`.txt` `.pco` `.bco` `.pic` `.val` `.font`) repaints that object with the background under its box first (crop / solid
+  `sta`), `vis` shows or hides objects and the hotspots that have no object, `fill` `cirs` `cir` `line` `xstr` `picq` paint
+  over what is there, `dim` dims the canvas. Pictures by id through the display manifest's per-background tables (tiles,
+  close cross, weather icons; cards and badges as rounded boxes), converted to RGB565 like the TFT. Fonts: the TrueType
+  sources of the TFT fonts (Ubuntu, Noto Sans, Material Design Icons, display code point + 0xE0001) at the em sizes and
+  baselines of `fonts.py`. The web UI crops the rightmost 30 px, hidden by the panel's frame.
+- **Assets**: `www/layout.json` and `boards/nspanel/nextion/display-manifest.json` of OHpanel commit `ba936198` (the stock
+  `bc629e1e` TFT) and its fonts, from `cdn.jsdelivr.net/gh/bruestel/ohpanel@<commit>/` (CORS open); nothing in the firmware.
+- **Not emulated**: the ring drag (`91` value reports), the TFT's own touch feedback colours, scrolling texts, the light page's
+  colour wheel.
+
 ## Terminal
 
 | Command | |
