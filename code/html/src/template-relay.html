@@ -9,14 +9,27 @@
     <div class="button-config">
         <div class="pure-control-group">
             <label>Button type</label>
-            <select class="pure-input-2-3" name="btnFreq" data-action="reboot">
-                <option value="0">Button</option>
-                <option value="1">AC mains switch</option>
+            <select class="pure-input-2-3 button-type" data-action="none">
+                <option value="button">Button</option>
+                <option value="switch">Switch</option>
+                <option value="follow">Follow</option>
+                <option value="ac">AC mains switch</option>
             </select>
             <span class="pure-form-message">
-                <em>AC mains switch</em> is a wall switch on mains (AC) connected through an optocoupler: it is ON while mains-frequency pulses are detected.
-                It always works as a <code>switch</code> (no click actions). You will have to <code>Reboot</code> to apply this setting.
+                <em>Button</em> is a momentary pushbutton. <em>Switch</em> is a wall switch with a fixed position, the relay toggles on every flip.
+                <em>Follow</em>: the relay is ON while the input is closed and OFF while it is open, clicks are ignored.
+                <em>AC mains switch</em> is a wall switch on mains (AC) connected through an optocoupler: it is ON while mains-frequency pulses are detected,
+                it always works as a <code>switch</code> (no click actions). You will have to <code>Reboot</code> to apply this setting.
             </span>
+            <select name="btnMode" data-action="reboot" hidden>
+                <option value="pushbutton">Pushbutton</option>
+                <option value="switch">Switch</option>
+                <option value="follow">Follow</option>
+            </select>
+            <select name="btnFreq" data-action="reboot" hidden>
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+            </select>
         </div>
         <div class="button-ac-filter" hidden>
             <div class="pure-control-group">

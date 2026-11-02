@@ -141,6 +141,8 @@ using espurna::settings::options::Enumeration;
 
 PROGMEM_STRING(Switch, "switch");
 PROGMEM_STRING(Pushbutton, "pushbutton");
+// not a debounce mode, a switch with the relay ON while pressed and OFF while released
+PROGMEM_STRING(Follow, "follow");
 
 static constexpr std::array<Enumeration<debounce_event::types::Mode>, 2> DebounceEventMode PROGMEM {
     {{debounce_event::types::Mode::Switch, Switch},
@@ -706,16 +708,26 @@ ButtonProvider provider(size_t index) {
     return getSetting({keys::Provider, index}, build::provider(index));
 }
 
+bool isFollow(size_t index) {
+    return strcmp_P(getSetting(espurna::settings::Key{keys::Mode, index}).c_str(), options::Follow) == 0;
+}
+
 debounce_event::types::Mode mode(size_t index) {
+    if (isFollow(index)) {
+        return debounce_event::types::Mode::Switch;
+    }
     if (internal::getDynamicButton(index)) {
-        return debounce_event::types::Mode::Pushbutton;
+        return getSetting({keys::Mode, index}, debounce_event::types::Mode::Pushbutton);
     }
     return getSetting({keys::Mode, index}, build::mode(index));
 }
 
 debounce_event::types::PinValue defaultValue(size_t index) {
     if (internal::getDynamicButton(index)) {
-        return debounce_event::types::PinValue::High;
+        // a switch can be in any position at boot, take it as the idle one
+        return ((mode(index) == debounce_event::types::Mode::Switch) && !isFollow(index))
+            ? debounce_event::types::PinValue::Initial
+            : debounce_event::types::PinValue::High;
     }
     return getSetting({keys::DefaultValue, index}, build::defaultValue(index));
 }
@@ -867,6 +879,13 @@ ID_VALUE(pin, settings::pin)
 ID_VALUE(pinType, settings::pinType)
 ID_VALUE(provider, settings::provider)
 ID_VALUE(mode, settings::mode)
+
+// btnMode as stored, including "follow"
+String modeName(size_t id) {
+    return settings::isFollow(id)
+        ? String(FPSTR(settings::options::Follow))
+        : mode(id);
+}
 ID_VALUE(defaultValue, settings::defaultValue)
 ID_VALUE(pinMode, settings::pinMode)
 ID_VALUE(release, settings::release)
@@ -1219,6 +1238,7 @@ void _buttonWebSocketOnVisible(JsonObject& root) {
 // Only what the WebUI button panel knows how to edit, see html/src/button.mjs
 static constexpr espurna::settings::query::IndexedSetting WebSocketSettings[] PROGMEM {
     {espurna::button::settings::keys::Gpio, espurna::button::settings::query::internal::pin},
+    {espurna::button::settings::keys::Mode, espurna::button::settings::query::internal::modeName},
     {espurna::button::settings::keys::Frequency, espurna::button::settings::query::internal::isFrequency},
     {espurna::button::settings::keys::MinPulses, espurna::button::settings::query::internal::minPulses},
     {espurna::button::settings::keys::MinDuty, espurna::button::settings::query::internal::minDuty},
@@ -1722,6 +1742,26 @@ espurna::button::Button _buttonWithPin(size_t index, BasePinPtr&& pin) {
 
     auto config = espurna::button::runtime_config(index);
     auto actions = _buttonActions(index);
+
+    // Relay follows the input, nothing else is done by it
+    if (espurna::button::settings::isFollow(index)) {
+        actions = ButtonActions{
+            .pressed = ButtonAction::On,
+            .released = ButtonAction::Off,
+            .click = ButtonAction::None,
+            .dblclick = ButtonAction::None,
+            .lngclick = ButtonAction::None,
+            .lnglngclick = ButtonAction::None,
+            .trplclick = ButtonAction::None};
+    // Wall switch toggles on every flip, with the action this input would do as a button
+    } else if (config.mode == debounce_event::types::Mode::Switch) {
+        if (actions.pressed == ButtonAction::None) {
+            actions.pressed = actions.click;
+        }
+        if (actions.released == ButtonAction::None) {
+            actions.released = actions.pressed;
+        }
+    }
 
     espurna::AcSwitch* ac_switch { nullptr };
     if (pin && espurna::button::settings::isFrequency(index)) {

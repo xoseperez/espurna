@@ -2,6 +2,7 @@ import { prepareFromSchema } from './template.mjs';
 import { variableListeners } from './settings.mjs';
 import { stringToBoolean } from './core.mjs';
 
+import { checkAndSetElementChanged } from './settings/change.mjs';
 import { setOriginalsFromValuesForNode } from './settings/dataset.mjs';
 import { setGroupCleanup, setGroupElement } from './settings/group.elem.mjs';
 import { setInputValue } from './settings/input.mjs';
@@ -10,7 +11,8 @@ import { loadTemplate } from './settings/template.mjs';
 import { findInputOrSelect } from './settings/utils.mjs';
 
 /**
- * Button inputs, currently only AC mains switch (frequency detection) options.
+ * Button inputs: type (button, switch, follow or AC mains switch) and AC mains switch (frequency detection) options.
+ * The single visible 'Button type' select is not saved itself, it fills the hidden `btnMode#` and `btnFreq#`.
  * Device reports them on connection as `btnConfig` (schema + values, one entry per button).
  * Options of the button controlling a relay (`btnRelay`) are shown in that relay card,
  * the rest is shown in the separate 'Other buttons' block.
@@ -43,6 +45,57 @@ const state = {
  */
 function typeSelect(node) {
     return node.querySelector("select[name='btnFreq']");
+}
+
+/**
+ * @param {HTMLElement} node
+ * @returns {HTMLSelectElement | null}
+ */
+function modeSelect(node) {
+    return node.querySelector("select[name='btnMode']");
+}
+
+/**
+ * @param {HTMLElement} node
+ * @returns {HTMLSelectElement | null}
+ */
+function kindSelect(node) {
+    return node.querySelector("select.button-type");
+}
+
+/** @param {HTMLElement} node */
+function kindFromSettings(node) {
+    const kind = kindSelect(node);
+    if (!kind) {
+        return;
+    }
+
+    kind.value = (typeSelect(node)?.value === "1") ? "ac"
+        : (modeSelect(node)?.value === "switch") ? "switch"
+        : (modeSelect(node)?.value === "follow") ? "follow"
+        : "button";
+}
+
+/**
+ * @param {HTMLSelectElement | null} elem
+ * @param {string} value
+ */
+function setChanged(elem, value) {
+    if (elem && (elem.value !== value)) {
+        elem.value = value;
+        checkAndSetElementChanged(elem);
+    }
+}
+
+/** @param {HTMLElement} node */
+function settingsFromKind(node) {
+    const kind = kindSelect(node)?.value;
+
+    setChanged(typeSelect(node), (kind === "ac") ? "1" : "0");
+    // AC mains switch is always a switch in the firmware, keep the mode as is
+    if (kind !== "ac") {
+        setChanged(modeSelect(node), ((kind === "switch") || (kind === "follow")) ? kind : "pushbutton");
+    }
 }
 
 /** @param {HTMLElement} node */
@@ -86,17 +139,21 @@ function createNode(index, cfg) {
             continue;
         }
 
-        if (elem instanceof HTMLSelectElement) {
+        if ((elem instanceof HTMLSelectElement) && (name === "btnFreq")) {
             const ac = (typeof value === "boolean") ? value
                 : (typeof value === "number") ? (value !== 0)
                 : stringToBoolean(String(value));
             setSelectValue(elem, ac ? "1" : "0");
+        } else if (elem instanceof HTMLSelectElement) {
+            setSelectValue(elem, String(value));
         } else if (elem instanceof HTMLInputElement) {
             setInputValue(elem, value);
         }
     }
 
-    typeSelect(node)?.addEventListener("change", () => {
+    kindFromSettings(node);
+    kindSelect(node)?.addEventListener("change", () => {
+        settingsFromKind(node);
         updateFilterVisibility(node);
         updateGlobalVisibility();
     });
