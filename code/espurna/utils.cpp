@@ -366,6 +366,30 @@ ParseUnsignedResult parseUnsigned(espurna::StringView value) {
     return parseUnsignedImpl(value, base);
 }
 
+#if !defined(LIBRETINY)
+String ipToString(const IPAddress& ip) {
+    return ip.toString();
+}
+#endif
+
+bool equalsConstantTime(const String& lhs, const String& rhs) {
+#if defined(LIBRETINY)
+    // every byte is compared, time only depends on the length
+    if (lhs.length() != rhs.length()) {
+        return false;
+    }
+
+    uint8_t diff = 0;
+    for (size_t index = 0; index < lhs.length(); ++index) {
+        diff |= static_cast<uint8_t>(lhs[index]) ^ static_cast<uint8_t>(rhs[index]);
+    }
+
+    return diff == 0;
+#else
+    return lhs.equalsConstantTime(rhs);
+#endif
+}
+
 String formatUnsigned(uint32_t value, int base) {
     constexpr size_t BufferSize { 8 * sizeof(decltype(value)) };
 
@@ -504,7 +528,8 @@ size_t consumeAvailableImpl(Stream& stream, size_t size) {
 #if defined(ARDUINO_ESP8266_RELEASE_2_7_2) \
 || defined(ARDUINO_ESP8266_RELEASE_2_7_3) \
 || defined(ARDUINO_ESP8266_RELEASE_2_7_4) \
-|| defined(ESP32)
+|| defined(ESP32) \
+|| defined(LIBRETINY)
     return consumeAvailableReadBytes(stream, size);
 #else
     if (stream.hasPeekBufferAPI()) {

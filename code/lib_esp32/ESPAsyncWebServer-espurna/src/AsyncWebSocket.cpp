@@ -795,7 +795,7 @@ size_t AsyncWebSocketClient::printf(const char *format, ...) {
   return len;
 }
 
-#ifndef ESP32
+#if !defined(ESP32) && !defined(LIBRETINY)
 size_t AsyncWebSocketClient::printf_P(PGM_P formatP, ...) {
   va_list arg;
   va_start(arg, formatP);
@@ -1167,7 +1167,7 @@ size_t AsyncWebSocket::printfAll(const char *format, ...) {
   return len;
 }
 
-#ifndef ESP32
+#if !defined(ESP32) && !defined(LIBRETINY)
 size_t AsyncWebSocket::printf_P(uint32_t id, PGM_P formatP, ...){
   AsyncWebSocketClient * c = client(id);
   if(c != NULL){

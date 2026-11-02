@@ -39,7 +39,7 @@ time_t delta_utc_impl(tm& out, Seconds seconds, Days days) {
 String tz_offset_string(Seconds offset) {
     String out;
 
-    out = (offset >= offset.zero()) ? '+' : '-';
+    out += (offset >= offset.zero()) ? '+' : '-';
     if (offset < offset.zero()) {
         offset = -offset;
     }
@@ -51,7 +51,7 @@ String tz_offset_string(Seconds offset) {
         out += '0';
     }
 
-    out += String(hours.count(), 10);
+    out += String(static_cast<long>(hours.count()), 10);
     out += ':';
 
     auto minutes = std::chrono::duration_cast<Minutes>(offset);
@@ -59,7 +59,7 @@ String tz_offset_string(Seconds offset) {
         out += '0';
     }
 
-    out += String(minutes.count(), 10);
+    out += String(static_cast<long>(minutes.count()), 10);
 
     return out;
 }

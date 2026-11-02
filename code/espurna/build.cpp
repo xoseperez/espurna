@@ -55,6 +55,17 @@ espurna::StringView core_version() {
         out = GET_COREVERSION_STR(ARDUINO_ESP8266_GIT_DESC);
 #undef _GET_COREVERSION_STR
 #undef GET_COREVERSION_STR
+#elif defined(LIBRETINY) && defined(CFG_BDK_VERSION)
+        // SDK version is the LibreTiny one (ref. system_get_sdk_version()), core is the Beken BDK under it
+        out.reserve(16);
+        out += F("BDK ");
+        out += String(CFG_BDK_VERSION / 10000);
+        out += '.';
+        out += String((CFG_BDK_VERSION / 100) % 100);
+        out += '.';
+        out += String(CFG_BDK_VERSION % 100);
+#elif defined(LIBRETINY)
+        out = F("LibreTiny");
 #else
         out = "unknown";
 #endif

@@ -12,6 +12,9 @@
 #include <freertos/task.h>
 
 #include <esp_system.h>
+#if __has_include(<esp_mac.h>)
+#include <esp_mac.h>    // ESP-IDF 5 (core 3.x): esp_read_mac() moved out of esp_system.h
+#endif
 
 // ESP8266-specific memory functions
 #define memmove_P memmove
@@ -127,7 +130,10 @@ inline uint64_t micros64() {
 // UART related shims for uart.cpp
 // (SerialConfig is defined in esp32-hal-uart.h in newer cores)
 // using SerialConfig = uint32_t;
+// core 3.x has its own SerialMode (uart_mode_t, HardwareSerial.h)
+#if ESP_ARDUINO_VERSION_MAJOR < 3
 using SerialMode = uint32_t;
+#endif
 
 // Timer shims
 #ifdef __cplusplus

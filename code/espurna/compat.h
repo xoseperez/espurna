@@ -8,6 +8,14 @@ COMPATIBILITY BETWEEN 2.3.0 and latest versions
 
 #include <Arduino.h>
 
+// Network callbacks (AsyncTCP, WiFi events, SNTP) run in tasks of their own, in parallel with loop().
+// esp8266 runs them from the same context as loop(), nothing has to be synchronized there
+#if defined(ARDUINO_ARCH_ESP32) || defined(LIBRETINY)
+#define ESPURNA_ASYNC_TASKS 1
+#else
+#define ESPURNA_ASYNC_TASKS 0
+#endif
+
 // -----------------------------------------------------------------------------
 // Core version 2.4.2 and higher changed the cont_t structure to a pointer:
 // https://github.com/esp8266/Arduino/commit/5d5ea92a4d004ab009d5f642629946a0cb8893dd#diff-3fa12668b289ccb95b7ab334833a4ba8L35

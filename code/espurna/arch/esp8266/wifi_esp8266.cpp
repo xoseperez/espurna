@@ -1560,6 +1560,13 @@ Networks preparedNetworks;
 bool connected { false };
 bool wait { false };
 
+// the AP that dropped us (deauth / disassoc from its side, e.g. a usteer kick), not a lost signal or our own leave.
+// The SDK cannot answer 802.11v requests, so a steering AP kicks the station, and the next scan most likely finds
+// the same AP the strongest again: try it last for a while, so the station goes to another one instead of a kick loop
+static constexpr auto KickedTime = duration::Minutes{ WIFI_KICKED_TIME };
+Mac kicked{};
+time::SystemClock::time_point kicked_at;
+
 timer::SystemTimer timer;
 bool persist { false };
 
@@ -1701,7 +1708,18 @@ void init() {
 
     // note that pass a simple request for state change, not the reason behind it
     // TODO 'lock' / 'trigger' object instead of multiple flags
-    static auto disconnected = WiFi.onStationModeDisconnected([](const WiFiEventStationModeDisconnected&) {
+    static auto disconnected = WiFi.onStationModeDisconnected([](const WiFiEventStationModeDisconnected& event) {
+        // reasons below 200 come from the AP (ASSOC_LEAVE is our own disconnect), 200+ are local (beacon timeout etc.)
+        if (connection::internal::connected
+            && (event.reason < WIFI_DISCONNECT_REASON_BEACON_TIMEOUT)
+            && (event.reason != WIFI_DISCONNECT_REASON_ASSOC_LEAVE))
+        {
+            std::copy(std::begin(event.bssid), std::end(event.bssid), connection::internal::kicked.begin());
+            connection::internal::kicked_at = time::SystemClock::now();
+            DEBUG_MSG_P(PSTR("[WIFI] Dropped by %s (reason %u), tried last for %u min\n"),
+                debug::mac(connection::internal::kicked).c_str(), static_cast<unsigned>(event.reason),
+                static_cast<unsigned>(connection::internal::KickedTime.count()));
+        }
         connection::internal::wait = false;
         connection::internal::connected = false;
     });
@@ -1854,6 +1872,12 @@ bool suitableNetwork(const Network& network, const SsidInfo& ssidInfo) {
                 : !network.passphrase().length());
 }
 
+bool kicked(const Mac& bssid) {
+    return (internal::KickedTime.count() > 0)
+        && (bssid == internal::kicked)
+        && (time::SystemClock::now() - internal::kicked_at < internal::KickedTime);
+}
+
 bool scanProcessResults(int8_t threshold) {
     if (internal::scanResults) {
         decltype(internal::scanResults) results;
@@ -1880,6 +1904,12 @@ bool scanProcessResults(int8_t threshold) {
                 }
             }
         }
+
+        // the AP that kicked us goes last, unless it is the only one
+        std::stable_partition(sortedNetworks.begin(), sortedNetworks.end(),
+            [](const Network& network) {
+                return !kicked(network.bssid());
+            });
 
         std::swap(sortedNetworks, internal::preparedNetworks);
         internal::scanResults.reset();

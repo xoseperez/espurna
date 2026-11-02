@@ -16,7 +16,7 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 // (...but, still suffers from a similar std::function API, forcing to self-reference the server object and manage various global state & result objects)
 //
 
-#include "ota.h"
+#include "espurna_ota.h"
 
 #include <ESP8266WebServer.h>
 #include <StreamString.h>

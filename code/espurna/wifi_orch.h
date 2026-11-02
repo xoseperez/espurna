@@ -4,5 +4,7 @@
     #include "arch/esp8266/wifi_esp8266.h"
 #elif defined(ESP32)
     #include "arch/esp32/wifi_esp32.h"
+#elif defined(LIBRETINY)
+    #include "arch/beken/wifi_beken.h"
 #endif
 

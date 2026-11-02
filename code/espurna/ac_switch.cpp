@@ -26,6 +26,12 @@ AC FREQUENCY DETECTION SWITCH MODULE
 #define AC_SWITCH_EXIT() portEXIT_CRITICAL(&_mux)
 #define AC_SWITCH_ISR_ENTER() portENTER_CRITICAL_ISR(&_mux)
 #define AC_SWITCH_ISR_EXIT() portEXIT_CRITICAL_ISR(&_mux)
+#elif defined(LIBRETINY)
+// Single core, but noInterrupts() is not implemented by the ARM968 port
+#define AC_SWITCH_ENTER() const auto _ac_switch_irq = port_disable_interrupts_flag()
+#define AC_SWITCH_EXIT() port_enable_interrupts_flag(_ac_switch_irq)
+#define AC_SWITCH_ISR_ENTER()
+#define AC_SWITCH_ISR_EXIT()
 #else
 #define AC_SWITCH_ENTER() noInterrupts()
 #define AC_SWITCH_EXIT() interrupts()
@@ -38,6 +44,8 @@ namespace {
 
 #if defined(ARDUINO_ARCH_ESP32)
 constexpr size_t AcSwitchPins { 40 };
+#elif defined(LIBRETINY)
+constexpr size_t AcSwitchPins { PINS_GPIO_MAX + 1 };
 #else
 constexpr size_t AcSwitchPins { EXTERNAL_NUM_INTERRUPTS };
 #endif
@@ -65,7 +73,9 @@ constexpr uint16_t tolerance_max(unsigned long period) {
 
 bool AcSwitch::available(unsigned char pin) {
     return (pin < AcSwitchPins)
+#if !defined(LIBRETINY)
         && (digitalPinToInterrupt(pin) != NOT_AN_INTERRUPT)
+#endif
         && (owners[pin] == nullptr);
 }
 
@@ -117,7 +127,11 @@ void AcSwitch::_attach() {
     }
 
     owners[_pin] = this;
+#if defined(LIBRETINY)
+    attachInterruptParam(_pin, _isr_static, CHANGE, this);
+#else
     attachInterruptArg(_pin, _isr_static, this, CHANGE);
+#endif
     _attached = true;
 }
 
@@ -210,6 +224,8 @@ bool IRAM_ATTR AcSwitch::_level() const {
     return (_pin < 32)
         ? ((REG_READ(GPIO_IN_REG) >> _pin) & 1)
         : ((REG_READ(GPIO_IN1_REG) >> (_pin - 32)) & 1);
+#elif defined(LIBRETINY)
+    return ::digitalRead(_pin) == HIGH;
 #else
     return GPIP(_pin);
 #endif

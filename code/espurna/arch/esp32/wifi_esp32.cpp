@@ -4,6 +4,9 @@
 #include <IPAddress.h>
 #include <esp_wifi.h>
 #include <esp_netif.h>
+#if __has_include(<esp_wifi_ap_get_sta_list.h>)
+#include <esp_wifi_ap_get_sta_list.h>    // ESP-IDF 5 (core 3.x)
+#endif
 #include <esp_phy_init.h>
 #include <lwip/dns.h>
 #include <soc/soc.h>
@@ -674,7 +677,7 @@ void configure_ip(uint8_t id) {
     }
 
     // zero IP restarts the DHCP client (not INADDR_NONE, lwip defines it as 255.255.255.255)
-    const IPAddress none(0u);
+    const IPAddress none(uint32_t{0});
     WiFi.config(none, none, none);
 }
 
@@ -2105,10 +2108,18 @@ STRING_VIEW_INLINE(Stations, "WIFI.STATIONS");
 
 void stations(::terminal::CommandContext&& ctx) {
     wifi_sta_list_t list{};
+#if ESP_IDF_VERSION_MAJOR >= 5
+    // ESP-IDF 5 (core 3.x): esp_netif_get_sta_list() became esp_wifi_ap_get_sta_list_with_ip()
+    wifi_sta_mac_ip_list_t netif_list{};
+    if ((esp_wifi_ap_get_sta_list(&list) != ESP_OK)
+        || (esp_wifi_ap_get_sta_list_with_ip(&list, &netif_list) != ESP_OK)
+        || !netif_list.num)
+#else
     esp_netif_sta_list_t netif_list{};
     if ((esp_wifi_ap_get_sta_list(&list) != ESP_OK)
         || (esp_netif_get_sta_list(&list, &netif_list) != ESP_OK)
         || !netif_list.num)
+#endif
     {
         terminalError(ctx, F("No stations connected"));
         return;

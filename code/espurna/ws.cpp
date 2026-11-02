@@ -515,7 +515,7 @@ void _wsUpdateAp(JsonObject& root) {
         ip = wifiApIp();
     }
 
-    root[F("apip")] = ip.toString();
+    root[F("apip")] = ipToString(ip);
 }
 
 void _wsUpdateSta(JsonObject& root) {
@@ -531,7 +531,7 @@ void _wsUpdateSta(JsonObject& root) {
     root[F("bssid")] =
         ::espurna::settings::internal::serialize(network.bssid);
     root[F("channel")] = network.channel;
-    root[F("staip")] = ip.toString();
+    root[F("staip")] = ipToString(ip);
 }
 
 void _wsUpdateStats(JsonObject& root) {
@@ -544,8 +544,6 @@ void _wsUpdateStats(JsonObject& root) {
     root[F("loadaverage")] = systemLoadAverage();
 #if ADC_MODE_VALUE == ADC_VCC
     root[F("vcc")] = ESP.getVcc();
-#else
-    root[F("vcc")] = F("N/A (TOUT) ");
 #endif
 }
 
@@ -991,7 +989,7 @@ void _wsParseImpl(AsyncWebSocketClient* client, uint8_t* payload, size_t length)
     _wsPostParse(client_id, save, reload);
 }
 
-#if defined(ARDUINO_ARCH_ESP32)
+#if ESPURNA_ASYNC_TASKS
 // ESP32 runs WS events in the AsyncTCP task. When _wsEvent() could not take the loop
 // lock in time (ref. AsyncGuard), parsing (which touches settings and _ws_queue) is
 // handed over to loop() instead. Once anything was deferred, following messages are
@@ -1060,12 +1058,16 @@ void _wsOnConnected(JsonObject& root) {
 
 void _wsOnVisible(JsonObject& root) {
     root[espurna::web::ws::settings::keys::Auth] = _ws_auth ? 1 : 0;
+#if ADC_MODE_VALUE == ADC_VCC
+    // supply voltage is only known with the ADC measuring it, the row is hidden otherwise
+    wsPayloadModule(root, STRING_VIEW("vcc"));
+#endif
 }
 
 void _wsConnected(uint32_t client_id) {
     static const auto defaultPassword = String(systemDefaultPassword());
     const bool changePassword = (USE_PASSWORD && WEB_FORCE_PASS_CHANGE)
-        ? systemPassword().equalsConstantTime(defaultPassword)
+        ? equalsConstantTime(systemPassword(), defaultPassword)
         : false;
 
     if (changePassword) {
@@ -1085,7 +1087,7 @@ void _wsEvent(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType
     switch (type) {
     case WS_EVT_CONNECT:
     {
-        const auto ip = client->remoteIP().toString();
+        const auto ip = ipToString(client->remoteIP());
 #ifndef NOWSAUTH
         if (_ws_auth && !_wsAuth(client)) {
             DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u session expired for %s\n"),
@@ -1143,11 +1145,11 @@ void _wsEvent(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType
         if (client->_tempObject) {
             auto *buffer = reinterpret_cast<WebSocketIncomingBuffer*>(client->_tempObject);
             AwsFrameInfo * info = (AwsFrameInfo*)arg;
-#if defined(ARDUINO_ARCH_ESP32)
+#if ESPURNA_ASYNC_TASKS
             _ws_parse_unlocked = !guard.locked();
 #endif
             buffer->data_event(client, info, data, len);
-#if defined(ARDUINO_ARCH_ESP32)
+#if ESPURNA_ASYNC_TASKS
             _ws_parse_unlocked = false;
 #endif
         }
@@ -1229,7 +1231,7 @@ void _wsHandlePostponedCallbacks(bool connected) {
 }
 
 void _wsLoop() {
-#if defined(ARDUINO_ARCH_ESP32)
+#if ESPURNA_ASYNC_TASKS
     // disconnected clients are only freed here, so client pointers used by loop()
     // stay valid while AsyncTCP task drops the connection (ref. lib_esp32/ESPAsyncWebServer-espurna)
     _ws.cleanupDisconnected();
@@ -1357,7 +1359,7 @@ void wsSetup() {
         .onVisible(_wsOnVisible)
         .onKeyCheck(_wsOnKeyCheck);
 
-#if defined(ARDUINO_ARCH_ESP32)
+#if ESPURNA_ASYNC_TASKS
     // e.g. RESET command reply, don't restart before it reaches the client
     espurna::system::registerPendingOutput([]() {
         return _ws.outputPending();

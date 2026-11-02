@@ -25,6 +25,14 @@ in arch/<arch>/system_<arch>.cpp (ref. espurna::system::arch in system.h)
 #include "button.h"
 #endif
 
+#if SYSTEM_CHECK_ENABLED
+#if defined(ESP8266)
+#include <Updater.h>
+#elif defined(ESP32)
+#include <Update.h>
+#endif
+#endif
+
 #include <cstdint>
 #include <cstring>
 #include <forward_list>
@@ -459,7 +467,12 @@ static_assert(ChecksMax != std::numeric_limits<decltype(ChecksMax)>::max(), "");
 constexpr espurna::duration::Seconds CheckTime { SYSTEM_CHECK_TIME };
 static_assert(CheckTime > decltype(CheckTime)::min(), "");
 
+constexpr espurna::duration::Minutes ExitTime { SYSTEM_CHECK_EXIT };
+constexpr espurna::duration::Minutes ExitRetry { 1 };
+
 } // namespace build
+
+timer::SystemTimer exit_timer;
 
 bool is_stable(uint8_t count) {
     return count < build::ChecksMax;
@@ -533,6 +546,21 @@ void init() {
     update_persist();
 }
 
+// The unstable mode does not end by itself: a few crashes from a flickering supply (a power cut) would leave
+// the device with no network services until a manual reboot. Once it ran ExitTime without a crash, reboot into
+// the normal mode; a real crash loop comes back here after ChecksMax crashes. Not while an OTA is being written
+void exit_unstable() {
+    if (Update.isRunning()) {
+        exit_timer.once(build::ExitRetry, exit_unstable);
+        return;
+    }
+
+    DEBUG_MSG_P(PSTR("[MAIN] No crashes for %u min in the unstable mode, rebooting\n"),
+        static_cast<unsigned>(build::ExitTime.count()));
+    reset();
+    ::prepareReset(CustomResetReason::Stability);
+}
+
 void setup_unstable() {
     if (!is_unstable_reset()) {
 #if LED_SUPPORT
@@ -541,6 +569,10 @@ void setup_unstable() {
 #if BUTTON_SUPPORT
         buttonSetupUnstable();
 #endif
+    }
+
+    if (build::ExitTime.count()) {
+        exit_timer.once(build::ExitTime, exit_unstable);
     }
 }
 
@@ -890,7 +922,7 @@ bool onKeyCheck(StringView key, const JsonVariant& value) {
     if (key == system::settings::keys::Password) {
         const auto password = system::password();
 #if defined(ESP8266)
-        return !password.equalsConstantTime(value.as<String>());
+        return !equalsConstantTime(password, value.as<String>());
 #else
         return !password.equals(value.as<String>());
 #endif

@@ -23,12 +23,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <algorithm>
 #include <utility>
 
-#if defined(ARDUINO_ARCH_ESP32)
+#if ESPURNA_ASYNC_TASKS
 #include <mutex>
 #endif
 
 #include "main.h"
-#include "ota.h"
+#include "espurna_ota.h"
 #include "rtcmem.h"
 
 #if NSPANEL_SUPPORT
@@ -81,14 +81,14 @@ espurna::duration::Milliseconds loop_delay { build::LoopDelayMin };
 
 std::forward_list<Callback> once_callbacks;
 
-#if defined(ARDUINO_ARCH_ESP32)
+#if ESPURNA_ASYNC_TASKS
 // once callbacks are also scheduled from other tasks (e.g. SNTP notification in tcpip task)
 std::mutex once_mutex;
 #endif
 
 } // namespace internal
 
-#if defined(ARDUINO_ARCH_ESP32)
+#if ESPURNA_ASYNC_TASKS
 using OnceLock = std::lock_guard<std::mutex>;
 #define ONCE_LOCK() OnceLock once_lock(internal::once_mutex)
 #else

@@ -76,7 +76,7 @@ private:
 
     std::list<BufferType> _buffers;
     AsyncWebServerRequest* const _request;
-#if defined(ARDUINO_ARCH_ESP32)
+#if ESPURNA_ASYNC_TASKS
     std::atomic<State> _state;
 #else
     State _state;

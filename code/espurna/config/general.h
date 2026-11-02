@@ -207,6 +207,11 @@
                                                 // the system is flagged as unstable
 #endif
 
+#ifndef SYSTEM_CHECK_EXIT
+#define SYSTEM_CHECK_EXIT       10              // Minutes in the unstable mode without a crash before rebooting
+                                                // into the normal mode, 0 stays until a manual reboot
+#endif
+
 //------------------------------------------------------------------------------
 // EEPROM
 //------------------------------------------------------------------------------
@@ -585,6 +590,11 @@
 #ifndef WIFI_FALLBACK_TIMEOUT
 #define WIFI_FALLBACK_TIMEOUT       60000                  // When AP is in FALLBACK mode and STA is connected,
                                                            // how long to wait (in ms) until stopping the AP
+#endif
+
+#ifndef WIFI_KICKED_TIME
+#define WIFI_KICKED_TIME            10                     // Minutes the AP that dropped the connection (e.g. usteer kick)
+                                                           // is tried last when the scan finds another one, 0 disables
 #endif
 
 #ifndef WIFI_AP_SSID
@@ -1062,6 +1072,12 @@
                                                     // From client side, handled internally by counting amount of time between control packets and / or PINGREQ & PINGRESP.
                                                     // From server side, depends on the implementation (usually, also adds +50% of the original value)
                                                     // 2 minutes by default. Can be zero. Small values 1..5 *may* not be handled properly.
+#endif
+
+#ifndef MQTT_CONNECT_TIMEOUT
+#define MQTT_CONNECT_TIMEOUT        60              // Give up a connection attempt that did not finish in this many seconds and start a new one.
+                                                    // Async client never reports some failed connects (e.g. DNS error), which would leave it 'connecting' forever.
+                                                    // 0 disables
 #endif
 
 #ifndef MQTT_CLEAN_SESSION

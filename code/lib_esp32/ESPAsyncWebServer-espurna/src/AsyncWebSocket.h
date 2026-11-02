@@ -231,7 +231,7 @@ class AsyncWebSocketClient {
     bool outputPending();
 
     size_t printf(const char *format, ...)  __attribute__ ((format (printf, 2, 3)));
-#ifndef ESP32
+#if !defined(ESP32) && !defined(LIBRETINY)
     size_t printf_P(PGM_P formatP, ...)  __attribute__ ((format (printf, 2, 3)));
 #endif
     void text(const char * message, size_t len);
@@ -339,7 +339,7 @@ class AsyncWebSocket: public AsyncWebHandler {
 
     size_t printf(uint32_t id, const char *format, ...)  __attribute__ ((format (printf, 3, 4)));
     size_t printfAll(const char *format, ...)  __attribute__ ((format (printf, 2, 3)));
-#ifndef ESP32
+#if !defined(ESP32) && !defined(LIBRETINY)
     size_t printf_P(uint32_t id, PGM_P formatP, ...)  __attribute__ ((format (printf, 3, 4)));
 #endif
     size_t printfAll_P(PGM_P formatP, ...)  __attribute__ ((format (printf, 2, 3)));

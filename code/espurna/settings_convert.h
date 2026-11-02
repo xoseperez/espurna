@@ -78,9 +78,21 @@ inline String serialize(uint16_t value, int base = 10) {
 
 String serialize(uint32_t value, int base = 10);
 
+// on ESP-IDF 5 (core 3.x) and LibreTiny (arm-none-eabi) toolchains uint32_t / int32_t are unsigned long / long,
+// the same overload twice; unsigned int (size_t) / int are separate types there instead
+#if !(defined(ESP_ARDUINO_VERSION_MAJOR) && (ESP_ARDUINO_VERSION_MAJOR >= 3)) && !defined(LIBRETINY)
 inline String serialize(unsigned long value, int base = 10) {
     return serialize(static_cast<uint32_t>(value), base);
 }
+#else
+inline String serialize(unsigned int value, int base = 10) {
+    return serialize(static_cast<uint32_t>(value), base);
+}
+
+inline String serialize(int value, int base = 10) {
+    return String(value, base);
+}
+#endif
 
 inline String serialize(int16_t value, int base = 10) {
     return String(value, base);
@@ -94,9 +106,11 @@ inline String serialize(int8_t value, int base = 10) {
     return serialize(static_cast<int32_t>(value), base);
 }
 
+#if !(defined(ESP_ARDUINO_VERSION_MAJOR) && (ESP_ARDUINO_VERSION_MAJOR >= 3)) && !defined(LIBRETINY)
 inline String serialize(long value, int base = 10) {
     return String(value, base);
 }
+#endif
 
 inline String serialize(bool value) {
     return value ? PSTR("true") : PSTR("false");

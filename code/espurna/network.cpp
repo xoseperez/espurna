@@ -52,6 +52,8 @@ void dns_found_callback_impl(const char*, const ip_addr_t* addr, void* arg) {
         pending->addr = addr;
 #elif defined(ESP32)
         pending->addr = IPAddress(addr->u_addr.ip4.addr);
+#elif defined(LIBRETINY)
+        pending->addr = IPAddress(ip_addr_get_ip4_u32(addr));
 #endif
         pending->err = ERR_OK;
     } else {
@@ -95,6 +97,16 @@ HostPtr resolve_impl(String hostname, HostCallback callback) {
         host.get());
     if (err == ERR_OK) {
         host->addr = IPAddress(addr.u_addr.ip4.addr);
+    }
+#elif defined(LIBRETINY)
+    ip_addr_t addr;
+    const auto err = dns_gethostbyname(
+        host->name.c_str(),
+        &addr,
+        dns_found_callback_impl,
+        host.get());
+    if (err == ERR_OK) {
+        host->addr = IPAddress(ip_addr_get_ip4_u32(&addr));
     }
 #endif
 
@@ -187,11 +199,11 @@ void host(::terminal::CommandContext&& ctx) {
     const auto result = dns::gethostbyname(ctx.argv[1]);
 #if defined(ESP8266)
     if (result.isSet()) {
-#elif defined(ESP32)
+#else
     if ((uint32_t)result != 0) {
 #endif
         ctx.output.printf_P(PSTR("%s has address %s\n"),
-            ctx.argv[1].c_str(), result.toString().c_str());
+            ctx.argv[1].c_str(), ipToString(result).c_str());
         terminalOK(ctx);
         return;
     }

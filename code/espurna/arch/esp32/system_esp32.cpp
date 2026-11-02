@@ -15,6 +15,9 @@ Chip specific part, common part is in system.cpp
 #include <vector>
 
 #include <esp_system.h>
+#if __has_include(<esp_mac.h>)
+#include <esp_mac.h>    // ESP-IDF 5 (core 3.x)
+#endif
 #include <esp_task_wdt.h>
 #include <esp_heap_caps.h>
 #include <esp_netif.h>

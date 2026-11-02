@@ -14,7 +14,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 // Terminal and MQTT OTA command handlers
 // -----------------------------------------------------------------------------
 
-#include "ota.h"
+#include "espurna_ota.h"
 
 #if TERMINAL_SUPPORT || OTA_MQTT_SUPPORT
 

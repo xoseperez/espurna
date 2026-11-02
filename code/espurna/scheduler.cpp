@@ -1856,7 +1856,7 @@ void run(const datetime::Context& ctx, const Results& results) {
         const auto action = settings::action(result.index);
         DEBUG_MSG_P(PSTR("[SCH] Restoring #%zu => %s (%sm)\n"),
             result.index, action.c_str(),
-            String(result.offset.count(), 10).c_str());
+            String(static_cast<long>(result.offset.count()), 10).c_str());
         last_action(ctx, result.index);
         parse_action(action);
     }

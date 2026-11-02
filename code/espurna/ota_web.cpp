@@ -11,7 +11,7 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #if WEB_SUPPORT && OTA_WEB_SUPPORT
 
-#include "ota.h"
+#include "espurna_ota.h"
 #include "web.h"
 #include "ws.h"
 
@@ -64,6 +64,25 @@ void setStatus(AsyncWebServerRequest *request, int code, const String& payload =
 size_t pending_size { 0 };
 bool pending { false };
 
+// Upload that started the running Update. When its connection is closed before the upload is
+// finished (client gone, request timed out), nothing else ends the Update. It would then stay
+// 'in progress' and every following upload fails with 400 until the reboot
+AsyncWebServerRequest* owner { nullptr };
+
+void onDisconnect(AsyncWebServerRequest* request) {
+    if (owner != request) {
+        return;
+    }
+
+    owner = nullptr;
+    if (Update.isRunning()) {
+        pending = false;
+        Update.end();
+        eepromRotate(true);
+        DEBUG_MSG_P(PSTR("[UPGRADE] Connection closed before the upload finished, aborted\n"));
+    }
+}
+
 bool complete(AsyncWebServerRequest *request) {
     const auto& header = request->header(F("Content-Length"));
     return header.length()
@@ -83,6 +102,7 @@ void onUpgrade(AsyncWebServerRequest *request) {
 
     if (pending) {
         pending = false;
+        owner = nullptr;
 
         if (!complete(request)) {
             DEBUG_MSG_P(PSTR("[UPGRADE] Incomplete upload, received %u of %s bytes\n"),
@@ -160,11 +180,22 @@ void onFile(AsyncWebServerRequest *request, String filename, size_t index, uint8
 #endif
 
         // Note: cannot use request->contentLength() for multipart/form-data
-        if (!Update.begin((ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000)) {
+#if defined(LIBRETINY)
+        // .uf2 package is a lot bigger than the image it carries, Update checks the OTA partition itself
+        const size_t size = UPDATE_SIZE_UNKNOWN;
+#else
+        const size_t size = (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
+#endif
+        if (!Update.begin(size)) {
             setStatus(request, 500);
             eepromRotate(true);
             return;
         }
+
+        owner = request;
+        request->onDisconnect([request]() {
+            onDisconnect(request);
+        });
     }
 
     if (request->_tempObject) {

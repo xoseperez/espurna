@@ -15,12 +15,12 @@
   "version": "3.4.0-espurna.1",
   "license": "LGPL-3.0",
   "frameworks": "arduino",
-  "platforms": ["espressif32"],
+  "platforms": ["espressif32", "libretiny"],
   "dependencies": [
     {
       "owner": "esphome",
       "name": "AsyncTCP-esphome",
-      "platforms": ["espressif32"]
+      "platforms": ["espressif32", "libretiny"]
     }
   ]
 }

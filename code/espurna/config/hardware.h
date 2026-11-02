@@ -105,6 +105,48 @@
     #define SSDP_SUPPORT            0
     #endif
 
+#elif defined(BEKEN_GENERIC)
+
+    // Any BK72xx (Tuya CB2S / CB3S / WB2S ...) board, built through LibreTiny. No relays,
+    // buttons or LEDs are pre-assigned, GPIOs are configured at runtime
+
+    // Info
+    #define MANUFACTURER            "GENERIC"
+    #define DEVICE                  "BEKEN"
+
+#elif defined(TUYA_CB3S_RELAY_RF)
+
+    // Tuya 1-channel 5V relay board with a 433 MHz receiver, CB3S (BK7231N) module.
+    // Pins are from the stock Tuya config (user_param_key)
+
+    // Info
+    #define MANUFACTURER            "TUYA"
+    #define DEVICE                  "CB3S_RELAY_RF"
+
+    // Buttons
+    #define BUTTON1_PIN             14
+    #define BUTTON1_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+    #define BUTTON1_RELAY           1
+
+    // 'total' (all on / off) button of the stock firmware
+    #define BUTTON2_PIN             6
+    #define BUTTON2_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+    #define BUTTON2_RELAY           1
+
+    // Relays
+    #define RELAY1_PIN              24
+    #define RELAY1_TYPE             RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN                8
+    #define LED1_PIN_INVERSE        1
+    #define LED1_MODE               LED_MODE_WIFI
+
+    // 433 MHz receiver data is on P26 (stock 'remote_io'), decoded by rc-switch
+    #define RFB_SUPPORT             1
+    #define RFB_PROVIDER            RFB_PROVIDER_RCSWITCH
+    #define RFB_RX_PIN              26
+
 #elif defined(ESP12F_RELAY_X2)
 
     // Info
@@ -116,6 +158,25 @@
     #define RELAY1_TYPE             RELAY_TYPE_NORMAL
     #define RELAY2_PIN              5
     #define RELAY2_TYPE             RELAY_TYPE_NORMAL
+
+#elif defined(HW_622)
+
+    // Info
+    #define MANUFACTURER            "GENERIC"
+    #define DEVICE                  "HW_622"
+
+    // Buttons (optocoupled input IN)
+    #define BUTTON1_PIN             5
+    #define BUTTON1_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY           1
+
+    // Relays
+    #define RELAY1_PIN              4
+    #define RELAY1_TYPE             RELAY_TYPE_NORMAL
+
+    // LEDs (ESP-12F module LED)
+    #define LED1_PIN                2
+    #define LED1_PIN_INVERSE        1
 
 #elif defined(ESP12F_RELAY_X4)
 
@@ -5800,3 +5861,56 @@
 
 #endif
 
+// -----------------------------------------------------------------------------
+// BK72xx through LibreTiny, any board
+// -----------------------------------------------------------------------------
+
+#if defined(LIBRETINY)
+
+    // UART1 (P11 TX, P10 RX), same pads as for flashing
+    #ifndef UART1_TX_PIN
+    #define UART1_TX_PIN            11
+    #endif
+
+    #ifndef UART1_RX_PIN
+    #define UART1_RX_PIN            10
+    #endif
+
+    // LibreTiny has no DNSServer
+    #ifndef WIFI_AP_CAPTIVE_SUPPORT
+    #define WIFI_AP_CAPTIVE_SUPPORT 0
+    #endif
+
+    #ifndef MDNS_SERVER_SUPPORT
+    #define MDNS_SERVER_SUPPORT     0
+    #endif
+
+    #ifndef ALEXA_SUPPORT
+    #define ALEXA_SUPPORT           0
+    #endif
+
+    #ifndef OTA_ARDUINOOTA_SUPPORT
+    #define OTA_ARDUINOOTA_SUPPORT  0
+    #endif
+
+    #ifndef OTA_CLIENT
+    #define OTA_CLIENT              OTA_CLIENT_NONE
+    #endif
+
+    #ifndef NOFUSS_SUPPORT
+    #define NOFUSS_SUPPORT          0
+    #endif
+
+    #ifndef LLMNR_SUPPORT
+    #define LLMNR_SUPPORT           0
+    #endif
+
+    #ifndef NETBIOS_SUPPORT
+    #define NETBIOS_SUPPORT         0
+    #endif
+
+    #ifndef SSDP_SUPPORT
+    #define SSDP_SUPPORT            0
+    #endif
+
+#endif

@@ -22,12 +22,29 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 
 #include <ctime>
 #include <errno.h>
-#include <lwip/apps/sntp.h>
 #if defined(ESP8266)
+#include <lwip/apps/sntp.h>
 #include <TZ.h>
 #endif
 #if defined(ESP32)
+// esp_sntp.h includes lwip's sntp.h itself; ESP-IDF 5 (core 3.x) declares the sntp_* wrappers there and they
+// conflict with a direct include of lwip/apps/sntp.h
 #include <esp_sntp.h>
+#include <lwip/tcpip.h>
+
+#if ESP_IDF_VERSION_MAJOR >= 5
+// ESP-IDF 5 kept sntp_init() and friends as wrappers, but not these two
+inline void sntp_stop() {
+    esp_sntp_stop();
+}
+
+inline bool sntp_enabled() {
+    return esp_sntp_enabled();
+}
+#endif
+#endif
+#if defined(LIBRETINY)
+#include <lwip/apps/sntp.h>
 #include <lwip/tcpip.h>
 #endif
 
@@ -455,6 +472,14 @@ String activeServer() {
                 server = ip.toString();
             }
         }
+    #elif defined(LIBRETINY)
+        const ip_addr_t* addr = sntp_getserver(0);
+        if (addr) {
+            auto ip = IPAddress(ip_addr_get_ip4_u32(addr));
+            if ((uint32_t)ip != 0) {
+                server = ipToString(ip);
+            }
+        }
     #endif
     }
 
@@ -697,6 +722,20 @@ void sntp_sync_notification(struct timeval *tv) {
 }
 #endif
 
+#if defined(LIBRETINY)
+// Plain lwip SNTP has no sync notification, it only calls settimeofday() (ref. LibreTiny lwipopts.h),
+// which LibreTiny already wraps. Clock is millis() + epoch offset there, a changed offset is a new sync
+void watch_sync() {
+    static time_t last { 0 };
+
+    const auto offset = ::time(nullptr) - static_cast<time_t>(::millis() / 1000);
+    if ((offset - last > 1) || (last - offset > 1)) {
+        last = offset;
+        onSystemTimeSynced();
+    }
+}
+#endif
+
 void callback() {
     if (!synced()) {
         schedule(OffsetMax);
@@ -863,7 +902,7 @@ void configure() {
     }
 }
 
-#if defined(ESP32)
+#if defined(ESP32) || defined(LIBRETINY)
 // esp8266 lwip2 glue restarts SNTP every time the netif gets a valid address (sntp_stop + sntp_init
 // from the netif status callback), IDF does not. sntp_init() from setup() runs before the station is
 // up, the first request fails and lwip falls back to its retry backoff (15s, 30s, ...), so the first
@@ -881,7 +920,7 @@ void restartOnGotIP() {
 }
 #endif
 
-#if defined(ESP8266) || defined(ESP32)
+#if defined(ESP8266) || defined(ESP32) || defined(LIBRETINY)
 void onStationModeGotIP() {
     if (!sntp_enabled()) {
         return;
@@ -918,6 +957,9 @@ void setup() {
 #if defined(ESP32)
     sntp_set_time_sync_notification_cb(tick::sntp_sync_notification);
 #endif
+#if defined(LIBRETINY)
+    ::espurnaRegisterLoop(tick::watch_sync);
+#endif
 
     // make sure our logic does know about the actual server
     // in case dhcp sends out ntp settings
@@ -926,7 +968,7 @@ void setup() {
         [](WiFiEventStationModeGotIP) {
             onStationModeGotIP();
         });
-#elif defined(ESP32)
+#elif defined(ESP32) || defined(LIBRETINY)
     // StationConnected is published from the loop once the IP is assigned
     wifiRegister([](espurna::wifi::Event event) {
         if (event == espurna::wifi::Event::StationConnected) {

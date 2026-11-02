@@ -12,6 +12,12 @@ EEPROM MODULE
 #include <EEPROM_Rotate.h>
 #define STORAGE_EEPROM_BASE : public EEPROM_Rotate
 #else
+#if __has_include(<spi_flash_mmap.h>)
+#include <spi_flash_mmap.h>    // ESP-IDF 5 (core 3.x): SPI_FLASH_SEC_SIZE
+#endif
+#ifndef SPI_FLASH_SEC_SIZE
+#define SPI_FLASH_SEC_SIZE 4096    // LibreTiny
+#endif
 #define STORAGE_EEPROM_BASE
 #endif
 
@@ -19,7 +25,7 @@ class StorageEEPROM_Rotate STORAGE_EEPROM_BASE {
 public:
     StorageEEPROM_Rotate();
 
-#if defined(ARDUINO_ARCH_ESP32)
+#if defined(ARDUINO_ARCH_ESP32) || defined(LIBRETINY)
     StorageEEPROM_Rotate(StorageEEPROM_Rotate&) = delete;
     StorageEEPROM_Rotate& operator=(StorageEEPROM_Rotate&) = delete;
 

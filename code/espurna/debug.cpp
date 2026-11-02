@@ -31,7 +31,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <WiFiUdp.h>
 #endif
 
-#if defined(ARDUINO_ARCH_ESP32)
+#if ESPURNA_ASYNC_TASKS
 #include <mutex>
 
 // Arduino core main.cpp
@@ -563,7 +563,7 @@ bool output(const char* message, size_t len) {
 
 void send_now(const char* message, size_t len, Timestamp timestamp);
 
-#if defined(ARDUINO_ARCH_ESP32)
+#if ESPURNA_ASYNC_TASKS
 // Outputs (telnet clients, websocket buffer, log buffer) belong to the loop task.
 // On ESP32 messages also come from AsyncTCP, WiFi events and other tasks running in
 // parallel, and writing into the same buffers from two tasks corrupts the heap.
@@ -622,7 +622,7 @@ void send(const char* message, size_t len, Timestamp timestamp) {
         return;
     }
 
-#if defined(ARDUINO_ARCH_ESP32)
+#if ESPURNA_ASYNC_TASKS
     if (!deferred::loop_task()) {
         deferred::push(message, len, timestamp);
         return;
@@ -849,7 +849,7 @@ void debugSetup() {
     ets_install_putc1(debugIgnoreChar);
 #endif
 #if DEBUG_SUPPORT
-#if defined(ARDUINO_ARCH_ESP32)
+#if ESPURNA_ASYNC_TASKS
     // messages queued by other tasks, when loop itself has nothing to print
     espurnaRegisterLoop(espurna::debug::deferred::flush);
 #endif

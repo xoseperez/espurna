@@ -287,7 +287,11 @@ void setup() {
 
 void update() {
     for (auto& channel : internal::channels) {
+#if ESP_ARDUINO_VERSION_MAJOR >= 3
+        ledcWriteChannel(channel.channel, channel.duty);  // ledcWrite() takes the pin in 3.x
+#else
         ledcWrite(channel.channel, channel.duty);
+#endif
     }
 }
 
@@ -326,14 +330,16 @@ bool init(const uint8_t* begin, const uint8_t* end) {
     }
 
     const auto freq = settings::frequency();
-    // TODO: ledcSetup() / ledcAttachPin() are deprecated in arduino-esp32 >= 3.x.
-    //       Migrate to the new pin-centric API: ledcAttach(pin, freq, res) +
-    //       ledcWrite(pin, duty) once espressif32 platform is bumped past 6.x.
+    // core 3.x: ledcSetup() / ledcAttachPin() are gone, ledcAttachChannel() keeps the explicit channel numbers
     uint8_t next_channel = 0;
     for (auto it = begin; it != end; ++it) {
         const auto pin = *it;
+#if ESP_ARDUINO_VERSION_MAJOR >= 3
+        ledcAttachChannel(pin, freq, internal::resolution, next_channel);
+#else
         ledcSetup(next_channel, freq, internal::resolution);
         ledcAttachPin(pin, next_channel);
+#endif
         gpioLock(pin);
 
         internal::channels.push_back(Channel{

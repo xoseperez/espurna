@@ -406,3 +406,4 @@ test('settings form: a tile calling a URL', () => {
     expect(previewTarget({url: 'ftp://a'}, {}).bad).toEqual(true);
     expect(previewTarget(TEMPLATES.url.make(), {}).bad).toEqual(true);
 });
+

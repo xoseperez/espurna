@@ -22,6 +22,8 @@
 #include "WebResponseImpl.h"
 #include "cbuf.h"
 
+#include <algorithm>
+
 // Since ESP8266 does not link memchr by default, here's its implementation.
 void* memchr(void* ptr, int ch, size_t count)
 {
@@ -178,59 +180,34 @@ AsyncBasicResponse::AsyncBasicResponse(int code, const String& contentType, cons
   addHeader("Connection","close");
 }
 
+// ESPurna: headers and content both go through _ack(), which only drops what the client actually took.
+// AsyncClient::write() returns 0 when lwip does not take the data (tcp_write ERR_MEM, short send queue
+// on BK72xx), upstream counted it as sent anyway and the reply lost its headers or a part of the content
 void AsyncBasicResponse::_respond(AsyncWebServerRequest *request){
-  _state = RESPONSE_HEADERS;
-  String out = _assembleHead(request->version());
-  size_t outLen = out.length();
-  size_t space = request->client()->space();
-  if(!_contentLength && space >= outLen){
-    _writtenLength += request->client()->write(out.c_str(), outLen);
-    _state = RESPONSE_WAIT_ACK;
-  } else if(_contentLength && space >= outLen + _contentLength){
-    out += _content;
-    outLen += _contentLength;
-    _writtenLength += request->client()->write(out.c_str(), outLen);
-    _state = RESPONSE_WAIT_ACK;
-  } else if(space && space < outLen){
-    String partial = out.substring(0, space);
-    _content = out.substring(space) + _content;
-    _contentLength += outLen - space;
-    _writtenLength += request->client()->write(partial.c_str(), partial.length());
-    _state = RESPONSE_CONTENT;
-  } else if(space > outLen && space < (outLen + _contentLength)){
-    size_t shift = space - outLen;
-    outLen += shift;
-    _sentLength += shift;
-    out += _content.substring(0, shift);
-    _content = _content.substring(shift);
-    _writtenLength += request->client()->write(out.c_str(), outLen);
-    _state = RESPONSE_CONTENT;
-  } else {
-    _content = out + _content;
-    _contentLength += outLen;
-    _state = RESPONSE_CONTENT;
-  }
+  _content = _assembleHead(request->version()) + _content;
+  _contentLength = _content.length();
+  _sentLength = 0;
+  _state = RESPONSE_CONTENT;
+  _ack(request, 0, 0);
 }
 
 size_t AsyncBasicResponse::_ack(AsyncWebServerRequest *request, size_t len, uint32_t time){
   (void)time;
   _ackedLength += len;
   if(_state == RESPONSE_CONTENT){
-    size_t available = _contentLength - _sentLength;
-    size_t space = request->client()->space();
-    //we can fit in this packet
-    if(space > available){
-      _writtenLength += request->client()->write(_content.c_str(), available);
-      _content = String();
-      _state = RESPONSE_WAIT_ACK;
-      return available;
+    const size_t space = request->client()->space();
+    const size_t out = std::min(space, (size_t)_content.length());
+    const size_t written = out ? request->client()->write(_content.c_str(), out) : 0;
+    if(written){
+      _content = _content.substring(written);
+      _sentLength += written;
+      _writtenLength += written;
     }
-    //send some data, the rest on ack
-    String out = _content.substring(0, space);
-    _content = _content.substring(space);
-    _sentLength += space;
-    _writtenLength += request->client()->write(out.c_str(), space);
-    return space;
+    // the rest goes out on the next ack / poll
+    if(!_content.length()){
+      _state = RESPONSE_WAIT_ACK;
+    }
+    return written;
   } else if(_state == RESPONSE_WAIT_ACK){
     if(_ackedLength >= _writtenLength){
       _state = RESPONSE_END;
@@ -261,6 +238,23 @@ void AsyncAbstractResponse::_respond(AsyncWebServerRequest *request){
   _ack(request, 0, 0);
 }
 
+// ESPurna: AsyncClient::write() returns 0 when lwip does not take the data (tcp_write ERR_MEM).
+// Upstream counted such data as sent anyway and dropped it: headers went missing (the browser got
+// a body without the status line and saved it as a download) or the body stopped short of its
+// Content-Length (the browser kept waiting). Unwritten bytes are kept and sent first on the next ack / poll
+size_t AsyncAbstractResponse::_writePending(AsyncWebServerRequest *request, size_t space){
+  const size_t len = std::min(space, _pending.size());
+  const size_t written = len ? request->client()->write((const char*)_pending.data(), len) : 0;
+  if(written){
+    _pending.erase(_pending.begin(), _pending.begin() + written);
+    _writtenLength += written;
+  }
+  if(_pending.empty() && _contentDone){
+    _state = RESPONSE_WAIT_ACK;
+  }
+  return written;
+}
+
 size_t AsyncAbstractResponse::_ack(AsyncWebServerRequest *request, size_t len, uint32_t time){
   (void)time;
   if(!_sourceValid()){
@@ -271,6 +265,10 @@ size_t AsyncAbstractResponse::_ack(AsyncWebServerRequest *request, size_t len, u
   _ackedLength += len;
   size_t space = request->client()->space();
 
+  if((_state == RESPONSE_HEADERS || _state == RESPONSE_CONTENT) && !_pending.empty()){
+    return _writePending(request, space);
+  }
+
   size_t headLen = _head.length();
   if(_state == RESPONSE_HEADERS){
     if(space >= headLen){
@@ -278,9 +276,10 @@ size_t AsyncAbstractResponse::_ack(AsyncWebServerRequest *request, size_t len, u
       space -= headLen;
     } else {
       String out = _head.substring(0, space);
-      _head = _head.substring(space);
-      _writtenLength += request->client()->write(out.c_str(), out.length());
-      return out.length();
+      const size_t written = out.length() ? request->client()->write(out.c_str(), out.length()) : 0;
+      _head = _head.substring(written);
+      _writtenLength += written;
+      return written;
     }
   }
 
@@ -337,8 +336,10 @@ size_t AsyncAbstractResponse::_ack(AsyncWebServerRequest *request, size_t len, u
         _head = String();
     }
 
-    if(outLen){
-        _writtenLength += request->client()->write((const char*)buf, outLen);
+    const size_t written = outLen ? request->client()->write((const char*)buf, outLen) : 0;
+    _writtenLength += written;
+    if(written < outLen){
+      _pending.insert(_pending.end(), buf + written, buf + outLen);
     }
 
     if(_chunked){
@@ -350,9 +351,12 @@ size_t AsyncAbstractResponse::_ack(AsyncWebServerRequest *request, size_t len, u
     free(buf);
 
     if((_chunked && readLen == 0) || (!_sendContentLength && outLen == 0) || (!_chunked && _sentLength == _contentLength)){
-      _state = RESPONSE_WAIT_ACK;
+      _contentDone = true;
+      if(_pending.empty()){
+        _state = RESPONSE_WAIT_ACK;
+      }
     }
-    return outLen;
+    return written;
 
   } else if(_state == RESPONSE_WAIT_ACK){
     if(!_sendContentLength || _ackedLength >= _writtenLength){

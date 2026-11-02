@@ -364,7 +364,7 @@ bool _isAPModeRequest(AsyncWebServerRequest* request) {
         const auto host = header->value();
 
         const auto domain = systemHostname() + '.';
-        const auto ip = wifiApIp().toString();
+        const auto ip = ipToString(wifiApIp());
 
         if (!host.equals(ip) && !host.startsWith(domain)) {
             return false;
@@ -381,7 +381,7 @@ bool _isAPModeRequest(AsyncWebServerRequest* request) {
 // ref: https://github.com/xoseperez/espurna/issues/1660
 void _webSendNotFound(AsyncWebServerRequest* request) {
     request->send(404);
-#if defined(ARDUINO_ARCH_ESP32)
+#if ESPURNA_ASYNC_TASKS
     // AsyncTCP close() runs the disconnect callback right away, deleting both the request and
     // the client while the server is still parsing the request (and the body) using them.
     // Close is delayed instead. RX timeout (reset by send()) closes it from the async_tcp poll
@@ -770,7 +770,7 @@ int _onCertificate(void * arg, const char *filename, uint8_t **buf) {
 void _onRequest(AsyncWebServerRequest *request){
     espurna::system::AsyncGuard guard;
 
-#if defined(ARDUINO_ARCH_ESP32)
+#if ESPURNA_ASYNC_TASKS
     // already answered by _onBody()
     if (request->_tempObject) {
         return;
@@ -800,7 +800,7 @@ void _onRequest(AsyncWebServerRequest *request){
 void _onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
     espurna::system::AsyncGuard guard;
 
-#if defined(ARDUINO_ARCH_ESP32)
+#if ESPURNA_ASYNC_TASKS
     // subscribers (alexa) use module state, 503 when busy. Request is then marked as answered
     // (same as ota_web.cpp, freed by the request itself), so that neither the following chunks
     // nor _onRequest() answer it once again. Same for the 404, see _webSendNotFound()
@@ -811,7 +811,7 @@ void _onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t i
 
     if (!_onAPModeRequest(request)) return;
 
-#if defined(ARDUINO_ARCH_ESP32)
+#if ESPURNA_ASYNC_TASKS
     if (!guard.locked()) {
         _webSendBusy(request);
         request->_tempObject = malloc(sizeof(bool));
@@ -875,7 +875,7 @@ void webRequestRegister(web_request_callback_f callback) {
 void webLog(AsyncWebServerRequest* request) {
     const auto client = request->client();
     String from = client
-        ? client->remoteIP().toString()
+        ? ipToString(client->remoteIP())
         : F("(unknown)");
 
     DEBUG_MSG_P(PSTR("[WEBSERVER] %s - %s %s\n"),

@@ -874,10 +874,13 @@ template <>
     return __builtin_bswap64(value);
 }
 
+// on ESP-IDF 5 (core 3.x) and LibreTiny toolchains uint32_t is already long unsigned int
+#if !(defined(ESP_ARDUINO_VERSION_MAJOR) && (ESP_ARDUINO_VERSION_MAJOR >= 3)) && !defined(LIBRETINY)
 template <>
 [[gnu::unused]] inline long unsigned int _rfb_bswap(long unsigned int value) {
     return __builtin_bswap32(value);
 }
+#endif
 
 void _rfbEnqueue(uint8_t protocol, uint16_t timing, uint8_t bits, RfbMessage::code_type code, unsigned char repeats = 1u) {
     if (!_rfb_transmit) return;
@@ -1011,11 +1014,15 @@ void _rfbReceiveImpl() {
     if (hexEncode(message, real_msgsize, buffer, sizeof(buffer))) {
         DEBUG_MSG_P(PSTR("[RF] Received code: %s\n"), buffer);
 
+        // buffer fits the longest (64bit) code, shorter ones leave zeroes at the end. View of the whole
+        // array would include them, and saved rfbON# / rfbOFF# codes would never match by length
+        const auto code = espurna::StringView(&buffer[0], real_msgsize * 2);
+
 #if RELAY_SUPPORT
         if (_rfb_learn) {
-            _rfbLearnFromReceived(_rfb_learn, buffer);
+            _rfbLearnFromReceived(_rfb_learn, code);
         } else {
-            _rfbRelayHandler(buffer, true);
+            _rfbRelayHandler(code, true);
         }
 #endif
 
@@ -1024,10 +1031,8 @@ void _rfbReceiveImpl() {
 #endif
 
         for (auto& handler : _rfb_code_handlers) {
-            const auto begin = std::begin(buffer) + 10;
-            const auto end = std::end(buffer);
             handler(message[1],
-                espurna::StringView(begin, end));
+                espurna::StringView(code.begin() + 10, code.end()));
         }
     }
 

@@ -43,9 +43,15 @@ class PrintLine final : public Print, public String {
 private:
     static_assert(!std::is_reference<T>::value, "");
 
+#if defined(LIBRETINY)
+    // ArduinoCore-API String, buffer and len are plain members
+    using String::buffer;
+    using String::len;
+#else
     using String::wbuffer;
     using String::buffer;
     using String::setLen;
+#endif
 
 public:
     using String::begin;
@@ -71,8 +77,13 @@ public:
     void flush() override {
         if (end() != std::find(begin(), end(), '\n')) {
             send();
+#if defined(LIBRETINY)
+            len = 0;
+            *buffer = '\0';
+#else
             setLen(0);
             *wbuffer() = '\0';
+#endif
         }
     }
 
@@ -95,7 +106,7 @@ public:
 
 private:
     void send() {
-        _output.write(buffer(), length());
+        _output.write(c_str(), length());
     }
 
     T _output;

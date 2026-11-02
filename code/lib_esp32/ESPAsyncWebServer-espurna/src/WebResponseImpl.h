@@ -47,6 +47,11 @@ class AsyncAbstractResponse: public AsyncWebServerResponse {
     // we won't be able to access it as contiguous array of bytes when reading from it,
     // so by gaining performance in one place, we'll lose it in another.
     std::vector<uint8_t> _cache;
+    // ESPurna: what the client did not accept yet (tcp_write ERR_MEM, short lwip send queue on BK72xx).
+    // Already taken from the source and framed, sent as-is before anything else
+    std::vector<uint8_t> _pending;
+    bool _contentDone { false };
+    size_t _writePending(AsyncWebServerRequest *request, size_t space);
     size_t _readDataFromCacheOrContent(uint8_t* data, const size_t len);
     size_t _fillBufferAndProcessTemplates(uint8_t* buf, size_t maxLen);
   protected:

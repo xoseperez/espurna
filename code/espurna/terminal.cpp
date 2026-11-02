@@ -204,6 +204,10 @@ void info(CommandContext&& ctx) {
     ctx.output.printf_P(PSTR("mcu: %s rev%u chipid: %s freq: %hhumhz\n"),
             ESP->getChipModel(), ESP->getChipRevision(),
             systemChipId().c_str(), system_get_cpu_freq());
+#elif defined(LIBRETINY)
+    ctx.output.printf_P(PSTR("mcu: %s chipid: %s freq: %hhumhz\n"),
+            lt_cpu_get_model_name(),
+            systemChipId().c_str(), system_get_cpu_freq());
 #else
     ctx.output.printf_P(PSTR("mcu: esp8266 chipid: %s freq: %hhumhz\n"),
             systemChipId().c_str(), system_get_cpu_freq());

@@ -5,7 +5,7 @@ OTA MODULE COMMON FUNCTIONS
 */
 
 #include "espurna.h"
-#include "ota.h"
+#include "espurna_ota.h"
 #include "system.h"
 #include "terminal.h"
 #include "utils.h"
@@ -65,6 +65,21 @@ bool otaVerifyHeader(uint8_t* data, size_t len) {
     }
 
     return header->chip_id == CONFIG_IDF_FIRMWARE_CHIP_ID;
+#elif defined(LIBRETINY)
+    // LibreTiny Update takes the .uf2 package (firmware.uf2), chip family and OTA scheme
+    // are checked by the Update itself. Only make sure it is an UF2 block, both magic words
+    if (len < 8) {
+        return false;
+    }
+
+    const auto word = [&](size_t offset) -> uint32_t {
+        return uint32_t{data[offset]}
+            | (uint32_t{data[offset + 1]} << 8)
+            | (uint32_t{data[offset + 2]} << 16)
+            | (uint32_t{data[offset + 3]} << 24);
+    };
+
+    return (word(0) == 0x0A324655) && (word(4) == 0x9E5D5157);
 #else
     if (len < 4) {
         return false;

@@ -27,6 +27,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "compat.h"
 #if defined(ESP32)
 #include "compat_esp32.h"
+#elif defined(LIBRETINY)
+#include "compat_beken.h"
 #endif
 
 #include "build.h"
@@ -39,7 +41,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "terminal.h"
 #include "uart.h"
 #include "utils.h"
-#include "network.h"
+#include "espurna_network.h"
 #include "wifi_orch.h"
 
 #include <functional>

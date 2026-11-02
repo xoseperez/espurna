@@ -302,6 +302,55 @@ BasePortPtr hardware_port(
             .stream = StreamPtr(ptr),
         });
 }
+#elif defined(LIBRETINY)
+// Pins are fixed, UART1 is P11 (TX) & P10 (RX), same pads are used for flashing.
+// UART2 is P0 (TX) & P1 (RX), SDK and LibreTiny log there by default.
+// Unlike esp8266, config is ArduinoCore-API SERIAL_... values
+constexpr uint16_t libretiny_config(Config config) {
+    return ((config.data_bits == 5) ? SERIAL_DATA_5 :
+            (config.data_bits == 6) ? SERIAL_DATA_6 :
+            (config.data_bits == 7) ? SERIAL_DATA_7 : SERIAL_DATA_8)
+        | ((config.parity == Parity::Even) ? SERIAL_PARITY_EVEN :
+            (config.parity == Parity::Odd) ? SERIAL_PARITY_ODD : SERIAL_PARITY_NONE)
+        | ((config.stop_bits == 2) ? SERIAL_STOP_BIT_2 : SERIAL_STOP_BIT_1);
+}
+
+BasePortPtr hardware_port(
+        uint32_t baudrate, uint8_t tx, uint8_t rx, Config config, bool)
+{
+    const auto pins = [&](uint8_t port_tx, uint8_t port_rx) {
+        return ((tx == port_tx) || (tx == GPIO_NONE))
+            && ((rx == port_rx) || (rx == GPIO_NONE))
+            && ((tx != GPIO_NONE) || (rx != GPIO_NONE));
+    };
+
+    const int number =
+        pins(11, 10) ? 1 :
+        pins(0, 1) ? 2 : -1;
+    if (number < 0) {
+        return nullptr;
+    }
+
+    const int slot = number - 1;
+    if (internal::used_hardware_ports[slot]) {
+        return nullptr;
+    }
+
+    internal::used_hardware_ports[slot] = true;
+
+    auto* ptr = new SerialClass(number,
+        (rx == GPIO_NONE) ? PIN_INVALID : rx,
+        (tx == GPIO_NONE) ? PIN_INVALID : tx);
+    ptr->begin(baudrate, libretiny_config(config));
+
+    return std::make_unique<BasePort>(
+        BasePort{
+            .type = (number == 1) ? Type::Uart0 : Type::Uart1,
+            .tx = (tx != GPIO_NONE),
+            .rx = (rx != GPIO_NONE),
+            .stream = StreamPtr(ptr),
+        });
+}
 #else
 BasePortPtr hardware_port(
         uint32_t baudrate, uint8_t tx, uint8_t rx, Config config, bool invert)
@@ -435,12 +484,17 @@ BasePortPtr make_port(size_t index) {
     const auto baudrate = settings::baudrate(index);
     const auto invert = settings::invert(index);
 
+#if defined(LIBRETINY)
+    // esp8266 pin pairs mean nothing here, hardware_port() checks the BK72xx ones itself
+    out = hardware_port(baudrate, tx, rx, config, invert);
+#else
     if (build::uart0_normal(tx, rx)
      || build::uart0_swapped(tx, rx)
      || build::uart1_normal(tx, rx))
     {
         out = hardware_port(baudrate, tx, rx, config, invert);
     }
+#endif
 
 #if UART_SOFTWARE_SUPPORT
     if (!out) {

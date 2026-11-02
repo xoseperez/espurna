@@ -1,0 +1,22 @@
+{
+  "name": "AsyncTCP-espurna",
+  "description": "esphome AsyncTCP 2.1.4 with use-after-free fixes for LibreTiny (ESPurna fork, see src/AsyncTCP.cpp ESPurna notes)",
+  "keywords": "async,tcp",
+  "authors": {
+    "name": "Hristo Gochkov",
+    "maintainer": true
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/esphome/AsyncTCP.git"
+  },
+  "version": "2.1.4-espurna.1",
+  "license": "LGPL-3.0",
+  "frameworks": "arduino",
+  "platforms": [
+    "libretiny"
+  ],
+  "build": {
+    "libCompatMode": 2
+  }
+}
