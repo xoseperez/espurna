@@ -3,12 +3,18 @@
 // averages them into 96 points of 15 min (x10, null when missing) and publishes them retained on
 // istabai/history/<room>; a thermostat with "history": "istabai/history/<room>" shows them on the panel.
 // Payload: {"from": <unix seconds of the first point>, "step": 900, "t": [<temperature>...], "s": [<setpoint>...],
-//           "h": [<humidity %>...]} ("h" only for rooms with a humidity item; ~1.2 KB, the panel takes up to 2 KB)
+//           "h": [<humidity %>...]} ("h" only for rooms with a humidity item; ~1.2 KB, the panel takes up to 2 KB).
+// A switch (e.g. the heating pump) gets its own topic istabai/history/<name>: {"from", "step", "p": [<% of the step it
+// was ON>...]}; a switch tile with "history": "istabai/history/<name>" opens it as a chart.
 
 // room (the key the panel's "history" topic ends with) -> [temperature item, setpoint item, humidity item or null]
 const ROOMS = {
   'Living room': ['GF_LivingRoom_Temperature', 'GF_LivingRoom_Setpoint', 'GF_LivingRoom_Humidity'],
   'Bedroom': ['FF_Bedroom_Temperature', 'FF_Bedroom_Setpoint', null],
+};
+// switch (the key the tile's "history" topic ends with) -> Switch item
+const SWITCHES = {
+  'Circulation pump': 'GF_Pantry_Pump',
 };
 const TOPIC = 'istabai/history/';
 const BROKER = 'mqtt:broker:mqtt';     // the MQTT broker thing
@@ -26,11 +32,12 @@ function seconds(p) {
   return p.instant ? p.instant.epochSecond() : p.timestamp.toEpochSecond();
 }
 
-function series(name) {
+// the averages of each slot, x10; a switch counts 100 while ON, so its average is the % of the slot it was ON
+function series(name, scale = 10) {
   const sum = new Array(POINTS).fill(0);
   const count = new Array(POINTS).fill(0);
   for (const p of items.getItem(name).persistence.getAllStatesBetween(begin, now, SERVICE)) {
-    const value = p.numericState;
+    const value = (p.state === 'ON') ? 100 : (p.state === 'OFF') ? 0 : p.numericState;
     const slot = Math.floor((seconds(p) - from) / STEP);
     if ((value === null) || isNaN(value) || (slot < 0) || (slot >= POINTS)) {
       continue;
@@ -38,7 +45,7 @@ function series(name) {
     sum[slot] += value;
     count[slot] += 1;
   }
-  return sum.map((s, i) => (count[i] ? Math.round(s / count[i] * 10) : null));
+  return sum.map((s, i) => (count[i] ? Math.round(s / count[i] * scale) : null));
 }
 
 for (const room of Object.keys(ROOMS)) {
@@ -51,5 +58,13 @@ for (const room of Object.keys(ROOMS)) {
     mqtt.publishMQTT(TOPIC + room, JSON.stringify(data), true);
   } catch (e) {
     console.warn('NSPanel history ' + room + ': ' + e);
+  }
+}
+
+for (const name of Object.keys(SWITCHES)) {
+  try {
+    mqtt.publishMQTT(TOPIC + name, JSON.stringify({ from: from, step: STEP, p: series(SWITCHES[name], 1) }), true);
+  } catch (e) {
+    console.warn('NSPanel history ' + name + ': ' + e);
   }
 }

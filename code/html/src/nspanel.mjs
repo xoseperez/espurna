@@ -653,6 +653,7 @@ export const KIND_FIELDS = {
         {key: "off", label: "Off value"},
         {key: "command", label: "Command topic (default: topic + /set)"},
         {key: "payload", label: "Command payload, %s = value"},
+        {key: "history", label: "History topic (a tap opens the chart instead of switching)"},
     ],
     button: [
         {key: "topic", label: "State topic"},
@@ -663,6 +664,7 @@ export const KIND_FIELDS = {
     ],
     relay: [
         {key: "relay", label: "Relay number (0 = first)", type: "number"},
+        {key: "history", label: "History topic (a tap opens the chart instead of switching)"},
     ],
     url: [
         {key: "url", label: "URL called on every tap (http:// or https://)"},

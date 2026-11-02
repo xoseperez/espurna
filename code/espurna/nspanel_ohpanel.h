@@ -2203,7 +2203,8 @@ void drawState(const Thermostat& thermostat) {
 // with its objects hidden, a dark rounded box over the grid area with the temperature (accent) and the target
 // (grey, steps), heating (target above temperature, as the Istabai bridge counts it) as dim orange bands in the
 // plot and an orange strip under it, degrees on the left, every 6 h of local time on the bottom. One burst of
-// ~100-250 commands; the series is not kept, the chart subscribes while it is open.
+// ~100-250 commands; the series is not kept, the chart subscribes while it is open. A switch tile with "history"
+// (e.g. the heating pump) opens the same box with its own series: orange bars of the % of each step it was ON.
 // -----------------------------------------------------------------------------
 
 namespace chart {
@@ -2358,7 +2359,88 @@ int legend(int x, uint16_t colour, const char* text, bool compact = false) {
     return x + gap + width + (compact ? 8 : 18);
 }
 
+// every 6 h of local time (the point of a full hour, whatever the step)
+void hours(const history::Series& series, const Scale& scale) {
+    if (series.from <= 1000000000UL) {
+        return;
+    }
+    for (size_t index = 0; index < scale.count; ++index) {
+        const time_t when = static_cast<time_t>(series.from + (scale.first + index) * series.step);
+        tm local;
+        localtime_r(&when, &local);
+        if ((local.tm_hour % 6) || (static_cast<uint32_t>(local.tm_min * 60 + local.tm_sec) >= series.step)) {
+            continue;
+        }
+        const int x = scale.x(index);
+        line(x, PlotY0, x, PlotY1, Grid);
+        char buf[8];
+        snprintf(buf, sizeof(buf), "%02d:00", local.tm_hour);
+        const int left = std::max(BoxX + 2, std::min(x - 24, BoxX + BoxW - 50));
+        xstr(left, LabelY, 48, 18, 0, color::LightGrey, 0, 1, buf);
+    }
+}
+
+// a switch: a bar per run of equal values (% of the step it was ON, 0..100 % on the left), the hours it was ON
+// in the legend
+void drawOn(const history::Series& series) {
+    const size_t total = series.on.size();
+    Scale scale;
+    scale.first = (total > PointsMax) ? (total - PointsMax) : 0;
+    scale.count = total - scale.first;
+    scale.low = 0;
+    scale.high = 100;
+
+    bool known = false;
+    uint32_t sum = 0;
+    for (size_t index = 0; index < scale.count; ++index) {
+        const auto value = scale.at(series.on, index);
+        if (value != history::Missing) {
+            known = true;
+            sum += std::max<int>(0, std::min<int>(100, value));
+        }
+    }
+    if (!known) {
+        message(lang::texts().no_history);
+        return;
+    }
+
+    drawn::shape(BoxX, BoxY, BoxW, BoxH, Box);
+
+    for (int percent = 0; percent <= 100; percent += 50) {
+        const int y = scale.y(percent * 10);
+        line(PlotX0, y, scale.right, y, Grid);
+        xstr(BoxX + 2, y - 9, PlotX0 - BoxX - 6, 18, 0, color::LightGrey, 0, 2, String(percent) + '%');
+    }
+    hours(series, scale);
+
+    const int half = std::max(1, (scale.right - PlotX0) / static_cast<int>(2 * (scale.count - 1)));
+    for (size_t index = 0; index < scale.count;) {
+        const auto value = scale.at(series.on, index);
+        size_t last = index;
+        while (((last + 1) < scale.count) && (scale.at(series.on, last + 1) == value)) {
+            ++last;
+        }
+        if ((value != history::Missing) && (value > 0)) {
+            const int x1 = std::max(PlotX0, scale.x(index) - half);
+            const int x2 = std::min(scale.right, scale.x(last) + half);
+            const int y = scale.y(std::min<int>(100, value) * 10);
+            fill(x1, y, x2 - x1 + 1, PlotY1 - y + 1, color::Heat);
+        }
+        index = last + 1;
+    }
+
+    char buf[16];
+    snprintf(buf, sizeof(buf), "%.1f", (sum / 100.0f) * series.step / 3600.0f);
+    lang::decimal(buf);
+    legend(PlotX0, color::Heat, (String(lang::texts().on_count) + buf + lang::texts().hours).c_str());
+}
+
 void draw(const history::Series& series) {
+    if (series.temperature.empty() && !series.on.empty()) {
+        drawOn(series);
+        return;
+    }
+
     const size_t total = series.temperature.size();
     Scale scale;
     scale.first = (total > PointsMax) ? (total - PointsMax) : 0;
@@ -2435,23 +2517,7 @@ void draw(const history::Series& series) {
         xstr(BoxX + 2, y - 9, PlotX0 - BoxX - 6, 18, 0, color::LightGrey, 0, 2, String(degree) + F("\xC2\xB0"));
     }
 
-    // every 6 h of local time (the point of a full hour, whatever the step)
-    if (series.from > 1000000000UL) {
-        for (size_t index = 0; index < scale.count; ++index) {
-            const time_t when = static_cast<time_t>(series.from + (scale.first + index) * series.step);
-            tm local;
-            localtime_r(&when, &local);
-            if ((local.tm_hour % 6) || (static_cast<uint32_t>(local.tm_min * 60 + local.tm_sec) >= series.step)) {
-                continue;
-            }
-            const int x = scale.x(index);
-            line(x, PlotY0, x, PlotY1, Grid);
-            char buf[8];
-            snprintf(buf, sizeof(buf), "%02d:00", local.tm_hour);
-            const int left = std::max(BoxX + 2, std::min(x - 24, BoxX + BoxW - 50));
-            xstr(left, LabelY, 48, 18, 0, color::LightGrey, 0, 1, buf);
-        }
-    }
+    hours(series, scale);
 
     if (humidity) {
         const int every_h = ((scale.hhigh - scale.hlow) > 40) ? 20 : 10;
@@ -2482,10 +2548,15 @@ void draw(const history::Series& series) {
 
 } // namespace chart
 
+// a thermostat's history topic, or the one of a switch tile
+const String& historyOf(const Item& item) {
+    const auto* thermostat = thermostatOf(item);
+    return thermostat ? thermostat->history : item.history;
+}
+
 // the chart instead of the dial: subscribes again on a full render (the retained series comes back)
 void renderChart(bool full) {
     const auto& item = config.items[state.thermo_item];
-    const auto* thermostat = thermostatOf(item);
 
     if (full) {
         loadPage(page::Thermostat);
@@ -2496,13 +2567,13 @@ void renderChart(bool full) {
         vis(F("swipe"), true);
         state.chart_drawn = false;
         state.chart_since = millis();
-        history::open(thermostat->history);
+        history::open(historyOf(item));
         return;
     }
 
     history::Series series;
     if (history::take(series)) {
-        const size_t count = std::min(series.temperature.size(), chart::PointsMax);
+        const size_t count = std::min(std::max(series.temperature.size(), series.on.size()), chart::PointsMax);
         String title(item.name);
         title += F(" \xC2\xB7 ");
         title += (series.step * (count - 1) + 1800) / 3600;
@@ -2542,16 +2613,16 @@ void renderThermostat(bool full) {
     if (state.thermo_item >= config.items.size()) {
         return;
     }
-    const auto& item = config.items[state.thermo_item];
-    const auto* thermostat = thermostatOf(item);
-    if (!thermostat) {
-        return;
-    }
-
     if (state.thermo_chart) {
         if (full) {
             renderChart(true);
         }
+        return;
+    }
+
+    const auto& item = config.items[state.thermo_item];
+    const auto* thermostat = thermostatOf(item);
+    if (!thermostat) {
         return;
     }
 
@@ -2845,6 +2916,22 @@ void showThermostat(size_t index) {
     renderThermostat(true);
 }
 
+// a switch tile with "history": its chart on the thermostat page, closing it goes back to where it was opened from
+void showChart(size_t index) {
+    if ((index >= config.items.size()) || !config.items[index].history.length()) {
+        return;
+    }
+    rememberBack();
+    if (state.thermo_chart) {
+        closeChart();
+    }
+    state.screen = Screen::Thermostat;
+    state.thermo_item = index;
+    state.thermo_chart = true;
+    state.dirty = false;
+    renderChart(true);
+}
+
 void openChart() {
     if ((state.thermo_item >= config.items.size())) {
         return;
@@ -2870,6 +2957,15 @@ void showBack() {
     showHome();
 }
 
+// the chart is closed: back to the dial of a thermostat, or where a switch's chart was opened from
+void chartClosed() {
+    if ((state.thermo_item < config.items.size()) && thermostatOf(config.items[state.thermo_item])) {
+        renderThermostat(true);
+    } else {
+        showBack();
+    }
+}
+
 void showCurrent() {
     switch (state.screen) {
     case Screen::Buttons:
@@ -2886,7 +2982,9 @@ void showCurrent() {
         renderSettings(true);
         break;
     case Screen::Thermostat:
-        if ((state.thermo_item < config.items.size()) && thermostatOf(config.items[state.thermo_item])) {
+        if ((state.thermo_item < config.items.size())
+            && (thermostatOf(config.items[state.thermo_item]) || state.thermo_chart))
+        {
             renderThermostat(true);
         } else {
             showHome();
@@ -3106,6 +3204,12 @@ void tap(size_t index) {
         return;
     }
 
+    if (item.history.length()) {
+        buzzer::beep();
+        showChart(index);
+        return;
+    }
+
     if (item.type == ItemType::Button) {
         if (state.pulse_until.size() != config.items.size()) {
             state.pulse_until.assign(config.items.size(), 0);
@@ -3185,7 +3289,7 @@ void swipe(const String& direction) {
         if (state.thermo_chart && !left) {
             closeChart();
             if (right) {
-                renderThermostat(true);
+                chartClosed();
             } else {
                 showBack();
             }
@@ -3239,7 +3343,7 @@ void act(const String& component) {
         buzzer::beep();
         if ((state.screen == Screen::Thermostat) && state.thermo_chart) {
             closeChart();
-            renderThermostat(true);
+            chartClosed();
         } else if ((state.screen == Screen::Settings) || (state.screen == Screen::Thermostat)) {
             showBack();
         } else if ((state.screen == Screen::Buttons) && (state.card < state.cards.size())
@@ -3771,7 +3875,9 @@ void reload() {
     state.edit_value = NAN;
     state.edit_unsent = false;
     if ((state.screen == Screen::Thermostat)
-        && ((state.thermo_item >= config.items.size()) || !thermostatOf(config.items[state.thermo_item])))
+        && ((state.thermo_item >= config.items.size())
+            || !(thermostatOf(config.items[state.thermo_item])
+                || (state.thermo_chart && config.items[state.thermo_item].history.length()))))
     {
         state.screen = Screen::Home;
     }

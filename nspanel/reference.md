@@ -109,6 +109,7 @@ Item fields:
 | `page` | instead of a target: a nested page (an object with the fields of a page: `title`, `type`, `layout`, `per_screen`, `items`, which may hold further `page` tiles). The tile opens it; see [Nested pages](#nested-pages). Without `name` the tile shows the page `title`, without `title` the page shows the tile `name` |
 | `open` | instead of a target: the tile opens a page. Page index (0-based), page `id`, page `title`, `"weather"`, `"home"` or `"settings"` (Lovelace: `weather`/`home` show the screensaver, `settings` does nothing) |
 | `color` | OHpanel: icon colour when on, `"#rrggbb"` or RGB565 number (default: the theme accent) |
+| `history` | not a thermostat (OHpanel): topic of a retained series `{"from": <unix s>, "step": <s>, "p": [<% of the step it was ON> \| null, ...]}`; a tap opens its chart instead of switching: orange bars (0 / 50 / 100 % on the left, a label every 6 h), legend `Вкл: 5,3 ч` = the hours ON, title `<name> · 24 h`, cross / swipe back to where it was opened from |
 | `font` | Lovelace TFT >= 53 only: font of the icon slot, `small` / `medium-icon` / `medium` / `large` (AppDaemon names) or a font id 0..9. Sent as `<icon>¬<id>`, e.g. to show a `text` value in a text font. Ignored on 51 |
 
 Tile colour: on = `colors.on`, off = `colors.off`, unknown = `colors.unknown`. A scene is "on" when any group member is on.

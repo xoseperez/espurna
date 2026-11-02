@@ -501,6 +501,7 @@ struct Item {
     uint8_t font { NoFont };
     int32_t color { -1 }; // OHpanel: icon colour (RGB565) when on, -1 = theme accent
     int16_t thermostat { -1 };
+    String history;       // not a thermostat: a tap opens the chart of this retained series instead of switching
     Target target;
 };
 
@@ -1148,6 +1149,15 @@ bool parseItem(JsonObject& item_obj, Config& out, Item& item, std::vector<Pendin
                 + (need_group ? F("': scene needs \"group\"") : F("': needs \"topic\", \"relay\" or \"url\""));
             return false;
         }
+    }
+
+    const char* history = item_obj["history"].as<const char*>();
+    if ((item.type != ItemType::Thermostat) && history && strlen(history)) {
+        if (strchr(history, '#') || strchr(history, '+')) {
+            error = where + F(" '") + item.name + F("': \"history\" must be a plain topic");
+            return false;
+        }
+        item.history = history;
     }
 
     item.icon = resolveIcon(item_obj["icon"].as<const char*>(), fallback, warnings);
@@ -3225,10 +3235,10 @@ void loop() {
 } // namespace json
 
 // -----------------------------------------------------------------------------
-// Thermostat history: a thermostat's "history" topic holds a retained series (e.g. published by an openHAB rule
+// History: a thermostat's or a switch tile's "history" topic holds a retained series (e.g. published by an openHAB rule
 // from its persistence). It is subscribed only while the chart is open, so nothing is kept on the panel:
 // {"from": <unix time of the first point>, "step": <seconds>, "t": [<temperature x10> | null, ...], "s": [<setpoint x10> | null, ...],
-//  "h": [<humidity % x10> | null, ...]} ("h" is optional)
+//  "h": [<humidity % x10> | null, ...]} ("h" is optional), or for a switch {"from", "step", "p": [<% of the step it was ON> | null, ...]}
 // -----------------------------------------------------------------------------
 
 namespace history {
@@ -3243,6 +3253,7 @@ struct Series {
     std::vector<int16_t> temperature;
     std::vector<int16_t> setpoint;
     std::vector<int16_t> humidity;
+    std::vector<int16_t> on;    // a switch: % of each step it was ON
 };
 
 String topic;               // subscribed while a chart is open, empty otherwise
@@ -3326,11 +3337,12 @@ bool take(Series& out) {
         read(root["t"], out.temperature);
         read(root["s"], out.setpoint);
         read(root["h"], out.humidity);
+        read(root["p"], out.on);
     } catch (const std::bad_alloc&) {
         return false;
     }
 
-    return (out.step > 0) && (out.temperature.size() > 1);
+    return (out.step > 0) && ((out.temperature.size() > 1) || (out.on.size() > 1));
 }
 
 } // namespace history
