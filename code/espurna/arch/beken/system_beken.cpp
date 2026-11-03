@@ -274,6 +274,14 @@ void loop() {
 
 // Same values as esp8266, common code (e.g. the stability check) relies on them
 uint32_t reset_reason() {
+    // SDK sees the system word written by restart() or our crash handlers as an unknown start type,
+    // i.e. a watchdog reset
+    if (rtcmemSysStatus()) {
+        return (rtcmemCrash() != RtcmemCrash::None)
+            ? REASON_EXCEPTION_RST
+            : REASON_SOFT_RESTART;
+    }
+
     switch (lt_get_reboot_reason()) {
     case REBOOT_REASON_HARDWARE:
         return REASON_EXT_SYS_RST;
@@ -313,7 +321,15 @@ uint32_t reset_reason() {
     // settings are committed by the loop, make sure the last change is not lost
     eepromForceCommit();
 
-    lt_reboot();
+    // lt_reboot() -> bk_reboot() writes the reboot type into the retention register. Same reboot,
+    // but with the system word (custom reset reason) there instead (ref. rtcmem_beken.cpp)
+    constexpr uintptr_t RegRetention { 0x00800150 };
+
+    portDISABLE_INTERRUPTS();
+    *reinterpret_cast<volatile uint32_t*>(RegRetention) = rtcmemRetention();
+
+    lt_wdt_disable();
+    lt_wdt_enable(5);
     for (;;) {
     }
 }

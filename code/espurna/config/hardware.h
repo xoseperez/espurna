@@ -116,7 +116,8 @@
 
 #elif defined(TUYA_CB3S_RELAY_RF)
 
-    // Tuya 1-channel 5V relay board with a 433 MHz receiver, CB3S (BK7231N) module.
+    // Tuya TYWRA-RF 1-channel relay board with a 433 MHz receiver, CB3S (BK7231N) module.
+    // AC/DC 7-32V on the terminal block or 5V micro-USB (power only).
     // Pins are from the stock Tuya config (user_param_key)
 
     // Info
@@ -5874,15 +5875,6 @@
 
     #ifndef UART1_RX_PIN
     #define UART1_RX_PIN            10
-    #endif
-
-    // LibreTiny has no DNSServer
-    #ifndef WIFI_AP_CAPTIVE_SUPPORT
-    #define WIFI_AP_CAPTIVE_SUPPORT 0
-    #endif
-
-    #ifndef MDNS_SERVER_SUPPORT
-    #define MDNS_SERVER_SUPPORT     0
     #endif
 
     #ifndef ALEXA_SUPPORT

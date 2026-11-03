@@ -67,6 +67,9 @@ void espurnaReload();
 using LoopCallback = void (*)();
 void espurnaRegisterLoop(LoopCallback);
 
+// what loop() runs right now: a loop or reload callback's address, 1 for the once callbacks, 0 between passes
+uintptr_t espurnaLoopCurrent();
+
 void espurnaRegisterOnce(espurna::Callback);
 void espurnaRegisterOnceUnique(espurna::Callback::Type);
 

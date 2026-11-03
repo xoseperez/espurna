@@ -1709,10 +1709,12 @@ void init() {
     // note that pass a simple request for state change, not the reason behind it
     // TODO 'lock' / 'trigger' object instead of multiple flags
     static auto disconnected = WiFi.onStationModeDisconnected([](const WiFiEventStationModeDisconnected& event) {
-        // reasons below 200 come from the AP (ASSOC_LEAVE is our own disconnect), 200+ are local (beacon timeout etc.)
+        // only an intentional drop by the AP counts. usteer kicks with 'AP busy' (its default load_kick_reason_code 5),
+        // manual hostapd del_client is 'unspecified'. AP restart (not authed / not assoced / leaving), inactivity and
+        // handshake failures say nothing about the AP itself
         if (connection::internal::connected
-            && (event.reason < WIFI_DISCONNECT_REASON_BEACON_TIMEOUT)
-            && (event.reason != WIFI_DISCONNECT_REASON_ASSOC_LEAVE))
+            && ((event.reason == WIFI_DISCONNECT_REASON_ASSOC_TOOMANY)
+             || (event.reason == WIFI_DISCONNECT_REASON_UNSPECIFIED)))
         {
             std::copy(std::begin(event.bssid), std::end(event.bssid), connection::internal::kicked.begin());
             connection::internal::kicked_at = time::SystemClock::now();
@@ -1773,12 +1775,17 @@ constexpr int8_t threshold() {
     return WIFI_SCAN_RSSI_THRESHOLD;
 }
 
+constexpr int8_t delta() {
+    return WIFI_ROAM_RSSI_DELTA;
+}
+
 } // namespace build
 
 namespace settings {
 namespace keys {
 
 PROGMEM_STRING(Threshold, "wifiScanRssi");
+PROGMEM_STRING(Delta, "wifiRoamDelta");
 
 } // namespace keys
 
@@ -1786,9 +1793,16 @@ int8_t threshold() {
     return getSetting(FPSTR(keys::Threshold), build::threshold());
 }
 
+int8_t delta() {
+    return std::clamp(
+        getSetting(FPSTR(keys::Delta), build::delta()),
+        int8_t{ 1 }, int8_t{ 40 });
+}
+
 namespace query {
 
 EXACT_VALUE(threshold, settings::threshold)
+EXACT_VALUE(delta, settings::delta)
 
 } // namespace query
 } // namespace settings
@@ -1799,15 +1813,24 @@ int8_t threshold { build::threshold() };
 int8_t counter { build::Checks };
 timer::SystemTimer timer;
 
+// every scan that found nothing better makes the next one come later, up to MaxStays times the usual
+// (3, 6, ... 15 min with the defaults). weak link with no better AP around should not keep scanning
+uint8_t stays { 0 };
+constexpr uint8_t MaxStays { 4 };
+
+int8_t checks() {
+    return build::Checks * (1 + stays);
+}
+
 void task() {
     if (!sta::connected()) {
-        counter = build::Checks;
+        counter = checks();
         return;
     }
 
     auto rssi = sta::rssi();
     if (rssi > threshold) {
-        counter = build::Checks;
+        counter = checks();
     } else if (rssi < threshold) {
         if (counter < 0) {
             return;
@@ -1820,12 +1843,12 @@ void task() {
 }
 
 void start() {
-    counter = build::Checks;
+    counter = checks();
     timer.repeat(build::Interval, task);
 }
 
 void stop() {
-    counter = build::Checks;
+    counter = checks();
     timer.stop();
 }
 
@@ -1839,13 +1862,24 @@ void stop() {
     internal::stop();
 }
 
+// new connection
 void start() {
+    internal::stays = 0;
+    internal::start();
+}
+
+// still on the same AP after looking for a better one
+void stayed() {
+    if (internal::stays < internal::MaxStays) {
+        ++internal::stays;
+    }
+
     internal::start();
 }
 
 bool check() {
     if (internal::counter <= 0) {
-        internal::counter = build::Checks;
+        internal::counter = internal::checks();
         return true;
     }
 
@@ -1918,8 +1952,27 @@ bool scanProcessResults(int8_t threshold) {
     return internal::preparedNetworks.size() > 0;
 }
 
+// Looking for a better network while connected. Only another AP at least wifiRoamDelta stronger
+// is worth the reconnection, current one (or a similarly weak one) would make us reconnect on every check.
+// Neither is the AP that recently kicked us, it would most likely do that again
 bool scanProcessResults(const Info& info) {
-    return scanProcessResults(info.rssi());
+    if (internal::scanResults) {
+        internal::scanResults->remove_if(
+            [&](const SsidInfo& result) {
+                return (result.info().bssid() == info.bssid())
+                    || kicked(result.info().bssid());
+            });
+    }
+
+    const auto threshold = std::min(
+        info.rssi() + scan::periodic::settings::delta(), -1);
+    if (scanProcessResults(static_cast<int8_t>(threshold))) {
+        return true;
+    }
+
+    DEBUG_MSG_P(PSTR("[WIFI] No other AP with RSSI %d or better (current %d), staying\n"),
+        threshold, info.rssi());
+    return false;
 }
 
 bool scanProcessResults() {
@@ -2253,7 +2306,7 @@ STRING_VIEW_INLINE(Prefix, "wifi");
 
 namespace query {
 
-static constexpr std::array<espurna::settings::query::Setting, 11> Settings PROGMEM {
+static constexpr std::array<espurna::settings::query::Setting, 12> Settings PROGMEM {
     {{ap::settings::keys::Ssid, ap::settings::ssid},
      {ap::settings::keys::Passphrase, ap::settings::passphrase},
      {ap::settings::keys::Captive, ap::settings::query::internal::captive},
@@ -2262,6 +2315,7 @@ static constexpr std::array<espurna::settings::query::Setting, 11> Settings PROG
      {sta::settings::keys::Mode, sta::settings::query::internal::mode},
      {sta::scan::settings::keys::Enabled, sta::scan::settings::query::enabled},
      {sta::scan::periodic::settings::keys::Threshold, sta::scan::periodic::settings::query::threshold},
+     {sta::scan::periodic::settings::keys::Delta, sta::scan::periodic::settings::query::delta},
      {settings::keys::TxPower, query::internal::txPower},
      {settings::keys::Sleep, query::internal::sleep},
      {settings::keys::Boot, query::internal::bootMode},
@@ -2916,6 +2970,11 @@ void loop() {
             sta::disconnect();
             state = State::Connect;
             break;
+        }
+
+        // still connected to the same AP, keep checking (less often)
+        if (sta::connected() && sta::scan::settings::enabled()) {
+            sta::scan::periodic::stayed();
         }
 
         state = State::Idle;

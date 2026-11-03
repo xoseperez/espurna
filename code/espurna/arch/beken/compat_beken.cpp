@@ -14,6 +14,8 @@ Compatibility layer for BEKEN (LibreTiny)
 
 // Global ESP object for the macro #define ESP BEKEN_ESP
 #include "compat_beken.h"
+#include "rtcmem.h"
+
 EspCompat BEKEN_ESP;
 
 // 32bit micros() wraps every ~71 minutes, extend it. Called often enough (every loop())
@@ -126,6 +128,32 @@ uint32_t EspCompat::getSketchSize() {
     constexpr uint32_t FlashOrigin { 0x10000 };
     const auto data = static_cast<uint32_t>(&_data_ram_end - &_data_ram_begin);
     return reinterpret_cast<uint32_t>(&_data_flash_begin) + data - FlashOrigin;
+}
+
+// LibreTiny names what the SDK start type says, which is 'watchdog' after our crash handlers
+String EspCompat::getResetReason() {
+    if (rtcmemCrash() != RtcmemCrash::None) {
+        return String(F("Crash"));
+    }
+
+    return ::ESP.getResetReason();
+}
+
+String EspCompat::getResetInfo() {
+    switch (rtcmemCrash()) {
+    case RtcmemCrash::None:
+        break;
+    case RtcmemCrash::Undefined:
+        return String(F("Crash (undefined instruction)"));
+    case RtcmemCrash::PrefetchAbort:
+        return String(F("Crash (prefetch abort)"));
+    case RtcmemCrash::DataAbort:
+        return String(F("Crash (data abort)"));
+    case RtcmemCrash::Reserved:
+        return String(F("Crash (reserved exception)"));
+    }
+
+    return ::ESP.getResetInfo();
 }
 
 namespace espurna {

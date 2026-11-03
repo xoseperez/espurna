@@ -87,7 +87,7 @@ Most new Tuya devices carry a Beken BK72xx module (CB2S, CB3S, WB2S) instead of 
 the builds are in [`code/platformio_beken.ini`](code/platformio_beken.ini).
 
 - `cb3s-generic`: any CB3S board, pins set in the web UI;
-- `tuya-cb3s-relay-rf`: Tuya 1-channel 5 V relay with a 433 MHz receiver (relay P24, buttons P14 / P6, LED P8, RF on P26),
+- `tuya-cb3s-relay-rf`: Tuya TYWRA-RF, a 1-channel relay with a 433 MHz receiver (relay P24, buttons P14 / P6, LED P8, RF on P26),
   remote buttons learnt per relay on the RFBRIDGE tab, any number of extra Dummy relays for more remote buttons;
 - first flash over UART1 with `ltchiptool`, then OTA of `firmware.uf2` from the web UI.
 
@@ -109,12 +109,15 @@ Many in-wall relay modules (e.g. Moes MS-104B) connect the wall switch to a GPIO
 
 ### Download
 
-Every push to `esp32-port` is built by [GitHub Actions](https://github.com/igorufox/espurna/actions/workflows/esp32.yml) and published as a [release](https://github.com/igorufox/espurna/releases/latest), with two files per build:
+Every push to `esp32-port` is built by [GitHub Actions](https://github.com/igorufox/espurna/actions/workflows/esp32.yml) and published as a [release](https://github.com/igorufox/espurna/releases/latest) with the images of every board of this fork:
 
 | File | Use |
 |------|-----|
-| `espurna-<build>-full.bin` | merged image (bootloader + partitions + app), first flash over serial at `0x0` |
-| `espurna-<build>-ota.bin` | application only, OTA upgrade from the WebUI |
+| `espurna-<build>-full.bin` | ESP32: merged image (bootloader + partitions + app), first flash over serial at `0x0` |
+| `espurna-<build>-ota.bin` | ESP32: application only, OTA upgrade from the WebUI |
+| `espurna-<build>.uf2` | Beken (`cb3s-generic`, `tuya-cb3s-relay-rf`): first flash with `ltchiptool`, then OTA from the WebUI |
+| `espurna-<build>.bin` | ESP8266 (Sonoff Mini / Basic / 4CH / RF Bridge / S20 / 1CH inching, ESP12F relay x2 / x4, HW-622, Moes MS-104B): serial flash at `0x0` or OTA |
+| `espurna-<build>.bin.gz` | ESP8266: compressed OTA, on 1 MB boards after `espurna-minimal-webui-1m.bin` (2-step OTA) |
 
 The latest build of a board is always at `https://github.com/igorufox/espurna/releases/latest/download/espurna-<build>-full.bin`, e.g. [espurna-itead-sonoff-minir4-full.bin](https://github.com/igorufox/espurna/releases/latest/download/espurna-itead-sonoff-minir4-full.bin).
 

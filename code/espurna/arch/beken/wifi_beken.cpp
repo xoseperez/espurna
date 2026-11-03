@@ -27,6 +27,12 @@
 #include <DNSServer.h>
 #endif
 
+// BDK rwnx interface (rw_msg_tx.c, rw_ieee80211.c), no public header
+extern "C" {
+uint8_t rwm_mgmt_vif_mac2idx(void* mac);
+int rw_msg_set_power(uint8_t vif_idx, uint8_t power);
+}
+
 namespace espurna {
 namespace wifi {
 
@@ -447,8 +453,29 @@ const char* sleep_name(wifi_ps_type_t type) {
 
 // Needs the driver to be started, i.e. called after the opmode is set
 void configure() {
-    // SDK only has DTIM sleep (on / off), no tx power control
+    // SDK only has DTIM sleep (on / off)
     WiFi.setSleep(settings::sleep() != WIFI_PS_NONE);
+}
+
+// MAC keeps a TX power limit per interface (MM_SET_POWER_REQ, in dBm), its own calibration
+// tables still cap it. Interface only exists while connected or while the AP is up
+void tx_power(uint8_t* mac) {
+    const auto index = rwm_mgmt_vif_mac2idx(mac);
+    if (index == 0xff) {
+        return;
+    }
+
+    const auto dbm = std::max(0l, std::min(20l, std::lround(settings::tx_power())));
+    rw_msg_set_power(index, static_cast<uint8_t>(dbm));
+}
+
+// STA interface only. Same request for the AP interface while both are up made the station drop
+// right after getting an IP, every time (reason 8), and the AP never showed up
+void tx_power() {
+    uint8_t mac[6];
+    if (WiFi.status() == WL_CONNECTED) {
+        tx_power(WiFi.macAddress(mac));
+    }
 }
 
 } // namespace radio
@@ -520,15 +547,26 @@ void _wifiStartAp() {
     DEBUG_MSG_P(PSTR("[WIFI] Starting AP: %s (%s)\n"),
         ssid.c_str(), secure ? PSTR("secure") : PSTR("open"));
 
+    // One radio for both. With STA connected the AP has to use its channel: on the configured one
+    // the two kept switching the radio, STA dropped every few seconds and the AP never showed up
+    const auto channel = (WiFi.status() == WL_CONNECTED)
+        ? static_cast<int>(WiFi.channel())
+        : static_cast<int>(ap::settings::channel());
+
     // STA bit is kept as-is (it may have been disabled on purpose)
     WiFi.enableAP(true);
-    WiFi.softAPConfig(IPAddress(192, 168, 4, 1), IPAddress(192, 168, 4, 1), IPAddress(255, 255, 255, 0));
-    WiFi.softAP(ssid.c_str(), secure ? pass.c_str() : nullptr, ap::settings::channel());
+    const IPAddress ip(192, 168, 4, 1);
+    WiFi.softAPConfig(ip, ip, IPAddress(255, 255, 255, 0));
+    WiFi.softAP(ssid.c_str(), secure ? pass.c_str() : nullptr, channel);
 
 #if WIFI_AP_CAPTIVE_SUPPORT
     if (ap::settings::captive()) {
         ap::internal::dns.setErrorReplyCode(DNSReplyCode::NoError);
-        ap::internal::dns_running = ap::internal::dns.start(53, "*", WiFi.softAPIP());
+        // Socket is bound to the AP address (ref. lib_beken/DNSServer)
+        ap::internal::dns_running = ap::internal::dns.start(53, "*", ip);
+        if (!ap::internal::dns_running) {
+            DEBUG_MSG_P(PSTR("[WIFI] Captive DNS server failed to start\n"));
+        }
     }
 #endif
 
@@ -1538,6 +1576,7 @@ void _wifiLoop() {
     }
     if (pending_connect && link_up) {
         internal::station_published = true;
+        radio::tx_power();
         _wifiPublish(espurna::wifi::Event::StationConnected);
     }
 

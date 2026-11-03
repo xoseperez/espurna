@@ -33,3 +33,18 @@ extern volatile RtcmemData* Rtcmem;
 
 bool rtcmemStatus();
 void rtcmemSetup();
+
+// Only Rtcmem->sys survives a reset here (ref. rtcmem_beken.cpp)
+bool rtcmemSysStatus();
+uint32_t rtcmemRetention();
+
+// Exception that caused the last reset, written into the register by our crash handlers
+enum class RtcmemCrash : uint32_t {
+    None = 0,
+    Undefined,
+    PrefetchAbort,
+    DataAbort,
+    Reserved,
+};
+
+RtcmemCrash rtcmemCrash();

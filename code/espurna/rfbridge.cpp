@@ -510,11 +510,12 @@ bool _rfbCompare(const char* lhs, const char* rhs, size_t length) {
 
 #elif RFB_PROVIDER == RFB_PROVIDER_RCSWITCH
 
-// protocol is [2:3), actual payload is [10:), as bit length may vary
-// although, we don't care if it does, since we expect length of both args to be the same
+// protocol is [2:4), bit length is [8:10), actual payload is [10:)
+// protocol is not compared: rc-switch tries every protocol in order and takes the first one
+// that fits, a jittery sync pulse of the same remote sometimes fits a later one better
+// (e.g. Princeton 01 received as 17, same bits, same payload) and the press was lost
 bool _rfbCompare(const char* lhs, const char* rhs, size_t length) {
-    return (0 == std::memcmp((lhs + 2), (rhs + 2), 2))
-        && (0 == std::memcmp((lhs + 10), (rhs + 10), length - 10));
+    return (0 == std::memcmp((lhs + 8), (rhs + 8), length - 8));
 }
 
 #endif // RFB_PROVIDER == RFB_PROVIDER_EFM8BB1

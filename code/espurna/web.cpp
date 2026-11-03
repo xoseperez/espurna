@@ -644,7 +644,7 @@ void _onPostConfigFile(AsyncWebServerRequest *request, String, size_t index, uin
 #if WIFI_AP_CAPTIVE_SUPPORT
 String _apCaptiveLocation() {
     STRING_VIEW_INLINE(Prefix, "http://");
-    return Prefix.toString() + wifiApIp().toString();
+    return Prefix.toString() + ipToString(wifiApIp());
 }
 
 void _onAPCaptiveRequest(AsyncWebServerRequest* request) {
@@ -932,6 +932,9 @@ void webSetup() {
 #if WIFI_AP_CAPTIVE_SUPPORT
     server->on("/generate_204", _onAPCaptiveRequest);
     server->on("/fwlink", _onAPCaptiveRequest);
+    // Windows 10+ and Apple connectivity checks, any other host name gets 404 while the AP is on
+    server->on("/connecttest.txt", _onAPCaptiveRequest);
+    server->on("/hotspot-detect.html", _onAPCaptiveRequest);
 #endif
 
     // Handle every other request, including 404

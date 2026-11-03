@@ -23,7 +23,10 @@ function byKey(key) {
 function choose(select, value) {
     select.value = value;
     select.dispatchEvent(new Event('change'));
-    checkAndSetElementChanged(select);
+    // same as the form listener, which ignores data-action="none" (e.g. the 'Button type' list)
+    if (select.dataset['action'] !== 'none') {
+        checkAndSetElementChanged(select);
+    }
 }
 
 /** @param {string} id */
@@ -100,14 +103,21 @@ test('btnConfig before relayConfig renders into fallback, then moves into relay 
     expect(/** @type {HTMLSelectElement} */
         (document.querySelector('select[name="btnAcFreq"]')).value).toEqual('50');
 
-    choose(freq0, '0');
+    // type is chosen in the single visible list, which fills the hidden btnFreq# and btnMode#
+    /** @param {HTMLSelectElement} freq */
+    const typeOf = (freq) => /** @type {HTMLSelectElement} */
+        (freq.closest('.button-config')?.querySelector('select.button-type'));
+    expect(typeOf(freq0).value).toEqual('ac');
+
+    choose(typeOf(freq0), 'button');
+    expect(freq0.value).toEqual('0');
     expect(filter0.hidden).toBe(true);
     expect(isHidden('buttonAcGlobal')).toBe(false);
 
-    choose(freq1, '0');
+    choose(typeOf(freq1), 'button');
     expect(isHidden('buttonAcGlobal')).toBe(true);
 
-    choose(/** @type {HTMLSelectElement} */(byKey('btnFreq2')), '1');
+    choose(typeOf(/** @type {HTMLSelectElement} */(byKey('btnFreq2'))), 'ac');
     expect(filter2.hidden).toBe(false);
     expect(isHidden('buttonAcGlobal')).toBe(false);
 

@@ -17,7 +17,7 @@ Updated secure client support by Niek van der Maas < mail at niekvandermaas dot 
 #include <vector>
 
 #include "system.h"
-#include "mdns.h"
+#include "espurna_mdns.h"
 #include "mqtt.h"
 #include "ntp.h"
 #include "rpc.h"
@@ -1083,6 +1083,8 @@ void _mqttMdnsDiscovery() {
 }
 #endif
 
+void _mqttOnDisconnect();
+
 struct MqttConfigureGuard {
     explicit MqttConfigureGuard(bool reschedule) {
         if (reschedule) {
@@ -1098,6 +1100,12 @@ struct MqttConfigureGuard {
             if (_mqtt.connected()) {
                 mqttDisconnect();
             }
+#if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
+            // Pending attempt still uses the old settings, same as the connect timeout instead of waiting for it
+            else if (_mqtt_state == AsyncClientState::Connecting) {
+                _mqttOnDisconnect();
+            }
+#endif
         }
 
         if (_mqtt_error && _mqtt_error.error().length()) {

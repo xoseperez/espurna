@@ -9,6 +9,7 @@ GPIO MODULE FOR BEKEN (LibreTiny)
 #include "gpio.h"
 #include "settings.h"
 #include "rtcmem.h"
+#include "terminal.h"
 
 #include <Arduino.h>
 
@@ -219,13 +220,193 @@ void setup() {
 } // namespace espurna
 #endif
 
+#if TERMINAL_SUPPORT
+namespace espurna {
+namespace gpio {
+namespace terminal {
+namespace {
+
+// BK72xx GPIO config registers, one word per pin (ref. BDK driver/gpio/gpio.h)
+// bit 0 input level, bit 1 output level, bit 2 input enable, bit 3 output disable, bit 6 second function
+constexpr uintptr_t RegGpioConfig { 0x00802800 };
+
+volatile uint32_t& reg(uintptr_t address) {
+    return *reinterpret_cast<volatile uint32_t*>(address);
+}
+
+uint32_t pin_config(unsigned char pin) {
+    return reg(RegGpioConfig + (pin * 4));
+}
+
+PROGMEM_STRING(GpioLocks, "GPIO.LOCKS");
+
+void gpio_list_origins(::terminal::CommandContext&& ctx) {
+    for (const auto& origin : origin::internal::origins) {
+        ctx.output.printf_P(PSTR("%c %c %s GPIO%hhu\t%d:%s:%s\n"),
+            origin.result ? ' ' : '!',
+            origin.lock ? '*' : ' ',
+            origin.base, origin.pin,
+            origin.location.line,
+            origin.location.file,
+            origin.location.func);
+    }
+}
+
+int gpio_pin(const String& value) {
+    int pin = espurna::settings::internal::convert<int>(value);
+    if ((pin < 0) || !gpioValid(pin)) {
+        pin = -1;
+    }
+
+    return pin;
+}
+
+PROGMEM_STRING(Gpio, "GPIO");
+
+void gpio_read_write(::terminal::CommandContext&& ctx) {
+    const auto pin_arg = ctx.argv.size() >= 2;
+    const int pin = pin_arg
+        ? gpio_pin(ctx.argv[1])
+        : -1;
+
+    if (pin_arg && pin < 0) {
+        terminalError(ctx, STRING_VIEW("Invalid pin number"));
+        return;
+    }
+
+    int start = 0;
+    int end = gpioPins();
+
+    switch (ctx.argv.size()) {
+    case 3:
+        ::digitalWrite(pin, espurna::settings::internal::convert<bool>(ctx.argv[2])
+            ? HIGH : LOW);
+        break;
+
+    case 2:
+        start = pin;
+        end = pin + 1;
+        // fallthrough!
+
+    case 1:
+        for (auto current = start; current < end; ++current) {
+            if (!gpioValid(current)) {
+                continue;
+            }
+
+            const auto config = pin_config(current);
+            const bool function = config & (1 << 6);
+            const bool output = !(config & (1 << 3));
+
+            ctx.output.printf_P(
+                PSTR("%c %8s @ GPIO%02d (%s) 0x%02X\n"),
+                gpioLocked(current) ? '*' : ' ',
+                function ? PSTR("FUNCTION")
+                    : output ? PSTR("OUTPUT")
+                    : PSTR("INPUT"),
+                current,
+                (output ? (config & (1 << 1)) : (config & (1 << 0)))
+                    ? PSTR("HIGH")
+                    : PSTR("LOW"),
+                config & 0xff);
+        }
+        break;
+    }
+
+    terminalOK(ctx);
+}
+
+PROGMEM_STRING(Mode, "GPIO.MODE");
+
+void gpio_mode(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() == 3) {
+        const auto pin = gpio_pin(ctx.argv[1]);
+        if (pin < 0) {
+            terminalError(ctx, STRING_VIEW("Invalid pin number"));
+            return;
+        }
+
+        const auto mode = ctx.argv[2];
+        if (mode == F("output")) {
+            ::pinMode(pin, OUTPUT);
+        } else if (mode == F("input")) {
+            ::pinMode(pin, INPUT);
+        } else if (mode == F("input-pull-up")) {
+            ::pinMode(pin, INPUT_PULLUP);
+        } else if (mode == F("input-pull-down")) {
+            ::pinMode(pin, INPUT_PULLDOWN);
+        } else {
+            terminalError(ctx, STRING_VIEW("Invalid mode"));
+            return;
+        }
+
+        terminalOK(ctx);
+        return;
+    }
+
+    terminalError(ctx, F("GPIO.MODE <GPIO> <output|input|input-pull-up|input-pull-down>"));
+}
+
+PROGMEM_STRING(RegRead, "REG.READ");
+
+void reg_read(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() == 2) {
+        const auto address = espurna::settings::internal::convert<uint32_t>(ctx.argv[1]);
+        ctx.output.printf_P(PSTR("0x%08X -> 0x%08X\n"),
+            address, reg(address));
+        terminalOK(ctx);
+        return;
+    }
+
+    terminalError(ctx, F("REG.READ <ADDRESS>"));
+}
+
+PROGMEM_STRING(RegWrite, "REG.WRITE");
+
+void reg_write(::terminal::CommandContext&& ctx) {
+    if (ctx.argv.size() == 3) {
+        const auto address = espurna::settings::internal::convert<uint32_t>(ctx.argv[1]);
+        const auto value = espurna::settings::internal::convert<uint32_t>(ctx.argv[2]);
+
+        ctx.output.printf_P(PSTR("0x%08X -> 0x%08X\n"), address, value);
+        reg(address) = value;
+
+        terminalOK(ctx);
+        return;
+    }
+
+    terminalError(ctx, F("REG.WRITE <ADDRESS> <VALUE>"));
+}
+
+static constexpr espurna::terminal::Command Commands[] PROGMEM {
+    {GpioLocks, gpio_list_origins},
+    {Gpio, gpio_read_write},
+    {Mode, gpio_mode},
+    {RegRead, reg_read},
+    {RegWrite, reg_write},
+};
+
+} // namespace
+
+void setup() {
+    espurna::terminal::add(Commands);
+}
+
+} // namespace terminal
+} // namespace gpio
+} // namespace espurna
+#endif
+
 void gpioSetup() {
 #if WEB_SUPPORT
     espurna::gpio::web::setup();
 #endif
+#if TERMINAL_SUPPORT
+    espurna::gpio::terminal::setup();
+#endif
 }
 
-// Nothing survives the reset (ref. rtcmem_beken.cpp)
+// Nothing but the system word survives the reset (ref. rtcmem_beken.cpp)
 void hardwareGpioIgnore(unsigned char) {
 }
 

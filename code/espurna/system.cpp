@@ -367,7 +367,12 @@ struct Data {
     {}
 
     bool status() const {
+#if defined(LIBRETINY)
+        // BK72xx only keeps this word across a reset, not the whole RTCMEM
+        return rtcmemSysStatus();
+#else
         return rtcmemStatus();
+#endif
     }
 
     uint8_t counter() const {

@@ -43,9 +43,20 @@ export function setupButtonDom() {
     </template>
     <template id="template-button-config">
         <div class="button-config">
-            <select name="btnFreq" data-action="reboot">
-                <option value="0">Button</option>
-                <option value="1">AC mains switch</option>
+            <select class="button-type" data-action="none">
+                <option value="button">Button</option>
+                <option value="switch">Switch</option>
+                <option value="follow">Follow</option>
+                <option value="ac">AC mains switch</option>
+            </select>
+            <select name="btnMode" data-action="reboot" hidden>
+                <option value="pushbutton">Pushbutton</option>
+                <option value="switch">Switch</option>
+                <option value="follow">Follow</option>
+            </select>
+            <select name="btnFreq" data-action="reboot" hidden>
+                <option value="0">No</option>
+                <option value="1">Yes</option>
             </select>
             <div class="button-ac-filter" hidden>
                 <input name="btnMinPulses" type="number">

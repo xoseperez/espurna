@@ -593,7 +593,7 @@
 #endif
 
 #ifndef WIFI_KICKED_TIME
-#define WIFI_KICKED_TIME            10                     // Minutes the AP that dropped the connection (e.g. usteer kick)
+#define WIFI_KICKED_TIME            10                     // Minutes the AP that kicked us (usteer 'AP busy' or unspecified reason)
                                                            // is tried last when the scan finds another one, 0 disables
 #endif
 
@@ -640,7 +640,7 @@
 #endif
 
 #ifndef WIFI_ROAM_RSSI_DELTA
-#define WIFI_ROAM_RSSI_DELTA            4                  // (ESP32) Only switch to another AP when it is at least this much (dB)
+#define WIFI_ROAM_RSSI_DELTA            4                  // Only switch to another AP when it is at least this much (dB)
                                                            // stronger than the current one, to avoid bouncing between similar APs
 #endif
 

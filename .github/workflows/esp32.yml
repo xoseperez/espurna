@@ -1,4 +1,4 @@
-name: ESP32 Build
+name: Firmware Build
 
 on:
   push:
@@ -19,8 +19,31 @@ jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        env: [esp32-generic, esp32-relay-x2, esp32-nspanel, itead-sonoff-minir4]
+        include:
+        # ESP32: platformio_esp32.ini
+        - { arch: esp32, config: platformio_esp32.ini, env: esp32-generic }
+        - { arch: esp32, config: platformio_esp32.ini, env: esp32-relay-x2 }
+        - { arch: esp32, config: platformio_esp32.ini, env: esp32-nspanel }
+        - { arch: esp32, config: platformio_esp32.ini, env: itead-sonoff-minir4 }
+        # Beken BK7231N through LibreTiny: platformio_beken.ini
+        - { arch: beken, config: platformio_beken.ini, env: cb3s-generic }
+        - { arch: beken, config: platformio_beken.ini, env: tuya-cb3s-relay-rf }
+        # ESP8266 boards of this fork (core 3.1.2 + SDK 3.0.5): platformio.ini + platformio_override.ini
+        - { arch: esp8266, config: platformio.ini, env: itead-sonoff-mini }
+        - { arch: esp8266, config: platformio.ini, env: itead-sonoff-basic }
+        - { arch: esp8266, config: platformio.ini, env: itead-sonoff-4ch }
+        - { arch: esp8266, config: platformio.ini, env: itead-sonoff-rfbridge }
+        - { arch: esp8266, config: platformio.ini, env: itead-s20 }
+        - { arch: esp8266, config: platformio.ini, env: itead-1ch-inching }
+        - { arch: esp8266, config: platformio.ini, env: esp12f-relay-x2 }
+        - { arch: esp8266, config: platformio.ini, env: esp12f-relay-x4 }
+        - { arch: esp8266, config: platformio.ini, env: hw-622 }
+        - { arch: esp8266, config: platformio.ini, env: moes-ms-104b }
+        # first step of the 2-step OTA on 1 MB boards
+        - { arch: esp8266, config: platformio.ini, env: espurna-minimal-webui-1m }
+        - { arch: esp8266, config: platformio.ini, env: espurna-minimal-arduino-ota-1m }
     steps:
     - uses: actions/checkout@v7
     - uses: actions/setup-python@v7
@@ -35,7 +58,7 @@ jobs:
       uses: actions/cache@v6
       with:
         path: ~/.platformio
-        key: ${{ runner.os }}-pio-${{ matrix.env }}-${{ hashFiles('code/platformio_esp32.ini') }}
+        key: ${{ runner.os }}-pio-${{ matrix.env }}-${{ hashFiles(format('code/{0}', matrix.config)) }}
         restore-keys: |
           ${{ runner.os }}-pio-${{ matrix.env }}-
     - name: Install PlatformIO
@@ -50,16 +73,35 @@ jobs:
       run: |
         # pio libs sometimes use raw hash instead of version, avoid useless warnings
         git config --global advice.detachedHead false
-        pio run -c platformio_esp32.ini -e ${{ matrix.env }}
+        pio run -c ${{ matrix.config }} -e ${{ matrix.env }}
     - name: Collect binaries
       run: |
-        build=code/.pio/build/${{ matrix.env }}
+        env=${{ matrix.env }}
+        # espurna-minimal-* envs already carry the prefix
+        name=espurna-${env#espurna-}
         mkdir -p dist
-        # merged image (bootloader + partitions + boot_app0 + app), flash at 0x0
-        cp ${build}/espurna-${{ matrix.env }}.bin dist/espurna-${{ matrix.env }}-full.bin
-        # app only, for OTA
-        cp ${build}/firmware.bin dist/espurna-${{ matrix.env }}-ota.bin
-        cp ${build}/firmware.elf dist/espurna-${{ matrix.env }}.elf
+        case "${{ matrix.arch }}" in
+        esp32)
+          build=code/.pio/build/${env}
+          # merged image (bootloader + partitions + boot_app0 + app), flash at 0x0
+          cp ${build}/espurna-${env}.bin dist/${name}-full.bin
+          # app only, for OTA
+          cp ${build}/firmware.bin dist/${name}-ota.bin
+          ;;
+        beken)
+          build=code/.pio/build_beken/${env}
+          # first flash over UART1 with ltchiptool, and OTA from the WebUI
+          cp ${build}/firmware.uf2 dist/${name}.uf2
+          ;;
+        esp8266)
+          build=code/.pio/build/${env}
+          # serial flash at 0x0, and OTA from the WebUI
+          cp ${build}/firmware.bin dist/${name}.bin
+          # compressed, OTA on 1 MB boards after the minimal image (eboot unpacks gzip)
+          gzip -9 -n -c ${build}/firmware.bin > dist/${name}.bin.gz
+          ;;
+        esac
+        cp ${build}/firmware.elf dist/${name}.elf
         ls -l dist
     - uses: actions/upload-artifact@v7
       with:
@@ -92,20 +134,29 @@ jobs:
       with:
         tag_name: ${{ steps.release.outputs.tag }}
         target_commitish: ${{ github.sha }}
-        name: ESP32 build (${{ steps.release.outputs.tag }})
+        name: Firmware build (${{ steps.release.outputs.tag }})
         body: |
           Automatic build of ${{ github.ref_name }} @ ${{ github.sha }}
 
+          ESP32 (`*-full.bin` - merged image (bootloader + partitions + app), flash at 0x0; `*-ota.bin` - application only, for OTA from the WebUI):
           - `espurna-esp32-generic-*` - any ESP32 with 4 MB flash, no GPIOs pre-assigned, configure from the WebUI or import a Tasmota template
           - `espurna-esp32-relay-x2-*` - LC-Tech ESP32 2-relay board
           - `espurna-esp32-nspanel-*` - Sonoff NSPanel EU (gen1) with the Lovelace UI TFT, screen built from `/nspanel.json`, see `nspanel/README.md`
           - `espurna-itead-sonoff-minir4-*` - Sonoff MINIR4 "Mini Extreme" (ESP32): relay GPIO26, button GPIO0, S1/S2 GPIO27, LED GPIO19
-          - `*-full.bin` - merged image (bootloader + partitions + app), flash at 0x0
-          - `*-ota.bin` - application only, for OTA upgrade from the WebUI
+
+          Beken BK7231N (`*.uf2` - first flash over UART1 with `ltchiptool`, then OTA from the WebUI, see `beken/README.md`):
+          - `espurna-cb3s-generic.uf2` - any Tuya CB3S board, pins set in the WebUI
+          - `espurna-tuya-cb3s-relay-rf.uf2` - Tuya TYWRA-RF 1-channel relay with a 433 MHz receiver
+
+          ESP8266, core 3.1.2 + SDK 3.0.5 (`*.bin` - serial flash at 0x0 or OTA; `*.bin.gz` - compressed OTA):
+          - `espurna-itead-sonoff-mini`, `-basic`, `-4ch`, `-rfbridge`, `espurna-itead-s20`, `espurna-itead-1ch-inching`
+          - `espurna-esp12f-relay-x2` (4 MB), `espurna-esp12f-relay-x4` (1 MB layout), `espurna-hw-622` (4 MB), `espurna-moes-ms-104b`
+          - `espurna-minimal-webui-1m` / `espurna-minimal-arduino-ota-1m` - first step of the 2-step OTA on 1 MB boards, then the `.bin.gz`
         make_latest: true
         files: |
-          dist/*-full.bin
-          dist/*-ota.bin
+          dist/*.bin
+          dist/*.bin.gz
+          dist/*.uf2
     # keep only the newest automatic builds (esp32-YYMMDD-sha); releases of hand-made esp32-* tags stay
     - name: Prune old automatic releases
       env:

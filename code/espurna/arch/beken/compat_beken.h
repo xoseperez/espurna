@@ -84,8 +84,9 @@ enum FlashMode_t {
 // LibreTiny EspClass already follows the ESP8266 API, this only adds what ESPurna uses on top of it
 extern uint16_t systemVcc();
 struct EspCompat {
-    String getResetReason() { return ::ESP.getResetReason(); }
-    String getResetInfo() { return ::ESP.getResetInfo(); }
+    // SDK reports our crashes as a watchdog reset (ref. rtcmem_beken.cpp)
+    String getResetReason();
+    String getResetInfo();
     uint16_t getVcc() { return systemVcc(); }
 
     EspClass* operator->() { return &::ESP; }

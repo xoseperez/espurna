@@ -79,6 +79,9 @@ bool reload_flag { false };
 std::vector<LoopCallback> loop_callbacks;
 espurna::duration::Milliseconds loop_delay { build::LoopDelayMin };
 
+// read by the stall guard (ESP32, another task), ref. espurnaLoopCurrent()
+volatile uintptr_t current { 0 };
+
 std::forward_list<Callback> once_callbacks;
 
 #if ESPURNA_ASYNC_TASKS
@@ -157,6 +160,7 @@ void loop() {
         if (check_reload()) {
             DEBUG_MSG_P(PSTR("[MAIN] Reloading configuration...\n"));
             for (const auto& callback : internal::reload_callbacks) {
+                internal::current = reinterpret_cast<uintptr_t>(callback);
                 callback();
             }
         }
@@ -164,8 +168,11 @@ void loop() {
         // Loop callbacks, registered some time in setup()
         // Notice that everything is in order of registration
         for (const auto& callback : internal::loop_callbacks) {
+            internal::current = reinterpret_cast<uintptr_t>(callback);
             callback();
         }
+
+        internal::current = 1;
 
         // One-time callbacks, registered some time during runtime
         // Notice that callback container is LIFO, most recently added
@@ -179,6 +186,8 @@ void loop() {
         for (const auto& callback : once_callbacks) {
             callback();
         }
+
+        internal::current = 0;
     }
 
     espurna::time::delay(internal::loop_delay);
@@ -445,6 +454,10 @@ void espurnaRegisterLoop(LoopCallback callback) {
 
 void espurnaReload() {
     espurna::main::flag_reload();
+}
+
+uintptr_t espurnaLoopCurrent() {
+    return espurna::main::internal::current;
 }
 
 espurna::duration::Milliseconds espurnaLoopDelay() {

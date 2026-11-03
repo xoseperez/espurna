@@ -68,9 +68,24 @@ void command_erase(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
+#ifdef SYSTEM_LOOP_STALL_TEST
+STRING_VIEW_INLINE(LoopStall, "LOOP.STALL");
+
+// test builds: loop() waits forever while feeding the task WDT, the stall guard reboots (system_esp32.cpp)
+void command_loop_stall(::terminal::CommandContext&& ctx) {
+    terminalOK(ctx);
+    for (;;) {
+        delay(100);
+    }
+}
+#endif
+
 static constexpr ::terminal::Command Commands[] PROGMEM {
     {Coredump, command},
     {CoredumpErase, command_erase},
+#ifdef SYSTEM_LOOP_STALL_TEST
+    {LoopStall, command_loop_stall},
+#endif
 };
 
 } // namespace

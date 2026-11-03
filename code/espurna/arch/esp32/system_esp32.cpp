@@ -19,6 +19,7 @@ Chip specific part, common part is in system.cpp
 #include <esp_mac.h>    // ESP-IDF 5 (core 3.x)
 #endif
 #include <esp_task_wdt.h>
+#include <esp_timer.h>
 #include <esp_heap_caps.h>
 #include <esp_netif.h>
 #include <esp_wifi.h>
@@ -310,6 +311,67 @@ bool any() {
 }
 
 } // namespace pending_output
+
+// The task WDT does not see a loop() that waits forever in something calling delay() (which feeds it): a task
+// of its own counts the loop passes and aborts when they stop. The panic reboots the chip and writes the core
+// dump (every task); RTC memory keeps which loop callback it stood in, for `info` after the reboot.
+namespace stall {
+
+#ifndef SYSTEM_LOOP_STALL
+#define SYSTEM_LOOP_STALL 60    // seconds without a loop() pass before the reboot, 0 = off
+#endif
+
+constexpr uint32_t Seconds { SYSTEM_LOOP_STALL };
+constexpr uint32_t Magic { 0x4C4F4F50 }; // LOOP
+
+struct Record {
+    uint32_t magic;
+    uint32_t callback;
+    uint32_t seconds;
+    uint32_t uptime;
+};
+
+RTC_NOINIT_ATTR Record record;
+
+std::atomic<uint32_t> passes { 0 };
+String last;
+
+void task(void*) {
+    uint32_t seen = passes.load();
+    uint32_t same = 0;
+    for (;;) {
+        vTaskDelay(pdMS_TO_TICKS(1000));
+        const auto now = passes.load();
+        if (now != seen) {
+            seen = now;
+            same = 0;
+            continue;
+        }
+
+        if (++same >= Seconds) {
+            record = Record{Magic, static_cast<uint32_t>(espurnaLoopCurrent()), same,
+                static_cast<uint32_t>(esp_timer_get_time() / 1000000)};
+            abort();
+        }
+    }
+}
+
+// a stall from the previous boot, once: what loop() stood in (`addr2line` it on the build's .elf)
+void setup() {
+    if ((record.magic == Magic) && (esp_reset_reason() == ESP_RST_PANIC)) {
+        char buf[96];
+        snprintf_P(buf, sizeof(buf), PSTR("loop() stalled %u s in 0x%08X at uptime %u s"),
+            record.seconds, record.callback, record.uptime);
+        last = buf;
+    }
+    record.magic = 0;
+
+    if (Seconds) {
+        xTaskCreatePinnedToCore(task, "loopstall", 2048, nullptr, 1, nullptr, 0);
+    }
+}
+
+} // namespace stall
 } // namespace
 
 void registerPendingOutput(PendingOutput check) {
@@ -342,9 +404,12 @@ void setup() {
     espurnaRegisterOnce([]() {
         enableLoopWDT();
     });
+
+    stall::setup();
 }
 
 void loop() {
+    ++stall::passes;
     timer::SystemTimer::dispatch();
     run_in_loop::drain();
 }
@@ -577,3 +642,8 @@ StringSumHelper convert(const String& v) {
 String getSetting(espurna::StringView key) { return ::getSetting(key.toString()); }
 bool delSetting(espurna::StringView key) { return ::delSetting(key.toString()); }
 bool hasSetting(espurna::StringView key) { return ::hasSetting(key.toString()); }
+
+// compat_esp32.h, ESP.getResetInfo()
+String systemStallInfo() {
+    return espurna::system::stall::last;
+}

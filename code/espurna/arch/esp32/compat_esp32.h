@@ -54,8 +54,18 @@ inline String getResetReasonShim() {
     return F("Unknown");
 }
 
+// system_esp32.cpp: the loop() stall that rebooted the chip last time, empty if none
+String systemStallInfo();
+
 inline String getResetInfoShim() {
-    return String(F("Reset reason: ")) + String(static_cast<int>(esp_reset_reason()), 10);
+    String out(F("Reset reason: "));
+    out += String(static_cast<int>(esp_reset_reason()), 10);
+    const auto stall = systemStallInfo();
+    if (stall.length()) {
+        out += F(", ");
+        out += stall;
+    }
+    return out;
 }
 
 // Xtensa cycle counter — exposed both as a free function (matches the

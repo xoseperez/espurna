@@ -6,12 +6,13 @@ of the Beken BDK 3.0.33) and runs next to the ESP8266 and ESP32 builds from the 
 [`code/espurna/arch/beken`](../code/espurna/arch/beken), the builds are in
 [`code/platformio_beken.ini`](../code/platformio_beken.ini).
 
-It was brought up on a Tuya 1-channel 5 V relay board with a 433 MHz receiver (CB3S module, BK7231N). Tested on that board:
+It was brought up on a Tuya **TYWRA-RF** "Smart Switch": a 1-channel 10 A relay with a 433 MHz receiver, powered by AC/DC
+7-32 V or 5 V micro-USB (CB3S module, BK7231N). Tested on that board:
 relay, both buttons, LED, the 433 MHz remote, Wi-Fi, web UI (direct and behind a reverse proxy), OTA over Wi-Fi, MQTT, HTTP
 API, NTP, serial and telnet terminal, settings kept across reboots and updates.
 
 <p>
-  <img src="img/cb3s-board.webp" width="49%" alt="Tuya 1-channel 5 V relay board with a CB3S module and a 433 MHz receiver">
+  <img src="img/cb3s-board.webp" width="49%" alt="Tuya TYWRA-RF relay board with a CB3S module and a 433 MHz receiver">
   <img src="img/cb3s-wired.webp" width="49%" alt="The same board wired to a CP2102 USB-UART adapter, powered from micro-USB">
 </p>
 
@@ -20,7 +21,7 @@ API, NTP, serial and telnet terminal, settings kept across reboots and updates.
 | Build | Board |
 |-------|-------|
 | `cb3s-generic` | any CB3S board (Tuya flash layout); no relays, buttons or LEDs pre-assigned, configure them in the web UI |
-| `tuya-cb3s-relay-rf` | **Tuya 1-channel 5 V relay + 433 MHz receiver**: relay P24, button P14, second ("total") button P6, LED P8 (inverted, Wi-Fi status), 433 MHz receiver data on P26 |
+| `tuya-cb3s-relay-rf` | **Tuya TYWRA-RF** (1-channel relay + 433 MHz receiver, AC/DC 7-32 V): relay P24, button P14, second ("total") button P6, LED P8 (inverted, Wi-Fi status), 433 MHz receiver data on P26 |
 
 Enabled modules: web UI, API, MQTT, terminal, Home Assistant; the RF bridge (rc-switch) on `tuya-cb3s-relay-rf`.
 
@@ -48,8 +49,8 @@ The flashing is done once. After that every update goes over Wi-Fi.
 | 9, GND | adapter GND |
 | 1, CEN | a loose wire: touch it to GND to reset the chip |
 
-- **Power the board from its micro-USB socket.** This socket is 5 V power only: the board has no USB-UART chip, and the
-  BK7231N has no USB. Leave the adapter's 3.3 V unconnected then. Without USB power, feed pad 8 (3.3 V) from a 3.3 V supply
+- **Power the board from its micro-USB socket** while flashing. This socket is 5 V power only: the board has no USB-UART
+  chip, and the BK7231N has no USB. The terminal block takes AC/DC 7-32 V (the relay coil itself is 5 V). Leave the adapter's 3.3 V unconnected then. Without USB power, feed pad 8 (3.3 V) from a 3.3 V supply
   strong enough for Wi-Fi; the 3.3 V pin of most adapters is not.
 - Check the pads with a meter before you solder. Pad 9 (GND) beeps to the minus of the electrolytic capacitor and to the USB
   shell, pad 8 reads 3.3 V with the board powered. If it is the other way round, the module is rotated.
@@ -107,7 +108,9 @@ so the stock pin map is still on the chip.
 2. Open `http://192.168.4.1`, log in as `admin` / `fibonacci` and set a new password when asked.
 3. Add your network on the **Wi-Fi** tab, then reach the device at the address your router gives it.
 
-No captive portal yet: open the address by hand.
+A phone should show the "sign in to network" page by itself (captive portal, not checked on a phone yet); otherwise
+open the address by hand.
+The device also answers as `ESPURNA-XXXXXX.local` (mDNS).
 
 Buttons on `tuya-cb3s-relay-rf` (ESPurna defaults):
 
@@ -157,8 +160,9 @@ To switch relays from the remote:
 With four relays, an 8-button remote fits exactly: ON and OFF of each relay on its own button, as above. With more remote buttons,
 add more relays; every new relay gets its own ON / OFF rows here.
 
-Tested with an 8-button remote (protocol 1, 24 bit): 16 out of 16 presses received. About one press in 16 is sometimes
-decoded as protocol 17 with a different code, and that press is ignored.
+Tested with an 8-button remote (protocol 1, 24 bit): 16 out of 16 presses received. About one press in 16 comes out as
+protocol 17 (a looser sync pulse) with the same bits; codes are matched by bit count and payload only, so it still
+switches the relay.
 
 ## 9. How this build differs from the stock LibreTiny settings
 
@@ -174,14 +178,27 @@ decoded as protocol 17 with a different code, and that press is ignored.
 - **Patched AsyncTCP** ([`code/lib_beken/AsyncTCP-espurna`](../code/lib_beken/AsyncTCP-espurna)), used instead of the
   registry version. A dropped connection could leave the web server using a freed lwIP connection, and other requests then
   stalled for 10 to 40 s.
+- **Captive portal DNS** ([`code/lib_beken/DNSServer`](../code/lib_beken/DNSServer), copied from arduino-esp32). The SDK DHCP
+  server runs its own DNS stub on port 53 that refuses every query, so clients of the access point decided there was no
+  internet and never showed the sign-in page. Ours is bound to `192.168.4.1` and gets the queries first.
+- **Access point on the router's channel.** There is one radio: with STA connected the access point uses its channel, on the
+  configured `wifiApChan` the two kept switching the radio and STA dropped every few seconds.
+- **Crash handlers** (`-Wl,--wrap=bk_trap_*`, [`rtcmem_beken.cpp`](../code/espurna/arch/beken/rtcmem_beken.cpp)). The SDK ones
+  overwrite the retention register, so the stability counter was lost on every crash and a crash loop never put the
+  device into the unstable mode. Ours keep it and add the exception type ("Crash (data abort)" etc. in `info`).
 - **Settings** are kept in 8 rotating slots in the `userdata` partition at `0x1DB000`, below the Tuya config. Every slot has
   a CRC, and the newest valid slot is loaded at boot.
 
 ## 10. Known limitations
 
-- The custom reset reason is lost: no RAM survives a reset on the BK7231N, so **Info** always shows `SW Reboot` after a
-  reboot from the web UI or the terminal.
-- No mDNS, no captive portal, no Alexa, no ArduinoOTA, no OTA from a URL yet.
-- `wifiTxPwr` does nothing.
-- No `gpio` terminal command.
+- No RAM survives a reset on the BK7231N (the bootloader clears all of it). The custom reset reason ("Reboot from a
+  terminal command", "after a successful OTA update") and the stability counter are carried in the 16-bit SDK retention
+  register instead, so they survive reboots done by ESPurna and crashes; after a hang only `watchdog` is known.
+  Relay states are restored from the settings, not from RTC memory.
+- mDNS only announces the device (`<hostname>.local`, HTTP and telnet services); looking up the MQTT broker over mDNS
+  (`mqttServer` left empty) does not work, set the broker address.
+- `wifiTxPwr` (dBm) works, but the SDK calibration caps it: 10 dBm measured about 5 dB below the default 20 dBm.
+- No Alexa, no ArduinoOTA, no OTA from a URL yet.
+- `GPIO`, `GPIO.MODE`, `GPIO.LOCKS`, `REG.READ`, `REG.WRITE` terminal commands read the BK72xx GPIO registers directly,
+  `FUNCTION` marks a pin taken by a peripheral (UART, PWM).
 - The ADC (P23) is not used, and there is no VCC measurement, so the VCC row is hidden on the status page.

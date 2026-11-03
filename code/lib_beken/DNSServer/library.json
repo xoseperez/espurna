@@ -1,0 +1,19 @@
+{
+  "name": "DNSServer",
+  "description": "DNSServer from arduino-esp32 2.0.x (unchanged), for the ESPurna captive portal on LibreTiny, which has no DNSServer of its own",
+  "keywords": "dns,captive",
+  "authors": {
+    "name": "Kristijan Novoselić",
+    "maintainer": true
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/espressif/arduino-esp32.git"
+  },
+  "version": "2.0.0",
+  "license": "LGPL-2.1",
+  "frameworks": "arduino",
+  "platforms": [
+    "libretiny"
+  ]
+}

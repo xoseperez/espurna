@@ -13,12 +13,12 @@
 
                 <div class="pure-control-group">
                     <label>SSID</label>
-                    <input name="wifiApSsid" maxlength="32" type="text" data-action="reboot" >
+                    <input name="wifiApSsid" maxlength="32" type="text" autocomplete="off" data-action="reboot" >
                 </div>
 
                 <div class="pure-control-group">
                     <label>Passphrase</label>
-                    <input name="wifiApPass" minlength="8" maxlength="63" type="password" spellcheck="false" data-action="reboot" >
+                    <input name="wifiApPass" minlength="8" maxlength="63" type="password" autocomplete="new-password" spellcheck="false" data-action="reboot" >
                     <span class="no-select password-reveal"></span>
                     <span class="pure-form-message">
                         When specified, ESPurna will use these values in place of the hostname (see <strong>GENERAL</strong> panel) as SSID and device password (see <strong>ADMIN</strong> panel) as passphrase.
@@ -51,7 +51,7 @@
                     <label>Roaming margin (dB)</label>
                     <div><input type="number" name="wifiRoamDelta" min="1" max="40" required ></div>
                     <span class="pure-form-message">
-                        (ESP32) Only switch to another access point when it is at least this much stronger than the current one.
+                        Only switch to another access point when it is at least this much stronger than the current one.
                         Checked every 3 minutes, gradually slowing down to 15 minutes while nothing changes.
                     </span>
                 </div>
