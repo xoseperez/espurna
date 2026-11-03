@@ -319,6 +319,8 @@ bool systemHeartbeat();
 espurna::duration::Seconds systemUptime();
 
 espurna::StringView systemDevice();
+String systemManufacturer();
+String systemDeviceName();
 espurna::StringView systemIdentifier();
 
 espurna::StringView systemChipId();

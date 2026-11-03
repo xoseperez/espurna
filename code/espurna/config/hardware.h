@@ -114,6 +114,16 @@
     #define MANUFACTURER            "GENERIC"
     #define DEVICE                  "BEKEN"
 
+#elif defined(ESP8266_GENERIC)
+
+    // Any ESP8266 board. Same as ESP32_GENERIC, nothing is pre-assigned and pins come from
+    // the settings (device template search, Tasmota import, WebUI or terminal). Drivers are
+    // chosen by the build (esp8266-1m, -sensor, -all ... in platformio.ini)
+
+    // Info
+    #define MANUFACTURER            "GENERIC"
+    #define DEVICE                  "ESP8266"
+
 #elif defined(TUYA_CB3S_RELAY_RF)
 
     // Tuya TYWRA-RF 1-channel relay board with a 433 MHz receiver, CB3S (BK7231N) module.

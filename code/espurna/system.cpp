@@ -77,6 +77,10 @@ STRING_VIEW_INLINE(Hostname, "hostname");
 STRING_VIEW_INLINE(Description, "desc");
 STRING_VIEW_INLINE(Password, "adminPass");
 
+// generic images get the board names from the device template, build values otherwise
+STRING_VIEW_INLINE(Manufacturer, "sysManufacturer");
+STRING_VIEW_INLINE(Device, "sysDevice");
+
 } // namespace keys
 
 } // namespace settings
@@ -150,19 +154,22 @@ STRING_VIEW_INLINE(Password, ADMIN_PASS);
 
 } // namespace internal
 
+String manufacturer() {
+    return getSetting(settings::keys::Manufacturer, buildHardware().manufacturer);
+}
+
+String device_name() {
+    return getSetting(settings::keys::Device, buildHardware().device);
+}
+
+// settings are only read once, the name stays the same until reboot
 StringView device() {
-    const static String out = ([]() {
-        String out;
-
-        const auto hardware = buildHardware();
-        out.concat(hardware.manufacturer.c_str(),
-            hardware.manufacturer.length());
+    static String out;
+    if (!out.length()) {
+        out = manufacturer();
         out += '_';
-        out.concat(hardware.device.c_str(),
-            hardware.device.length());
-
-        return out;
-    })();
+        out += device_name();
+    }
 
     return out;
 }
@@ -223,8 +230,10 @@ EXACT_VALUE(sleepInterrupt, sleep::settings::interrupt);
 
 #undef EXACT_VALUE
 
-static constexpr std::array<espurna::settings::query::Setting, 5> Settings PROGMEM {{
+static constexpr std::array<espurna::settings::query::Setting, 7> Settings PROGMEM {{
      {keys::Description, system::description},
+     {keys::Manufacturer, system::manufacturer},
+     {keys::Device, system::device_name},
      {keys::Hostname, system::hostname},
      {keys::Password, system::password},
 
@@ -1164,6 +1173,14 @@ String systemHostname() {
 
 String systemDescription() {
     return espurna::system::description();
+}
+
+String systemManufacturer() {
+    return espurna::system::manufacturer();
+}
+
+String systemDeviceName() {
+    return espurna::system::device_name();
 }
 
 void systemSetup() {

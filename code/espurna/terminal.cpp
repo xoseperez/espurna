@@ -42,6 +42,9 @@ Copyright (C) 2020-2022 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include <esp_ota_ops.h>
 #include <esp_partition.h>
 #endif
+#if defined(LIBRETINY)
+#include <lwip/stats.h>
+#endif
 #include <Stream.h>
 
 // FS 'range', declared at compile time via .ld script PROVIDE declarations
@@ -179,6 +182,11 @@ void heap(CommandContext&& ctx) {
     const auto stats = systemHeapStats();
     ctx.output.printf_P(PSTR("initial: %lu available: %lu contiguous: %lu\n"),
             systemInitialFreeHeap(), stats.available, stats.usable);
+#if defined(LIBRETINY) && LWIP_STATS && MEM_STATS
+    // lwip has its own heap there, queued tcp data and received frames live in it
+    ctx.output.printf_P(PSTR("lwip: size: %u used: %u max: %u errors: %u\n"),
+            lwip_stats.mem.avail, lwip_stats.mem.used, lwip_stats.mem.max, lwip_stats.mem.err);
+#endif
 
     terminalOK(ctx);
 }

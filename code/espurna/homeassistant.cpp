@@ -201,12 +201,11 @@ using BuildStringsPtr = std::unique_ptr<BuildStrings>;
 
 BuildStringsPtr make_build_strings() {
     const auto app = buildApp();
-    const auto hardware = buildHardware();
     return BuildStringsPtr(
         new BuildStrings{
             .version = app.version.toString(),
-            .manufacturer = hardware.manufacturer.toString(),
-            .device = hardware.device.toString(),
+            .manufacturer = systemManufacturer(),
+            .device = systemDeviceName(),
         });
 }
 

@@ -39,10 +39,10 @@ Enabled modules: WebUI, API, MQTT, terminal, Home Assistant, Domoticz, Alexa, se
 
 ### Other ESP32 boards: Tasmota templates
 
-Relays, buttons and LEDs are configured at runtime, so any ESP32 device can run the `esp32-generic` build and be set up from a [Tasmota template](https://templates.blakadder.com/) - no rebuild needed. The generic image drives no GPIOs until configured, so it is safe to flash on unknown hardware. The import also works on `esp32-relay-x2`, to re-purpose that board.
+Relays, buttons and LEDs are configured at runtime, so any ESP32 device can run the `esp32` image (`esp32-generic` build) and be set up from a [Tasmota template](https://templates.blakadder.com/) - no rebuild needed. The generic image drives no GPIOs until configured, so it is safe to flash on unknown hardware. The import also works on `esp32-relay-x2`, to re-purpose that board.
 
-1. Flash `espurna-esp32-generic-full.bin` and connect to the device WebUI.
-2. Go to **Admin → Tasmota Profile Import** and paste the template JSON, e.g.
+1. Flash `espurna-esp32-full.bin` and connect to the device WebUI.
+2. Go to **Admin → Device Template**, find the device and press **Apply**, or open *Paste a Tasmota template* there and paste the template JSON, e.g.
    `{"NAME":"MyDevice","GPIO":[0,0,0,0,0,0,0,0,0,0,0,0,224,225,0,0,0,0,0,544,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"FLAG":0,"BASE":1}`
 3. Check the preview (number of relays / buttons / LEDs found), press **Import Tasmota Template** and reboot.
 
@@ -103,28 +103,35 @@ Wiring, backup, flashing, the 433 MHz remote and the known limitations: [beken/R
 Many in-wall relay modules (e.g. Moes MS-104B) connect the wall switch to a GPIO through an optocoupler, so while the switch is ON the pin sees a 50/60 Hz pulse train instead of a steady level. A button marked as *AC mains switch* counts these edges in a GPIO interrupt and is ON while at least *min pulses* edges were seen within one debounce window (100 ms is recommended), optionally accepting only edges with the 50 or 60 Hz period (either full-wave or half-wave optocoupler circuits). Such a button always works in `switch` mode: the position at boot is taken as the starting point (no toggle at boot) and click / long-click actions are disabled, so a wall switch can never trigger reset or AP mode. Works on both ESP8266 (GPIO0..15) and ESP32 (any input-capable GPIO); on other pin types (ESP8266 GPIO16, expanders, analog) the button is disabled instead, because a plain pin would read the pulses as constant presses and releases.
 
 - **WebUI**: *Relays → Buttons and wall switches* has the global *AC frequency* (Any / 50 / 60 Hz) and *AC debug log*, plus *AC mains switch* and *Min pulses* per button. Changes other than the debug log need a reboot.
-- **Tasmota import**: Tasmota templates cannot express AC inputs (Tasmota uses `SwitchDebounce` ending with 9). Tick *AC mains switches* and pick the frequency in the import panel (or paste e.g. `SwitchDebounce 69` into the *Tasmota commands* field to tick it automatically). Inputs imported from `Switch` codes then become `switch` mode buttons with AC detection, 100 ms debounce and relay toggle on every position change, each controlling the relay with the same Tasmota number. *Buttons are AC too* applies the same to `Button` codes.
+- **Tasmota templates**: they cannot express AC inputs (Tasmota uses `SwitchDebounce` ending with 9). Inputs imported from `Switch` codes become `switch` mode buttons toggling the relay with the same Tasmota number on every position change; mark them as *AC mains switch* on the RELAYS panel afterwards. The boards of this firmware in the device search (e.g. Moes MS-104B) already come with it.
 - **Settings**: `btnFreq<N>` (AC detection on/off), `btnMinPulses<N>` (default 5), `btnAcFreq` (0 = any, 50, 60), `btnAcDbg` (pulse statistics in the debug log), together with `btnMode<N>=switch`, `btnPress<N>` / `btnRlse<N>=relay-toggle` and `btnDebDel<N>=100`.
 - **Moes MS-104B** (ESP8266, 1 MB): `moes-ms-104b` build (`pio run -e moes-ms-104b`, defined in `code/platformio_override.ini`) with AC switches on GPIO13 / GPIO12 controlling relays on GPIO14 / GPIO15 and the on-board button on GPIO2.
 
 ### Download
 
-Every push to `esp32-port` is built by [GitHub Actions](https://github.com/igorufox/espurna/actions/workflows/esp32.yml) and published as a [release](https://github.com/igorufox/espurna/releases/latest) with the images of every board of this fork:
+Every push to `esp32-port` is built by [GitHub Actions](https://github.com/igorufox/espurna/actions/workflows/esp32.yml) and published as a [release](https://github.com/igorufox/espurna/releases/latest). There is one image per chip instead of one per board, the board is picked after flashing:
 
-| File | Use |
-|------|-----|
-| `espurna-<build>-full.bin` | ESP32: merged image (bootloader + partitions + app), first flash over serial at `0x0` |
-| `espurna-<build>-ota.bin` | ESP32: application only, OTA upgrade from the WebUI |
-| `espurna-<build>.uf2` | Beken (`cb3s-generic`, `tuya-cb3s-relay-rf`): first flash with `ltchiptool`, then OTA from the WebUI |
-| `espurna-<build>.bin` | ESP8266 (Sonoff Mini / Basic / 4CH / RF Bridge / S20 / 1CH inching, ESP12F relay x2 / x4, HW-622, Moes MS-104B): serial flash at `0x0` or OTA |
-| `espurna-<build>.bin.gz` | ESP8266: compressed OTA, on 1 MB boards after `espurna-minimal-webui-1m.bin` (2-step OTA) |
+| Image | Files | For |
+|-------|-------|-----|
+| `esp32` | `-full.bin` (serial, at `0x0`), `-ota.bin` (WebUI) | any ESP32 with 4 MB flash |
+| `esp32-nspanel` | same | Sonoff NSPanel EU (gen1), see [nspanel/README.md](nspanel/README.md) |
+| `beken-cb3s` | `.uf2` (`ltchiptool`, then WebUI) | any Tuya CB3S (BK7231N) board |
+| `beken-cb3s-rf` | same | CB3S with a 433 MHz receiver, e.g. Tuya TYWRA-RF |
+| `esp8266-1m` | `.bin` (serial at `0x0` or WebUI), `.bin.gz` | relays, buttons, AC mains switches, LEDs, dummy relays |
+| `esp8266-1m-all` | same | + PWM light and Sonoff RF Bridge; no serial debug / terminal, UART0 belongs to the RF chip |
+| `esp8266-4m` | same | boards installed with the 4 MB layout (settings live there), single step OTA |
+| `esp8266-1m-minimal` | same | first step of the 2-step OTA on 1 MB boards, then the `.bin.gz` |
 
-The latest build of a board is always at `https://github.com/igorufox/espurna/releases/latest/download/espurna-<build>-full.bin`, e.g. [espurna-itead-sonoff-minir4-full.bin](https://github.com/igorufox/espurna/releases/latest/download/espurna-itead-sonoff-minir4-full.bin).
+**Picking the board.** WebUI, *ADMIN*, *Device Template*: type the name (e.g. `sonoff mini`, `shelly 1pm`, `ms-104b`) and *Apply*. The list is downloaded by the browser at that moment from [templates.blakadder.com](https://templates.blakadder.com) (Tasmota templates, ESP8266 / ESP32) or [OpenBeken](https://openbekeniot.github.io/webapp/devicesList.html) (Beken), plus the boards of this firmware; nothing is stored here. AC mains wall switches are marked afterwards on the RELAYS panel, per button. Your own board: [add a template](https://templates.blakadder.com/new.html) to the Tasmota list, or the `devices.json` of [openbekeniot/webapp](https://github.com/openbekeniot/webapp) for Beken.
+
+Sensor drivers (power metering, DHT, I2C ...) are not in the generic images yet: they take their default pins at boot, before any settings, and those pins are relays on many boards. The board builds (`pio run -e itead-sonoff-pow` ...) still have them.
+
+The latest image is always at `https://github.com/igorufox/espurna/releases/latest/download/espurna-<image>...`, e.g. [espurna-esp32-full.bin](https://github.com/igorufox/espurna/releases/latest/download/espurna-esp32-full.bin).
 
 First flash over serial:
 
 ```
-esptool.py --chip esp32 --baud 460800 write_flash 0x0 espurna-esp32-generic-full.bin
+esptool.py --chip esp32 --baud 460800 write_flash 0x0 espurna-esp32-full.bin
 ```
 
 ### Build from source

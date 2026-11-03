@@ -1036,13 +1036,21 @@ void _wsOnConnected(JsonObject& root) {
     root[F("sdk")] = info.sdk.base.c_str();
     root[F("core")] = info.sdk.version.c_str();
 
-    // nb: flash strings are copied anyway, can't just use as a ptr.
-    // need to explicitly copy through our own ctor operator as `String`,
-    // we should not expect that the given view is actually a C-string
-    root[F("manufacturer")] =
-        String(info.hardware.manufacturer);
-    root[F("device")] =
-        String(info.hardware.device);
+    // device template search picks the database and the pin layout by these
+#if defined(ARDUINO_ARCH_ESP32)
+    root[F("arch")] = F("esp32");
+    root[F("mcu")] = ESP->getChipModel();
+#elif defined(LIBRETINY)
+    root[F("arch")] = F("beken");
+    root[F("mcu")] = lt_cpu_get_model_name();
+#else
+    root[F("arch")] = F("esp8266");
+    root[F("mcu")] = F("ESP8266");
+#endif
+
+    // build values, or the ones written by the device template
+    root[F("manufacturer")] = systemManufacturer();
+    root[F("device")] = systemDeviceName();
 
     root[F("app_name")] = info.app.name;
     root[F("app_version")] = info.app.version;

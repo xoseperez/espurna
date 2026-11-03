@@ -236,6 +236,9 @@ span.visible {
 .button-settings-backup,
 .button-settings-restore,
 .button-setup-password,
+.button-tasmota-import,
+.button-template-apply,
+.button-template-search,
 .button-upgrade-browse {
     background: rgb(0, 192, 0); /* green */
 }
@@ -263,6 +266,7 @@ span.visible {
 }
 
 .button-upgrade-browse,
+.button-template-search,
 .button-clear-filters,
 .button-clear-messages,
 .button-clear-counts,
@@ -524,4 +528,19 @@ input::placeholder {
 #tasmota-preview {
     font-family: monospace;
     font-size: 0.9em;
+}
+
+#template-results {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1em 0;
+}
+
+.template-result {
+    margin: 0.3em 0;
+    font-size: 0.9em;
+}
+
+.template-result .pure-button {
+    padding: 0.2em 0.8em;
 }

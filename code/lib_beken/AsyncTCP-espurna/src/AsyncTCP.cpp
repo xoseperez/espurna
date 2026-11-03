@@ -28,6 +28,7 @@ extern "C"{
 #include "lwip/inet.h"
 #include "lwip/dns.h"
 #include "lwip/err.h"
+#include "lwip/stats.h"
 }
 #if CONFIG_ASYNC_TCP_USE_WDT
 #include "esp_task_wdt.h"
@@ -797,9 +798,20 @@ int8_t AsyncClient::abort(){
     return ERR_ABRT;
 }
 
+// Queued tcp data and every received frame share the lwip heap (MEM_SIZE 16 KiB, the driver allocates PBUF_RAM for rx).
+// A slow reader (nginx proxying for a remote browser) let the page and the websocket queue it full, then no frame could
+// be received, not even the window update or the ack that would free it, and the board was off the network for good.
+// Writes leave room for rx, the rest goes on the next poll or ack
+static constexpr size_t RxReserve = 4096;
+
 size_t AsyncClient::space(){
     if((_pcb != NULL) && (_pcb->state == 4)){
-        return tcp_sndbuf(_pcb);
+        size_t room = tcp_sndbuf(_pcb);
+#if LWIP_STATS && MEM_STATS
+        const size_t used = lwip_stats.mem.used + RxReserve;
+        room = std::min<size_t>(room, (lwip_stats.mem.avail > used) ? (lwip_stats.mem.avail - used) : 0);
+#endif
+        return room;
     }
     return 0;
 }

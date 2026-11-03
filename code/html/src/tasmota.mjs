@@ -85,23 +85,97 @@ function buildGpioMap() {
     // -------------------------------------------------------------
     // PWM Channels (up to 32)
     // -------------------------------------------------------------
-    // Often used as LEDs or lighting outputs, can be mapped as LEDs.
+    // Light channels (bulbs, LED strips), ESPurna dimmer channels in PWM order
     // Standard PWM: 416 to 447 (PWM1 to PWM32)
     // Inverted PWM: 448 to 479 (PWM_i1 to PWM_i32)
     for (let i = 0; i < 32; i++) {
-        map.set(416 + i, { type: 'led', index: i, inverted: false });
-        map.set(448 + i, { type: 'led', index: i, inverted: true });
+        map.set(416 + i, { type: 'light', index: i, inverted: false });
+        map.set(448 + i, { type: 'light', index: i, inverted: true });
     }
 
     // -------------------------------------------------------------
     // LedLink / Status LEDs (standard status/Wi-Fi connection LED)
     // -------------------------------------------------------------
     // LedLink = 544
-    map.set(544, { type: 'led', index: 0, inverted: false });
+    map.set(544, { type: 'led', index: 0, inverted: false, link: true });
     // LedLinki = 576
-    map.set(576, { type: 'led', index: 0, inverted: true });
+    map.set(576, { type: 'led', index: 0, inverted: true, link: true });
 
     return map;
+}
+
+// Template GPIO array position -> physical GPIO, ref. Tasmota include/tasmota_template.h
+// - ESP8266, 13 (legacy 8-bit codes) or 14 (+ ADC0, not used here) entries, flash pins 6, 7, 8 and 11 are skipped
+// - ESP32, 36 entries. Kept backwards compatible with the older 0-5 9-10 12-39 layout, flash pins are at the end
+// Any other length (e.g. full 18 / 40 entry lists) is taken as position == GPIO
+const ESP8266_TEMPLATE_PINS = [0, 1, 2, 3, 4, 5, 9, 10, 12, 13, 14, 15, 16];
+const ESP32_TEMPLATE_PINS = [
+    0, 1, 2, 3, 4, 5, 9, 10,
+    12, 13, 14, 15, 16, 17, 18, 19,
+    20, 21, 22, 23, 24, 25, 26, 27,
+    6, 7, 8, 11,
+    32, 33, 34, 35, 36, 37, 38, 39];
+
+/**
+ * @param {number} length of the template GPIO array
+ * @returns {'esp8266' | 'esp32' | null} chip the template was made for, null when the layout is not known
+ */
+export function templateChip(length) {
+    if ((length === 13) || (length === 14)) {
+        return 'esp8266';
+    }
+
+    if (length === 36) {
+        return 'esp32';
+    }
+
+    return null;
+}
+
+/**
+ * @param {number} length
+ * @param {number} position
+ * @returns {number | null} physical GPIO, null for ADC0
+ */
+function templatePin(length, position) {
+    switch (templateChip(length)) {
+    case 'esp8266':
+        return ESP8266_TEMPLATE_PINS[position] ?? null;
+    case 'esp32':
+        return ESP32_TEMPLATE_PINS[position] ?? null;
+    }
+
+    return position;
+}
+
+// Tasmota before 9.1 used 8-bit codes, still found in 13 entry templates.
+// Indexed by the legacy code, ref. kGpioConvert in Tasmota include/tasmota_template_legacy.h
+const LEGACY_GPIO_CODES = [
+    0, 1184, 1216, 1248, 1312, 608, 640, 1376, 1056, 160, 161, 162, 163, 164, 165, 166, 167, 32, 33, 34, 35,
+    224, 225, 226, 227, 228, 229, 230, 231, 256, 257, 258, 259, 260, 261, 262, 263, 416, 417, 418, 419, 420,
+    352, 353, 354, 355, 448, 449, 450, 451, 452, 1088, 288, 289, 290, 291, 320, 321, 322, 323, 1408, 1440, 1472,
+    1504, 1600, 1632, 768, 800, 992, 1696, 1760, 1792, 1824, 1856, 1888, 1920, 1952, 1984, 2016, 2048, 2080,
+    2112, 192, 193, 194, 195, 196, 197, 198, 199, 64, 65, 66, 67, 384, 385, 386, 387, 1536, 1568, 2144, 1728,
+    2176, 2208, 2240, 1120, 1152, 2272, 2304, 2336, 2368, 832, 864, 896, 928, 960, 2400, 2432, 2464, 2496, 2528,
+    2560, 96, 97, 98, 99, 128, 129, 130, 131, 2592, 2624, 2656, 2688, 2720, 2752, 2784, 2816, 2848, 2880, 2912,
+    2944, 2976, 3008, 3040, 3072, 3104, 3136, 3200, 3232, 3264, 3296, 3265, 3297, 3392, 3424, 3456, 544, 576,
+    3168, 480, 512, 1024, 3488, 3520, 3552, 3584, 3616, 3648, 3680, 3712, 3744, 3776, 3808, 3809, 3810, 3904,
+    3936, 3968, 4000, 4032, 4064, 4096, 4128, 4160, 4192, 4224, 4256, 4288, 4320, 4352, 4384, 1344, 1280, 4416,
+    4448, 4480, 4512, 4544, 4576, 4608, 4640, 4672, 1664, 4928, 4960, 4992, 5056, 5088, 5120, 5152, 5184, 5216,
+    5248, 5280, 5312, 5344
+];
+
+/**
+ * @param {number} length of the template GPIO array
+ * @param {number} code
+ * @returns {number} current Tasmota GPIO function code
+ */
+function templateCode(length, code) {
+    if (length === 13) {
+        return LEGACY_GPIO_CODES[code] ?? 0;
+    }
+
+    return code;
 }
 
 /**
@@ -109,7 +183,8 @@ function buildGpioMap() {
  *   NAME: string,
  *   GPIO: number[],
  *   FLAG?: number,
- *   BASE?: number
+ *   BASE?: number,
+ *   CMND?: string
  * }} TasmotaTemplate
  */
 
@@ -127,69 +202,63 @@ function parseTasmotaTemplate(text) {
 }
 
 /**
- * Tasmota templates cannot express AC mains (optocoupler) switch inputs, Tasmota itself
- * enables AC detection with `SwitchDebounce` ending with 9 (e.g. `SwitchDebounce 69`).
- * - `ac` marks inputs imported from Switch codes (160..223) as AC mains switches
- * - `acButtons` also marks inputs imported from Button codes (32..159)
- * - `freq` is the mains frequency, 50 or 60 Hz (global `btnAcFreq`)
- * @typedef {{ac: boolean, acButtons: boolean, freq: number}} ImportOptions
- */
-
-/** @type {ImportOptions} */
-const DEFAULT_OPTIONS = { ac: false, acButtons: false, freq: 50 };
-
-/**
- * Detect AC switch mode from pasted Tasmota commands, e.g. `SwitchDebounce 69`
- * @param {string} text
- * @returns {boolean}
- */
-export function acFromCommands(text) {
-    const match = text.match(/SwitchDebounce\s+(\d+)/i);
-    if (!match) {
-        return false;
-    }
-
-    return (parseInt(match[1], 10) % 10) === 9;
-}
-
-/**
  * Convert Tasmota template to ESPurna settings key-value pairs.
+ * The template itself cannot express AC mains (optocoupler) wall switches. Tasmota enables them
+ * with `SwitchDebounce` ending with 9, when that is in the template commands (`CMND`) Switch inputs
+ * become AC mains switches here too. Otherwise they are marked afterwards on the RELAYS panel
  * @param {TasmotaTemplate} tmpl
- * @param {ImportOptions} options
  * @returns {{[key: string]: string}}
  */
-export function tasmotaToEspurna(tmpl, options = DEFAULT_OPTIONS) {
+export function tasmotaToEspurna(tmpl) {
     /** @type {{[key: string]: string}} */
     const settings = {};
-
-    /** @type {{button: number, tasmota: number}[]} */
-    const acInputs = [];
 
     /** @type {Map<number, number>} Tasmota RelayN number to the ESPurna relay index */
     const relays = new Map();
 
+    const ac = /SwitchDebounce\s+\d*9\b/i.test(tmpl.CMND ?? '');
+
+    // shown as the Device on the status page, `desc` is left to the user
     if (tmpl.NAME) {
-        settings['desc'] = tmpl.NAME;
+        settings['sysDevice'] = tmpl.NAME;
+    }
+
+    // Template positions to physical GPIOs, legacy codes to the current ones.
+    // ESPurna indices are assigned in GPIO order
+    const length = tmpl.GPIO.length;
+    const pins = tmpl.GPIO
+        .map((code, position) => ({
+            gpio: templatePin(length, position),
+            info: TASMOTA_GPIO_MAP.get(templateCode(length, code)),
+        }))
+        .filter((pin) => (pin.gpio !== null) && (pin.info !== undefined))
+        .sort((lhs, rhs) => (lhs.gpio ?? 0) - (rhs.gpio ?? 0));
+
+    for (const pin of pins) {
+        const info = /** @type {NonNullable<typeof pin.info>} */(pin.info);
+        if (info.type === 'relay') {
+            relays.set(info.index, relays.size);
+        }
     }
 
     // Counters per type to track assigned indices
-    const counters = { relay: 0, button: 0, led: 0 };
+    const counters = { relay: 0, button: 0, led: 0, light: 0 };
 
-    tmpl.GPIO.forEach((code, gpioPin) => {
-        if (code === 0) return;
+    /** @type {Map<number, number>} Tasmota LedN number to the ESPurna led index */
+    const leds = new Map();
+    let link = false;
 
-        const info = TASMOTA_GPIO_MAP.get(code);
-        if (!info) return; // unknown/unsupported function
-
+    for (const pin of pins) {
+        const info = /** @type {NonNullable<typeof pin.info>} */(pin.info);
         const { type, inverted } = info;
         const espurnaIndex = counters[type]++;
+        const gpioPin = /** @type {number} */(pin.gpio);
 
         switch (type) {
             case 'relay':
                 settings[`relayGpio${espurnaIndex}`] = gpioPin.toString();
                 settings[`relayType${espurnaIndex}`] = inverted ? 'inverse' : 'normal';
                 settings[`relayProv${espurnaIndex}`] = 'gpio';
-                relays.set(info.index, espurnaIndex);
                 break;
 
             case 'button': {
@@ -207,85 +276,114 @@ export function tasmotaToEspurna(tmpl, options = DEFAULT_OPTIONS) {
                     : activeHigh  ? 'pull-down'
                                   : 'pull-up';
 
-                // AC mains wall switch. Input sees mains-frequency pulses while ON,
-                // which are counted within the debounce window (100ms).
-                // Maintained switch, every change of position toggles the relay.
-                if (options.ac && (info.switch || options.acButtons)) {
-                    settings[`btnFreq${espurnaIndex}`] = '1';
+                // Tasmota default is SwitchN / ButtonN controlling RelayN
+                const relay = relays.get(info.index);
+                if (relay !== undefined) {
+                    settings[`btnRelay${espurnaIndex}`] = relay.toString();
+                }
+
+                // Wall switch, every change of position toggles the relay (Tasmota SwitchMode 0).
+                // No click actions, holding the switch must not reset the device
+                if (info.switch) {
                     settings[`btnMode${espurnaIndex}`] = 'switch';
-                    settings[`btnDefVal${espurnaIndex}`] = 'high';
                     settings[`btnPress${espurnaIndex}`] = 'relay-toggle';
                     settings[`btnRlse${espurnaIndex}`] = 'relay-toggle';
-                    settings[`btnDebDel${espurnaIndex}`] = '100';
-                    acInputs.push({button: espurnaIndex, tasmota: info.index});
+                    for (const key of ['btnClick', 'btnDclk', 'btnTclk', 'btnLclk', 'btnLLclk']) {
+                        settings[`${key}${espurnaIndex}`] = 'none';
+                    }
+
+                    // mains frequency pulses while ON, counted within the debounce window
+                    if (ac) {
+                        settings[`btnFreq${espurnaIndex}`] = '1';
+                        settings[`btnDefVal${espurnaIndex}`] = 'high';
+                        settings[`btnPinMode${espurnaIndex}`] = 'default';
+                        settings[`btnDebDel${espurnaIndex}`] = '100';
+                    }
                 }
+
                 break;
             }
 
             case 'led':
                 settings[`ledGpio${espurnaIndex}`] = gpioPin.toString();
                 settings[`ledInv${espurnaIndex}`] = inverted ? '1' : '0';
+                if (info.link) {
+                    settings[`ledMode${espurnaIndex}`] = 'wifi';
+                    link = true;
+                } else {
+                    leds.set(espurnaIndex, info.index);
+                }
+                break;
+
+            case 'light':
+                settings[`ltDimmerGPIO${espurnaIndex}`] = gpioPin.toString();
+                settings[`ltInv${espurnaIndex}`] = inverted ? '1' : '0';
                 break;
         }
-    });
+    }
 
-    // Tasmota default is SwitchN / ButtonN controlling RelayN.
-    // nb. ESPurna indices are assigned in GPIO order, not by the Tasmota number
-    if (acInputs.length) {
-        settings['btnAcFreq'] = (options.freq === 60) ? '60' : '50';
-        for (const input of acInputs) {
-            const relay = relays.get(input.tasmota);
-            if (relay !== undefined) {
-                settings[`btnRelay${input.button}`] = relay.toString();
-            }
+    // Tasmota LedN shows the state of RelayN (LedState 1), the first one is also
+    // the Wi-Fi status LED when there is no LedLink
+    for (const [index, tasmota] of leds) {
+        const relay = relays.get(tasmota);
+        if (!link && (index === 0)) {
+            settings[`ledMode${index}`] = (relay !== undefined) ? 'relays-wifi' : 'wifi';
+            link = true;
+        } else if (relay !== undefined) {
+            settings[`ledMode${index}`] = 'relay';
+            settings[`ledRelay${index}`] = relay.toString();
+        } else {
+            settings[`ledMode${index}`] = 'manual';
         }
+    }
+
+    // Bulbs and strips without a relay pin, light is switched by its own (virtual) relay
+    if (counters.light && !counters.relay) {
+        settings['relayProv0'] = 'light-state';
     }
 
     return settings;
 }
 
 /**
- * @param {string} json
- * @param {ImportOptions} options
- * @returns {string} Human readable summary of what was imported
+ * @param {{[key: string]: string}} settings
+ * @returns {string} relays, buttons, LEDs and light channels found
  */
-export function importSummary(json, options = DEFAULT_OPTIONS) {
-    try {
-        const tmpl = parseTasmotaTemplate(json);
-        const settings = tasmotaToEspurna(tmpl, options);
+export function importSummary(settings) {
+    const count = (/** @type {string} */prefix) =>
+        Object.keys(settings).filter((key) => key.startsWith(prefix)).length;
 
-        const relays = Object.keys(settings).filter(k => k.startsWith('relayGpio')).length;
-        const buttons = Object.keys(settings).filter(k => k.startsWith('btnGpio')).length;
-        const leds = Object.keys(settings).filter(k => k.startsWith('ledGpio')).length;
-        const ac = Object.keys(settings).filter(k => k.startsWith('btnFreq')).length;
-
-        let out = `"${tmpl.NAME}": ${relays} relay(s), ${buttons} button(s), ${leds} LED(s)`;
-        if (ac) {
-            out += `, ${ac} of them AC mains switch(es) @ ${settings['btnAcFreq']} Hz`;
-        }
-
-        return out;
-    } catch {
-        return '';
+    let out = `${count('relayGpio')} relay(s), ${count('btnGpio')} button(s), ${count('ledGpio')} LED(s)`;
+    const lights = count('ltDimmerGPIO');
+    if (lights) {
+        out += `, ${lights} light channel(s)`;
     }
+
+    return out;
+}
+
+/**
+ * @param {string} json
+ * @returns {{[key: string]: string}}
+ */
+function settingsFromJson(json) {
+    return tasmotaToEspurna(parseTasmotaTemplate(json));
 }
 
 /**
  * Import Tasmota template and send settings to the device.
  * @param {string} json
- * @param {ImportOptions} options
  */
-function doImport(json, options) {
+function doImport(json) {
     const tmpl = parseTasmotaTemplate(json);
-    const settings = tasmotaToEspurna(tmpl, options);
+    const settings = tasmotaToEspurna(tmpl);
 
-    if (Object.keys(settings).length === 0) {
+    if (Object.keys(settings).every((key) => key === 'sysDevice')) {
         window.alert('No supported GPIO functions found in this Tasmota template.');
         return;
     }
 
-    const summary = importSummary(json, options);
-    const msg = `Import Tasmota template?\n\n${summary}\n\nNote: existing relay/button/LED settings will be overwritten.`;
+    const msg = `Import Tasmota template "${tmpl.NAME}"?\n\n${importSummary(settings)}\n\nNote: existing relay/button/LED settings will be overwritten.`;
     if (!window.confirm(msg)) return;
 
     send(JSON.stringify({
@@ -310,48 +408,19 @@ export function init() {
 
     if (!textarea || !button || !preview) return;
 
-    const ac = /** @type {HTMLInputElement | null} */
-        (document.getElementById('tasmota-ac'));
-    const acButtons = /** @type {HTMLInputElement | null} */
-        (document.getElementById('tasmota-ac-buttons'));
-    const acFreq = /** @type {HTMLSelectElement | null} */
-        (document.getElementById('tasmota-ac-freq'));
-    const commands = /** @type {HTMLInputElement | null} */
-        (document.getElementById('tasmota-commands'));
-
-    /** @returns {ImportOptions} */
-    const options = () => ({
-        ac: !!ac?.checked,
-        acButtons: !!acButtons?.checked,
-        freq: parseInt(acFreq?.value ?? '50', 10),
-    });
-
-    const updatePreview = () => {
+    textarea.addEventListener('input', () => {
         const val = textarea.value.trim();
         if (!val) {
             preview.textContent = '';
             return;
         }
         try {
-            const summary = importSummary(val, options());
-            preview.textContent = summary ? `✓ ${summary}` : '⚠ No recognized functions';
-            preview.style.color = summary ? '#2a7' : '#c80';
+            preview.textContent = `✓ ${importSummary(settingsFromJson(val))}`;
+            preview.style.color = '#2a7';
         } catch {
             preview.textContent = '✗ Invalid JSON';
             preview.style.color = '#c22';
         }
-    };
-
-    textarea.addEventListener('input', updatePreview);
-    for (const elem of [ac, acButtons, acFreq]) {
-        elem?.addEventListener('change', updatePreview);
-    }
-
-    commands?.addEventListener('input', () => {
-        if (ac && acFromCommands(commands.value)) {
-            ac.checked = true;
-        }
-        updatePreview();
     });
 
     button.addEventListener('click', () => {
@@ -361,7 +430,7 @@ export function init() {
             return;
         }
         try {
-            doImport(val, options());
+            doImport(val);
         } catch (e) {
             notifyError(/** @type {Error} */(e));
         }

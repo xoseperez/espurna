@@ -21,29 +21,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # generic images, the board is picked in the WebUI (device template search / Tasmota import).
+        # `name` is the release file name, espurna-<name>-*
         include:
-        # ESP32: platformio_esp32.ini
-        - { arch: esp32, config: platformio_esp32.ini, env: esp32-generic }
-        - { arch: esp32, config: platformio_esp32.ini, env: esp32-relay-x2 }
-        - { arch: esp32, config: platformio_esp32.ini, env: esp32-nspanel }
-        - { arch: esp32, config: platformio_esp32.ini, env: itead-sonoff-minir4 }
-        # Beken BK7231N through LibreTiny: platformio_beken.ini
-        - { arch: beken, config: platformio_beken.ini, env: cb3s-generic }
-        - { arch: beken, config: platformio_beken.ini, env: tuya-cb3s-relay-rf }
-        # ESP8266 boards of this fork (core 3.1.2 + SDK 3.0.5): platformio.ini + platformio_override.ini
-        - { arch: esp8266, config: platformio.ini, env: itead-sonoff-mini }
-        - { arch: esp8266, config: platformio.ini, env: itead-sonoff-basic }
-        - { arch: esp8266, config: platformio.ini, env: itead-sonoff-4ch }
-        - { arch: esp8266, config: platformio.ini, env: itead-sonoff-rfbridge }
-        - { arch: esp8266, config: platformio.ini, env: itead-s20 }
-        - { arch: esp8266, config: platformio.ini, env: itead-1ch-inching }
-        - { arch: esp8266, config: platformio.ini, env: esp12f-relay-x2 }
-        - { arch: esp8266, config: platformio.ini, env: esp12f-relay-x4 }
-        - { arch: esp8266, config: platformio.ini, env: hw-622 }
-        - { arch: esp8266, config: platformio.ini, env: moes-ms-104b }
+        - { arch: esp32, config: platformio_esp32.ini, env: esp32-generic, name: esp32 }
+        - { arch: esp32, config: platformio_esp32.ini, env: esp32-nspanel, name: esp32-nspanel }
+        - { arch: beken, config: platformio_beken.ini, env: cb3s-generic, name: beken-cb3s }
+        - { arch: beken, config: platformio_beken.ini, env: beken-cb3s-rf, name: beken-cb3s-rf }
+        - { arch: esp8266, config: platformio.ini, env: esp8266-1m, name: esp8266-1m }
+        - { arch: esp8266, config: platformio.ini, env: esp8266-1m-all, name: esp8266-1m-all }
+        - { arch: esp8266, config: platformio.ini, env: esp8266-4m, name: esp8266-4m }
         # first step of the 2-step OTA on 1 MB boards
-        - { arch: esp8266, config: platformio.ini, env: espurna-minimal-webui-1m }
-        - { arch: esp8266, config: platformio.ini, env: espurna-minimal-arduino-ota-1m }
+        - { arch: esp8266, config: platformio.ini, env: espurna-minimal-webui-1m, name: esp8266-1m-minimal }
     steps:
     - uses: actions/checkout@v7
     - uses: actions/setup-python@v7
@@ -77,8 +66,7 @@ jobs:
     - name: Collect binaries
       run: |
         env=${{ matrix.env }}
-        # espurna-minimal-* envs already carry the prefix
-        name=espurna-${env#espurna-}
+        name=espurna-${{ matrix.name }}
         mkdir -p dist
         case "${{ matrix.arch }}" in
         esp32)
@@ -140,20 +128,21 @@ jobs:
         body: |
           Automatic build of ${{ github.ref_name }} @ ${{ github.sha }}
 
-          ESP32 (`*-full.bin` - merged image (bootloader + partitions + app), flash at 0x0; `*-ota.bin` - application only, for OTA from the WebUI):
-          - `espurna-esp32-generic-*` - any ESP32 with 4 MB flash, no GPIOs pre-assigned, configure from the WebUI or import a Tasmota template
-          - `espurna-esp32-relay-x2-*` - LC-Tech ESP32 2-relay board
-          - `espurna-esp32-nspanel-*` - Sonoff NSPanel EU (gen1) with the Lovelace UI TFT, screen built from `/nspanel.json`, see `nspanel/README.md`
-          - `espurna-itead-sonoff-minir4-*` - Sonoff MINIR4 "Mini Extreme" (ESP32): relay GPIO26, button GPIO0, S1/S2 GPIO27, LED GPIO19
+          One image per chip, the board is picked after flashing: WebUI, ADMIN, *Device Template* (Tasmota templates, OpenBeken devices and the boards of this firmware) or *Tasmota Profile Import*.
+
+          ESP32 (`*-full.bin` - merged image, flash at 0x0; `*-ota.bin` - application only, for OTA from the WebUI):
+          - `espurna-esp32-*` - any ESP32 with 4 MB flash
+          - `espurna-esp32-nspanel-*` - Sonoff NSPanel EU (gen1) with the Lovelace UI TFT, see `nspanel/README.md`
 
           Beken BK7231N (`*.uf2` - first flash over UART1 with `ltchiptool`, then OTA from the WebUI, see `beken/README.md`):
-          - `espurna-cb3s-generic.uf2` - any Tuya CB3S board, pins set in the WebUI
-          - `espurna-tuya-cb3s-relay-rf.uf2` - Tuya TYWRA-RF 1-channel relay with a 433 MHz receiver
+          - `espurna-beken-cb3s.uf2` - any CB3S board
+          - `espurna-beken-cb3s-rf.uf2` - with the 433 MHz receiver (rc-switch, pin from `rfbRX`), e.g. Tuya TYWRA-RF
 
           ESP8266, core 3.1.2 + SDK 3.0.5 (`*.bin` - serial flash at 0x0 or OTA; `*.bin.gz` - compressed OTA):
-          - `espurna-itead-sonoff-mini`, `-basic`, `-4ch`, `-rfbridge`, `espurna-itead-s20`, `espurna-itead-1ch-inching`
-          - `espurna-esp12f-relay-x2` (4 MB), `espurna-esp12f-relay-x4` (1 MB layout), `espurna-hw-622` (4 MB), `espurna-moes-ms-104b`
-          - `espurna-minimal-webui-1m` / `espurna-minimal-arduino-ota-1m` - first step of the 2-step OTA on 1 MB boards, then the `.bin.gz`
+          - `espurna-esp8266-1m` - relays, buttons, AC mains switches, LEDs, dummy relays
+          - `espurna-esp8266-1m-all` - + PWM light and Sonoff RF Bridge (no serial debug / terminal, UART0 belongs to the RF chip)
+          - `espurna-esp8266-4m` - boards installed with the 4 MB layout
+          - `espurna-esp8266-1m-minimal` - first step of the 2-step OTA on 1 MB boards, then the `.bin.gz`
         make_latest: true
         files: |
           dist/*.bin

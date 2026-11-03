@@ -242,9 +242,24 @@ void AsyncAbstractResponse::_respond(AsyncWebServerRequest *request){
 // Upstream counted such data as sent anyway and dropped it: headers went missing (the browser got
 // a body without the status line and saved it as a download) or the body stopped short of its
 // Content-Length (the browser kept waiting). Unwritten bytes are kept and sent first on the next ack / poll
+// lwip copies into its own heap, which may not have room for the whole send buffer at once (Beken lwip
+// MEM_SIZE is 16 KiB and the mDNS responder lives there too). Retrying the same size never succeeded,
+// the response stalled before the first byte. Smaller pieces go out, the rest waits for the ack
+static size_t _writeSplit(AsyncClient* client, const uint8_t* data, size_t len){
+  static constexpr size_t SmallestWrite = 536;
+  while(len){
+    const size_t written = client->write((const char*)data, len);
+    if(written || (len <= SmallestWrite)){
+      return written;
+    }
+    len = std::max(len / 2, SmallestWrite);
+  }
+  return 0;
+}
+
 size_t AsyncAbstractResponse::_writePending(AsyncWebServerRequest *request, size_t space){
   const size_t len = std::min(space, _pending.size());
-  const size_t written = len ? request->client()->write((const char*)_pending.data(), len) : 0;
+  const size_t written = _writeSplit(request->client(), _pending.data(), len);
   if(written){
     _pending.erase(_pending.begin(), _pending.begin() + written);
     _writtenLength += written;
@@ -336,7 +351,7 @@ size_t AsyncAbstractResponse::_ack(AsyncWebServerRequest *request, size_t len, u
         _head = String();
     }
 
-    const size_t written = outLen ? request->client()->write((const char*)buf, outLen) : 0;
+    const size_t written = _writeSplit(request->client(), buf, outLen);
     _writtenLength += written;
     if(written < outLen){
       _pending.insert(_pending.end(), buf + written, buf + outLen);
