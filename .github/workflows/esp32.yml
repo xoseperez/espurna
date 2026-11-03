@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     strategy:
       fail-fast: false
       matrix:
@@ -92,6 +92,8 @@ jobs:
           build=code/.pio/build_beken/${env}
           # first flash over UART1 with ltchiptool, and OTA from the WebUI
           cp ${build}/firmware.uf2 dist/${name}.uf2
+          # LibreTiny links raw_firmware.elf
+          cp ${build}/raw_firmware.elf ${build}/firmware.elf
           ;;
         esp8266)
           build=code/.pio/build/${env}
@@ -113,7 +115,7 @@ jobs:
   release:
     needs: build
     if: github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
     - uses: actions/download-artifact@v8
       with:
