@@ -30,7 +30,8 @@ constexpr uint32_t SlotsOffset { 0x1DB000 };
 constexpr uint32_t SlotSize { 2 * FLASH_SECTOR_SIZE };
 constexpr size_t Slots { 8 };
 
-static_assert((SlotsOffset + (Slots * SlotSize)) <= 0x1ED000, "Slots overlap with the Tuya config");
+// crash record of rtcmem_beken.cpp at 0x1EB000, Tuya config at 0x1ED000
+static_assert((SlotsOffset + (Slots * SlotSize)) <= 0x1EB000, "Slots overlap with the crash record");
 
 constexpr uint32_t HeaderMagic { 0x45535042 }; // BPSE
 

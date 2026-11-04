@@ -48,3 +48,8 @@ enum class RtcmemCrash : uint32_t {
 };
 
 RtcmemCrash rtcmemCrash();
+
+// Registers and stack of the last crash, kept in the flash (ref. rtcmem_beken.cpp). Setup reports a new one once,
+// in the log and on MQTT, dump prints the whole record (CRASH command)
+void rtcmemCrashSetup();
+void rtcmemCrashDump(Print&);

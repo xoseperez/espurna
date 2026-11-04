@@ -106,7 +106,9 @@ Only the app is written. The bootloader, the littlefs and the Matter factory dat
 first boot ESPurna writes a small block of its own into the empty calibration sector with a locally administered
 `CA:47:8C:xx:xx:xx` (`No RF calibration block, MAC ... written to a new one` in the log). From then on the address, the
 chip ID and the `ESPURNA-XXXXXX` name stay the same across reboots, updates and factory resets. Nothing is written if the
-sector is not empty.
+sector is not empty. The three random bytes come from the chip's TRNG. The first build took them from an unseeded `rand()`
+and gave every board `CA:47:8C:2D:F4:51`; a board that still has that one in its own block gets a new address on the
+next boot (`MAC of the first build was the same on every board, ... written instead`), so expect a new IP once.
 
 ## Pins
 
@@ -162,8 +164,8 @@ entry of the [own device list](../README.md#picking-the-board) (*ADMIN → Devic
 ## Tested
 
 Backup, flash, boot, access point, home Wi-Fi, MQTT, the relay, K1, S1 / S2, the LED and the second switch on P21, on the
-desk from 5 V.
+desk from 5 V; two units.
 
-Not tested yet: **OTA over Wi-Fi.** The `download` partition and the OTA package format (`rbl`) are taken from the stock
-bootloader but no update has been applied through it. Try it on the desk, with the wires still on, before the board goes into
-a wall.
+**OTA over Wi-Fi works**: `firmware.uf2` uploaded on *ADMIN → Upgrade* (32 s), the stock bootloader copies it from the
+`download` partition at `0x286000` into the app and the board is back after about 30 s with `Reboot after a successful OTA
+update` and the new build date. Settings, the MAC and the IP stay. Only the first flash has to go over the wires.

@@ -87,6 +87,7 @@ namespace mac {
 enum class Result {
     Stored,
     Generated,
+    Replaced,
     Failed,
 };
 
@@ -109,20 +110,11 @@ constexpr uint32_t BlockMagic { 0x00564c54 };
 constexpr uint32_t ChipInfoGroup { 0x11111100 };
 constexpr uint32_t MacItem { 0x11111102 };
 
-// only into a blank sector, whatever else is there stays as it is
-bool write_block(const uint8_t* mac) {
-    uint8_t chunk[256];
-    for (uint32_t offset = 0; offset < FLASH_CALIBRATION_LENGTH; offset += sizeof(chunk)) {
-        if (lt_flash_read(FLASH_CALIBRATION_OFFSET + offset, chunk, sizeof(chunk)) != sizeof(chunk)) {
-            return false;
-        }
+// The first build took the random bytes from rand(), which nothing seeds, and every board got this one
+constexpr uint8_t Unseeded[6] { 0xca, 0x47, 0x8c, 0x2d, 0xf4, 0x51 };
 
-        if (std::any_of(std::begin(chunk), std::end(chunk), [](uint8_t value) { return value != 0xff; })) {
-            return false;
-        }
-    }
-
-    Block block {
+Block make_block(const uint8_t* mac) {
+    Block out {
         .magic = BlockMagic,
         .length = sizeof(Block) - 8,
         .group = ChipInfoGroup,
@@ -131,16 +123,75 @@ bool write_block(const uint8_t* mac) {
         .item_length = sizeof(Block::mac),
         .mac = {},
     };
-    std::memcpy(block.mac, mac, sizeof(block.mac));
+    std::memcpy(out.mac, mac, sizeof(out.mac));
 
+    return out;
+}
+
+// the sector holds nothing but this block (or nothing at all, without one)
+bool sector_holds(const Block* block) {
+    uint8_t chunk[256];
+    for (uint32_t offset = 0; offset < FLASH_CALIBRATION_LENGTH; offset += sizeof(chunk)) {
+        if (lt_flash_read(FLASH_CALIBRATION_OFFSET + offset, chunk, sizeof(chunk)) != sizeof(chunk)) {
+            return false;
+        }
+
+        size_t from = 0;
+        if (block && (offset == 0)) {
+            if (std::memcmp(chunk, block, sizeof(Block)) != 0) {
+                return false;
+            }
+
+            from = sizeof(Block);
+        }
+
+        if (std::any_of(std::begin(chunk) + from, std::end(chunk), [](uint8_t value) { return value != 0xff; })) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool write_block(const uint8_t* mac, bool replace) {
+    if (replace) {
+        if (!lt_flash_erase(FLASH_CALIBRATION_OFFSET, FLASH_CALIBRATION_LENGTH)) {
+            return false;
+        }
+    } else if (!sector_holds(nullptr)) {
+        return false;
+    }
+
+    const auto block = make_block(mac);
     const auto* data = reinterpret_cast<const uint8_t*>(&block);
     if (lt_flash_write(FLASH_CALIBRATION_OFFSET, data, sizeof(block)) != sizeof(block)) {
         return false;
     }
 
-    Block check;
-    return (lt_flash_read(FLASH_CALIBRATION_OFFSET, reinterpret_cast<uint8_t*>(&check), sizeof(check)) == sizeof(check))
-        && (std::memcmp(&check, &block, sizeof(block)) == 0);
+    return sector_holds(&block);
+}
+
+// BK7231N TRNG, the registers the SDK irda driver reads for TRNG_CMD_GET (its bk_rand() is not in the LibreTiny build).
+// rand() of the libc is never seeded here and gives every board the same numbers
+constexpr uint32_t TrngCtrl { 0x00802480 };
+constexpr uint32_t TrngData { 0x00802484 };
+constexpr uint32_t TrngEnable { 1 };
+
+uint32_t hardware_random() {
+    auto* ctrl = reinterpret_cast<volatile uint32_t*>(TrngCtrl);
+    const auto* data = reinterpret_cast<const volatile uint32_t*>(TrngData);
+
+    *ctrl = *ctrl | TrngEnable;
+
+    uint32_t out { 0 };
+    for (size_t index = 0; index < 8; ++index) {
+        delayMicroseconds(100);
+        out = (out << 7) ^ (out >> 25) ^ *data;
+    }
+
+    *ctrl = *ctrl & ~TrngEnable;
+
+    return out;
 }
 
 // once, from whichever comes first: the chip id (the boot log asks for it before system setup) or pre_setup()
@@ -152,23 +203,43 @@ void ensure_unique() {
 
     done = true;
 
+    // lt_rand_bytes() and our RandomDevice are rand() as well
+    srand(hardware_random());
+
+    bool replace { false };
+
     uint8_t stored[6];
     if (manual_cal_get_macaddr_from_flash(stored)) {
-        return;
+        if (std::memcmp(stored, Unseeded, sizeof(stored)) != 0) {
+            return;
+        }
+
+        // only our own block, a Tuya one with this MAC (not likely) stays as it is
+        const auto ours = make_block(Unseeded);
+        if (!sector_holds(&ours)) {
+            return;
+        }
+
+        replace = true;
     }
 
+    const auto random = hardware_random();
     generated[0] = 0xca;
     generated[1] = 0x47;
     generated[2] = 0x8c;
-    lt_rand_bytes(&generated[3], 3);
+    generated[3] = (random >> 16) & 0xff;
+    generated[4] = (random >> 8) & 0xff;
+    generated[5] = random & 0xff;
 
     // not written means the default stays, a new random one on every boot would be worse
-    result = write_block(generated) ? Result::Generated : Result::Failed;
+    result = write_block(generated, replace)
+        ? (replace ? Result::Replaced : Result::Generated)
+        : Result::Failed;
 }
 
 // the SDK reads the block once, the new MAC is used from the next boot on and set by hand for this one
 void apply() {
-    if (result == Result::Generated) {
+    if ((result == Result::Generated) || (result == Result::Replaced)) {
         WiFi.setMacAddress(generated);
     }
 }
@@ -179,6 +250,10 @@ void report() {
         break;
     case Result::Generated:
         DEBUG_MSG_P(PSTR("[MAIN] No RF calibration block, MAC %s written to a new one\n"),
+            WiFi.macAddress().c_str());
+        break;
+    case Result::Replaced:
+        DEBUG_MSG_P(PSTR("[MAIN] MAC of the first build was the same on every board, %s written instead\n"),
             WiFi.macAddress().c_str());
         break;
     case Result::Failed:
@@ -196,7 +271,7 @@ espurna::StringView systemChipId() {
         mac::ensure_unique();
 
         uint8_t address[6];
-        if (mac::result == mac::Result::Generated) {
+        if ((mac::result == mac::Result::Generated) || (mac::result == mac::Result::Replaced)) {
             std::memcpy(address, mac::generated, sizeof(address));
         } else {
             lt_get_device_mac(address);

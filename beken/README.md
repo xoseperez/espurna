@@ -194,6 +194,14 @@ switches the relay.
 - **Crash handlers** (`-Wl,--wrap=bk_trap_*`, [`rtcmem_beken.cpp`](../code/espurna/arch/beken/rtcmem_beken.cpp)). The SDK ones
   overwrite the retention register, so the stability counter was lost on every crash and a crash loop never put the
   device into the unstable mode. Ours keep it and add the exception type ("Crash (data abort)" etc. in `info`).
+- **Crash record** at `0x1EB000`, the flash sector between the settings slots and the Tuya config. The handlers write the
+  registers (r0-r12, sp, lr, pc, cpsr, spsr), 32 words of the stack, the task, the uptime and the build into it. The next
+  boot reports a new record once: `[MAIN] Last crash: undefined instruction pc=0x... lr=0x... task=...` in the log and the
+  same line on MQTT `<root>/crash`; the `CRASH` terminal command prints the whole record. Look the addresses up in the ELF
+  of the same build: `arm-none-eabi-addr2line -f -C -e code/.pio/build_beken/<build>/raw_firmware.elf <pc> <lr>`
+  (the CI release keeps the ELF too). Without a wire this is the only trace of a crash, RAM does not survive the reset.
+- **Random numbers** come from the chip's TRNG. LibreTiny's `lt_rand_bytes()` is the libc `rand()`, which nothing seeds,
+  so it gave every board the same numbers; `srand()` is now seeded from the TRNG at boot.
 - **Settings** are kept in 8 rotating slots in the `userdata` partition at `0x1DB000`, below the Tuya config. Every slot has
   a CRC, and the newest valid slot is loaded at boot.
 

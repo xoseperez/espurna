@@ -135,6 +135,14 @@ void clear() {
 // Print out crash information that has been previusly saved in EEPROM
 // Optionally, check whether the timestamp is erased / EEPROM contains no data.
 void dump(Print& print, bool check) {
+#if defined(LIBRETINY)
+    // Beken keeps it in its own flash record (rtcmem_beken.cpp), the EEPROM part is not written there
+    if (!check) {
+        rtcmemCrashDump(print);
+    }
+    return;
+#endif
+
     char buffer[256] = {0};
 
     auto& instance = eepromInstance();
@@ -278,6 +286,10 @@ void setup() {
     if (!rtcmemStatus()) {
         clear();
     }
+
+#if defined(LIBRETINY)
+    rtcmemCrashSetup();
+#endif
 
 #if TERMINAL_SUPPORT
     terminal::add(Commands);
