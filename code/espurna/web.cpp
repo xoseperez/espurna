@@ -106,6 +106,9 @@ STRING_VIEW_INLINE(AccessLog, "webAccessLog");
 STRING_VIEW_INLINE(Domain, "webDomain");
 STRING_VIEW_INLINE(Port, "webPort");
 
+// own device list of the WebUI device template search, the default one when empty
+STRING_VIEW_INLINE(TemplatesUrl, "webTplUrl");
+
 } // namespace keys
 
 bool access_log() {
@@ -832,6 +835,7 @@ void _onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t i
 
 void _onVisible(JsonObject& root) {
     root[espurna::web::settings::keys::Port] = espurna::web::port;
+    root[espurna::web::settings::keys::TemplatesUrl] = getSetting(espurna::web::settings::keys::TemplatesUrl);
 }
 
 bool _onKeyCheck(espurna::StringView key, const JsonVariant&) {

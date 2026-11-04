@@ -105,6 +105,15 @@
 
                 <ul id="template-results"></ul>
 
+                <div class="pure-control-group">
+                    <label>Own device list</label>
+                    <input name="webTplUrl" class="pure-input-2-3" type="text" placeholder="https://raw.githubusercontent.com/igorufox/espurna-devices/main/devices.json" spellcheck="false" autocomplete="off">
+                    <span class="pure-form-message">
+                        URL of the <em>ESPurna devices</em> list, a <code>devices.json</code> with boards that are in no other list.
+                        Empty to use the default one. Only relay, button, LED, UART and RF pins, button actions and the board names are taken from it.
+                    </span>
+                </div>
+
                 <details>
                     <summary>Paste a Tasmota template</summary>
 
@@ -125,6 +134,30 @@
 
                     <div class="pure-controls">
                         <button type="button" id="button-tasmota-import" class="pure-button button-tasmota-import">Import Tasmota Template</button>
+                    </div>
+                </details>
+
+                <details>
+                    <summary>Export this device as a template</summary>
+
+                    <div class="pure-control-group">
+                        <label>Template JSON</label>
+                        <textarea id="template-export" class="pure-input-2-3" rows="12" readonly spellcheck="false"></textarea>
+                        <span class="pure-form-message">
+                            An entry for the <code>devices.json</code> of the own device list, made of the saved settings of this device:
+                            relay, button, LED, UART and RF pins, button actions, manufacturer and device name.
+                            Network, MQTT, passwords, topics and everything else are left out.
+                        </span>
+                    </div>
+
+                    <div class="pure-control-group">
+                        <label>&nbsp;</label>
+                        <span id="template-export-status"></span>
+                    </div>
+
+                    <div class="pure-controls">
+                        <button type="button" id="button-template-export" class="pure-button button-template-export">Export as template</button>
+                        <button type="button" id="button-template-copy" class="pure-button button-template-copy">Copy</button>
                     </div>
                 </details>
             </fieldset>

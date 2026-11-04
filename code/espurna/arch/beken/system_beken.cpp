@@ -13,6 +13,7 @@ Chip specific part, common part is in system.cpp
 
 #include <algorithm>
 #include <atomic>
+#include <cstring>
 #include <forward_list>
 #include <mutex>
 #include <vector>
@@ -69,12 +70,138 @@ uint16_t systemVcc() {
     return 0;
 }
 
+// -----------------------------------------------------------------------------
+// MAC
+// -----------------------------------------------------------------------------
+
+// libcal, reads the MAC out of the RF calibration block (LibreTiny 'calibration' partition)
+extern "C" int manual_cal_get_macaddr_from_flash(uint8_t* mac);
+
+namespace {
+namespace mac {
+
+// The SDK reads the MAC from the RF calibration block. Boards that have no such block (no Tuya config, e.g. the Sparkleiot
+// XH-CB2S) all fall back to the same C8:47:8C:42:00:48, and two of them on one network get one IP. Such a board gets its
+// own locally administered address once (CA:47:8C + 3 random bytes), in a block of its own. The SDK cannot add one, its
+// manual_cal_write_macaddr_to_flash() only updates the MAC of a block that is already there
+enum class Result {
+    Stored,
+    Generated,
+    Failed,
+};
+
+Result result { Result::Stored };
+uint8_t generated[6] {};
+
+// Same layout as a Tuya CB3S / CBU block: "TLV\0" and the length of the rest, then groups of items, each one a tag,
+// a length and the data. MAC is the item 0x11111102 of the chip info group 0x11111100
+struct __attribute__((packed)) Block {
+    uint32_t magic;
+    uint32_t length;
+    uint32_t group;
+    uint32_t group_length;
+    uint32_t item;
+    uint32_t item_length;
+    uint8_t mac[6];
+};
+
+constexpr uint32_t BlockMagic { 0x00564c54 };
+constexpr uint32_t ChipInfoGroup { 0x11111100 };
+constexpr uint32_t MacItem { 0x11111102 };
+
+// only into a blank sector, whatever else is there stays as it is
+bool write_block(const uint8_t* mac) {
+    uint8_t chunk[256];
+    for (uint32_t offset = 0; offset < FLASH_CALIBRATION_LENGTH; offset += sizeof(chunk)) {
+        if (lt_flash_read(FLASH_CALIBRATION_OFFSET + offset, chunk, sizeof(chunk)) != sizeof(chunk)) {
+            return false;
+        }
+
+        if (std::any_of(std::begin(chunk), std::end(chunk), [](uint8_t value) { return value != 0xff; })) {
+            return false;
+        }
+    }
+
+    Block block {
+        .magic = BlockMagic,
+        .length = sizeof(Block) - 8,
+        .group = ChipInfoGroup,
+        .group_length = sizeof(Block) - 16,
+        .item = MacItem,
+        .item_length = sizeof(Block::mac),
+        .mac = {},
+    };
+    std::memcpy(block.mac, mac, sizeof(block.mac));
+
+    const auto* data = reinterpret_cast<const uint8_t*>(&block);
+    if (lt_flash_write(FLASH_CALIBRATION_OFFSET, data, sizeof(block)) != sizeof(block)) {
+        return false;
+    }
+
+    Block check;
+    return (lt_flash_read(FLASH_CALIBRATION_OFFSET, reinterpret_cast<uint8_t*>(&check), sizeof(check)) == sizeof(check))
+        && (std::memcmp(&check, &block, sizeof(block)) == 0);
+}
+
+// once, from whichever comes first: the chip id (the boot log asks for it before system setup) or pre_setup()
+void ensure_unique() {
+    static bool done { false };
+    if (done) {
+        return;
+    }
+
+    done = true;
+
+    uint8_t stored[6];
+    if (manual_cal_get_macaddr_from_flash(stored)) {
+        return;
+    }
+
+    generated[0] = 0xca;
+    generated[1] = 0x47;
+    generated[2] = 0x8c;
+    lt_rand_bytes(&generated[3], 3);
+
+    // not written means the default stays, a new random one on every boot would be worse
+    result = write_block(generated) ? Result::Generated : Result::Failed;
+}
+
+// the SDK reads the block once, the new MAC is used from the next boot on and set by hand for this one
+void apply() {
+    if (result == Result::Generated) {
+        WiFi.setMacAddress(generated);
+    }
+}
+
+void report() {
+    switch (result) {
+    case Result::Stored:
+        break;
+    case Result::Generated:
+        DEBUG_MSG_P(PSTR("[MAIN] No RF calibration block, MAC %s written to a new one\n"),
+            WiFi.macAddress().c_str());
+        break;
+    case Result::Failed:
+        DEBUG_MSG_P(PSTR("[MAIN] No MAC in the RF calibration block and none could be written, using the SDK default\n"));
+        break;
+    }
+}
+
+} // namespace mac
+} // namespace
+
 espurna::StringView systemChipId() {
     static String _chipid;
     if (!_chipid.length()) {
-        uint8_t mac[6];
-        lt_get_device_mac(mac);
-        _chipid = hexEncode(mac);
+        mac::ensure_unique();
+
+        uint8_t address[6];
+        if (mac::result == mac::Result::Generated) {
+            std::memcpy(address, mac::generated, sizeof(address));
+        } else {
+            lt_get_device_mac(address);
+        }
+        _chipid = hexEncode(address);
     }
     return _chipid;
 }
@@ -90,6 +217,7 @@ uint32_t espurna::system::RandomDevice::operator()() const {
     lt_rand_bytes(reinterpret_cast<uint8_t*>(&out), sizeof(out));
     return out;
 }
+
 
 // -----------------------------------------------------------------------------
 // SLEEP
@@ -257,9 +385,15 @@ void pre_setup() {
     // WiFi module sets the mode it needs later on
     WiFi.mode(WIFI_MODE_STA);
     WiFi.mode(WIFI_MODE_NULL);
+
+    // the chip id is made of the MAC, which has to be unique by now
+    mac::ensure_unique();
+    mac::apply();
 }
 
 void setup() {
+    mac::report();
+
     // Same as esp8266 soft WDT, reset when loop() gets stuck.
     // Enabled from the first loop(), since the rest of setup() is allowed to take its time.
     espurnaRegisterOnce([]() {

@@ -238,6 +238,7 @@ span.visible {
 .button-setup-password,
 .button-tasmota-import,
 .button-template-apply,
+.button-template-export,
 .button-template-search,
 .button-upgrade-browse {
     background: rgb(0, 192, 0); /* green */
@@ -266,6 +267,7 @@ span.visible {
 }
 
 .button-upgrade-browse,
+.button-template-copy,
 .button-template-search,
 .button-clear-filters,
 .button-clear-messages,

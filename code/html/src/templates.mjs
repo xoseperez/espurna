@@ -1,18 +1,21 @@
-import { send, sendAction } from './connection.mjs';
+import { listenAppConnected, send, sendAction } from './connection.mjs';
 import { notifyError } from './notify.mjs';
 import { variableListeners } from './settings.mjs';
 import { templateChip, tasmotaToEspurna } from './tasmota.mjs';
 
 // Device template search. Databases are fetched by the browser at the time of the search,
-// straight from their authors (both allow CORS), nothing is copied or bundled:
+// straight from their authors (all of them allow CORS), nothing is copied or bundled:
 // - Tasmota templates, https://templates.blakadder.com (ESP8266, ESP32)
 // - OpenBeken devices, https://openbekeniot.github.io/webapp (BK72xx)
+// - ESPurna devices, a devices.json on GitHub (every chip), boards that are not in either of them.
+//   The default list can be replaced with the `webTplUrl` setting
 // plus the boards of this firmware, which are not in either of them or need ESPurna-only settings
 
 const TASMOTA_URL = 'https://templates.blakadder.com/templates.json';
 const TASMOTA_LINK = 'https://templates.blakadder.com';
 const OPENBEKEN_URL = 'https://openbekeniot.github.io/webapp/devices.json';
 const OPENBEKEN_LINK = 'https://openbekeniot.github.io/webapp/devicesList.html';
+export const GITHUB_URL = 'https://raw.githubusercontent.com/igorufox/espurna-devices/main/devices.json';
 
 const RESULTS_MAX = 30;
 
@@ -22,14 +25,32 @@ const RESULTS_MAX = 30;
 
 /**
  * @typedef {{
- *   source: 'espurna' | 'tasmota' | 'openbeken',
+ *   source: 'espurna' | 'tasmota' | 'openbeken' | 'github',
  *   name: string,
  *   model: string,
  *   category: string,
  *   link: string,
  *   settings: Settings,
  *   names: Settings,
+ *   image?: string,
+ *   notes?: string,
  * }} DeviceTemplate
+ */
+
+/**
+ * Entry of the ESPurna devices.json, a JSON array of these. `mcu` limits the entry to one chip
+ * (as reported by the device, e.g. BK7231N), `image` is the firmware image the board needs
+ * @typedef {{
+ *   name: string,
+ *   model?: string,
+ *   category?: string,
+ *   arch: Arch,
+ *   mcu?: string,
+ *   image?: string,
+ *   link?: string,
+ *   notes?: string,
+ *   settings: Settings,
+ * }} DeviceEntry
  */
 
 /**
@@ -358,6 +379,120 @@ export function openbekenTemplates(data, mcu) {
 }
 
 /**
+ * Settings describing the board: pins and their modes, button actions and the board names.
+ * Indexed keys are listed without the index. Network, passwords, MQTT, topics, sync and
+ * the rest are never exported and never applied from a downloaded list
+ */
+const HARDWARE_KEYS = new Set([
+    'relayGpio', 'relayGpioType', 'relayType', 'relayProv', 'relayResetGpio', 'relayDummy',
+    'btnGpio', 'btnGpioType', 'btnProv', 'btnMode', 'btnPinMode', 'btnDefVal', 'btnRelay',
+    'btnPress', 'btnRlse', 'btnClick', 'btnDclk', 'btnTclk', 'btnLclk', 'btnLLclk',
+    'btnLclkDel', 'btnLLclkDel', 'btnDebDel', 'btnRepDel',
+    'btnFreq', 'btnMinPulses', 'btnMinDuty', 'btnAcConfirm', 'btnAcFreq',
+    'ledGpio', 'ledInv', 'ledMode', 'ledRelay',
+    'ltDimmerGPIO', 'ltEnableGPIO', 'ltInv',
+    'uartTx', 'uartRx', 'uartBaud', 'uartDataBits', 'uartParity', 'uartStopBits', 'uartInv',
+    'rfbRX', 'rfbTX',
+    'sysManufacturer', 'sysDevice',
+]);
+
+// in case the list above ever gets a key it should not have
+const NEVER_KEYS = /pass|key|secret|token|ssid|wifi|mqtt|api|host|topic/i;
+
+/**
+ * @param {{[key: string]: any}} settings
+ * @returns {Settings} only the keys of HARDWARE_KEYS, values as strings
+ */
+export function hardwareSettings(settings) {
+    /** @type {Settings} */
+    const out = {};
+    for (const [key, value] of Object.entries(settings ?? {})) {
+        if (HARDWARE_KEYS.has(key.replace(/\d+$/, ''))
+            && !NEVER_KEYS.test(key)
+            && ((typeof value === 'string') || (typeof value === 'number')))
+        {
+            out[key] = String(value);
+        }
+    }
+
+    return out;
+}
+
+/**
+ * ESPurna devices.json, entries for this chip. Only hardware keys are taken from the entry
+ * @param {any} entries
+ * @param {Arch} arch
+ * @param {string} mcu
+ * @returns {DeviceTemplate[]}
+ */
+export function githubTemplates(entries, arch, mcu) {
+    return (Array.isArray(entries) ? entries : [])
+        .filter((entry) => (typeof entry?.name === 'string')
+            && (entry.arch === arch)
+            && (!entry.mcu || (String(entry.mcu).toUpperCase() === mcu.toUpperCase()))
+            && (typeof entry.settings === 'object'))
+        .map((/** @type {DeviceEntry} */entry) => {
+            const {sysManufacturer, sysDevice, ...settings} = hardwareSettings(entry.settings);
+            return {
+                source: /** @type {const} */('github'),
+                name: entry.name,
+                model: entry.model ?? '',
+                category: entry.category ?? '',
+                link: entry.link ?? '',
+                settings,
+                names: names(sysManufacturer ?? '', sysDevice ?? ''),
+                image: entry.image ?? '',
+                notes: entry.notes ?? '',
+            };
+        })
+        .filter((template) => hasPins(template.settings));
+}
+
+/**
+ * Settings backup of the device (/config). Values are written as they are stored, without
+ * escaping, so it is read line by line, every setting is a `"key": "value"` line
+ * @param {string} text
+ * @returns {Settings}
+ */
+export function parseSettingsBackup(text) {
+    /** @type {Settings} */
+    const out = {};
+    for (const [, key, value] of text.matchAll(/^"(\w+)": "(.*)",?$/gm)) {
+        out[key] = value;
+    }
+
+    return out;
+}
+
+/**
+ * devices.json entry made of the hardware settings of this device. Names fall back to
+ * the ones the device reported (build values), image and notes are left for the user
+ * @param {Settings} backup
+ * @param {{arch: Arch, mcu: string, manufacturer: string, device: string}} device
+ * @returns {DeviceEntry}
+ */
+export function exportTemplate(backup, {arch, mcu, manufacturer, device}) {
+    const settings = hardwareSettings(backup);
+    for (const [key, value] of Object.entries(names(manufacturer, device))) {
+        settings[key] ??= value;
+    }
+
+    const name = [settings['sysManufacturer'], settings['sysDevice']]
+        .filter((x) => x).join(' ');
+
+    return {
+        name: name || 'My device',
+        model: settings['sysDevice'] ?? '',
+        arch,
+        // ESP8266 and ESP32 entries are not limited to the chip revision
+        ...((arch === 'beken') ? {mcu} : {}),
+        image: '',
+        notes: '',
+        settings,
+    };
+}
+
+/**
  * @param {Settings} settings
  * @returns {boolean} at least one relay, button, LED or light channel
  */
@@ -437,12 +572,39 @@ export function settingsSummary(settings) {
     return parts.join(', ');
 }
 
-/** @type {{arch: Arch | null, mcu: string, loaded: DeviceTemplate[] | null}} */
+/**
+ * Downloaded lists are kept by their URL, failed ones are tried again with the next search
+ * @type {{
+ *   arch: Arch | null,
+ *   mcu: string,
+ *   manufacturer: string,
+ *   device: string,
+ *   url: string,
+ *   config: URL | null,
+ *   cache: Map<string, DeviceTemplate[]>,
+ *   failed: Map<string, string>,
+ * }}
+ */
 const state = {
     arch: null,
     mcu: '',
-    loaded: null,
+    manufacturer: '',
+    device: '',
+    url: '',
+    config: null,
+    cache: new Map(),
+    failed: new Map(),
 };
+
+function resetLoaded() {
+    state.cache.clear();
+    state.failed.clear();
+}
+
+/** @returns {string} */
+function githubUrl() {
+    return state.url.trim() || GITHUB_URL;
+}
 
 /**
  * @param {string} name
@@ -459,38 +621,98 @@ function archFromName(name) {
     return null;
 }
 
-/** @returns {Promise<DeviceTemplate[]>} */
-async function loadTemplates() {
-    if (state.loaded) {
-        return state.loaded;
+/**
+ * @typedef {{
+ *   url: string,
+ *   load: (response: Response) => Promise<DeviceTemplate[]>,
+ * }} RemoteSource
+ */
+
+/**
+ * @param {Arch} arch
+ * @returns {RemoteSource[]}
+ */
+function remoteSources(arch) {
+    /** @type {RemoteSource} */
+    const github = {
+        url: githubUrl(),
+        load: async (response) => githubTemplates(await response.json(), arch, state.mcu),
+    };
+
+    if (arch === 'beken') {
+        return [{
+            url: OPENBEKEN_URL,
+            load: async (response) => openbekenTemplates(await response.json(), state.mcu),
+        }, github];
     }
 
+    return [{
+        url: TASMOTA_URL,
+        load: async (response) => tasmotaTemplates(parseTasmotaTemplates(await response.text()), arch),
+    }, github];
+}
+
+/**
+ * One list that could not be downloaded does not stop the others
+ * @param {RemoteSource} remote
+ * @returns {Promise<DeviceTemplate[]>}
+ */
+async function loadRemote({url, load}) {
+    const cached = state.cache.get(url);
+    if (cached) {
+        return cached;
+    }
+
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        const templates = await load(response);
+        state.cache.set(url, templates);
+        state.failed.delete(url);
+        return templates;
+    } catch (e) {
+        state.failed.set(url, /** @type {Error} */(e).message);
+        return [];
+    }
+}
+
+/** @returns {Promise<DeviceTemplate[]>} */
+async function loadTemplates() {
     const arch = state.arch;
     if (!arch) {
         throw new Error('Device architecture is not known yet');
     }
 
-    const remote = (arch === 'beken')
-        ? openbekenTemplates(await (await fetch(OPENBEKEN_URL)).json(), state.mcu)
-        : tasmotaTemplates(parseTasmotaTemplates(await (await fetch(TASMOTA_URL)).text()), arch);
-
-    state.loaded = [...espurnaTemplates(arch), ...remote];
-    return state.loaded;
+    const remote = await Promise.all(remoteSources(arch).map(loadRemote));
+    return [...espurnaTemplates(arch), ...remote.flat()];
 }
 
 /**
- * @param {Settings} settings
- * @param {string} name
+ * @param {DeviceTemplate} template
+ * @returns {string} firmware image the board needs, when the list says so
  */
-function applySettings(settings, name) {
-    const summary = settingsSummary(settings);
-    if (!window.confirm(`Apply "${name}"?\n\n${summary}\n\nNote: existing relay/button/LED settings will be overwritten.`)) {
+function imageText(template) {
+    return template.image ? `needs the ${template.image} image` : '';
+}
+
+/** @param {DeviceTemplate} template */
+function applySettings(template) {
+    const summary = settingsSummary(template.settings);
+    // the device does not know which image it runs, only the list does
+    const image = template.image
+        ? `\n\nThis board ${imageText(template)}, make sure the device runs it.`
+        : '';
+    const notes = template.notes ? `\n\n${template.notes}` : '';
+    if (!window.confirm(`Apply "${template.name}"?\n\n${summary}${image}${notes}\n\nNote: existing relay/button/LED settings will be overwritten.`)) {
         return;
     }
 
     send(JSON.stringify({
         settings: {
-            set: settings,
+            set: {...template.settings, ...template.names},
             del: [],
         }
     }));
@@ -516,7 +738,7 @@ function resultRow(template) {
     button.textContent = 'Apply';
     button.addEventListener('click', () => {
         try {
-            applySettings({...template.settings, ...template.names}, template.name);
+            applySettings(template);
         } catch (e) {
             notifyError(/** @type {Error} */(e));
         }
@@ -526,7 +748,11 @@ function resultRow(template) {
     const text = document.createElement('span');
     text.textContent = ` ${template.name}`
         + (template.model ? ` (${template.model})` : '')
-        + ` - ${settingsSummary(template.settings)}`;
+        + ` - ${settingsSummary(template.settings)}`
+        + (template.image ? `, ${imageText(template)}` : '');
+    if (template.notes) {
+        text.title = template.notes;
+    }
     row.appendChild(text);
 
     if (template.link) {
@@ -551,19 +777,111 @@ function resultRow(template) {
  * @returns {string}
  */
 function sourcesText(loaded) {
-    const count = (/** @type {DeviceTemplate['source']} */source) => loaded
-        ? ` (${loaded.filter((template) => template.source === source).length})`
-        : '';
+    const count = (/** @type {DeviceTemplate['source']} */source, url = '') => {
+        const failed = state.failed.get(url);
+        if (failed) {
+            return ` (unavailable, ${failed})`;
+        }
+
+        return loaded
+            ? ` (${loaded.filter((template) => template.source === source).length})`
+            : '';
+    };
+
+    const github = `ESPurna devices (GitHub)${count('github', githubUrl())}`;
 
     switch (state.arch) {
     case 'beken':
-        return `boards of this firmware${count('espurna')} and OpenBeken ${state.mcu} devices${count('openbeken')}`;
+        return `boards of this firmware${count('espurna')}, OpenBeken ${state.mcu} devices${count('openbeken', OPENBEKEN_URL)} and ${github}`;
     case 'esp8266':
     case 'esp32':
-        return `boards of this firmware${count('espurna')} and Tasmota ${state.arch.toUpperCase()} templates${count('tasmota')}`;
+        return `boards of this firmware${count('espurna')}, Tasmota ${state.arch.toUpperCase()} templates${count('tasmota', TASMOTA_URL)} and ${github}`;
     }
 
     return 'nothing yet, the device did not tell its chip';
+}
+
+/**
+ * Hardware settings of this device, read from its settings backup (/config), which has every
+ * stored key. The WebSocket only sends what the panels show, e.g. no button actions
+ * @returns {Promise<string>}
+ */
+async function exportText() {
+    if (!state.config || !state.arch) {
+        throw new Error('not connected');
+    }
+
+    const response = await fetch(state.config.href, {
+        credentials: 'same-origin',
+        cache: 'no-store',
+    });
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+    }
+
+    const entry = exportTemplate(parseSettingsBackup(await response.text()), {
+        arch: state.arch,
+        mcu: state.mcu,
+        manufacturer: state.manufacturer,
+        device: state.device,
+    });
+
+    return JSON.stringify(entry, null, 4);
+}
+
+/**
+ * Clipboard API only works on https:// and localhost, the device is plain http://
+ * @param {HTMLTextAreaElement} textarea
+ */
+async function copyText(textarea) {
+    if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(textarea.value);
+        return;
+    }
+
+    textarea.select();
+    if (!document.execCommand('copy')) {
+        throw new Error('not supported by the browser');
+    }
+}
+
+function initExport() {
+    const textarea = /** @type {HTMLTextAreaElement | null} */
+        (document.getElementById('template-export'));
+    const button = document.getElementById('button-template-export');
+    const copy = document.getElementById('button-template-copy');
+    const status = document.getElementById('template-export-status');
+
+    if (!textarea || !button || !copy || !status) {
+        return;
+    }
+
+    listenAppConnected((urls) => {
+        state.config = urls.config;
+    });
+
+    button.addEventListener('click', async () => {
+        status.textContent = 'Loading...';
+        try {
+            textarea.value = await exportText();
+            status.textContent = 'Fill in name, image and notes, then add it to devices.json';
+        } catch (e) {
+            status.textContent = `Could not read the settings (${/** @type {Error} */(e).message})`;
+        }
+    });
+
+    copy.addEventListener('click', async () => {
+        if (!textarea.value) {
+            return;
+        }
+
+        try {
+            await copyText(textarea);
+            status.textContent = 'Copied';
+        } catch (e) {
+            status.textContent = `Could not copy (${/** @type {Error} */(e).message}), select the text and copy it by hand`;
+        }
+    });
 }
 
 export function init() {
@@ -573,22 +891,40 @@ export function init() {
     const results = document.getElementById('template-results');
     const status = document.getElementById('template-status');
     const sources = document.getElementById('template-sources');
+    const url = /** @type {HTMLInputElement | null} */
+        (document.querySelector('input[name="webTplUrl"]'));
 
-    if (!input || !button || !results || !status || !sources) {
+    if (!input || !button || !results || !status || !sources || !url) {
         return;
     }
 
     variableListeners({
         'arch': (_, value) => {
             state.arch = archFromName(String(value));
-            state.loaded = null;
+            resetLoaded();
             sources.textContent = sourcesText(null);
         },
         'mcu': (_, value) => {
             state.mcu = String(value);
-            state.loaded = null;
+            resetLoaded();
             sources.textContent = sourcesText(null);
         },
+        'manufacturer': (_, value) => {
+            state.manufacturer = String(value);
+        },
+        'device': (_, value) => {
+            state.device = String(value);
+        },
+        'webTplUrl': (_, value) => {
+            state.url = String(value);
+            sources.textContent = sourcesText(null);
+        },
+    });
+
+    // used as typed, Save keeps it on the device for the next time
+    url.addEventListener('change', () => {
+        state.url = url.value;
+        sources.textContent = sourcesText(null);
     });
 
     const search = async () => {
@@ -606,10 +942,13 @@ export function init() {
             status.textContent = found.length
                 ? `${found.length} found` + ((found.length > RESULTS_MAX) ? `, first ${RESULTS_MAX} shown` : '')
                 : 'Nothing found';
+            if (state.failed.size && !state.cache.size) {
+                status.textContent += '. The device lists could not be downloaded,'
+                    + ' the browser needs internet access, the device itself does not.';
+            }
             results.replaceChildren(...found.slice(0, RESULTS_MAX).map(resultRow));
         } catch (e) {
-            status.textContent = `Could not load the device list (${/** @type {Error} */(e).message}).`
-                + ' The browser needs internet access, the device itself does not.';
+            status.textContent = `Could not load the device list (${/** @type {Error} */(e).message}).`;
         }
     };
 
@@ -620,4 +959,6 @@ export function init() {
             search();
         }
     });
+
+    initExport();
 }

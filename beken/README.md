@@ -16,12 +16,20 @@ API, NTP, serial and telnet terminal, settings kept across reboots and updates.
   <img src="img/cb3s-wired.webp" width="49%" alt="The same board wired to a CP2102 USB-UART adapter, powered from micro-USB">
 </p>
 
+Other Beken boards, with what differs from this guide:
+
+- [Tuya 4-gang switch module (CBU)](cbu-4gang.md): relay 1 and the LED on the UART1 pins, 5 V needed for flashing;
+- [Sparkleiot Mini Smart Switch (XH-CB2S, BK7231M)](sparkleiot-mini.md): no flash encryption and its own 4 MiB layout,
+  stock Matter firmware, a second wall switch on a test pad.
+
 ## 1. Builds
 
 | Build | Board |
 |-------|-------|
 | `cb3s-generic` | any CB3S board (Tuya flash layout); no relays, buttons or LEDs pre-assigned, configure them in the web UI |
 | `tuya-cb3s-relay-rf` | **Tuya TYWRA-RF** (1-channel relay + 433 MHz receiver, AC/DC 7-32 V): relay P24, button P14, second ("total") button P6, LED P8 (inverted, Wi-Fi status), 433 MHz receiver data on P26 |
+| `cbu-generic` | any CBU board (Tuya layout, all 21 pads mapped), e.g. the [4-gang switch module](cbu-4gang.md) |
+| `xh-cb2s-generic` | XH-CB2S / BK7231M without flash encryption, 4 MiB layout: the [Sparkleiot Mini](sparkleiot-mini.md); does not start on Tuya chips, and the Tuya builds do not start on it |
 
 Enabled modules: web UI, API, MQTT, terminal, Home Assistant; the RF bridge (rc-switch) on `tuya-cb3s-relay-rf`.
 

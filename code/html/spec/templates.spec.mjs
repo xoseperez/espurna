@@ -2,8 +2,12 @@ import { expect, test } from 'vitest';
 import {
     PROFILES,
     espurnaTemplates,
+    exportTemplate,
+    githubTemplates,
+    hardwareSettings,
     openbekenTemplates,
     openbekenToEspurna,
+    parseSettingsBackup,
     parseTasmotaTemplates,
     searchTemplates,
     settingsSummary,
@@ -160,4 +164,162 @@ test('templates name the manufacturer and the device, the description is left al
 
     const [moes] = tasmotaTemplates(parseTasmotaTemplates(TASMOTA_JSON), 'esp8266');
     expect(moes.names).toEqual({sysManufacturer: 'Moes', sysDevice: 'MS-104B'});
+});
+
+// ESPurna devices.json, a JSON array of entries
+const GITHUB = [
+    {name: 'Sparkleiot MINI (XH-CB2S)', arch: 'beken', mcu: 'BK7231N', image: 'xh-cb2s-generic',
+        notes: 'S1 is tied to N', settings: {
+            relayGpio0: '24', relayType0: 'normal', relayDummy: '1',
+            btnGpio0: '7', btnMode0: 'pushbutton', btnRelay0: '0',
+            ledGpio0: '6', ledInv0: '1', ledMode0: 'wifi',
+            sysManufacturer: 'SPARKLEIOT', sysDevice: 'MINI_XH_CB2S',
+            // not hardware, never applied from a list
+            mqttServer: 'evil.example.com', adminPass: 'x', ssid0: 'evil', relayTopicSub0: 'a/b',
+        }},
+    {name: 'Other Beken chip', arch: 'beken', mcu: 'BK7231T', settings: {relayGpio0: '6'}},
+    {name: 'Any ESP8266', arch: 'esp8266', settings: {relayGpio0: 12, ledGpio0: '13'}},
+    {name: 'No pins', arch: 'esp8266', settings: {sysDevice: 'NOTHING'}},
+    {name: 'No settings', arch: 'esp8266'},
+    'garbage',
+];
+
+test('ESPurna devices are listed for their chip, mcu is optional', () => {
+    expect(githubTemplates(GITHUB, 'beken', 'BK7231N').map((x) => x.name))
+        .toEqual(['Sparkleiot MINI (XH-CB2S)']);
+    expect(githubTemplates(GITHUB, 'beken', 'bk7231t').map((x) => x.name))
+        .toEqual(['Other Beken chip']);
+    expect(githubTemplates(GITHUB, 'esp8266', 'ESP8266').map((x) => x.name))
+        .toEqual(['Any ESP8266']);
+    expect(githubTemplates(GITHUB, 'esp32', 'ESP32-D0WD-V3')).toHaveLength(0);
+    expect(githubTemplates({devices: GITHUB}, 'beken', 'BK7231N')).toHaveLength(0);
+    expect(githubTemplates(null, 'beken', 'BK7231N')).toHaveLength(0);
+});
+
+test('ESPurna devices only bring hardware settings, names and the image', () => {
+    const [mini] = githubTemplates(GITHUB, 'beken', 'BK7231N');
+    expect(mini.source).toEqual('github');
+    expect(mini.image).toEqual('xh-cb2s-generic');
+    expect(mini.notes).toEqual('S1 is tied to N');
+    expect(mini.names).toEqual({sysManufacturer: 'SPARKLEIOT', sysDevice: 'MINI_XH_CB2S'});
+    expect(mini.settings).toEqual({
+        relayGpio0: '24', relayType0: 'normal', relayDummy: '1',
+        btnGpio0: '7', btnMode0: 'pushbutton', btnRelay0: '0',
+        ledGpio0: '6', ledInv0: '1', ledMode0: 'wifi',
+    });
+
+    const [esp] = githubTemplates(GITHUB, 'esp8266', 'ESP8266');
+    expect(esp.settings['relayGpio0']).toEqual('12');
+    expect(esp.names).toEqual({});
+});
+
+// /config of the device, values are not escaped
+const BACKUP = [
+    '{',
+    '"app": "ESPURNA",',
+    '"version": "1.22.0-dev",',
+    '"backup": "1",',
+    '"adminPass": "fibonacci1",',
+    '"apiKey": "0123456789ABCDEF",',
+    '"btnDefVal0": "high",',
+    '"btnGpio0": "7",',
+    '"btnGpio1": "26",',
+    '"btnMode0": "pushbutton",',
+    '"btnMode1": "switch",',
+    '"btnPinMode0": "pull-up",',
+    '"btnPress1": "relay-toggle",',
+    '"btnRelay0": "0",',
+    '"btnRelay1": "1",',
+    '"btnRlse1": "relay-toggle",',
+    '"btnTermCmd0": "reboot",',
+    '"desc": "Coridor",',
+    '"haEnabled": "1",',
+    '"hostname": "CORIDOR12",',
+    '"ledGpio0": "6",',
+    '"ledInv0": "1",',
+    '"ledMode0": "wifi",',
+    '"mqttPassword": "mqtt-secret",',
+    '"mqttServer": "mqtt.lan",',
+    '"mqttUser": "espurna",',
+    '"ntpTZ": "EET",',
+    '"pass0": "with "quotes" and \\ backslash",',
+    '"relayDummy": "1",',
+    '"relayGpio0": "24",',
+    '"relayName0": "Facade",',
+    '"relaySync": "1",',
+    '"relayTopicSub1": "ESPURNA-SYNC/Outside/Garbage",',
+    '"ssid0": "foxy",',
+    '"sysManufacturer": "SPARKLEIOT",',
+    '"sysDevice": "MINI_XH_CB2S",',
+    '"telnetAuth": "1",',
+    '"wifiApPass": "hunter2222",',
+    '"wifiApSsid": "igoru",',
+    '"wsAuth": "1"',
+    '}',
+].join('\n');
+
+test('settings backup is read line by line, values as they are', () => {
+    const backup = parseSettingsBackup(BACKUP);
+    expect(backup['pass0']).toEqual('with "quotes" and \\ backslash');
+    expect(backup['relayGpio0']).toEqual('24');
+    expect(backup['wsAuth']).toEqual('1');
+    expect(backup['app']).toEqual('ESPURNA');
+});
+
+const SECRETS = [
+    'adminPass', 'apiKey', 'desc', 'haEnabled', 'hostname', 'mqttPassword', 'mqttServer', 'mqttUser',
+    'ntpTZ', 'pass0', 'relayName0', 'relaySync', 'relayTopicSub1', 'ssid0', 'telnetAuth',
+    'wifiApPass', 'wifiApSsid', 'wsAuth', 'btnTermCmd0', 'app', 'version',
+];
+
+test('export takes hardware keys only, secrets never get in', () => {
+    const backup = parseSettingsBackup(BACKUP);
+    const entry = exportTemplate(backup, {arch: 'beken', mcu: 'BK7231N', manufacturer: 'GENERIC', device: 'CB2S'});
+
+    expect(Object.keys(entry.settings).sort()).toEqual([
+        'btnDefVal0', 'btnGpio0', 'btnGpio1', 'btnMode0', 'btnMode1', 'btnPinMode0', 'btnPress1',
+        'btnRelay0', 'btnRelay1', 'btnRlse1', 'ledGpio0', 'ledInv0', 'ledMode0', 'relayDummy', 'relayGpio0',
+        'sysDevice', 'sysManufacturer',
+    ]);
+
+    const text = JSON.stringify(entry);
+    for (const key of SECRETS) {
+        expect(entry.settings[key]).toBeUndefined();
+        expect(text).not.toContain(`"${key}"`);
+    }
+
+    for (const value of ['fibonacci1', '0123456789ABCDEF', 'mqtt-secret', 'mqtt.lan', 'foxy',
+        'hunter2222', 'igoru', 'CORIDOR12', 'Coridor', 'quotes', 'Facade', 'ESPURNA-SYNC'])
+    {
+        expect(text).not.toContain(value);
+    }
+
+    // stored names win over the build ones
+    expect(entry.name).toEqual('SPARKLEIOT MINI_XH_CB2S');
+    expect(entry.model).toEqual('MINI_XH_CB2S');
+    expect(entry.arch).toEqual('beken');
+    expect(entry.mcu).toEqual('BK7231N');
+    expect(entry.image).toEqual('');
+});
+
+test('export falls back to the build names, ESP entries are not limited to the chip revision', () => {
+    const entry = exportTemplate({relayGpio0: '12', mqttServer: 'mqtt.lan'},
+        {arch: 'esp32', mcu: 'ESP32-D0WD-V3', manufacturer: 'LC_TECH', device: 'ESP32_RELAY_X2'});
+    expect(entry.settings).toEqual({relayGpio0: '12', sysManufacturer: 'LC_TECH', sysDevice: 'ESP32_RELAY_X2'});
+    expect(entry.mcu).toBeUndefined();
+});
+
+test('exported entry is found again in the list with the same settings', () => {
+    const entry = exportTemplate(parseSettingsBackup(BACKUP),
+        {arch: 'beken', mcu: 'BK7231N', manufacturer: '', device: ''});
+    const [template] = githubTemplates(JSON.parse(JSON.stringify([entry])), 'beken', 'BK7231N');
+    expect({...template.settings, ...template.names}).toEqual(entry.settings);
+});
+
+test('hardware keys are allow-listed by name, not by prefix', () => {
+    expect(hardwareSettings({
+        relayGpio3: '5', relayTopicPub0: 'x', relayPayloadOn: 'ON', relayBoot0: '1',
+        btnMqttRetain: '1', ledPattern0: 'x', uartTx0: '153', rfbON0: 'A1B2', rfbRX: '26',
+        ltDimmerGPIO0: '4', sysLoopStall: '1', btnGpio0: {nested: true},
+    })).toEqual({relayGpio3: '5', uartTx0: '153', rfbRX: '26', ltDimmerGPIO0: '4'});
 });
