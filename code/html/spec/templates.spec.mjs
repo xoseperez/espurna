@@ -168,7 +168,7 @@ test('templates name the manufacturer and the device, the description is left al
 
 // ESPurna devices.json, a JSON array of entries
 const GITHUB = [
-    {name: 'Sparkleiot MINI (XH-CB2S)', arch: 'beken', mcu: 'BK7231N', image: 'xh-cb2s-generic',
+    {name: 'Sparkleiot MINI (XH-CB2S)', arch: 'beken', mcu: 'BK7231N', image: 'beken-bk7231n-nokey',
         notes: 'S1 is tied to N', settings: {
             relayGpio0: '24', relayType0: 'normal', relayDummy: '1',
             btnGpio0: '7', btnMode0: 'pushbutton', btnRelay0: '0',
@@ -199,7 +199,7 @@ test('ESPurna devices are listed for their chip, mcu is optional', () => {
 test('ESPurna devices only bring hardware settings, names and the image', () => {
     const [mini] = githubTemplates(GITHUB, 'beken', 'BK7231N');
     expect(mini.source).toEqual('github');
-    expect(mini.image).toEqual('xh-cb2s-generic');
+    expect(mini.image).toEqual('beken-bk7231n-nokey');
     expect(mini.notes).toEqual('S1 is tied to N');
     expect(mini.names).toEqual({sysManufacturer: 'SPARKLEIOT', sysDevice: 'MINI_XH_CB2S'});
     expect(mini.settings).toEqual({

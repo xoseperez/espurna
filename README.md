@@ -39,10 +39,10 @@ Boards run on the generic image of their chip; pins come from the device templat
 | LC-Tech ESP32 2-relay | ESP32 | `esp32` / `esp32-relay-x2` | relays GPIO16 / GPIO17, button GPIO0, LED GPIO23 (inverted) |
 | Sonoff NSPanel EU (gen1) | ESP32 | `esp32-nspanel` | [Sonoff NSPanel](#sonoff-nspanel), [nspanel/README.md](nspanel/README.md) |
 | Sonoff MINIR4 "Mini Extreme" | ESP32 | `esp32` / `itead-sonoff-minir4` | relay GPIO26, button GPIO0, S1/S2 GPIO27, LED GPIO19 (inverted); [Sonoff MINIR4](#sonoff-minir4) |
-| any Tuya CB3S board | BK7231N | `beken-cb3s` / `cb3s-generic` | [beken/README.md](beken/README.md) |
-| Tuya TYWRA-RF, 1 relay + 433 MHz | BK7231N (CB3S) | `beken-cb3s-rf` / `tuya-cb3s-relay-rf` | [beken/README.md](beken/README.md) |
-| Tuya 4-gang switch module | BK7231N (CBU) | build `cbu-generic` | [beken/cbu-4gang.md](beken/cbu-4gang.md) |
-| Sparkleiot Mini Smart Switch (Matter) | BK7231M (XH-CB2S) | build `xh-cb2s-generic` | [beken/sparkleiot-mini.md](beken/sparkleiot-mini.md) |
+| any Tuya BK7231N board (CB2S, CB3S, CBU ...) | BK7231N | `beken-bk7231n` | [beken/README.md](beken/README.md) |
+| Tuya TYWRA-RF, 1 relay + 433 MHz | BK7231N (CB3S) | `beken-bk7231n` | [beken/README.md](beken/README.md) |
+| Tuya 4-gang switch module | BK7231N (CBU) | `beken-bk7231n` | [beken/cbu-4gang.md](beken/cbu-4gang.md) |
+| Sparkleiot Mini Smart Switch (Matter) | BK7231M (XH-CB2S) | `beken-bk7231n-nokey` | [beken/sparkleiot-mini.md](beken/sparkleiot-mini.md) |
 | Moes MS-104B, AC mains wall switches | ESP8266 | `esp8266-1m` / `moes-ms-104b` | [AC mains wall-switch inputs](#ac-mains-wall-switch-inputs) |
 | Sonoff Mini, Shelly 1 and other ESP8266 boards | ESP8266 / ESP8285 | `esp8266-1m`, `-1m-all`, `-4m` | device template |
 
@@ -56,8 +56,8 @@ Every push to `esp32-port` is built by [GitHub Actions](https://github.com/igoru
 |-------|-------|-----|
 | `esp32` | `-full.bin` (serial, at `0x0`), `-ota.bin` (WebUI) | any ESP32 with 4 MB flash |
 | `esp32-nspanel` | same | Sonoff NSPanel EU (gen1), see [nspanel/README.md](nspanel/README.md) |
-| `beken-cb3s` | `.uf2` (`ltchiptool`, then WebUI) | any Tuya CB3S (BK7231N) board |
-| `beken-cb3s-rf` | same | CB3S with a 433 MHz receiver, e.g. Tuya TYWRA-RF |
+| `beken-bk7231n` | `.uf2` (`ltchiptool`, then WebUI) | any Tuya BK7231N board (CB2S, CB3S, CBU ...), 433 MHz receiver included |
+| `beken-bk7231n-nokey` | same | BK7231N without flash encryption and a 4 MiB layout, e.g. the Sparkleiot Mini (XH-CB2S / BK7231M) |
 | `esp8266-1m` | `.bin` (serial at `0x0` or WebUI), `.bin.gz` | relays, buttons, AC mains switches, LEDs, dummy relays |
 | `esp8266-1m-all` | same | + PWM light and Sonoff RF Bridge; no serial debug / terminal, UART0 belongs to the RF chip |
 | `esp8266-4m` | same | boards installed with the 4 MB layout (settings live there), single step OTA |
@@ -92,7 +92,7 @@ Beken builds have their own build directory (`code/.pio/build_beken`) and produc
 
 ```
 cd code
-py -3 -m platformio run -c platformio_beken.ini -e cb3s-generic
+py -3 -m platformio run -c platformio_beken.ini -e beken-bk7231n
 ```
 
 ## Device notes

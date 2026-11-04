@@ -26,8 +26,8 @@ jobs:
         include:
         - { arch: esp32, config: platformio_esp32.ini, env: esp32-generic, name: esp32 }
         - { arch: esp32, config: platformio_esp32.ini, env: esp32-nspanel, name: esp32-nspanel }
-        - { arch: beken, config: platformio_beken.ini, env: cb3s-generic, name: beken-cb3s }
-        - { arch: beken, config: platformio_beken.ini, env: beken-cb3s-rf, name: beken-cb3s-rf }
+        - { arch: beken, config: platformio_beken.ini, env: beken-bk7231n, name: beken-bk7231n }
+        - { arch: beken, config: platformio_beken.ini, env: beken-bk7231n-nokey, name: beken-bk7231n-nokey }
         - { arch: esp8266, config: platformio.ini, env: esp8266-1m, name: esp8266-1m }
         - { arch: esp8266, config: platformio.ini, env: esp8266-1m-all, name: esp8266-1m-all }
         - { arch: esp8266, config: platformio.ini, env: esp8266-4m, name: esp8266-4m }
@@ -135,8 +135,8 @@ jobs:
           - `espurna-esp32-nspanel-*` - Sonoff NSPanel EU (gen1) with the Lovelace UI TFT, see `nspanel/README.md`
 
           Beken BK7231N (`*.uf2` - first flash over UART1 with `ltchiptool`, then OTA from the WebUI, see `beken/README.md`):
-          - `espurna-beken-cb3s.uf2` - any CB3S board
-          - `espurna-beken-cb3s-rf.uf2` - with the 433 MHz receiver (rc-switch, pin from `rfbRX`), e.g. Tuya TYWRA-RF
+          - `espurna-beken-bk7231n.uf2` - any Tuya BK7231N board (CB2S, CB3S, CBU ...), 433 MHz receiver included (rc-switch, pin from `rfbRX`)
+          - `espurna-beken-bk7231n-nokey.uf2` - BK7231N without flash encryption and with a 4 MiB layout, e.g. the XH-CB2S / BK7231M of the Sparkleiot Mini (`beken/sparkleiot-mini.md`)
 
           ESP8266, core 3.1.2 + SDK 3.0.5 (`*.bin` - serial flash at 0x0 or OTA; `*.bin.gz` - compressed OTA):
           - `espurna-esp8266-1m` - relays, buttons, AC mains switches, LEDs, dummy relays

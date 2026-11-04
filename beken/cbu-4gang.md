@@ -12,11 +12,11 @@ lists what differs.
 
 ## Build
 
-`cbu-generic` (LibreTiny board `cbu`): the CB3S build has no pin map for P9, P15, P17, P28, which this board uses. It is not
-in the CI releases yet, build it from `code/`:
+`beken-bk7231n`, the generic image of every Tuya BK7231N board (it maps all GPIOs, P9, P15, P17 and P28 included). From the
+CI release, or built from `code/`:
 
 ```
-py -3 -m platformio run -c platformio_beken.ini -e cbu-generic
+py -3 -m platformio run -c platformio_beken.ini -e beken-bk7231n
 ```
 
 ## Wiring

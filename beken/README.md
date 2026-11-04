@@ -26,12 +26,12 @@ Other Beken boards, with what differs from this guide:
 
 | Build | Board |
 |-------|-------|
-| `cb3s-generic` | any CB3S board (Tuya flash layout); no relays, buttons or LEDs pre-assigned, configure them in the web UI |
-| `tuya-cb3s-relay-rf` | **Tuya TYWRA-RF** (1-channel relay + 433 MHz receiver, AC/DC 7-32 V): relay P24, button P14, second ("total") button P6, LED P8 (inverted, Wi-Fi status), 433 MHz receiver data on P26 |
-| `cbu-generic` | any CBU board (Tuya layout, all 21 pads mapped), e.g. the [4-gang switch module](cbu-4gang.md) |
-| `xh-cb2s-generic` | XH-CB2S / BK7231M without flash encryption, 4 MiB layout: the [Sparkleiot Mini](sparkleiot-mini.md); does not start on Tuya chips, and the Tuya builds do not start on it |
+| `beken-bk7231n` | any Tuya BK7231N board (CB1S, CB2S, CB3S, CBU, CB2L ...): Tuya flash layout and keys, every GPIO of the chip, no relays, buttons or LEDs pre-assigned (device template or web UI), 433 MHz receiver (rc-switch) unused until `rfbRX` is set |
+| `beken-bk7231n-nokey` | the same for BK7231N without flash encryption and with a 4 MiB layout of its own bootloader, e.g. the XH-CB2S / BK7231M of the [Sparkleiot Mini](sparkleiot-mini.md); does not start on Tuya chips, and the Tuya builds do not start on it |
+| `tuya-cb3s-relay-rf` | **Tuya TYWRA-RF** with its pins built in: relay P24, button P14, second ("total") button P6, LED P8 (inverted, Wi-Fi status), 433 MHz receiver data on P26. `beken-bk7231n` with the *Tuya TYWRA-RF* device template does the same |
 
-Enabled modules: web UI, API, MQTT, terminal, Home Assistant; the RF bridge (rc-switch) on `tuya-cb3s-relay-rf`.
+Both generic images are in the CI release. Enabled modules: web UI, API, MQTT, terminal, Home Assistant, the RF bridge
+(rc-switch).
 
 Pin numbers are GPIO numbers (`P24` is GPIO 24, set it as `24` in the web UI). Only the pins that the module brings out
 can be used.
@@ -92,20 +92,22 @@ Wi-Fi LED, `remote_io` is the 433 MHz receiver. The `_lv` fields give the active
 
 ## 5. Flash ESPurna
 
-Build from `code/`:
+Take `espurna-beken-bk7231n.uf2` from the [release](https://github.com/igorufox/espurna/releases/latest), or build it from
+`code/`:
 
 ```
-py -3 -m platformio run -c platformio_beken.ini -e tuya-cb3s-relay-rf
+py -3 -m platformio run -c platformio_beken.ini -e beken-bk7231n
 ```
 
-The image is `code/.pio/build_beken/tuya-cb3s-relay-rf/firmware.uf2`. It uses its own build directory, so it does not touch
+The image is `code/.pio/build_beken/beken-bk7231n/firmware.uf2`. It uses its own build directory, so it does not touch
 the ESP8266 / ESP32 builds in `.pio/build`. Then flash it:
 
 ```
-ltchiptool flash write -d COM3 -t 45 code/.pio/build_beken/tuya-cb3s-relay-rf/firmware.uf2
+ltchiptool flash write -d COM3 -t 45 code/.pio/build_beken/beken-bk7231n/firmware.uf2
 ```
 
-Touch CEN to GND at `Connecting...` again. The chip starts ESPurna by itself at the end, no reset is needed.
+Touch CEN to GND at `Connecting...` again. The chip starts ESPurna by itself at the end, no reset is needed. After the first
+setup below, pick the board on *ADMIN → Device Template* (`tywra` finds the TYWRA-RF) and reboot.
 
 Only the `app` partition (`0x11000`) is written. The Tuya bootloader and the Tuya config at `0x1EE000` stay where they were,
 so the stock pin map is still on the chip.
@@ -120,7 +122,7 @@ A phone should show the "sign in to network" page by itself (captive portal, not
 open the address by hand.
 The device also answers as `ESPURNA-XXXXXX.local` (mDNS).
 
-Buttons on `tuya-cb3s-relay-rf` (ESPurna defaults):
+Buttons of the TYWRA-RF (ESPurna defaults):
 
 | Button | Click | Double click | Long click | Very long click |
 |--------|-------|--------------|------------|-----------------|
