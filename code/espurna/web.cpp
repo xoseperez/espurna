@@ -889,7 +889,7 @@ void webLog(AsyncWebServerRequest* request) {
 }
 
 class WebAccessLogHandler : public AsyncWebHandler {
-    bool canHandle(AsyncWebServerRequest* request) override {
+    bool canHandle(AsyncWebServerRequest* request) WEB_HANDLER_CONST override {
         webLog(request);
         return false;
     }

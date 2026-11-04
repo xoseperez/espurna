@@ -441,11 +441,11 @@ public:
         _put(std::forward<Put>(put))
     {}
 
-    bool isRequestHandlerTrivial() override {
+    bool isRequestHandlerTrivial() WEB_HANDLER_CONST override {
         return true;
     }
 
-    bool canHandle(AsyncWebServerRequest* request) override {
+    bool canHandle(AsyncWebServerRequest* request) WEB_HANDLER_CONST override {
         if (!apiEnabled()) {
             return false;
         }
@@ -616,11 +616,11 @@ public:
         _put(std::forward<Put>(put))
     {}
 
-    bool isRequestHandlerTrivial() override {
+    bool isRequestHandlerTrivial() WEB_HANDLER_CONST override {
         return false;
     }
 
-    bool canHandle(AsyncWebServerRequest* request) override {
+    bool canHandle(AsyncWebServerRequest* request) WEB_HANDLER_CONST override {
         if (!apiEnabled()) {
             return false;
         }
