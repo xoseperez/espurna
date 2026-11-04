@@ -114,11 +114,22 @@ types::Event EventEmitter::loop() {
     if (value != _value) {
 
         // TODO: check each loop instead of blocking?
+        // Sample the pin through the whole debounce window and require the new level in at
+        // least 80% of the samples. Sampling only at both ends lets noise through (e.g. mains
+        // pickup on a long switch wire) when it happens to read the same level twice, while
+        // requiring a perfectly clean window blocks real changes on such a wire.
+        unsigned long samples = 0;
+        unsigned long changed = 0;
         auto start = millis();
-        while (millis() - start < _delay) delay(1);
+        while (millis() - start < _delay) {
+            delay(1);
+            ++samples;
+            if ((_pin->digitalRead() == (HIGH)) != _value) {
+                ++changed;
+            }
+        }
 
-        value = _pin->digitalRead() == (HIGH);
-        if (value != _value) {
+        if (!samples || ((changed * 100) >= (samples * 80))) {
 
             _value = !_value;
 
