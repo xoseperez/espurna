@@ -1071,6 +1071,12 @@
 #define MQTT_SKIP_TIME              0               // Skip messages for N ms after connection. Disabled by default
 #endif
 
+#ifndef MQTT_CONNECT_TIMEOUT
+#define MQTT_CONNECT_TIMEOUT        60              // Give up a connection attempt that did not finish in this many seconds and start a new one.
+                                                    // Async client never reports some failed connects (e.g. DNS error), which would leave it 'connecting' forever.
+                                                    // 0 disables
+#endif
+
 #ifndef MQTT_JSON
 #define MQTT_JSON                   0               // Don't group messages in a JSON body by default
 #endif
