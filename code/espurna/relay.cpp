@@ -726,7 +726,13 @@ void cancel(size_t id) {
 }
 
 void cancel(const BulkTimer& timer) {
-    internal::timers.remove(timer);
+    // `timer` is usually an element of the list itself. remove() would keep comparing
+    // the rest of the list against it after it was already destroyed, match by address instead
+    const auto* ptr = std::addressof(timer);
+    internal::timers.remove_if(
+        [ptr](const BulkTimer& other) {
+            return std::addressof(other) == ptr;
+        });
 }
 
 bool is_pulse(const BulkTimer& timer) {
@@ -779,7 +785,11 @@ void BulkTimer::start() {
     _timer.once(
         _duration,
         [pair, flags]() {
-            _relayStatusPair(pair, flags);
+            // relay status notification may cancel (and destroy) this timer,
+            // never refer to the captured values while the relay status is being changed
+            const auto local_pair = pair;
+            const auto local_flags = flags;
+            _relayStatusPair(local_pair, local_flags);
         });
 }
 
