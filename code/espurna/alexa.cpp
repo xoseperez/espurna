@@ -132,7 +132,7 @@ bool body_callback(AsyncWebServerRequest *request, uint8_t *data, size_t len, si
         DEBUG_MSG_P(PSTR("[ALEXA] Ignoring incomplete %s %s from %s (%zu / %zu)\n"),
                 request->methodToString(),
                 request->url().c_str(),
-                IPAddress(request->client()->getRemoteAddress()).toString().c_str(),
+                request->client()->remoteIP().toString().c_str(),
                 len, index);
         return false;
     }

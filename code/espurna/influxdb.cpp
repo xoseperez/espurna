@@ -106,7 +106,7 @@ void _idbInitClient() {
         client->state = AsyncClientState::Connected;
 
         DEBUG_MSG_P(PSTR("[INFLUXDB] Connected to %s:%u\n"),
-            IPAddress(client->getRemoteAddress()).toString().c_str(),
+            client->remoteIP().toString().c_str(),
             client->getRemotePort()
         );
 
