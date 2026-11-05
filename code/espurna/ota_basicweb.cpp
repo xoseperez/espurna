@@ -127,6 +127,16 @@ void upload(Server& server) {
     }
 
     case UPLOAD_FILE_END:
+        // Request body is the file plus a few hundred bytes of multipart framing. When data is lost
+        // below HTTP, the form still ends at the final boundary, only with a shorter file. Anything
+        // close to a TCP segment missing means the image is broken, never flash it
+        if (upload.contentLength > (upload.totalSize + 1024ul)) {
+            internal::result.set(400, F("Incomplete upload"));
+            Update.end();
+            eepromRotate(true);
+            break;
+        }
+
         if (otaFinalize(upload.totalSize, CustomResetReason::Ota, true)) {
             internal::result.set(200, F("Rebooting..."));
         } else {
