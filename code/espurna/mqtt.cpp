@@ -176,6 +176,8 @@ constexpr bool autoconnect() {
     return 1 == MQTT_AUTOCONNECT;
 }
 
+static constexpr auto ConnectTimeout = espurna::duration::Seconds{ MQTT_CONNECT_TIMEOUT };
+
 PROGMEM_STRING(Topic, MQTT_TOPIC);
 PROGMEM_STRING(Getter, MQTT_GETTER);
 PROGMEM_STRING(Setter, MQTT_SETTER);
@@ -559,6 +561,8 @@ espurna::ReadyFlag _mqtt_skip_flag;
 
 espurna::PolledFlag<espurna::time::CoreClock> _mqtt_reconnect_flag;
 size_t _mqtt_reconnect_delay;
+
+espurna::PolledFlag<espurna::time::CoreClock> _mqtt_connect_flag;
 
 bool _mqttReconnectWait() {
     return _mqtt_reconnect_flag.wait(
@@ -2129,6 +2133,7 @@ void _mqttConnect() {
     }
 
     _mqtt_state = AsyncClientState::Connecting;
+    _mqtt_connect_flag.reset();
     _mqttStopConnect();
 
     DEBUG_MSG_P(PSTR("[MQTT] Connecting to broker at %s:%hu\n"),
@@ -2155,10 +2160,28 @@ void _mqttConnect() {
 
 }
 
+#if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
+
+// AsyncMqttClient ignores the result of AsyncClient::connect(), which fails without any callback
+// on a DNS error or while the previous pcb is still around. Nothing would ever move us out of 'connecting'
+void _mqttConnectTimeout() {
+    if ((mqtt::build::ConnectTimeout.count() > 0)
+        && (_mqtt_state == AsyncClientState::Connecting)
+        && _mqtt_connect_flag.wait(mqtt::build::ConnectTimeout))
+    {
+        DEBUG_MSG_P(PSTR("[MQTT] Not connected after %u seconds, giving up\n"),
+            static_cast<unsigned>(mqtt::build::ConnectTimeout.count()));
+        _mqttOnDisconnect();
+    }
+}
+
+#endif
+
 } // namespace
 
 void mqttLoop() {
 #if MQTT_LIBRARY == MQTT_LIBRARY_ASYNCMQTTCLIENT
+    _mqttConnectTimeout();
     _mqttConnect();
 #else
     if (_mqtt.connected()) {
