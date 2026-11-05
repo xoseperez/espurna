@@ -1,0 +1,75 @@
+<form id="form-matter" class="pure-form">
+    <div class="panel" id="panel-matter">
+
+        <div class="header">
+            <h1>MATTER</h1>
+            <h2>Matter On/Off plug on relay #0, with the device certificates the board came with</h2>
+        </div>
+
+        <div class="page">
+
+            <fieldset>
+                <legend>Status</legend>
+
+                <div class="pure-control-group">
+                    <label>Running</label>
+                    <span data-key="matterStarted"></span>
+                </div>
+
+                <div class="pure-control-group">
+                    <label>Controllers (fabrics)</label>
+                    <span data-key="matterFabrics"></span>
+                </div>
+
+                <div class="pure-control-group">
+                    <label>Vendor / product</label>
+                    <span data-key="matterProduct"></span>
+                </div>
+
+                <div class="pure-control-group">
+                    <label>Start at boot</label>
+                    <input class="checkbox-toggle" type="checkbox" name="matterAuto">
+                    <span class="pure-form-message">Off: Matter only starts with the button below (or <code>matter.start</code> in the terminal), a crash then does not repeat on every boot.</span>
+                </div>
+
+                <div class="pure-control-group">
+                    <label></label>
+                    <button type="button" class="pure-button button-matter-start">Start Matter now</button>
+                </div>
+            </fieldset>
+
+            <fieldset class="matter-commissioning">
+                <legend>Pairing</legend>
+
+                <div class="pure-control-group">
+                    <span class="pure-form-message">
+                        Add the device in a Matter controller on the same network (pairing over IP, this firmware has no
+                        Bluetooth). The code contains the device setup PIN: show it only to people who may control the device.
+                    </span>
+                </div>
+
+                <div class="pure-control-group">
+                    <label></label>
+                    <button type="button" class="pure-button button-matter-window">Open pairing window</button>
+                    <span class="pure-form-message">The window closes 15 minutes after the start and after a controller added the device. Open it again to pair once more or to add a second controller.</span>
+                </div>
+
+                <div class="pure-control-group">
+                    <label>Manual code</label>
+                    <span class="matter-manual" data-key="matterManual"></span>
+                </div>
+
+                <div class="pure-control-group">
+                    <label>QR code</label>
+                    <canvas class="matter-qr"></canvas>
+                </div>
+
+                <div class="pure-control-group">
+                    <label>QR payload</label>
+                    <span class="matter-payload" data-key="matterQr"></span>
+                </div>
+            </fieldset>
+
+        </div>
+    </div>
+</form>

@@ -8,9 +8,11 @@
 	},
 	"flash": {
 		"app": "0x011000+0x1A9000",
-		"download": "0x286000+0x15A000"
+		"download": "0x286000+0x15A000",
+		"matter": "0x3E0000+0x020000"
 	},
 	"upload": {
-		"flash_size": 4194304
+		"flash_size": 4194304,
+		"maximum_size": 1638400
 	}
 }

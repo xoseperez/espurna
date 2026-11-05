@@ -599,6 +599,10 @@ namespace {
 bool _ws_auth { espurna::web::ws::build::authentication() };
 
 AsyncWebSocket _ws("/ws");
+
+// No web socket clients for a while: their buffers are heap that something else needs right now
+// (Matter commissioning on Beken, ~10 s of certificate checks that run out of memory otherwise)
+bool _ws_paused { false };
 std::queue<espurna::web::ws::PostponedCallback> _ws_queue;
 espurna::web::ws::Callbacks _ws_callbacks;
 
@@ -1096,6 +1100,11 @@ void _wsEvent(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType
     case WS_EVT_CONNECT:
     {
         const auto ip = ipToString(client->remoteIP());
+        if (_ws_paused) {
+            client->close();
+            return;
+        }
+
 #ifndef NOWSAUTH
         if (_ws_auth && !_wsAuth(client)) {
             DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u session expired for %s\n"),
@@ -1275,6 +1284,19 @@ WsClientInfo wsClientInfo(uint32_t client_id) {
         .connected = (client != nullptr),
         .stalled = (client != nullptr) && client->queueIsFull(),
     };
+}
+
+void wsPause(bool paused) {
+    if (_ws_paused == paused) {
+        return;
+    }
+
+    _ws_paused = paused;
+    if (paused) {
+        _ws.closeAll();
+    }
+
+    DEBUG_MSG_P(PSTR("[WEBSOCKET] %s\n"), paused ? "Paused, clients closed" : "Resumed");
 }
 
 bool wsConnected() {

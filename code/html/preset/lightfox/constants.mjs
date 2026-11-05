@@ -9,6 +9,7 @@ export const MODULE_IDB = true;
 export const MODULE_LED = true;
 export const MODULE_LIGHT = false;
 export const MODULE_LIGHTFOX = true;
+export const MODULE_MATTER = false;
 export const MODULE_MQTT = true;
 export const MODULE_NOFUSS = true;
 export const MODULE_NSPANEL = false;
@@ -36,6 +37,7 @@ export const MODULES = {
     'led': MODULE_LED,
     'light': MODULE_LIGHT,
     'lightfox': MODULE_LIGHTFOX,
+    'matter': MODULE_MATTER,
     'mqtt': MODULE_MQTT,
     'nofuss': MODULE_NOFUSS,
     'nspanel': MODULE_NSPANEL,

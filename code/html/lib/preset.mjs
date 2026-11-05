@@ -30,6 +30,7 @@ export const DEFAULT_MODULES = {
     'led': true,
     'light': false,
     'lightfox': false,
+    'matter': false,
     'mqtt': true,
     'nofuss': true,
     'nspanel': false,
