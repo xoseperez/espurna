@@ -760,7 +760,7 @@ void webLog(AsyncWebServerRequest* request) {
 }
 
 class WebAccessLogHandler : public AsyncWebHandler {
-    bool canHandle(AsyncWebServerRequest* request) override {
+    bool canHandle(AsyncWebServerRequest* request) const override {
         webLog(request);
         return false;
     }
