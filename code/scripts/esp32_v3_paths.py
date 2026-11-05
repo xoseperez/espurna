@@ -10,4 +10,10 @@ Import("env")  # noqa: F821
 
 framework = env.PioPlatform().get_package_dir("framework-arduinoespressif32")  # noqa: F821
 if framework:
-    env.Prepend(CPPPATH=[os.path.join(framework, "libraries", "Network", "src")])  # noqa: F821
+    # WiFi too: the framework library Matter includes WiFi.h without naming it as a dependency.
+    # FS: LittleFS (NSPanel) includes FS.h, and with chain+ the LDF leaves FS off its include path
+    env.Prepend(CPPPATH=[  # noqa: F821
+        os.path.join(framework, "libraries", "Network", "src"),
+        os.path.join(framework, "libraries", "WiFi", "src"),
+        os.path.join(framework, "libraries", "FS", "src"),
+    ])

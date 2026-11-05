@@ -26,7 +26,7 @@ ESP32 and Beken ports and AC wall-switch support are maintained by **@igorufox**
 
 This fork lives in the [`esp32-port`](https://github.com/igorufox/espurna/tree/esp32-port) branch and adds two architectures to the ESP8266 one, from the same source:
 
-- **ESP32** (Arduino-ESP32 via PlatformIO `espressif32 @ 6.3.2`), code under [`code/espurna/arch/esp32`](code/espurna/arch/esp32);
+- **ESP32** (Arduino-ESP32 core 3 / ESP-IDF 5 via [pioarduino](https://github.com/pioarduino/platform-espressif32), PlatformIO Core 6.2 or newer; Matter On/Off plugs; Tasmota safeboot flash layout, [`code/esp32_4mb_safeboot.csv`](code/esp32_4mb_safeboot.csv)), code under [`code/espurna/arch/esp32`](code/espurna/arch/esp32);
 - **Beken BK72xx** (Tuya CB3S / CBU and compatible modules) through [LibreTiny](https://docs.libretiny.eu/), code under [`code/espurna/arch/beken`](code/espurna/arch/beken), builds in [`code/platformio_beken.ini`](code/platformio_beken.ini).
 
 ### Hardware
@@ -86,7 +86,7 @@ cd code
 pio run -c platformio_esp32.ini -e esp32-generic
 ```
 
-The merged image is written to `code/.pio/build/<build>/espurna-<build>.bin` by [`scripts/esp32_merge.py`](code/scripts/esp32_merge.py).
+The merged image is written to `code/.pio/build/<build>/espurna-<build>.bin` by [`scripts/esp32_merge.py`](code/scripts/esp32_merge.py): bootloader, partition table, `boot_app0` and ESPurna at 0xE0000. With `code/safeboot/tasmota32-safeboot.bin` in place (Tasmota's release image) it goes into the factory partition at 0x10000 too; without it ESPurna runs, only the `safeboot` command has nothing to switch to.
 
 Beken builds have their own build directory (`code/.pio/build_beken`) and produce a `firmware.uf2`:
 

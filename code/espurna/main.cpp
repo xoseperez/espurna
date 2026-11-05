@@ -35,8 +35,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "nspanel.h"
 #endif
 
-#if defined(LIBRETINY) && MATTER_SUPPORT
-void matterSetup();
+#if MATTER_SUPPORT
+#include "espurna_matter.h"
+#endif
+
+#if SAFEBOOT_SUPPORT
+#include "safeboot_esp32.h"
 #endif
 
 // -----------------------------------------------------------------------------
@@ -261,6 +265,11 @@ void setup() {
         nspanelBootSetup();
     #endif
 
+    // Asymmetric (safeboot) flash layout: crash-loop guard and `safeboot`, also in the unstable mode
+    #if SAFEBOOT_SUPPORT
+        safebootSetup();
+    #endif
+
     // -------------------------------------------------------------------------
     // Check if system is stable
     // -------------------------------------------------------------------------
@@ -285,6 +294,9 @@ void setup() {
         #endif
         #if OTA_WEB_SUPPORT
             otaWebSetup();
+        #endif
+        #if SAFEBOOT_SUPPORT
+            safebootWebSetup();
         #endif
     #endif
 
@@ -341,7 +353,7 @@ void setup() {
     #if MQTT_SUPPORT
         mqttSetup();
     #endif
-    #if defined(LIBRETINY) && MATTER_SUPPORT
+    #if MATTER_SUPPORT
         matterSetup();
     #endif
     #if MDNS_SERVER_SUPPORT

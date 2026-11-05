@@ -106,6 +106,20 @@ export function makeModules(name) {
 
     case 'small':
         return DEFAULT_MODULES;
+
+    // Matter relay boards (Beken, ESP32 core 3): the small image + MATTER, without the panels of the modules their
+    // firmware leaves out to fit (HA, Domoticz, Thingspeak, scheduler, telnet, NoFUSS, InfluxDB)
+    case 'matter':
+        return Object.assign({}, DEFAULT_MODULES, {
+            'dcz': false,
+            'ha': false,
+            'idb': false,
+            'matter': true,
+            'nofuss': false,
+            'sch': false,
+            'telnet': false,
+            'tspk': false,
+        });
     }
 
     if (NAMED_BUILD[name] === undefined) {
@@ -162,6 +176,7 @@ export const MODULE_PRESETS = new Set([
     'garland',
     'light',
     'lightfox',
+    'matter',
     'rfbridge',
     'rfm69',
     'sensor',

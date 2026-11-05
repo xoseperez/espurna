@@ -7,6 +7,32 @@ def _quote(p):
     return '"{}"'.format(p)
 
 
+def _app_offsets(env):
+    """Offsets of the app slot (ota_0, else the first app) and of the factory partition when there is an ota_0 too,
+    from the partition table csv."""
+    csv = env.BoardConfig().get("build.partitions", "default.csv")
+    path = os.path.join(env.subst("$PROJECT_DIR"), csv)
+    if not os.path.exists(path):
+        framework_dir = env.PioPlatform().get_package_dir("framework-arduinoespressif32")
+        path = os.path.join(framework_dir, "tools", "partitions", csv)
+
+    apps = {}
+    with open(path) as f:
+        for line in f:
+            line = line.split("#", 1)[0].strip()
+            if not line:
+                continue
+            cols = [c.strip() for c in line.split(",")]
+            if len(cols) >= 4 and cols[1] == "app":
+                apps.setdefault(cols[2], cols[3])
+
+    if "ota_0" in apps:
+        return apps["ota_0"], apps.get("factory")
+    if apps:
+        return next(iter(apps.values())), None
+    raise Exception("[POST-BUILD] No app partition in {}".format(path))
+
+
 def merge_bin(source, target, env):
     print("\n[POST-BUILD] Creating merged production binary...")
 
@@ -51,6 +77,7 @@ def merge_bin(source, target, env):
         boot_app0 = os.path.join(framework_dir, "tools", "partitions", "boot_app0.bin")
 
     firmware = os.path.join(build_dir, "firmware.bin")
+    app_offset, safeboot_offset = _app_offsets(env)
 
     missing = [f for f in (bootloader, partitions, boot_app0, firmware) if not os.path.exists(f)]
     if missing:
@@ -63,7 +90,7 @@ def merge_bin(source, target, env):
         "0x1000 {bootloader} "
         "0x8000 {partitions} "
         "0xe000 {boot_app0} "
-        "0x10000 {firmware}"
+        "{app_offset} {firmware}"
     ).format(
         esptool=_quote(esptool),
         chip=board,
@@ -74,7 +101,14 @@ def merge_bin(source, target, env):
         partitions=_quote(partitions),
         boot_app0=_quote(boot_app0),
         firmware=_quote(firmware),
+        app_offset=app_offset,
     )
+
+    # Safeboot layout: the factory partition holds the Tasmota safeboot image. Without it the merged image still
+    # boots (boot_app0 selects ota_0), only the `safeboot` command refuses to switch to an empty partition
+    safeboot = os.path.join(env.subst("$PROJECT_DIR"), "safeboot", "tasmota32-safeboot.bin")
+    if safeboot_offset and os.path.exists(safeboot):
+        cmd += " {} {}".format(safeboot_offset, _quote(safeboot))
 
     print("Running: " + cmd)
     rc = env.Execute(cmd)

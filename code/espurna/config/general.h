@@ -127,6 +127,43 @@
 #define TELNET_SUPPORT          1               // Enable telnet support by default (3.34Kb)
 #endif
 
+//------------------------------------------------------------------------------
+// MATTER
+// On/Off plug endpoints for the relays (matter.cpp). Beken (libMatterApp of matter-bk7231n) and ESP32 on
+// Arduino-ESP32 core 3.x only, set by their *-matter environments
+//------------------------------------------------------------------------------
+
+#ifndef MATTER_SUPPORT
+#define MATTER_SUPPORT          0
+#endif
+
+//------------------------------------------------------------------------------
+// SAFEBOOT
+// ESP32 with the asymmetric flash layout (esp32_4mb_safeboot.csv): `safeboot` command, crash-loop guard, web /upgrade
+// guard (arch/esp32/safeboot_esp32.cpp), on by default for ESP32 (harmless on other layouts: no factory partition, no
+// guard). The NSPanel module has its own copy for the same Tasmota layout
+//------------------------------------------------------------------------------
+
+#ifndef SAFEBOOT_SUPPORT
+#if defined(ESP32) && !NSPANEL_SUPPORT
+#define SAFEBOOT_SUPPORT        1
+#else
+#define SAFEBOOT_SUPPORT        0
+#endif
+#endif
+
+#if SAFEBOOT_SUPPORT && !defined(ESP32)
+#error "SAFEBOOT_SUPPORT is for ESP32 only"
+#endif
+
+#if SAFEBOOT_SUPPORT && NSPANEL_SUPPORT
+#error "the NSPanel module already handles the safeboot layout"
+#endif
+
+#if MATTER_SUPPORT && !defined(LIBRETINY) && !defined(ESP32)
+#error "MATTER_SUPPORT needs Beken (LibreTiny) or ESP32 (Arduino-ESP32 core 3.x)"
+#endif
+
 #ifndef TELNET_STA
 #define TELNET_STA              0               // By default, disallow connections via STA interface
 #endif

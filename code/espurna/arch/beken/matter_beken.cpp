@@ -1,9 +1,10 @@
 /*
 
-MATTER MODULE FOR BEKEN (LibreTiny)
+MATTER BACKEND FOR BEKEN (LibreTiny)
 
-Matter On/Off plug (connectedhomeip, prebuilt libMatterApp.a) on top of ESPurna. ESPurna keeps Wi-Fi, the relay and
-the web UI; Matter gets the bk_* platform API it was written against (matter_pal.h of the BK7231N port):
+Matter On/Off plug (connectedhomeip, prebuilt libMatterApp.a of matter-bk7231n) on top of ESPurna. ESPurna keeps
+Wi-Fi, the relay and the web UI (matter.cpp); Matter gets the bk_* platform API it was written against (matter_pal.h
+of the BK7231N port):
 - "chip-factory" namespace: read only, straight from the factory data the stock firmware left in flash (Quectel SDK
   on the Sparkleiot XH-CB2S): DAC and its key, PAI, certification declaration, passcode verifier, discriminator.
   Nothing is ever written there
@@ -17,10 +18,9 @@ the web UI; Matter gets the bk_* platform API it was written against (matter_pal
 
 #if defined(LIBRETINY) && MATTER_SUPPORT
 
+#include "espurna_matter.h"
 #include "relay.h"
 #include "terminal.h"
-#include "wifi.h"
-#include "ws.h"
 
 #include <FreeRTOS.h>
 #include <semphr.h>
@@ -408,131 +408,10 @@ void fill(unsigned char* out, size_t length) {
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-bool started { false };
 String node_label;
 
-// Relay changes from Matter come from its own task, they are applied in the loop
-std::atomic<int> pending { -1 };
-
-// Log lines of the Matter task, printed from the loop (ESPurna debug output is not for other tasks).
-// Fixed slots, a line that does not fit is counted as dropped
-namespace log {
-
-constexpr size_t Slots { 8 };
-constexpr size_t Length { 120 };
-
-char lines[Slots][Length];
-size_t head { 0 };
-size_t tail { 0 };
-size_t dropped { 0 };
-SemaphoreHandle_t mutex { nullptr };
-
-void push(const char* line) {
-    if (!mutex) {
-        return;
-    }
-
-    // A burst of lines waits a little for the loop to print them (it runs every 10 ms)
-    for (size_t attempt = 0; attempt < 5; ++attempt) {
-        xSemaphoreTake(mutex, portMAX_DELAY);
-        if ((head - tail) < Slots) {
-            std::strncpy(lines[head % Slots], line, Length - 1);
-            lines[head % Slots][Length - 1] = '\0';
-            ++head;
-            xSemaphoreGive(mutex);
-            return;
-        }
-        xSemaphoreGive(mutex);
-        vTaskDelay(pdMS_TO_TICKS(10));
-    }
-
-    xSemaphoreTake(mutex, portMAX_DELAY);
-    ++dropped;
-    xSemaphoreGive(mutex);
-}
-
-void print() {
-    if (!mutex) {
-        return;
-    }
-
-    char line[Length];
-    for (;;) {
-        size_t lost { 0 };
-
-        xSemaphoreTake(mutex, portMAX_DELAY);
-        const bool empty = (head == tail);
-        if (!empty) {
-            std::memcpy(line, lines[tail % Slots], Length);
-            ++tail;
-        }
-        lost = dropped;
-        dropped = 0;
-        xSemaphoreGive(mutex);
-
-        if (lost) {
-            DEBUG_MSG_P(PSTR("[MATTER] (%u lines dropped)\n"), lost);
-        }
-
-        if (empty) {
-            break;
-        }
-
-        DEBUG_MSG_P(PSTR("[MATTER] %s\n"), line);
-    }
-}
-
-} // namespace log
-
-std::atomic<bool> pong { false };
-
-// Commissioning in progress (from the Matter task), applied in the loop
-std::atomic<int> commissioning { -1 };
+// Commissioning in progress, from the Matter task: the message trace is only logged then
 std::atomic<bool> commissioning_active { false };
-
-void web_tick();
-
-void loop() {
-    const auto value = pending.exchange(-1);
-    if (value >= 0) {
-        relayStatus(0, value != 0);
-    }
-
-    const auto busy = commissioning.exchange(-1);
-    if (busy >= 0) {
-        DEBUG_MSG_P(PSTR("[MATTER] Commissioning %s\n"), busy ? "started" : "ended");
-#if WEB_SUPPORT
-        wsPause(busy != 0);
-#endif
-    }
-
-    if (pong.exchange(false)) {
-        DEBUG_MSG_P(PSTR("[MATTER] Task is alive\n"));
-    }
-
-    log::print();
-    web_tick();
-}
-
-void start() {
-    if (started) {
-        return;
-    }
-
-    if (!kv::init()) {
-        DEBUG_MSG_P(PSTR("[MATTER] Key-value store failed\n"));
-        return;
-    }
-
-    node_label = systemHostname();
-    started = matter_app_start() == 0;
-    DEBUG_MSG_P(PSTR("[MATTER] Start %s, heap %u\n"),
-        started ? "OK" : "FAILED", static_cast<unsigned>(lt_heap_get_free()));
-
-    if (started && relayCount()) {
-        matter_set_onoff(1, relayStatus(0) == RelayStatus::On);
-    }
-}
 
 // The lwIP port of the BDK brings the netif up without NETIF_FLAG_IGMP (MLD6 is set), joining an IPv4 multicast
 // group then fails with ERR_VAL, and the minimal mDNS of Matter cannot answer on 224.0.0.251. Runs in the tcpip thread
@@ -542,34 +421,6 @@ void enable_igmp(void*) {
             netif->flags |= NETIF_FLAG_IGMP;
             igmp_start(netif);
         }
-    }
-}
-
-void wifi_event(espurna::wifi::Event event) {
-    switch (event) {
-    case espurna::wifi::Event::StationConnected:
-        events::connected = true;
-        tcpip_callback(enable_igmp, nullptr);
-        // Bring-up: a crash in Matter must not put the board into a boot loop, so it only starts on
-        // MATTER.START until `matterAuto 1` is set
-        if (getSetting("matterAuto", false)) {
-            start();
-        }
-        events::notify(EVENT_MOD_WIFI, EventWifiStaConnected, nullptr);
-        events::notify(EVENT_MOD_NETIF, EventNetifGotIp4, nullptr);
-        break;
-
-    case espurna::wifi::Event::StationDisconnected: {
-        if (events::connected) {
-            events::connected = false;
-            matter_sta_disconnected_t data {};
-            events::notify(EVENT_MOD_WIFI, EventWifiStaDisconnected, &data);
-        }
-        break;
-    }
-
-    default:
-        break;
     }
 }
 
@@ -594,220 +445,103 @@ void command_factory(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
-PROGMEM_STRING(Status, "MATTER");
-
-void command_status(::terminal::CommandContext&& ctx) {
-    ctx.output.printf_P(PSTR("started: %s, fabrics: %d, heap: %u, lowest since boot: %u\n"),
-        started ? "yes" : "no",
-        started ? matter_fabric_count() : 0,
-        static_cast<unsigned>(lt_heap_get_free()),
-        static_cast<unsigned>(lt_heap_get_min_free()));
-    terminalOK(ctx);
-}
-
-PROGMEM_STRING(Window, "MATTER.WINDOW");
-
-// Commissioning window again: it closes after 15 minutes and after a controller added the device
-void command_window(::terminal::CommandContext&& ctx) {
-    if (!started) {
-        terminalError(ctx, F("Matter is not started"));
-        return;
-    }
-
-    matter_open_window();
-    terminalOK(ctx);
-}
-
-PROGMEM_STRING(Ping, "MATTER.PING");
-
-// Work item through the Matter task, answered from the loop
-void command_ping(::terminal::CommandContext&& ctx) {
-    if (!started) {
-        terminalError(ctx, F("Matter is not started"));
-        return;
-    }
-
-    matter_ping();
-    terminalOK(ctx);
-}
-
-PROGMEM_STRING(Start, "MATTER.START");
-
-void command_start(::terminal::CommandContext&& ctx) {
-    if (!events::connected) {
-        terminalError(ctx, F("Not connected to Wi-Fi"));
-        return;
-    }
-
-    start();
-    if (!started) {
-        terminalError(ctx, F("Start failed"));
-        return;
-    }
-
-    terminalOK(ctx);
-}
-
-// The manual pairing code and the QR payload carry the setup passcode, they are for the device owner only
-PROGMEM_STRING(Codes, "MATTER.CODES");
-
-void command_codes(::terminal::CommandContext&& ctx) {
-    if (!started) {
-        terminalError(ctx, F("Matter is not started"));
-        return;
-    }
-
-    char manual[24];
-    char qr[32];
-    if (!matter_onboarding_codes(manual, sizeof(manual), qr, sizeof(qr))) {
-        terminalError(ctx, F("No commissioning data"));
-        return;
-    }
-
-    ctx.output.printf_P(PSTR("manual pairing code: %s\nQR code: %s\n"), manual, qr);
-    terminalOK(ctx);
-}
-
 static constexpr ::terminal::Command Commands[] PROGMEM {
     {Factory, command_factory},
-    {Status, command_status},
-    {Codes, command_codes},
-    {Start, command_start},
-    {Ping, command_ping},
-    {Window, command_window},
 };
 #endif
 
-// ---------------------------------------------------------------------------------------------------------------------
-// MATTER panel of the WebUI: status, start, auto start and the pairing codes (they carry the setup passcode, the panel
-// is behind the WebUI login like the rest of the settings)
-
-#if WEB_SUPPORT
-namespace web {
-
-STRING_VIEW_INLINE(Prefix, "matter");
-
-int fabrics { -1 };
-espurna::time::CoreClock::time_point last;
-
-bool onKeyCheck(espurna::StringView key, const JsonVariant&) {
-    return key.startsWith(Prefix);
-}
-
-void onVisible(JsonObject& root) {
-    wsPayloadModule(root, Prefix);
-}
-
-void onData(JsonObject& root) {
-    root["matterStarted"] = started ? F("yes") : F("no");
-    root["matterFabrics"] = started ? matter_fabric_count() : 0;
-
-    String product;
-    product.reserve(64);
-    product += factory::read_text("vendor-name");
-    product += F(" (0x");
-    product += String(factory::read_number("vendor-id"), 16);
-    product += F(") / ");
-    product += factory::read_text("product-name");
-    product += F(" (0x");
-    product += String(factory::read_number("product-id"), 16);
-    product += ')';
-    root["matterProduct"] = product;
-
-    char manual[24] {};
-    char qr[32] {};
-    if (started && matter_onboarding_codes(manual, sizeof(manual), qr, sizeof(qr))) {
-        root["matterManual"] = manual;
-        root["matterQr"] = qr;
-    } else {
-        root["matterManual"] = "";
-        root["matterQr"] = "";
-    }
-}
-
-void onConnected(JsonObject& root) {
-    root["matterAuto"] = getSetting("matterAuto", false);
-    onData(root);
-}
-
-void onAction(uint32_t, const char* action, JsonObject&) {
-    if (std::strcmp(action, "matterWindow") == 0) {
-        if (started) {
-            matter_open_window();
-        }
-        return;
-    }
-
-    if (std::strcmp(action, "matterStart") != 0) {
-        return;
-    }
-
-    if (events::connected) {
-        start();
-    }
-
-    wsPost(onData);
-}
-
-void setup() {
-    wsRegister()
-        .onVisible(onVisible)
-        .onConnected(onConnected)
-        .onAction(onAction)
-        .onKeyCheck(onKeyCheck);
-}
-
-} // namespace web
-
-// a controller was added or removed: refresh the panel
-void web_tick() {
-    if (!started) {
-        return;
-    }
-
-    const auto now = espurna::time::CoreClock::now();
-    if ((now - web::last) < espurna::duration::Seconds(2)) {
-        return;
-    }
-    web::last = now;
-
-    const auto count = matter_fabric_count();
-    if (count != web::fabrics) {
-        web::fabrics = count;
-        if (wsConnected()) {
-            wsPost(web::onData);
-        }
-    }
-}
-#else
-void web_tick() {
-}
-#endif
-
 } // namespace
+
+// ---------------------------------------------------------------------------------------------------------------------
+
+namespace backend {
+
+// The data model of libMatterApp has a single plug endpoint
+size_t endpoints() {
+    return std::min(relayCount(), static_cast<size_t>(1));
+}
 
 void setup() {
 #if TERMINAL_SUPPORT
     terminal::add(Commands);
 #endif
-#if WEB_SUPPORT
-    web::setup();
-#endif
-    wifiRegister(wifi_event);
-    relayOnStatusChange([](size_t id, bool status) {
-        if (started && (id == 0)) {
-            matter_set_onoff(1, status);
-        }
-    });
-    log::mutex = xSemaphoreCreateMutex();
-    espurnaRegisterLoop(loop);
 }
 
+bool start() {
+    if (!kv::init()) {
+        DEBUG_MSG_P(PSTR("[MATTER] Key-value store failed\n"));
+        return false;
+    }
+
+    node_label = systemHostname();
+    return matter_app_start() == 0;
+}
+
+void network(bool up) {
+    if (up) {
+        events::connected = true;
+        tcpip_callback(enable_igmp, nullptr);
+        events::notify(EVENT_MOD_WIFI, EventWifiStaConnected, nullptr);
+        events::notify(EVENT_MOD_NETIF, EventNetifGotIp4, nullptr);
+        return;
+    }
+
+    if (events::connected) {
+        events::connected = false;
+        matter_sta_disconnected_t data {};
+        events::notify(EVENT_MOD_WIFI, EventWifiStaDisconnected, &data);
+    }
+}
+
+void set_onoff(size_t index, bool on) {
+    matter_set_onoff(static_cast<uint8_t>(index + 1), on);
+}
+
+bool codes(char* manual, size_t manual_size, char* qr, size_t qr_size) {
+    return matter_onboarding_codes(manual, manual_size, qr, qr_size);
+}
+
+int fabrics() {
+    return matter_fabric_count();
+}
+
+void open_window() {
+    matter_open_window();
+}
+
+void ping() {
+    matter_ping();
+}
+
+String product() {
+    String out;
+    out.reserve(64);
+    out += factory::read_text("vendor-name");
+    out += F(" (0x");
+    out += String(factory::read_number("vendor-id"), 16);
+    out += F(") / ");
+    out += factory::read_text("product-name");
+    out += F(" (0x");
+    out += String(factory::read_number("product-id"), 16);
+    out += ')';
+
+    return out;
+}
+
+size_t heap() {
+    return lt_heap_get_free();
+}
+
+size_t heap_min() {
+    return lt_heap_get_min_free();
+}
+
+} // namespace backend
 } // namespace matter
 } // namespace espurna
 
 // ---------------------------------------------------------------------------------------------------------------------
-// The bk_* platform API of the Matter library
+// Callbacks of matter_app.cpp and the bk_* platform API of the Matter library
 
 extern "C" {
 
@@ -820,28 +554,28 @@ void matter_log(const char* line) {
     }
 
     // free heap at the time of the line: commissioning runs out of it, this shows which step takes how much
-    char tagged[espurna::matter::log::Length];
+    char tagged[120];
     snprintf(tagged, sizeof(tagged), "(%u) %s", static_cast<unsigned>(lt_heap_get_free()), line);
-    espurna::matter::log::push(tagged);
+    espurna::matter::log_line(tagged);
 }
 
-// filled by start(), in the loop: settings are not read from the Matter task
+// filled by backend::start(), in the loop: settings are not read from the Matter task
 const char* matter_node_label(void) {
     return espurna::matter::node_label.c_str();
 }
 
 void matter_commissioning(bool active) {
     espurna::matter::commissioning_active = active;
-    espurna::matter::commissioning = active ? 1 : 0;
+    espurna::matter::commissioning(active);
 }
 
 void matter_pong(void) {
-    espurna::matter::pong = true;
+    espurna::matter::pong();
 }
 
 void matter_onoff_changed(uint8_t endpoint, bool on) {
-    if (endpoint == 1) {
-        espurna::matter::pending = on ? 1 : 0;
+    if (endpoint >= 1) {
+        espurna::matter::onoff_changed(endpoint - 1, on);
     }
 }
 
@@ -1008,9 +742,5 @@ int mbedtls_hardware_poll(void*, unsigned char* output, size_t len, size_t* olen
 }
 
 } // extern "C"
-
-void matterSetup() {
-    espurna::matter::setup();
-}
 
 #endif

@@ -56,6 +56,8 @@ namespace {
     #include "static/index.thermostat.html.ipp"
 #elif WEBUI_IMAGE == WEBUI_IMAGE_CURTAIN
     #include "static/index.curtain.html.ipp"
+#elif WEBUI_IMAGE == WEBUI_IMAGE_MATTER
+    #include "static/index.matter.html.ipp"
 #elif WEBUI_IMAGE == WEBUI_IMAGE_FULL
     #include "static/index.all.html.ipp"
 #endif

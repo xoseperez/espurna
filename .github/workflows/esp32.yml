@@ -52,7 +52,8 @@ jobs:
           ${{ runner.os }}-pio-${{ matrix.env }}-
     - name: Install PlatformIO
       run: |
-        pip install -U platformio
+        # ESP32: pioarduino needs PlatformIO Core >= 6.2
+        pip install -U 'platformio>=6.2'
     - name: Build
       working-directory: code
       env:
@@ -130,7 +131,7 @@ jobs:
 
           One image per chip, the board is picked after flashing: WebUI, ADMIN, *Device Template* (Tasmota templates, OpenBeken devices and the boards of this firmware) or *Tasmota Profile Import*.
 
-          ESP32 (`*-full.bin` - merged image, flash at 0x0; `*-ota.bin` - application only, for OTA from the WebUI):
+          ESP32, Arduino-ESP32 core 3 (ESP-IDF 5), Matter On/Off plugs included, Tasmota safeboot flash layout (ESPurna at 0xE0000, 2880 KB; `*-full.bin` - merged image, flash at 0x0, then put the Tasmota safeboot image to 0x10000; `*-ota.bin` - application only, upload it from the safeboot web UI after the `safeboot` command):
           - `espurna-esp32-*` - any ESP32 with 4 MB flash
           - `espurna-esp32-nspanel-*` - Sonoff NSPanel EU (gen1) with the Lovelace UI TFT, see `nspanel/README.md`
 
