@@ -125,6 +125,15 @@ void onDisconnect(AsyncWebServerRequest* request) {
     }
 }
 
+// The web server drops a connection after 3 s without received data (WebServer.cpp). While the image goes
+// into the flash, the receive buffers can be full and the sender waits for its TCP retransmission timer,
+// which grows past that: the upload stopped half-way (nginx answered 502 to the browser)
+constexpr uint32_t UploadRxTimeout { 30 };
+
+void uploadRxTimeout(AsyncWebServerRequest* request) {
+    request->client()->setRxTimeout(UploadRxTimeout);
+}
+
 bool complete(AsyncWebServerRequest *request) {
     const auto& header = request->header(F("Content-Length"));
     return header.length()
@@ -261,6 +270,7 @@ void onFile(AsyncWebServerRequest *request, String filename, size_t index, uint8
 
             DEBUG_MSG_P(PSTR("[UPGRADE] Start (%s): %s\n"), writer->name, filename.c_str());
             owner = request;
+            uploadRxTimeout(request);
             request->onDisconnect([request]() {
                 onDisconnect(request);
             });
@@ -325,6 +335,7 @@ void onFile(AsyncWebServerRequest *request, String filename, size_t index, uint8
         }
 
         owner = request;
+        uploadRxTimeout(request);
         request->onDisconnect([request]() {
             onDisconnect(request);
         });

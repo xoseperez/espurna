@@ -402,10 +402,13 @@ async function fetchTimeout(url, options = {}, timeout = 4000) {
  * @param {string} [className]
  */
 function setStatus(text, className = '') {
-    const status = document.getElementById('firmware-status');
-    if (status) {
-        status.textContent = text;
-        status.className = className;
+    // ADMIN release list, and the MATTER panel when it installs the Matter code
+    for (const id of ['firmware-status', 'matter-code-status']) {
+        const status = document.getElementById(id);
+        if (status) {
+            status.textContent = text;
+            status.className = className;
+        }
     }
 }
 
@@ -606,7 +609,7 @@ async function installEsp8266(urls, row, choice, route) {
 
     const mini = miniFiles(row);
     if (!mini) {
-        throw new Error(`release ${row.tag} has no minimal image`);
+        throw new Error(`release ${releaseName(row)} has no minimal image`);
     }
 
     // downloaded before anything is stored on the board
@@ -772,7 +775,7 @@ async function installEsp32(urls, row, choice) {
             throw new Error(`the migration to the safeboot layout is not possible: ${status.error}`);
         }
         if (!safebootFile) {
-            throw new Error(`release ${row.tag} has no safeboot image, the two-slot layout needs it for the migration`);
+            throw new Error(`release ${releaseName(row)} has no safeboot image, the two-slot layout needs it for the migration`);
         }
 
         const blob = await downloadFile(safebootFile);
@@ -831,7 +834,7 @@ async function install(row, choice) {
     const warning = state.imageKnown ? ''
         : '\n\nThis build does not say which image it is: make sure it is the one for this board.';
     const step = choice.step ? `\n(${choice.step})` : '';
-    if (!window.confirm(`Install ${file.name} of ${row.tag} on this board?${step}\n\nThe board restarts, keep it powered until it is back.${warning}`)) {
+    if (!window.confirm(`Install ${file.name} of ${releaseName(row)} on this board?${step}\n\nThe board restarts, keep it powered until it is back.${warning}`)) {
         return;
     }
 
@@ -934,6 +937,17 @@ function choiceItem(row, choice) {
 }
 
 /**
+ * The build date names a release: CI tags start with 'esp32-' for every chip
+ * @param {FirmwareRow} row
+ * @returns {string}
+ */
+export function releaseName(row) {
+    return row.date
+        ? row.date.replace('T', ' ').replace(/:\d\dZ$/, ' UTC')
+        : row.tag;
+}
+
+/**
  * @param {HTMLElement} list
  * @param {FirmwareRow[]} rows
  */
@@ -943,36 +957,83 @@ function showRows(list, rows) {
     for (const row of rows) {
         const item = document.createElement('li');
 
+        // the commit links to the release page
         const title = document.createElement('strong');
-        title.textContent = row.tag;
+        title.textContent = releaseName(row);
         item.appendChild(title);
 
-        const info = [];
-        if (row.date) {
-            info.push(row.date.replace('T', ' ').replace('Z', ' UTC'));
-        }
         if (row.commit) {
-            info.push(`commit ${row.commit.slice(0, 7)}`);
+            item.appendChild(document.createTextNode(', commit '));
+            const short = row.commit.slice(0, 7);
+            if (row.release) {
+                const link = document.createElement('a');
+                link.href = row.release;
+                link.target = '_blank';
+                link.rel = 'noopener';
+                link.textContent = short;
+                item.appendChild(link);
+            } else {
+                item.appendChild(document.createTextNode(short));
+            }
         }
+
         if (row.running) {
-            info.push('running now');
+            item.appendChild(document.createTextNode(', running now'));
         }
-        item.appendChild(document.createTextNode(` ${info.join(', ')}`));
 
         const files = document.createElement('ul');
         for (const choice of row.choices) {
             files.appendChild(choiceItem(row, choice));
         }
 
-        if (!row.choices.length) {
-            const none = document.createElement('li');
-            none.textContent = 'nothing for this board in this release';
-            files.appendChild(none);
-        }
-
         item.appendChild(files);
         list.appendChild(item);
     }
+}
+
+/**
+ * MATTER panel, Beken with the Tuya bootloader: the Matter code is missing (the second upload of the image did
+ * not happen). Installs the newest release of the running image: the same build only adds its Matter code, a newer
+ * one updates the firmware first and its Matter code goes up after the reboot by itself ('again')
+ */
+export async function installMatterCode() {
+    if (state.busy) {
+        return;
+    }
+
+    if (!state.imageKnown) {
+        setStatus('This build does not say which image it is (local build): upload its espurna-beken-matter.bin in ADMIN, Upgrade.', 'firmware-error');
+        return;
+    }
+
+    const url = manifestUrl();
+    setStatus(`Downloading ${url}...`);
+
+    /** @type {FirmwareRow[]} */
+    let rows;
+    try {
+        const response = await fetch(url, {cache: 'no-store'});
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        rows = firmwareRows(await response.json(), {
+            image: state.image, arch: state.arch, version: state.version})
+            .filter((row) => row.choices.some((choice) => installable(choice.file)));
+    } catch (e) {
+        setStatus(`Could not load ${url}: ${/** @type {Error} */(e).message}`, 'firmware-error');
+        return;
+    }
+
+    const row = rows[0];
+    const choice = row ? row.choices.find((other) => installable(other.file)) : undefined;
+    if (!row || !choice) {
+        setStatus(`No release has files of the ${state.image} image.`, 'firmware-error');
+        return;
+    }
+
+    setStatus('');
+    await install(row, choice);
 }
 
 /** @param {HTMLElement} list */
@@ -996,12 +1057,16 @@ async function loadReleases(list) {
             throw new Error(`HTTP ${response.status}`);
         }
 
+        // releases without a file for this board are not listed
         const rows = firmwareRows(await response.json(), {
-            image: state.image, arch: state.arch, version: state.version});
+            image: state.image, arch: state.arch, version: state.version})
+            .filter((row) => row.choices.length > 0);
         showRows(list, rows);
 
         const count = rows.length;
-        setStatus((state.imageKnown
+        setStatus((!count
+            ? `No release has files of the ${state.image || state.arch || 'this'} image.`
+            : state.imageKnown
             ? `${count} release(s), files of the ${state.image} image.`
             : `${count} release(s). This build does not say which image it is (local build): all ${state.arch || ''} images are listed, pick the one built for this board.`) + last,
             state.imageKnown ? '' : 'firmware-error');

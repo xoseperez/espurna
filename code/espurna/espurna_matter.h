@@ -85,4 +85,6 @@ const char* matterTailBegin();
 const char* matterTailWrite(const uint8_t* data, size_t length);
 const char* matterTailEnd();
 void matterTailAbort();
+// nullptr when the Matter code is in place, otherwise its state ("missing", "from another build", ...)
+const char* matterTailProblem();
 #endif

@@ -11,7 +11,9 @@ Inspired by https://github.com/Vasil-Pahomov/ArWs2812 (currently https://github.
 
 class Palette {
    public:
-    Palette(const char* name, bool bright, std::vector<Color>&& colors) : _name(name), _bright(bright), _numColors(colors.size()), _colors(std::move(colors)), _cache(256) {
+    // the cache (256 colors, 768 bytes) is allocated by its first use: the palettes are global objects,
+    // 14 caches taken at boot left the generic ESP8266 images without heap for Wi-Fi when no garland is set up
+    Palette(const char* name, bool bright, std::vector<Color>&& colors) : _name(name), _bright(bright), _numColors(colors.size()), _colors(std::move(colors)) {
     }
 
     const char* name() const { return _name; }
@@ -32,6 +34,9 @@ class Palette {
     }
 
     Color getCachedPalColor(byte i) {
+        if (_cache.empty())
+            _cache.resize(256);
+
         if (!_cache[i].is_empty())
             return _cache[i];
 

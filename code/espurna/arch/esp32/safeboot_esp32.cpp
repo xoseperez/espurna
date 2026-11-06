@@ -195,10 +195,24 @@ String read(const char* key) {
     return out;
 }
 
-// once per image change, not on every boot
+// once per image change, not on every boot. "app" - what the safeboot page shows for app0: the app description of
+// an Arduino build names the prebuilt IDF libraries ("arduino-lib-builder"), not ESPurna
 void image() {
     const String current(F(ESPURNA_IMAGE));
-    if (current == read("image")) {
+
+    const auto app = buildApp();
+    String description;
+    description += app.name.toString();
+    description += ' ';
+    description += app.version.toString();
+    if (current.length()) {
+        description += ' ';
+        description += current;
+    }
+    description += F(", built ");
+    description += app.build_time.toString();
+
+    if ((current == read("image")) && (description == read("app"))) {
         return;
     }
 
@@ -209,6 +223,7 @@ void image() {
         } else {
             nvs_erase_key(handle, "image");
         }
+        nvs_set_str(handle, "app", description.c_str());
         nvs_commit(handle);
         nvs_close(handle);
     }

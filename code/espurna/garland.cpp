@@ -158,26 +158,31 @@ constexpr neoPixelType GarlandPixelType { NEO_GRB + NEO_KHZ800 };
 Adafruit_NeoPixel pixels;
 Scene scene(&pixels);
 
-std::array<Anim*, 18> anims {
-    new AnimStart(),
-    new AnimGlow(),
-    new AnimPixieDust(),
-    new AnimSparkr(),
-    new AnimStars(),
-    new AnimSpread(),
-    new AnimRandCyc(),
-    new AnimFly(),
-    new AnimComets(),
-    new AnimAssemble(),
-    new AnimDolphins(),
-    new AnimSalut(),
-    new AnimFountain(),
-    new AnimRandRun(),
-    new AnimWaves(AnimWaves::Type::LongWaves),
-    new AnimWaves(AnimWaves::Type::ShortWaves),
-    new AnimWaves(AnimWaves::Type::Comets),
-    new AnimWaves(AnimWaves::Type::CrossWaves),
-};
+// created by garlandSetup() once a garland is configured: nothing is allocated at boot otherwise
+std::array<Anim*, 18> anims {};
+
+void _garlandCreateAnims() {
+    anims = {
+        new AnimStart(),
+        new AnimGlow(),
+        new AnimPixieDust(),
+        new AnimSparkr(),
+        new AnimStars(),
+        new AnimSpread(),
+        new AnimRandCyc(),
+        new AnimFly(),
+        new AnimComets(),
+        new AnimAssemble(),
+        new AnimDolphins(),
+        new AnimSalut(),
+        new AnimFountain(),
+        new AnimRandRun(),
+        new AnimWaves(AnimWaves::Type::LongWaves),
+        new AnimWaves(AnimWaves::Type::ShortWaves),
+        new AnimWaves(AnimWaves::Type::Comets),
+        new AnimWaves(AnimWaves::Type::CrossWaves),
+    };
+}
 
 #define START_ANIMATION  0
 
@@ -745,6 +750,7 @@ void garlandSetup() {
     espurnaRegisterReload(_garlandReload);
 
     pixels.begin();
+    _garlandCreateAnims();
     scene.setAnim(anims[START_ANIMATION]);
     scene.setPalette(&pals[0]);
     scene.setPals(pals.data(), pals.size());

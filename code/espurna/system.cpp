@@ -548,10 +548,19 @@ void init() {
         force_stable();
         return;
     // no need to run the timer when counter gets changed manually
+    // an update is not a crash, every phase of it starts the count anew: installs reboot several times within
+    // a minute (Matter running from the OTA partition, the Tuya bootloader taking the same file twice), counting
+    // them landed boards in the unstable mode
     case REASON_SOFT_RESTART:
-        if (customReason() == CustomResetReason::Stability) {
+        switch (customReason()) {
+        case CustomResetReason::Stability:
             update_flag();
             return;
+        case CustomResetReason::Ota:
+            force_stable();
+            return;
+        default:
+            break;
         }
         break;
     }

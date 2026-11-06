@@ -1,4 +1,5 @@
 import { sendAction } from './connection.mjs';
+import { installMatterCode } from './fwinstall.mjs';
 import { styleInject } from './core.mjs';
 import { qrDraw } from './qrcode.mjs';
 import { variableListeners } from './settings.mjs';
@@ -205,7 +206,24 @@ export function init() {
         matterWindow: (_, value) => {
             updateWindow(Number(value) || 0);
         },
+        // Beken, Tuya layout: empty when the Matter code is in place, otherwise what is wrong with it
+        matterCode: (_, value) => {
+            const problem = String(value ?? "");
+            for (const row of document.querySelectorAll("#panel-matter .matter-code")) {
+                /** @type {HTMLElement} */(row).style.display = problem ? "" : "none";
+            }
+            const text = element(".matter-code-state");
+            if (text) {
+                text.textContent = problem ? `${problem}, Matter cannot start` : "";
+            }
+        },
     });
+
+    element(".button-matter-code")
+        ?.addEventListener("click", (event) => {
+            event.preventDefault();
+            installMatterCode();
+        });
 
     element(".button-matter-start")
         ?.addEventListener("click", (event) => {

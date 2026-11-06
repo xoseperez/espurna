@@ -347,8 +347,13 @@ jobs:
         os.remove(os.path.join(SITE, "tags.txt"))
         print(json.dumps(manifest, indent=1))
         PY
+    # one artifact per attempt: a re-run of this job otherwise finds the github-pages artifact of the failed
+    # attempt as well and deploy-pages stops ("Multiple artifacts named github-pages")
     - uses: actions/upload-pages-artifact@v5
       with:
         path: site/
+        name: github-pages-${{ github.run_attempt }}
     - id: deploy
       uses: actions/deploy-pages@v5
+      with:
+        artifact_name: github-pages-${{ github.run_attempt }}

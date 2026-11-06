@@ -414,6 +414,12 @@ void onData(JsonObject& root) {
     root["matterProduct"] = backend::product();
     root["matterWindow"] = started ? window_left() : 0;
 
+#if MATTER_TAIL_SUPPORT
+    // Beken, Tuya layout: the Matter code comes with a second upload of the image, empty when it is in place
+    const auto* problem = matterTailProblem();
+    root["matterCode"] = problem ? problem : "";
+#endif
+
     // [[#, vendor id, "node id (hex)", "label"], ...]
     JsonArray& list = root.createNestedArray("matterControllers");
     if (started) {

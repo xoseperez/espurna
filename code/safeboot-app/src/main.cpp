@@ -226,6 +226,8 @@ const esp_partition_t* app() {
     return esp_partition_find_first(ESP_PARTITION_TYPE_APP, ESP_PARTITION_SUBTYPE_APP_OTA_0, nullptr);
 }
 
+// ESPurna writes NVS "safeboot"/"app" at boot: the app description of an Arduino build names the prebuilt IDF
+// libraries ("arduino-lib-builder"), not ESPurna. Erased whenever safeboot writes app0, until ESPurna boots again
 std::string appInfo() {
     esp_app_desc_t desc;
     const auto* part = app();
@@ -233,7 +235,26 @@ std::string appInfo() {
         return "no valid image";
     }
 
+    std::string written;
+    nvs_handle_t handle;
+    if (nvs_open("safeboot", NVS_READONLY, &handle) == ESP_OK) {
+        written = nvsString(handle, "app");
+        nvs_close(handle);
+    }
+    if (!written.empty()) {
+        return written;
+    }
+
     return std::string(desc.project_name) + " " + desc.version + ", built " + desc.date + " " + desc.time;
+}
+
+void forgetAppInfo() {
+    nvs_handle_t handle;
+    if (nvs_open("safeboot", NVS_READWRITE, &handle) == ESP_OK) {
+        nvs_erase_key(handle, "app");
+        nvs_commit(handle);
+        nvs_close(handle);
+    }
 }
 
 bool bootApp(std::string& error) {
@@ -335,6 +356,7 @@ struct Writer {
         auto result = esp_ota_end(handle);
         part = nullptr;
         if (result == ESP_OK) {
+            forgetAppInfo();
             result = esp_ota_set_boot_partition(app());
         }
 
@@ -609,14 +631,17 @@ std::string jsString(const std::string& value) {
 // one itself (/url) and checks its SHA-256
 constexpr char PageScript[] =
     "const $=i=>document.getElementById(i);"
+    // the answers are whole pages: their first paragraph is the result
+    "async function msg(r){const d=new DOMParser().parseFromString(await r.text(),'text/html');"
+    "const p=d.querySelector('p');return(p||d.body).textContent.trim()}"
     "$('up').onclick=async()=>{const f=$('file').files[0];"
     "const l=$('log');if(!f){l.textContent='Pick a file';return}l.textContent='Uploading...';"
-    "try{const r=await fetch('/upload',{method:'POST',body:f});l.textContent=await r.text();"
+    "try{const r=await fetch('/upload',{method:'POST',body:f});l.textContent=await msg(r);"
     "if(r.ok)setTimeout(()=>location.href='/',30000)}catch(e){l.textContent=e}};"
     "async function get(u,h){const l=$('rlog');l.textContent='Downloading '+u+' (about a minute)...';"
     "for(const b of document.querySelectorAll('#rel button'))b.disabled=true;"
     "try{const r=await fetch('/url',{method:'POST',body:new URLSearchParams({url:u,sha256:h||''})});"
-    "l.textContent=(await r.text()).replace(/<[^>]*>/g,' ');if(r.ok)setTimeout(()=>location.href='/',30000)}"
+    "l.textContent=await msg(r);if(r.ok)setTimeout(()=>location.href='/',30000)}"
     "catch(e){l.textContent=e}}"
     "fetch(M,{cache:'no-store'}).then(r=>r.json()).then(m=>{const d=$('rel');d.textContent='';"
     "for(const r of m.releases||[]){const im=r.images||{};"

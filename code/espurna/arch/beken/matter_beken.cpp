@@ -825,6 +825,15 @@ void upload_abort() {
     upload.active = false;
 }
 
+// nullptr when the Matter code is in place, what is wrong with it otherwise
+const char* problem() {
+    if (state == State::Unchecked) {
+        state = check();
+    }
+
+    return (state == State::Ready) ? nullptr : name(state);
+}
+
 } // namespace tail
 #endif
 
@@ -1364,6 +1373,10 @@ const char* matterTailEnd() {
 
 void matterTailAbort() {
     espurna::matter::tail::upload_abort();
+}
+
+const char* matterTailProblem() {
+    return espurna::matter::tail::problem();
 }
 #endif
 

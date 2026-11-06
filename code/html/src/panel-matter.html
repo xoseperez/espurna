@@ -11,6 +11,24 @@
             <fieldset>
                 <legend>Status</legend>
 
+                <div class="pure-control-group matter-code" style="display: none">
+                    <label>Matter code</label>
+                    <strong class="matter-code-state"></strong>
+                    <span class="pure-form-message">
+                        On 2 MiB Tuya boards the firmware keeps its Matter code apart: it comes with a second upload of
+                        the same file, which has not happened yet, so Matter cannot start. <em>Install the Matter code</em>
+                        takes the newest release of this image from GitHub (a newer release updates the firmware too, the
+                        board restarts once or twice). Or upload the same <code>espurna-beken-matter.bin</code> once more
+                        in ADMIN, <em>Upgrade</em>.
+                    </span>
+                </div>
+
+                <div class="pure-control-group matter-code" style="display: none">
+                    <label></label>
+                    <button type="button" class="pure-button button-matter-code">Install the Matter code</button>
+                    <span id="matter-code-status"></span>
+                </div>
+
                 <div class="pure-control-group">
                     <label>Running</label>
                     <span data-key="matterStarted"></span>

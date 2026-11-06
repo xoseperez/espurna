@@ -221,6 +221,7 @@ span.visible {
 .button-settings-factory,
 .button-settings-password,
 .button-setup-password.button-setup-lenient,
+.button-firmware-install,
 .button-upgrade {
     background: rgb(192, 0, 0); /* redish */
 }
@@ -229,6 +230,7 @@ span.visible {
 .button-apikey,
 .button-cmd,
 .button-emon-expected-calculate,
+.button-firmware-list,
 .button-garland-set-default,
 .button-ha-enabled,
 .button-lightfox-learn,
