@@ -72,14 +72,19 @@ const uint32_t _rtcmem_retention_at_boot = retention();
 // on every stock dump seen. The record stays until the next crash, 'pending' goes from all ones to zero (no erase
 // needed) once the boot has reported it
 constexpr uint32_t CrashRecordOffset { 0x1EB000 };
-constexpr uint32_t CrashRecordMagic { 0x48535243 }; // CRSH
+constexpr uint32_t CrashRecordMagic { 0x32535243 }; // CRS2, CRSH kept the exception mode sp lr
 constexpr uint32_t CrashRecordPending { 0xffffffff };
 
 // BK7231N RAM, a stack pointer outside of it is not read
 constexpr uint32_t RamBegin { 0x00400000 };
 constexpr uint32_t RamEnd { 0x00440000 };
 
-// struct arm_registers of the SDK, r0..r12 sp lr pc spsr cpsr
+// Code runs from the flash mapped at 0, an instruction outside of both is not read either
+constexpr uint32_t FlashEnd { 0x00200000 };
+
+// struct arm_registers of the SDK, r0..r12 sp lr pc spsr cpsr. Filled by the exception vector in the exception
+// mode, so its sp lr and pc are that mode's own: sp points to this very struct and lr = pc = return address.
+// Record keeps the interrupted mode's sp and lr instead (from the SDK backup area below) and the faulting pc
 constexpr size_t CrashRegisters { 18 };
 constexpr size_t CrashRegisterSp { 13 };
 constexpr size_t CrashRegisterLr { 14 };
@@ -87,13 +92,39 @@ constexpr size_t CrashRegisterPc { 15 };
 constexpr size_t CrashRegisterSpsr { 16 };
 constexpr size_t CrashRegisterCpsr { 17 };
 
-constexpr size_t CrashStackWords { 32 };
+constexpr size_t CrashStackWords { 128 };
+
+constexpr uint32_t PsrModeMask { 0x1f };
+constexpr uint32_t PsrThumb { 1 << 5 };
+
+// Vectors (boot_handlers.S PUSH_ALL_ARM_REG) store the banked r8..r14 of every mode at fixed addresses, the same
+// ones bk_show_register prints. Address of the banked r13, r14 follows it
+uintptr_t crash_banked_sp(uint32_t mode) {
+    switch (mode) {
+    case 0x10: // usr
+    case 0x1f: // sys
+        return 0x0040003c;
+    case 0x12: // irq
+        return 0x00400060;
+    case 0x11: // fiq
+        return 0x00400084;
+    case 0x17: // abt
+        return 0x004000a8;
+    case 0x1b: // und
+        return 0x004000cc;
+    case 0x13: // svc
+        return 0x004000f0;
+    }
+
+    return 0;
+}
 
 struct CrashRecord {
     uint32_t magic;
     uint32_t kind;
     uint32_t uptime;
     uint32_t regs[CrashRegisters];
+    uint32_t insn;
     uint32_t stack[CrashStackWords];
     char task[16];
     char build[32];
@@ -125,6 +156,28 @@ const char* crash_name(uint32_t kind) {
     return "unknown";
 }
 
+// Faulting instruction, the one lr points after
+uint32_t crash_pc(uint32_t lr, uint32_t spsr, RtcmemCrash kind) {
+    switch (kind) {
+    case RtcmemCrash::Undefined:
+        return lr - (((spsr & PsrThumb) != 0) ? 2 : 4);
+    case RtcmemCrash::PrefetchAbort:
+        return lr - 4;
+    case RtcmemCrash::DataAbort:
+        return lr - 8;
+    case RtcmemCrash::Reserved:
+    case RtcmemCrash::None:
+        break;
+    }
+
+    return lr;
+}
+
+bool crash_readable(uint32_t address, size_t size) {
+    return ((address + size) <= FlashEnd)
+        || ((address >= RamBegin) && ((address + size) <= RamEnd));
+}
+
 void crash_record_write(const uint32_t* regs, RtcmemCrash kind) {
     auto& record = _crash_record;
     std::memset(&record, 0, sizeof(record));
@@ -134,7 +187,22 @@ void crash_record_write(const uint32_t* regs, RtcmemCrash kind) {
     record.uptime = millis();
     std::memcpy(record.regs, regs, sizeof(record.regs));
 
-    const auto sp = regs[CrashRegisterSp];
+    const auto spsr = regs[CrashRegisterSpsr];
+    const auto banked = crash_banked_sp(spsr & PsrModeMask);
+    if (banked) {
+        record.regs[CrashRegisterSp] = *reinterpret_cast<const volatile uint32_t*>(banked);
+        record.regs[CrashRegisterLr] = *reinterpret_cast<const volatile uint32_t*>(banked + sizeof(uint32_t));
+    }
+
+    const auto pc = crash_pc(regs[CrashRegisterPc], spsr, kind);
+    record.regs[CrashRegisterPc] = pc;
+
+    // tells a jump into data (heap, zeroes, erased flash) from a real undefined opcode
+    if (crash_readable(pc & ~3u, sizeof(uint32_t))) {
+        record.insn = *reinterpret_cast<const volatile uint32_t*>(pc & ~3u);
+    }
+
+    const auto sp = record.regs[CrashRegisterSp];
     if (((sp & 3) == 0) && (sp >= RamBegin) && (sp < RamEnd)) {
         const auto words = std::min<size_t>(CrashStackWords, (RamEnd - sp) / sizeof(uint32_t));
         std::memcpy(record.stack, reinterpret_cast<const void*>(sp), words * sizeof(uint32_t));
@@ -158,12 +226,12 @@ bool crash_record_read(CrashRecord& out) {
 }
 
 String crash_summary(const CrashRecord& record) {
-    char buffer[192];
+    char buffer[224];
     snprintf_P(buffer, sizeof(buffer),
-        PSTR("%s pc=0x%08x lr=0x%08x sp=0x%08x task=%.16s uptime=%u build=%.32s"),
+        PSTR("%s pc=0x%08x insn=0x%08x lr=0x%08x sp=0x%08x spsr=0x%02x task=%.16s uptime=%u build=%.32s"),
         crash_name(record.kind),
-        record.regs[CrashRegisterPc], record.regs[CrashRegisterLr], record.regs[CrashRegisterSp],
-        record.task, record.uptime, record.build);
+        record.regs[CrashRegisterPc], record.insn, record.regs[CrashRegisterLr], record.regs[CrashRegisterSp],
+        record.regs[CrashRegisterSpsr] & 0xff, record.task, record.uptime, record.build);
 
     return String(buffer);
 }
@@ -174,8 +242,12 @@ String _crash_mqtt;
 
 } // namespace
 
-// Same as the SDK handlers (LibreTiny fixups/intc.c), except for the value left in the register.
-// Called from the exception vectors (boot_handlers.S), linked with --wrap (ref. platformio_beken.ini)
+// Same as the SDK handlers (LibreTiny fixups/intc.c), except for the value left in the register and the record.
+// Called from the exception vectors (boot_handlers.S), linked with --wrap (ref. platformio_beken.ini).
+// Vectors run them in the exception mode, whose stack is only 16 bytes (_UND_STACK_SIZE_, _ABT_STACK_SIZE_) and
+// already overflown by the 72-byte register frame. Anything deeper, like printf or the flash driver, writes over
+// the .bss below it (wifi globals, then whatever comes next) and never finishes: the watchdog resets the chip with
+// an empty record and no output. So the C part runs on its own stack, with both interrupts off
 extern "C" {
 
 struct arm_registers;
@@ -183,35 +255,49 @@ void bk_show_register(struct arm_registers*);
 void bk_cpu_shutdown(void);
 void bk_printf(const char*, ...);
 
-namespace {
+alignas(8) uint32_t _rtcmem_crash_stack[512];
+static_assert(sizeof(_rtcmem_crash_stack) == 2048, "");
 
-[[noreturn]] void _rtcmem_crash(struct arm_registers* regs, RtcmemCrash kind, const char* name) {
-    retention() = rtcmemRetention() | static_cast<uint32_t>(kind);
-    crash_record_write(reinterpret_cast<const uint32_t*>(regs), kind);
-    bk_printf("%s\n", name);
-    bk_show_register(regs);
+[[noreturn]] void _rtcmem_crash(const uint32_t* frame, uint32_t kind) {
+    // frame lives below the exception mode stack, nothing writes there from now on
+    uint32_t regs[CrashRegisters];
+    std::memcpy(regs, frame, sizeof(regs));
+
+    retention() = rtcmemRetention() | kind;
+    crash_record_write(regs, static_cast<RtcmemCrash>(kind));
+
+    bk_printf("%s\n", crash_name(kind));
+    bk_show_register(reinterpret_cast<struct arm_registers*>(regs));
     bk_cpu_shutdown();
     for (;;) {
     }
 }
 
-} // namespace
+// r0 is the frame, r1 the kind
+#define RTCMEM_CRASH_HANDLER(NAME, KIND)\
+    __attribute__((naked, target("arm"))) void NAME(struct arm_registers*) {\
+        asm volatile(\
+            "mrs r2, cpsr\n"\
+            "orr r2, r2, #0xc0\n"\
+            "msr cpsr_c, r2\n"\
+            "mov r1, #" #KIND "\n"\
+            "ldr sp, =_rtcmem_crash_stack + 2048\n"\
+            "ldr r2, =_rtcmem_crash\n"\
+            "bx r2\n"\
+            ".ltorg\n");\
+    }
 
-void __wrap_bk_trap_udef(struct arm_registers* regs) {
-    _rtcmem_crash(regs, RtcmemCrash::Undefined, "undefined instruction");
-}
+static_assert(static_cast<uint32_t>(RtcmemCrash::Undefined) == 1, "");
+static_assert(static_cast<uint32_t>(RtcmemCrash::PrefetchAbort) == 2, "");
+static_assert(static_cast<uint32_t>(RtcmemCrash::DataAbort) == 3, "");
+static_assert(static_cast<uint32_t>(RtcmemCrash::Reserved) == 4, "");
 
-void __wrap_bk_trap_pabt(struct arm_registers* regs) {
-    _rtcmem_crash(regs, RtcmemCrash::PrefetchAbort, "prefetch abort");
-}
+RTCMEM_CRASH_HANDLER(__wrap_bk_trap_udef, 1)
+RTCMEM_CRASH_HANDLER(__wrap_bk_trap_pabt, 2)
+RTCMEM_CRASH_HANDLER(__wrap_bk_trap_dabt, 3)
+RTCMEM_CRASH_HANDLER(__wrap_bk_trap_resv, 4)
 
-void __wrap_bk_trap_dabt(struct arm_registers* regs) {
-    _rtcmem_crash(regs, RtcmemCrash::DataAbort, "data abort");
-}
-
-void __wrap_bk_trap_resv(struct arm_registers* regs) {
-    _rtcmem_crash(regs, RtcmemCrash::Reserved, "not used");
-}
+#undef RTCMEM_CRASH_HANDLER
 
 } // extern "C"
 
@@ -282,7 +368,8 @@ void rtcmemCrashDump(Print& print) {
     print.printf_P(PSTR("Last crash: %s\n"), crash_summary(record).c_str());
 
     const auto* regs = record.regs;
-    print.printf_P(PSTR("cpsr=0x%08x spsr=0x%08x\n"), regs[CrashRegisterCpsr], regs[CrashRegisterSpsr]);
+    print.printf_P(PSTR("cpsr=0x%08x spsr=0x%08x, sp lr of the interrupted mode\n"),
+        regs[CrashRegisterCpsr], regs[CrashRegisterSpsr]);
     for (size_t index = 0; index < CrashRegisterSp; index += 4) {
         print.printf_P(PSTR("r%-2u 0x%08x"), index, regs[index]);
         for (size_t next = index + 1; (next < index + 4) && (next < CrashRegisterSp); ++next) {
