@@ -30,6 +30,10 @@ void window(bool open);
 // From the backend, any task: one log line (the shared part prints it from the loop)
 void log_line(const char* line);
 
+// Name of the plug of a relay when the device is a bridge (relay name `relayName<n>`, else "<hostname> <n>" counted
+// from 1) and its unique id ("<chip id>-<n>"). From the loop: settings
+void plug_name(size_t index, char* label, size_t label_size, char* unique, size_t unique_size);
+
 namespace backend {
 
 // Relays that get an endpoint (index 0 -> endpoint 1, ...)

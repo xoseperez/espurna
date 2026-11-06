@@ -886,6 +886,14 @@ void send(const char* text) {
 String node_label;
 uint8_t plug_count { 1 };
 
+// names of the bridged plugs, filled by backend::start() in the loop for the Matter task (matter_plug_name())
+struct PlugName {
+    char label[33];
+    char unique[33];
+};
+
+PlugName plug_names[4];
+
 // Commissioning in progress, from the Matter task: the message trace is only logged then
 std::atomic<bool> commissioning_active { false };
 
@@ -997,6 +1005,10 @@ bool start() {
     node_label = systemHostname();
     library_plugs = matter_app_plugs ? matter_app_plugs() : 1;
     plug_count = endpoints();
+    for (size_t index = 0; (index < plug_count) && (index < (sizeof(plug_names) / sizeof(plug_names[0]))); ++index) {
+        plug_name(index, plug_names[index].label, sizeof(plug_names[index].label),
+            plug_names[index].unique, sizeof(plug_names[index].unique));
+    }
     MATTER_STEP("kv ready, matter_app_start");
     const auto out = matter_app_start() == 0;
     MATTER_STEP(out ? "matter_app_start OK" : "matter_app_start FAILED");
@@ -1127,6 +1139,22 @@ const char* matter_node_label(void) {
 // plug endpoints in use (the relays), filled by backend::start() like the label
 uint8_t matter_plug_count(void) {
     return espurna::matter::plug_count;
+}
+
+// plug = relay + 1
+bool matter_plug_name(uint8_t plug, char* label, size_t label_size, char* unique, size_t unique_size) {
+    using namespace espurna::matter;
+    if ((plug < 1) || (plug > plug_count) || (plug > (sizeof(plug_names) / sizeof(plug_names[0]))) || !label_size || !unique_size) {
+        return false;
+    }
+
+    const auto& name = plug_names[plug - 1];
+    std::strncpy(label, name.label, label_size - 1);
+    label[label_size - 1] = '\0';
+    std::strncpy(unique, name.unique, unique_size - 1);
+    unique[unique_size - 1] = '\0';
+
+    return true;
 }
 
 void matter_commissioning(bool active) {

@@ -52,19 +52,8 @@ struct BridgedName {
 BridgedName names[MaxPlugs];
 bool bridge { false };
 
-// Relay name (`relayName<n>`), else "<hostname> <n>" counted from 1
 void bridged_name(size_t index, BridgedName& out) {
-    auto name = getSetting({"relayName", index}, String());
-    if (!name.length()) {
-        name = systemHostname();
-        name += ' ';
-        name += String(index + 1);
-    }
-
-    std::strncpy(out.label, name.c_str(), sizeof(out.label) - 1);
-    out.label[sizeof(out.label) - 1] = '\0';
-
-    snprintf(out.unique, sizeof(out.unique), "%s-%u", systemChipId().c_str(), static_cast<unsigned>(index));
+    plug_name(index, out.label, sizeof(out.label), out.unique, sizeof(out.unique));
 }
 
 // A char string attribute of a cluster: the value of the existing one, or a new one

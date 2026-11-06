@@ -156,8 +156,10 @@ void print() {
 void web_tick();
 
 // Quiet mode while a controller commissions: the certificate checks (PASE / CASE, CSR, NOC) need tens of KB of heap
-// at once, more than is left with every module busy. Web socket clients are closed, MQTT disconnects, the Alexa servers
-// stop; settings stay, everything comes back at the end (or after QuietMaxMs without an end event)
+// at once, more than is left with every module busy. MQTT disconnects, the Alexa servers stop; settings stay, everything
+// comes back at the end (or after QuietMaxMs without an end event). The WebUI stays connected: the user watches the
+// pairing there (closing it showed "Connection lost" in the middle of it), and the heap has room since the Beken data
+// moved to TCM
 constexpr uint32_t QuietMaxMs { 5 * 60 * 1000 };
 uint32_t quiet_since { 0 };
 
@@ -171,11 +173,6 @@ void quiet(bool active) {
     }
 
     quiet_since = active ? (millis() | 1) : 0;
-
-#if WEB_SUPPORT
-    // web socket clients hold heap the certificate checks need (Beken: ~10 s of them would run out otherwise)
-    wsPause(active);
-#endif
 
 #if MQTT_SUPPORT
     if (active) {
@@ -556,6 +553,24 @@ void window(bool open) {
 
 void log_line(const char* line) {
     log::push(line);
+}
+
+void plug_name(size_t index, char* label, size_t label_size, char* unique, size_t unique_size) {
+    auto name = getSetting({"relayName", index}, String());
+    if (!name.length()) {
+        name = systemHostname();
+        name += ' ';
+        name += String(index + 1);
+    }
+
+    if (label_size) {
+        std::strncpy(label, name.c_str(), label_size - 1);
+        label[label_size - 1] = '\0';
+    }
+
+    if (unique_size) {
+        snprintf(unique, unique_size, "%s-%u", systemChipId().c_str(), static_cast<unsigned>(index));
+    }
 }
 
 void setup() {

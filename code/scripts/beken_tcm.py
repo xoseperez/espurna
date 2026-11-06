@@ -11,9 +11,15 @@ import os
 
 Import("env")  # noqa: F821
 
-# input sections already placed by the first matching statement, so these go before the generic .bss rules
+# Objects of the Matter library that stay in the main RAM: with the Matter pools of the spec (5 fabrics, 15
+# subscriptions) the library .bss is ~3 KiB more than the TCM has left. These two (Wi-Fi connectivity manager 3 KiB,
+# access control entries 1.4 KiB) are not on any hot path
+MAIN_RAM = "*libMatterApp.a:BK7231N.ConnectivityManagerImpl.cpp.o *libMatterApp.a:libaccess.ExampleAccessControlDelegate.cpp.o"
+
+# input sections already placed by the first matching statement, so these go before the generic .bss rules.
+# EXCLUDE_FILE applies to the section name right after it
 PATTERNS = (
-    "*libMatterApp.a:*(.bss .bss.* COMMON)",
+    f"*libMatterApp.a:*(EXCLUDE_FILE({MAIN_RAM}) .bss EXCLUDE_FILE({MAIN_RAM}) .bss.* EXCLUDE_FILE({MAIN_RAM}) COMMON)",
     "*/src/*.o(.bss .bss.* COMMON)",
 )
 
