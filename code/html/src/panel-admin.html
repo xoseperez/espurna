@@ -96,9 +96,20 @@
                         Image of this board: <strong id="firmware-image">?</strong>.
                         The newest builds of <a href="https://github.com/igorufox/espurna/releases">igorufox/espurna</a>,
                         files of this image only. <em>Install</em> downloads the file into this browser and uploads it to the board,
-                        same as <em>Upgrade</em>. With Matter running, or with the Tuya bootloader of Beken boards, the board
-                        restarts in between and the file goes up a second time by itself. ESP32 installs through safeboot,
-                        which may ask for the login: admin and the admin password.
+                        same as <em>Upgrade</em>, and lists the steps ahead. ESP32 installs through safeboot, which may ask
+                        for the login: admin and the admin password.
+                    </span>
+                    <span class="pure-form-message">
+                        <strong>Why a Beken install can take several restarts.</strong> These boards are filled to the last
+                        byte. A 2 MiB Tuya board (CB2S, CB3S, CBU ...) has 1124 KiB for the firmware and 664 KiB for an
+                        update, while ESPurna with Matter is about 1.4 MiB. So the Matter code does not live in the firmware
+                        space but in the update space: an update overwrites it, the board restarts into the new firmware without
+                        Matter, and the same file goes up a second time to put its Matter code back. And while Matter runs,
+                        its code sits right where the update has to go, so the board first restarts without Matter. The
+                        install does all of it by itself, up to seven steps and three restarts. 4 MiB Quectel boards take the
+                        file in one go. Keep the board powered until the last step. When an install stops half-way, the board
+                        keeps running its firmware (at worst without Matter, which its MATTER page then says) and
+                        <em>Install</em> can simply be started again.
                     </span>
                 </div>
 
@@ -106,6 +117,8 @@
                     <label>&nbsp;</label>
                     <span id="firmware-status"></span>
                 </div>
+
+                <ol id="firmware-steps" class="firmware-steps"></ol>
 
                 <ul id="firmware-releases"></ul>
             </fieldset>

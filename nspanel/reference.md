@@ -2,7 +2,7 @@
 
 Every field, limit and protocol detail. For setting the panel up start with the [user guide](README.md).
 
-Firmware: ESPurna `esp32-port` branch, env `esp32-nspanel` (`-DSONOFF_NSPANEL`, module `code/espurna/nspanel*.{cpp,h}`).
+Firmware: ESPurna `esp32-port` branch, release image `esp32-matter-nspanel`, env `esp32-nspanel` (`-DSONOFF_NSPANEL`, module `code/espurna/nspanel*.{cpp,h}`).
 ESPurna replaces the Tasmota + Berry + AppDaemon chain and talks to the TFT directly. Two display designs are supported, chosen by
 `"display"` in the JSON (default `auto` = detected):
 
@@ -510,35 +510,43 @@ Risks:
 
 ## Flash layout, install and update
 
-### Serial flash (recommended, tested)
+Every ESP32 image of this fork, the panel's `esp32-matter-nspanel` included, uses the safeboot layout
+(`code/esp32_4mb_safeboot.csv`, Tasmota's offsets): `nvs`, `otadata`, `safeboot` (factory, `0x10000`, 832 KB), `app0`
+(ota_0, `0xE0000`, 2880 KB), `spiffs`, `coredump`. There is no second OTA slot, so ESPurna cannot update itself in place:
 
-Flash the merged image (`espurna-esp32-nspanel.bin`, bootloader + ESPurna partition table + app) once over the J1 header
-(3V3, ESP_TX, ESP_RX, GND, IO0; hold IO0 low at power-up). The display is powered from the 5 V of the relay board, so it stays
-dark on a USB-UART adapter alone. Example:
+- ESPurna web `/upgrade` answers with an error ("...run `safeboot`...") on this layout; ArduinoOTA and the terminal `ota`
+  client are disabled in the NSPanel build. The *From GitHub* release list of the WebUI needs ESPurna's `/safeboot`
+  endpoints, which the NSPanel image does not have (its module keeps its own `safeboot` command and crash-loop guard).
+- Updates: terminal (telnet / web debug) `safeboot` → the panel reboots into the image of the factory partition → its
+  web UI → the new `espurna-esp32-matter-nspanel-ota.bin` (built: `code/.pio/build/esp32-nspanel/firmware.bin`, the app
+  image only, **not** the merged `-full.bin`).
 
-`esptool.py --chip esp32 --port COMx --baud 460800 write_flash --erase-all -z 0x0 espurna-esp32-nspanel.bin`
+### Serial flash (recommended)
 
-Then configure WiFi from the ESPurna AP, set MQTT and NTP, upload `/nspanel.json`. With the ESPurna layout (two OTA slots)
-later updates are normal web OTA with `firmware.bin`; `safeboot` and the crash-loop guard below do nothing.
+Flash the merged image (`espurna-esp32-matter-nspanel-full.bin` of the release, or `espurna-esp32-nspanel.bin` of a
+build: bootloader, partition table, the ESPurna safeboot, ESPurna) once over the J1 header (3V3, ESP_TX, ESP_RX, GND, IO0;
+hold IO0 low at power-up). The display is powered from the 5 V of the relay board, so it stays dark on a USB-UART adapter
+alone. Example:
 
-### Tasmota safeboot layout (OTA from Tasmota, untested)
+`esptool.py --chip esp32 --port COMx --baud 460800 write_flash --erase-all -z 0x0 espurna-esp32-matter-nspanel-full.bin`
 
-The panel keeps the **Tasmota safeboot layout**: `nvs`, `otadata`, `safeboot` (factory, ~832 KB), `app0` (ota_0, 2880 KB),
-`spiffs` (~320 KB). There is no second OTA slot, so ESPurna cannot update itself in place:
+Then configure WiFi from the ESPurna AP, set MQTT and NTP, upload `/nspanel.json`. The factory partition holds the ESPurna
+safeboot (`code/safeboot-app`): after `safeboot` it joins WiFi with the ESPurna settings, its page (user `admin`, the
+admin password) lists the releases and takes an upload; it boots ESPurna when done, or after 15 minutes of nothing.
 
-- ESPurna web `/upgrade` answers 400 "...run `safeboot`..." on this layout; ArduinoOTA and the terminal `ota` client are disabled
-  in the NSPanel build.
-- Firmware to upload: `code/.pio/build-nspanel/esp32-nspanel/firmware.bin` (the app image only, **not** `espurna-esp32-nspanel.bin`,
-  which is a merged image for serial flashing with a different partition table).
+### Over Tasmota (untested)
+
+A panel with Tasmota already has the same layout with the Tasmota safeboot in the factory partition.
 
 Install from Tasmota (first time):
 1. In the Tasmota console, check the TFT version first: `CustomSend pageType~pageStartup`, expect `{"CustomRecv":"event,startup,51,eu"}`.
-2. Tasmota web UI → Firmware Upgrade → upload `firmware.bin`. Tasmota restarts into safeboot, writes the image into `app0`, boots it.
+2. Tasmota web UI → Firmware Upgrade → upload `espurna-esp32-matter-nspanel-ota.bin`. Tasmota restarts into safeboot, writes
+   the image into `app0`, boots it.
 3. ESPurna starts its AP (no WiFi credentials yet): connect, configure WiFi, MQTT, NTP time zone, password.
 4. Open `http://<panel>/nspanel`, paste `nspanel.json`, Save.
 
-Update later: terminal (telnet / web debug) `safeboot` → the panel reboots into Tasmota safeboot (it uses Tasmota's own WiFi
-settings, still in NVS unless NVS was erased) → its web UI → upload the new `firmware.bin`.
+Update later: `safeboot` → the panel reboots into Tasmota safeboot (it uses Tasmota's own WiFi settings, still in NVS
+unless NVS was erased) → its web UI → upload the new `-ota.bin`.
 
 Crash-loop guard: when the panel boots 3 times in a row with a crash reset (panic / watchdog, or a software restart ESPurna did not
 request itself) without reaching 60 s uptime, it switches the boot partition to safeboot and restarts. The counter lives in RTC memory

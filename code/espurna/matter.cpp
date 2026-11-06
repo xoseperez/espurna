@@ -157,9 +157,9 @@ void web_tick();
 
 // Quiet mode while a controller commissions: the certificate checks (PASE / CASE, CSR, NOC) need tens of KB of heap
 // at once, more than is left with every module busy. MQTT disconnects, the Alexa servers stop; settings stay, everything
-// comes back at the end (or after QuietMaxMs without an end event). The WebUI stays connected: the user watches the
-// pairing there (closing it showed "Connection lost" in the middle of it), and the heap has room since the Beken data
-// moved to TCM
+// comes back at the end (or after QuietMaxMs without an end event). The WebUI stays connected (closing it showed
+// "Connection lost" in the middle of a pairing), only its periodic status and the debug log are held back: a 4-relay
+// Beken bridge ran out of heap in the status update while the hub paired it
 constexpr uint32_t QuietMaxMs { 5 * 60 * 1000 };
 uint32_t quiet_since { 0 };
 
@@ -173,6 +173,10 @@ void quiet(bool active) {
     }
 
     quiet_since = active ? (millis() | 1) : 0;
+
+#if WEB_SUPPORT
+    wsPause(active);
+#endif
 
 #if MQTT_SUPPORT
     if (active) {

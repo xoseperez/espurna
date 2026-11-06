@@ -1,6 +1,6 @@
 /*
 
-BK7231N: ONE OTA FILE FOR BOTH BOOTLOADERS (ref. ota_beken.h, scripts/beken_image.py)
+BK7231N: ONE OTA FILE FOR BOTH BOOTLOADERS (ref. ota_beken.h, scripts/beken_link_tail.py)
 
 */
 

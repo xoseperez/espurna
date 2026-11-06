@@ -9,7 +9,7 @@ BK7231N: ONE OTA FILE FOR BOTH BOOTLOADERS
 #include <cstddef>
 #include <cstdint>
 
-// espurna-beken.bin (scripts/beken_image.py): a header, a table of parts and the parts. The board writes the one its
+// espurna-beken.bin (scripts/beken_link_tail.py): a header, a table of parts and the parts. The board writes the one its
 // bootloader takes into that bootloader's 'download' partition: the RBL for the Tuya layout (the image without the
 // Matter code) or for the Quectel layout (the whole image). On the Tuya layout the same file uploaded again after the
 // reboot, by the image it carries, writes the Matter code (ref. arch/beken/matter_beken.cpp). Functions return

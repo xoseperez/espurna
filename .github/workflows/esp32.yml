@@ -167,9 +167,9 @@ jobs:
           - `espurna-beken-initial-quectel.uf2` - first flash over UART1, Quectel bootloader without flash encryption (XH-CB2S / BK7231M, `beken/sparkleiot-mini.md`)
 
           ESP8266, core 3.1.2 + SDK 3.0.5 (`*.bin` - serial flash at 0x0 or OTA; `*.bin.gz` - compressed OTA):
-          - `espurna-esp8266-1m` - 1 MB boards: relays, buttons, AC mains switches, LEDs, dummy relays
+          - `espurna-esp8266-1m` - 1 MB boards: relays, buttons, AC mains switches, LEDs, dummy relays, RF receiver / Sonoff RF Bridge, relay MCUs (Sonoff Dual, STM, LightFox, iFan, KingArt)
           - `espurna-esp8266-1m-light` - 1 MB, + PWM light, IR
-          - `espurna-esp8266-1m-sensor` - 1 MB, + power meters (HLW8012, CSE7766, PZEM ...), sensors (DHT, Dallas, BMx280, analog ...), RF receiver / Sonoff RF Bridge
+          - `espurna-esp8266-1m-sensor` - 1 MB, + power meters (HLW8012, CSE7766, PZEM ...), sensors (DHT, Dallas, BMx280, analog ...), analog buttons
           - `espurna-esp8266-4m` - boards installed with the 4 MB layout (its settings sit at the end of 4 MB)
           - `espurna-esp8266-1m-mini` - first step of the two-step update on 1 MB boards, then the `.bin.gz`
         make_latest: true

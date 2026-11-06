@@ -12,6 +12,8 @@ import {
     miniFreeSize,
     roundedSize,
     uploadOutcome,
+    stepTo,
+    uploadSteps,
 } from '../src/fwinstall.mjs';
 
 /**
@@ -153,6 +155,35 @@ test('release rows carry the files of the running image and mark the running bui
     expect(rows[1].choices).toEqual([]);
 });
 
+test('the NSPanel image gets the shared safeboot file of the release, like every ESP32 image', () => {
+    const safeboot = {name: 'espurna-esp32-safeboot.bin', kind: 'safeboot', size: 720000, sha256: 'a'.repeat(64),
+        url: 'esp32-261107-abcdef1/espurna-esp32-safeboot.bin'};
+    /** @type {import('../src/fwinstall.mjs').FirmwareManifest} */
+    const manifest = {
+        version: 1,
+        releases: [{
+            tag: 'esp32-261107-abcdef1',
+            date: '2026-11-07T10:00:00Z',
+            commit: 'abcdef1',
+            images: {
+                'esp32-matter': [
+                    {name: 'espurna-esp32-matter-ota.bin', kind: 'ota', size: 2100000, url: 'x/espurna-esp32-matter-ota.bin'},
+                    safeboot,
+                ],
+                'esp32-matter-nspanel': [
+                    {name: 'espurna-esp32-matter-nspanel-ota.bin', kind: 'ota', size: 2500000, url: 'x/espurna-esp32-matter-nspanel-ota.bin'},
+                    safeboot,
+                ],
+            },
+        }],
+    };
+
+    const rows = firmwareRows(manifest, {image: 'esp32-matter-nspanel', arch: 'esp32', version: '1.22.0-gitabcdef1'});
+    expect(rows[0].choices.map((x) => x.file.name))
+        .toEqual(['espurna-esp32-matter-nspanel-ota.bin', 'espurna-esp32-safeboot.bin']);
+    expect(rows[0].choices.map((x) => installable(x.file))).toEqual([true, false]);
+});
+
 test('broken manifest', () => {
     expect(() => firmwareRows(/** @type {any} */({}), {image: '', arch: '', version: ''}))
         .toThrow(/firmware.json/);
@@ -266,4 +297,38 @@ test('result of the download as /ota/status shows it', () => {
     expect(fetchOutcome({image: 'esp8266-1m', result: 'ok: downloaded 482695 bytes, SHA-256 checked'})).toBe('done');
     expect(fetchOutcome({image: 'esp8266-1m-mini', result: 'failed: SHA-256 mismatch'})).toBe('failed');
     expect(fetchOutcome({image: 'esp8266-4m', result: 'failed: no Wi-Fi connection'})).toBe('failed');
+});
+
+test('install steps ahead of a Beken upload', () => {
+    const keys = (steps) => steps.map((step) => step.key);
+    const name = 'espurna-beken-matter.bin';
+
+    expect(keys(uploadSteps({name, layout: 'Quectel', matter: true, sameBuild: false})))
+        .toEqual(['download', 'upload', 'restart']);
+    expect(keys(uploadSteps({name, layout: 'Tuya', matter: false, sameBuild: true})))
+        .toEqual(['download', 'upload', 'restart']);
+    expect(keys(uploadSteps({name, layout: 'Tuya', matter: false, sameBuild: false})))
+        .toEqual(['download', 'upload', 'again-restart', 'again-upload', 'restart']);
+    expect(keys(uploadSteps({name, layout: 'Tuya', matter: true, sameBuild: false})))
+        .toEqual(['download', 'matter-upload', 'matter-restart', 'upload', 'again-restart', 'again-upload', 'restart']);
+});
+
+test('install steps follow what the board answers', () => {
+    const steps = uploadSteps({name: 'x.bin', layout: 'Tuya', matter: true, sameBuild: false});
+
+    // Matter was not running after all: its two steps are dropped
+    let current = stepTo(steps, 0, {key: 'upload', text: ''});
+    expect(current).toBe(1);
+    expect(steps.map((step) => step.key)).toEqual(['download', 'upload', 'again-restart', 'again-upload', 'restart']);
+
+    // the same build after all: done at once, the second upload is dropped
+    current = stepTo(steps, current, {key: 'restart', text: ''});
+    expect(current).toBe(2);
+    expect(steps.map((step) => step.key)).toEqual(['download', 'upload', 'restart']);
+
+    // an answer that was not planned is added after the current step
+    const other = uploadSteps({name: 'x.bin', layout: 'Quectel', matter: false, sameBuild: false});
+    current = stepTo(other, 1, {key: 'matter-restart', text: 'restart without Matter'});
+    expect(current).toBe(2);
+    expect(other.map((step) => step.key)).toEqual(['download', 'upload', 'matter-restart', 'restart']);
 });

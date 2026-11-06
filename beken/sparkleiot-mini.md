@@ -4,7 +4,8 @@ An in-wall 1-channel relay for AC 100-240 V, 16 A, with an S1 / S2 wall-switch i
 `STL2022E0929107C-YA`, board "MINI 通断器 V1.3", sparkleiot.com). The stock firmware is a Quectel **Matter** firmware. The
 Wi-Fi module is an **XH-CB2S** (a CB2S-sized clone) with a chip marked **BK7231M**. ltchiptool talks to it as a BK7231N, but
 it is not a Tuya chip: the flash is **not encrypted** (the eFuse key is all zeros) and the bootloader has its own 4 MiB layout.
-The Tuya image does not start on it, it needs the `beken-bk7231n-nokey` image.
+It runs the same `beken-matter` image as the Tuya boards: the firmware tells the bootloaders apart at boot (by the CRC32
+of the bootloader) and uses the Quectel layout here, with the Matter factory data of the switch.
 
 <p>
   <img src="img/sparkleiot-mini-case.webp" width="32%" alt="Sparkleiot Mini Smart Switch, case and terminals S1 S2 N N L_IN L_OUT">
@@ -15,18 +16,18 @@ The Tuya image does not start on it, it needs the `beken-bk7231n-nokey` image.
 **Safety.** S1 is tied to N on the board and the low-voltage side is not isolated from the mains. Flash and debug only with
 the mains disconnected, from 5 V. Never connect the USB-UART adapter while it is on 230 V.
 
-## Build
+## Image
 
-From `code/`:
+`beken-matter`, the image of every BK7231N board ([beken/README.md](README.md#1-image)). On this board it uses the layout of
+the Quectel bootloader: app partition `0x11000` + `0x1A9000`, OTA (`download`) partition at `0x286000`, 4 MiB flash (from
+the partition table in the stock bootloader, also in
+[`code/boards_beken/xh-cb2s-bk7231m.json`](../code/boards_beken/xh-cb2s-bk7231m.json)). The first flash over UART takes
+`espurna-beken-initial-quectel.uf2` of the [release](https://github.com/igorufox/espurna/releases/latest), or
+`code/.pio/build_beken/beken-bk7231n/espurna-beken-quectel.uf2` built from `code/`:
 
 ```
-py -3 -m platformio run -c platformio_beken.ini -e beken-bk7231n-nokey
+py -3 -m platformio run -c platformio_beken.ini -e beken-bk7231n
 ```
-
-`beken-bk7231n-nokey` is the generic BK7231N image (every GPIO, 433 MHz receiver) plus
-[`code/boards_beken/xh-cb2s-bk7231m.json`](../code/boards_beken/xh-cb2s-bk7231m.json): encryption coefficients `0`, app
-partition `0x11000` + `0x1A9000`, OTA (`download`) partition at `0x286000`, 4 MiB flash. These come from the partition
-table in the stock bootloader.
 
 ## Wiring
 
@@ -86,15 +87,13 @@ below were found by testing.
 ## Flash ESPurna
 
 ```
-ltchiptool flash write -d COM3 -t 120 code/.pio/build_beken/beken-bk7231n-nokey/firmware.uf2
+ltchiptool flash write -d COM3 -t 120 espurna-beken-initial-quectel.uf2
 ```
 
-On this board the last piece of the UF2, the 102-byte RBL header at `0x1B9F9A`, failed with `Writing failed; wrote only 0
-bytes`. Write the last 4 KiB sector of the app image instead, it carries the same header:
-
-```
-ltchiptool flash write -d COM3 -t 120 -f bk7231n -s 0x1B9000 -S 0x1A8000 -l 0x1000 code/.pio/build_beken/beken-bk7231n-nokey/image_bk7231n_app.0x011000.rbl
-```
+It is one piece (the app, padding and the RBL header the bootloader checks) and takes about 3.5 minutes. With the older
+per-board build the last piece of its UF2, the 102-byte RBL header at `0x1B9F9A`, failed with `Writing failed; wrote
+only 0 bytes`; if that happens, flash again. A board that already runs ESPurna can be flashed without the CEN wire, see
+[beken/README.md](README.md#5-flash-espurna).
 
 After a write the chip stays in its download mode: power-cycle the board to start ESPurna. The first start from a weak
 5 V supply may reset a few times (`Reset reason: Power-On`) when the access point comes up, then it runs.
@@ -166,6 +165,8 @@ entry of the [own device list](../README.md#picking-the-board) (*ADMIN → Devic
 Backup, flash, boot, access point, home Wi-Fi, MQTT, the relay, K1, S1 / S2, the LED and the second switch on P21, on the
 desk from 5 V; two units.
 
-**OTA over Wi-Fi works**: `firmware.uf2` uploaded on *ADMIN → Upgrade* (32 s), the stock bootloader copies it from the
-`download` partition at `0x286000` into the app and the board is back after about 30 s with `Reboot after a successful OTA
-update` and the new build date. Settings, the MAC and the IP stay. Only the first flash has to go over the wires.
+**OTA over Wi-Fi works**: `espurna-beken-matter.bin` from the WebUI release list or uploaded on *ADMIN → Upgrade*
+(about 30 s), the board writes the Quectel part of it into the `download` partition at `0x286000`, the stock bootloader
+copies it into the app and the board is back after about 20 s with `Reboot after a successful OTA update` and the new
+build date. One upload: on this layout the Matter code is inside the app. Settings, the MAC, the IP and the Matter
+controllers stay. Only the first flash has to go over the wires.

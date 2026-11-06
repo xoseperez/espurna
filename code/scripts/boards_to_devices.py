@@ -67,11 +67,16 @@ IMAGE_4M = "esp8266-4m"
 # features that only the -max image has (the 4m image needs them too for 4 MB boards)
 MAX_FEATURES = ("light", "rfb", "ir", "sensor", "analog-button")
 
-# the two 1 MB feature images: PWM light and IR / power meters, sensors, RF (rc-switch and EFM8BB1) and
-# analog buttons (A0 is the sensor image's ADC anyway). A board that needs both goes to the light image,
-# its sensor image part stays off
+# the two 1 MB feature images: PWM light and IR / power meters, sensors and analog buttons (A0 is the sensor
+# image's ADC anyway). RF (rc-switch and EFM8BB1) is in esp8266-1m itself. A board that needs features of two
+# images goes to the light image, then the sensor image, and its entry says what does not work there
 LIGHT_FEATURES = ("light", "ir")
-SENSOR_FEATURES = ("sensor", "rfb", "analog-button")
+SENSOR_FEATURES = ("sensor", "analog-button")
+IMAGE_FEATURES = {
+    IMAGE_1M: ("rfb",),
+    IMAGE_LIGHT: LIGHT_FEATURES,
+    IMAGE_SENSOR: SENSOR_FEATURES,
+}
 
 # -----------------------------------------------------------------------------
 # hardware.h / defaults.h
@@ -996,7 +1001,7 @@ def build(args):
         if board_define is None or board_define in GENERIC_BOARDS:
             images = {"esp8266-1m": "generic image esp8266-1m", "esp8266-4m": "generic image esp8266-4m",
                       "esp8266-1m-light": "generic image esp8266-1m-light (PWM light, IR)",
-                      "esp8266-1m-sensor": "generic image esp8266-1m-sensor (power meters, sensors, RF)"}
+                      "esp8266-1m-sensor": "generic image esp8266-1m-sensor (power meters, sensors)"}
             if name in images:
                 reason = images[name] + ", stays"
             elif board_define in ("ESPURNA_MINIMAL_ARDUINO_OTA", "ESPURNA_MINIMAL_WEBUI"):
@@ -1057,12 +1062,14 @@ def build(args):
             notes.append(flash_reason("2m") + ".")
         for note in board.notes:
             notes.append(note[0].upper() + note[1:] + ".")
-        sensor = [f for f in SENSOR_FEATURES if f in board.features]
-        if target == IMAGE_LIGHT and sensor:
-            notes.append("Needs both %s and %s: on %s the %s do not work." % (
-                IMAGE_LIGHT, IMAGE_SENSOR, IMAGE_LIGHT,
-                " and ".join({"sensor": "sensors", "rfb": "RF 433 MHz", "analog-button": "analog buttons"}[f]
-                         for f in sensor)))
+        if target in IMAGE_FEATURES:
+            missing = [f for f in MAX_FEATURES if (f in board.features) and (f not in IMAGE_FEATURES[target])]
+            if missing:
+                notes.append("Needs more than one 1 MB image: on %s the %s do not work (all of it: %s)." % (
+                    target,
+                    " and ".join({"sensor": "sensors", "rfb": "RF 433 MHz", "analog-button": "analog buttons",
+                                  "light": "light", "ir": "IR receiver"}[f] for f in missing),
+                    IMAGE_4M))
         if board.needs:
             notes.append("Not set by this entry (compile-time only in the firmware): "
                          + "; ".join(needs_text(board)) + ".")

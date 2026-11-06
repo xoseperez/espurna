@@ -7,8 +7,9 @@ The image downloads its update by itself, over http:// or https://.
   (settings otaFetchUrl, otaFetchSha256), then the board restarts
 - 1 MB boards: the full image does not fit next to the next one. The full image only stores the request, the browser
   uploads the minimal image (espurna-esp8266-1m-mini.bin.gz) to /upgrade, the minimal image downloads the full one
-- images that fit next to their update (OTA_FETCH_SUPPORT, the minimal image and 4 MB layouts) take it at boot.
-  A full image boots in the unstable mode for that (Wi-Fi and telnet only, the heap is free for TLS)
+- OTA_FETCH_SUPPORT (off in every release image: a full image never has the ~27 KB of heap TLS needs, the unstable
+  mode it would boot in for that is softAP only) lets an image take its update at boot itself. The 1 MB updater that
+  does this is code/mini-app; 4 MB boards get their update uploaded by the browser
 - one attempt per stored URL: it is erased before the download. The result goes to otaFetchResult, the full image
   shows it (/ota/status). The minimal image stays with its page after a failure, a full image restarts normally
 

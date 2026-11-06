@@ -572,3 +572,33 @@ input::placeholder {
 #firmware-status.firmware-ok {
     color: #070;
 }
+
+#matter-code-status.firmware-error {
+    color: #b00;
+}
+
+#matter-code-status.firmware-ok {
+    color: #070;
+}
+
+/* install steps: done, in progress, still to come */
+.firmware-steps {
+    margin: 0 0 1em 0;
+    font-size: 0.9em;
+}
+
+.firmware-steps .step-done {
+    color: #070;
+}
+
+.firmware-steps .step-done::after {
+    content: " \2713";
+}
+
+.firmware-steps .step-current {
+    font-weight: bold;
+}
+
+.firmware-steps .step-pending {
+    color: #999;
+}

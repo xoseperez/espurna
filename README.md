@@ -26,50 +26,47 @@ ESP32 and Beken ports and AC wall-switch support are maintained by **@igorufox**
 
 This fork lives in the [`esp32-port`](https://github.com/igorufox/espurna/tree/esp32-port) branch and adds two architectures to the ESP8266 one, from the same source:
 
-- **ESP32** (Arduino-ESP32 core 3 / ESP-IDF 5 via [pioarduino](https://github.com/pioarduino/platform-espressif32), PlatformIO Core 6.2 or newer; Matter On/Off plugs; Tasmota safeboot flash layout, [`code/esp32_4mb_safeboot.csv`](code/esp32_4mb_safeboot.csv)), code under [`code/espurna/arch/esp32`](code/espurna/arch/esp32);
-- **Beken BK72xx** (Tuya CB3S / CBU and compatible modules) through [LibreTiny](https://docs.libretiny.eu/), code under [`code/espurna/arch/beken`](code/espurna/arch/beken), builds in [`code/platformio_beken.ini`](code/platformio_beken.ini).
+- **ESP32** (Arduino-ESP32 core 3 / ESP-IDF 5 via [pioarduino](https://github.com/pioarduino/platform-espressif32), PlatformIO Core 6.2 or newer; Matter On/Off plugs; safeboot flash layout with Tasmota's offsets, [`code/esp32_4mb_safeboot.csv`](code/esp32_4mb_safeboot.csv), and an own safeboot image, [`code/safeboot-app`](code/safeboot-app)), code under [`code/espurna/arch/esp32`](code/espurna/arch/esp32);
+- **Beken BK7231N** (Tuya CB2S / CB3S / CBU and compatible modules, Tuya or Quectel bootloader) through [LibreTiny](https://docs.libretiny.eu/), Matter On/Off plugs, code under [`code/espurna/arch/beken`](code/espurna/arch/beken), builds in [`code/platformio_beken.ini`](code/platformio_beken.ini).
+
+The ESP8266 side has generic images instead of the 216 per-board builds: the board is picked after flashing, see [Picking the board](#picking-the-board). How updates work on each chip, the releases and CI: [docs/updates.md](docs/updates.md).
 
 ### Hardware
 
 Boards run on the generic image of their chip; pins come from the device template (*ADMIN → Device Template*) or the settings, not from the build. Guides cover the boards that need more than that.
 
-| Device | Chip | Image / build | Guide |
-|--------|------|---------------|-------|
-| any ESP32 with 4 MB flash | ESP32 | `esp32` / `esp32-generic` | [Tasmota templates](#esp32-tasmota-templates) |
-| LC-Tech ESP32 2-relay | ESP32 | `esp32` / `esp32-generic` | relays GPIO16 / GPIO17, button GPIO0, LED GPIO23 (inverted); [settings](#esp32-boards-from-the-settings) |
-| Sonoff NSPanel EU (gen1) | ESP32 | `esp32-nspanel` | [Sonoff NSPanel](#sonoff-nspanel), [nspanel/README.md](nspanel/README.md) |
-| Sonoff MINIR4 "Mini Extreme" | ESP32 | `esp32` / `esp32-generic` | relay GPIO26, button GPIO0, S1/S2 GPIO27, LED GPIO19 (inverted); [Sonoff MINIR4](#sonoff-minir4), [settings](#esp32-boards-from-the-settings) |
-| any Tuya BK7231N board (CB2S, CB3S, CBU ...) | BK7231N | `beken-bk7231n` | [beken/README.md](beken/README.md) |
-| Tuya TYWRA-RF, 1 relay + 433 MHz | BK7231N (CB3S) | `beken-bk7231n` | [beken/README.md](beken/README.md) |
-| Tuya 4-gang switch module | BK7231N (CBU) | `beken-bk7231n` | [beken/cbu-4gang.md](beken/cbu-4gang.md) |
-| Sparkleiot Mini Smart Switch (Matter) | BK7231M (XH-CB2S) | `beken-bk7231n-nokey` | [beken/sparkleiot-mini.md](beken/sparkleiot-mini.md) |
-| Moes MS-104B, AC mains wall switches | ESP8266 | `esp8266-1m` / `moes-ms-104b` | [AC mains wall-switch inputs](#ac-mains-wall-switch-inputs) |
-| Sonoff Mini, Shelly 1 and other ESP8266 boards | ESP8266 / ESP8285 | `esp8266-1m`, `-1m-all`, `-4m` | device template |
+| Device | Chip | Image | Guide |
+|--------|------|-------|-------|
+| any ESP32 with 4 MB flash | ESP32 | `esp32-matter` | [Tasmota templates](#esp32-tasmota-templates) |
+| LC-Tech ESP32 2-relay | ESP32 | `esp32-matter` | relays GPIO16 / GPIO17, button GPIO0, LED GPIO23 (inverted); [settings](#esp32-boards-from-the-settings) |
+| Sonoff NSPanel EU (gen1) | ESP32 | `esp32-matter-nspanel` | [Sonoff NSPanel](#sonoff-nspanel), [nspanel/README.md](nspanel/README.md) |
+| Sonoff MINIR4 "Mini Extreme" | ESP32 | `esp32-matter` | relay GPIO26, button GPIO0, S1/S2 GPIO27, LED GPIO19 (inverted); [Sonoff MINIR4](#sonoff-minir4), [settings](#esp32-boards-from-the-settings) |
+| any BK7231N board, Tuya or Quectel bootloader (CB2S, CB3S, CBU ...) | BK7231N | `beken-matter` | [beken/README.md](beken/README.md) |
+| Tuya TYWRA-RF, 1 relay + 433 MHz | BK7231N (CB3S) | `beken-matter` | [beken/README.md](beken/README.md) |
+| Tuya 4-gang switch module | BK7231N (CBU) | `beken-matter` | [beken/cbu-4gang.md](beken/cbu-4gang.md) |
+| Sparkleiot Mini Smart Switch (Matter) | BK7231M (XH-CB2S) | `beken-matter` | [beken/sparkleiot-mini.md](beken/sparkleiot-mini.md) |
+| Moes MS-104B, AC mains wall switches | ESP8266 | `esp8266-1m` | [AC mains wall-switch inputs](#ac-mains-wall-switch-inputs) |
+| Sonoff, Shelly and the other boards of `hardware.h` | ESP8266 / ESP8285 | `esp8266-1m`, `-1m-light`, `-1m-sensor`, `-4m` | device template, [which image](#which-image) |
 
-Enabled modules: WebUI, API, MQTT, terminal, Home Assistant; on ESP32 also Domoticz, Alexa, sensors, PWM.
+Enabled modules: WebUI, API, MQTT, terminal, Home Assistant; on ESP32 also Domoticz, Alexa, sensors, PWM and Matter; on Beken also Alexa, Domoticz, the 433 MHz receiver and Matter.
 
 ### Download
 
-Every push to `esp32-port` is built by [GitHub Actions](https://github.com/igorufox/espurna/actions/workflows/esp32.yml) and published as a [release](https://github.com/igorufox/espurna/releases/latest). There is one image per chip instead of one per board, the board is picked after flashing:
+Every push to `esp32-port` is built by [GitHub Actions](https://github.com/igorufox/espurna/actions/workflows/esp32.yml) and published as one [release](https://github.com/igorufox/espurna/releases/latest) for all chips, tag `esp32-YYMMDD-<sha7>`; the newest 5 are kept. The same files with their SHA-256 are listed in [`firmware.json`](https://igorufox.github.io/espurna/firmware.json) on GitHub Pages, which the WebUI reads. There is one image per chip (or per group of drivers on the ESP8266) instead of one per board:
 
 | Image | Files | For |
 |-------|-------|-----|
-| `esp32-matter` | `-full.bin` (serial, at `0x0`), `-ota.bin` (WebUI) | any ESP32 with 4 MB flash, Matter On/Off plugs |
+| `esp32-matter` | `-full.bin` (serial, at `0x0`, with the safeboot), `-ota.bin` (updates) | any ESP32 with 4 MB flash, Matter On/Off plugs |
 | `esp32-matter-nspanel` | same | Sonoff NSPanel EU (gen1), see [nspanel/README.md](nspanel/README.md) |
-| `beken-matter` | `.bin` (WebUI) | any BK7231N board, Tuya or Quectel bootloader, Matter plug and 433 MHz receiver included |
-| `esp8266-1m` | `.bin` (serial at `0x0` or WebUI), `.bin.gz` | 1 MB boards: relays, buttons, AC mains switches, LEDs, dummy relays |
-| `esp8266-1m-light` | same | + PWM light, IR |
-| `esp8266-1m-sensor` | same | + power meters (HLW8012, CSE7766, PZEM ...), sensors (DHT, Dallas, BMx280, analog ...), RF receiver / Sonoff RF Bridge |
-| `esp8266-4m` | same | boards installed with the 4 MB layout (settings live at the end of 4 MB), single step OTA |
+| `beken-matter` | `.bin` (updates) | any BK7231N board, Tuya or Quectel bootloader, Matter plugs and 433 MHz receiver included |
+| `esp8266-1m` | `.bin` (serial at `0x0` or update), `.bin.gz` (update) | 1 MB boards: relays, buttons (AC mains switches too), LEDs, dummy relays, RF receiver and Sonoff RF Bridge, relay MCUs (Sonoff Dual, STM relays, LightFox, iFan, KingArt curtain), MCP23S08 |
+| `esp8266-1m-light` | same | 1 MB, relays, buttons, LEDs + lights (`ltProvider`: PWM dimmer, MY92XX ...), IR, rotary encoder |
+| `esp8266-1m-sensor` | same | 1 MB, relays, buttons, LEDs + power meters (HLW8012, CSE7766, V9261F, ECH1560, PZEM-004T, ADE7953), sensors (DHT, Dallas, BMx280, analog, NTC, digital), analog buttons |
+| `esp8266-4m` | same | boards installed with the 4 MB layout (their settings sit at the end of 4 MB): relays, buttons, LEDs, RF receiver, MCP23S08 and the drivers of `-1m-sensor` (plus LDR, events, pulse meter); no light, IR, relay MCUs. Every driver costs static RAM even while idle, and with all of them only ~4 KB of heap was left |
 
-Helper images: `esp8266-1m-mini` - first step of the 2-step OTA on 1 MB boards, then the `.bin.gz`; `esp32-safeboot` - the
-safeboot image alone (the WebUI installs it by itself when it differs); `beken-initial-tuya` / `beken-initial-quectel` -
-the first flash of a Beken chip over UART with `ltchiptool`, per bootloader.
+Helper images: `esp8266-1m-mini` ([`code/mini-app`](code/mini-app)) - the first step of the two-step update on 1 MB boards, it downloads the full `.bin.gz` itself; `esp32-safeboot` - the safeboot image alone (the WebUI installs it by itself when it differs, and migrates two-slot ESP32 boards with it); `beken-initial-tuya` / `beken-initial-quectel` - the first flash of a Beken chip over UART with `ltchiptool`, one `.uf2` per bootloader.
 
-The WebUI updates itself from the releases: *ADMIN*, the release list. ESP32 boards download the picked image
-themselves, through safeboot (https, SHA-256 checked); the safeboot page lists the releases as well.
-
-Sensor drivers (power metering, DHT, I2C ...) are not in the generic images yet: they take their default pins at boot, before any settings, and those pins are relays on many boards. The board builds (`pio run -e itead-sonoff-pow` ...) still have them.
+Every driver of a generic image stays idle until its pins or its port are set: sensor pins (`dhtPin`, `dallasPin`, `ntcPin` ...), `rfbProv` / `rfbRX` (RF), `irRx` / `irRxPreset` (IR), `ltProvider` (light), `relayProv` (relay MCUs). A UART driver (power meters, RF Bridge, relay MCUs) claims the port configured with `uartTx` / `uartRx`; the serial log and terminal stop using that port then, and keep it on boards where nothing claims it. Unknown hardware is safe to flash: no GPIO is driven until configured.
 
 The latest image is always at `https://github.com/igorufox/espurna/releases/latest/download/espurna-<image>...`, e.g. [espurna-esp32-matter-full.bin](https://github.com/igorufox/espurna/releases/latest/download/espurna-esp32-matter-full.bin).
 
@@ -77,29 +74,62 @@ First flash over serial:
 
 ```
 esptool.py --chip esp32 --baud 460800 write_flash 0x0 espurna-esp32-matter-full.bin
+esptool.py --chip esp8266 --baud 460800 write_flash 0x0 espurna-esp8266-1m.bin
 ```
+
+Beken: `ltchiptool`, see [beken/README.md](beken/README.md#5-flash-espurna).
+
+### Updating
+
+WebUI, *ADMIN*, OTA: *Upgrade* with a file as before, or *From GitHub*, *Show releases*: the kept releases with the files of the image the board runs, *Install*. The WebUI lists the steps ahead and goes through them by itself; the board restarts during the install.
+
+- **ESP32**: through safeboot. The WebUI installs the release's safeboot when its SHA-256 differs, then the board restarts into safeboot, which downloads the `-ota.bin` over https, checks its SHA-256 and boots ESPurna; the result shows in the WebUI. ESP32 boards on the old two-slot layout are migrated over Wi-Fi on the way. The safeboot page (`http://<board>/` while in safeboot, user `admin`, the admin password) lists the releases too.
+- **Beken**: the browser downloads `espurna-beken-matter.bin` and uploads it; the board writes the part made for its bootloader. On 2 MiB Tuya boards the same file goes up a second time for the Matter code (the board answers "OK, again"), and once more first when Matter is running.
+- **ESP8266**: the browser uploads the file when it fits the free space behind the running image (4 MB layout). On 1 MB boards it uploads the mini first, which downloads the full `.bin.gz` from GitHub over https, checks its SHA-256 and writes it. The mini's page lists the releases as well.
+
+Details, limits and what happens when an install stops half-way: [docs/updates.md](docs/updates.md).
 
 ### Picking the board
 
-WebUI, *ADMIN*, *Device Template*: type the name (e.g. `sonoff mini`, `shelly 1pm`, `ms-104b`) and *Apply*. The list is downloaded by the browser at that moment from [templates.blakadder.com](https://templates.blakadder.com) (Tasmota templates, ESP8266 / ESP32) or [OpenBeken](https://openbekeniot.github.io/webapp/devicesList.html) (Beken), plus the boards of this firmware; nothing is stored here. AC mains wall switches are marked afterwards on the RELAYS panel, per button. Your own board: [add a template](https://templates.blakadder.com/new.html) to the Tasmota list, or the `devices.json` of [openbekeniot/webapp](https://github.com/openbekeniot/webapp) for Beken.
+WebUI, *ADMIN*, *Device Template*: type the name (e.g. `sonoff mini`, `shelly 1pm`, `ms-104b`) and *Apply*. The list is downloaded by the browser at that moment from [templates.blakadder.com](https://templates.blakadder.com) (Tasmota templates, ESP8266 / ESP32), [OpenBeken](https://openbekeniot.github.io/webapp/devicesList.html) (Beken) and [igorufox/espurna-devices](https://github.com/igorufox/espurna-devices) (*ESPurna devices*, results marked `[github]`); nothing is stored here. AC mains wall switches are marked afterwards on the RELAYS panel, per button. Your own board: [add a template](https://templates.blakadder.com/new.html) to the Tasmota list, the `devices.json` of [openbekeniot/webapp](https://github.com/openbekeniot/webapp) for Beken, or an entry of espurna-devices.
 
-**Own boards.** A third list, *ESPurna devices*, is read from [igorufox/espurna-devices](https://github.com/igorufox/espurna-devices) (`devices.json`, every chip; another URL with the `webTplUrl` setting, *Own device list* in the same panel). It holds the no-name boards that are in no other list, such as the [CBU 4-gang module](beken/cbu-4gang.md) and the [Sparkleiot Mini](beken/sparkleiot-mini.md). A board set up by hand is turned into an entry with *Export this device as a template*: only relay / button / LED / UART / RF pins, button actions and the board names are taken, never Wi-Fi, MQTT, passwords or topics, and only those keys are ever applied from the list.
+**ESPurna devices.** [`devices.json`](https://github.com/igorufox/espurna-devices) holds every ESP8266 board of [`hardware.h`](code/espurna/config/hardware.h) (generated by [`code/scripts/boards_to_devices.py`](code/scripts/boards_to_devices.py), most of them not verified on hardware since the move to generic images) and the no-name boards that are in no other list, such as the [CBU 4-gang module](beken/cbu-4gang.md) and the [Sparkleiot Mini](beken/sparkleiot-mini.md). Another list: the `webTplUrl` setting, *Own device list* in the same panel. A board set up by hand is turned into an entry with *Export this device as a template*: only relay / button / LED / UART / RF pins, button actions and the board names are taken, never Wi-Fi, MQTT, passwords or topics, and only those keys are ever applied from the list.
+
+#### Which image
+
+Every espurna-devices entry names its image; the search result and the *Apply* confirmation show it. The device cannot tell which image it runs, so *Apply* does not check it. For ESP8266 boards:
+
+| The board has | Image |
+|---------------|-------|
+| relays, buttons, LEDs, AC mains switches, RF receiver, Sonoff RF Bridge, Sonoff Dual / STM relays / LightFox / iFan / KingArt, MCP23S08 | `esp8266-1m` |
+| a light (PWM, MY92XX), IR, an encoder | `esp8266-1m-light` |
+| a power meter, a sensor, analog buttons | `esp8266-1m-sensor` |
+| 4 MB flash and the 4 MB layout of its old build (development boards, ESPurna H, NodeMCU ...) | `esp8266-4m` |
+
+Two boards need two 1 MB images (light and power meter / RF): the Smartlife Mini Smart Socket and the MagicHome ZJ-WFMN-B11 run `esp8266-1m-light`, their other part stays off. 2 MB boards (Shelly 1 / 2 / 1PM / 2.5, Euromate V2) run the 1 MB images, but their settings sit elsewhere in the 2 MB layout: back up the settings (*ADMIN*, *Backup*) before the switch.
+
+Coming from a board build: the generic image reads the pins from the settings. Apply the board's template before the update (it writes the values the build had, nothing changes on the running board) or right after the first boot.
 
 ### Build from source
 
 ```
 cd code
+pio run -e esp8266-1m                 # -1m-light, -1m-sensor, -4m
+pio run -d mini-app                   # the mini, code/mini-app/.pio/build/esp8266-1m-mini/firmware.bin
+pio run -d safeboot-app               # ESP32 safeboot first, it goes into the -full image
 pio run -c platformio_esp32.ini -e esp32-generic
 ```
 
-The merged image is written to `code/.pio/build/<build>/espurna-<build>.bin` by [`scripts/esp32_merge.py`](code/scripts/esp32_merge.py): bootloader, partition table, `boot_app0` and ESPurna at 0xE0000. With the ESPurna safeboot built first (`pio run -d safeboot-app`, plain ESP-IDF, ~720 KB of the 832 KB factory partition) it goes into the factory partition at 0x10000 too; without it ESPurna runs, only the `safeboot` command refuses to switch. Safeboot reads Wi-Fi and the admin password from the ESPurna settings; updates go through safeboot: the WebUI release list or `/safeboot` page (an http:// or https:// URL), or a file uploaded to safeboot itself.
+ESP32: the merged image is written to `code/.pio/build/<build>/espurna-<build>.bin` by [`scripts/esp32_merge.py`](code/scripts/esp32_merge.py): bootloader, partition table, `boot_app0`, the ESPurna safeboot in the factory partition at `0x10000` (832 KB) and ESPurna at `0xE0000`; `firmware.bin` next to it is the `-ota.bin`. Without the safeboot built first ESPurna still runs, only the `safeboot` command refuses to switch. Safeboot reads Wi-Fi, the hostname, the admin password and `webFwUrl` from the ESPurna settings and has none of its own. The `pioarduino` tool installer refuses MSYS: run the ESP32 build outside Git Bash.
 
-Beken builds have their own build directory (`code/.pio/build_beken`) and produce `espurna-beken.bin` (the release's `espurna-beken-matter.bin`) and the two UART images, see [beken/README.md](beken/README.md):
+Beken builds have their own build directory (`code/.pio/build_beken`) and produce `espurna-beken.bin` (the release's `espurna-beken-matter.bin`) and the two UART images; the Matter library comes from the releases of [igorufox/matter-bk7231n](https://github.com/igorufox/matter-bk7231n), see [beken/README.md](beken/README.md):
 
 ```
 cd code
 py -3 -m platformio run -c platformio_beken.ini -e beken-bk7231n
 ```
+
+`code/scripts/boards_to_devices.py` regenerates the board entries of `../espurna-devices/devices.json` from `hardware.h` (hand-made entries are kept).
 
 ## Device notes
 
@@ -157,7 +187,7 @@ Tested on a real MINIR4 (stock eWeLink firmware `FWSW-E32R4-MINIR4`, no Matter i
 
 ### Beken boards
 
-Most new Tuya devices carry a Beken BK72xx module (CB2S, CB3S, CBU, WB2S) instead of an ESP8266. The first flash goes over UART1 with `ltchiptool`, after that every update is an OTA of `firmware.uf2` from the web UI.
+Most new Tuya devices carry a Beken BK72xx module (CB2S, CB3S, CBU, WB2S) instead of an ESP8266. The first flash goes over UART1 with `ltchiptool` (`espurna-beken-initial-tuya.uf2` or `-initial-quectel.uf2`, per bootloader), after that every update goes over Wi-Fi: `espurna-beken-matter.bin`, the same file for every BK7231N board, from the WebUI release list or uploaded by hand.
 
 |||
 |---|---|
@@ -166,7 +196,7 @@ Most new Tuya devices carry a Beken BK72xx module (CB2S, CB3S, CBU, WB2S) instea
 
 - [Tuya CB3S and the TYWRA-RF relay](beken/README.md): wiring, backup, flashing, OTA, the 433 MHz remote, known limitations;
 - [Tuya 4-gang switch module (CBU)](beken/cbu-4gang.md): relay 1 and the LED on the UART1 pins;
-- [Sparkleiot Mini Smart Switch (XH-CB2S, BK7231M)](beken/sparkleiot-mini.md): stock Quectel Matter firmware, its own build, a second wall switch on a test pad.
+- [Sparkleiot Mini Smart Switch (XH-CB2S, BK7231M)](beken/sparkleiot-mini.md): stock Quectel Matter firmware and its factory Matter identity, Quectel bootloader (4 MiB, no flash encryption), a second wall switch on a test pad.
 
 ### AC mains wall-switch inputs
 
@@ -175,7 +205,7 @@ Many in-wall relay modules (e.g. Moes MS-104B) connect the wall switch to a GPIO
 - **WebUI**: *Relays → Buttons and wall switches* has the global *AC frequency* (Any / 50 / 60 Hz) and *AC debug log*, plus *AC mains switch* and *Min pulses* per button. Changes other than the debug log need a reboot.
 - **Tasmota templates**: they cannot express AC inputs (Tasmota uses `SwitchDebounce` ending with 9). Inputs imported from `Switch` codes become `switch` mode buttons toggling the relay with the same Tasmota number on every position change; mark them as *AC mains switch* on the RELAYS panel afterwards. The boards of this firmware in the device search (e.g. Moes MS-104B) already come with it.
 - **Settings**: `btnFreq<N>` (AC detection on/off), `btnMinPulses<N>` (default 5), `btnAcFreq` (0 = any, 50, 60), `btnAcDbg` (pulse statistics in the debug log), together with `btnMode<N>=switch`, `btnPress<N>` / `btnRlse<N>=relay-toggle` and `btnDebDel<N>=100`.
-- **Moes MS-104B** (ESP8266, 1 MB): `moes-ms-104b` build (`pio run -e moes-ms-104b`, defined in `code/platformio_override.ini`) with AC switches on GPIO13 / GPIO12 controlling relays on GPIO14 / GPIO15 and the on-board button on GPIO2.
+- **Moes MS-104B** (ESP8266, 1 MB): the `esp8266-1m` image with the *Moes MS-104B* device template, or the `moes-ms-104b` build (`pio run -e moes-ms-104b`, defined in `code/platformio_override.ini`), with AC switches on GPIO13 / GPIO12 controlling relays on GPIO14 / GPIO15 and the on-board button on GPIO2.
 
 ---
 

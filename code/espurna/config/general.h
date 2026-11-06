@@ -141,11 +141,12 @@
 // SAFEBOOT
 // ESP32 with the asymmetric flash layout (esp32_4mb_safeboot.csv): `safeboot` command, crash-loop guard, web /upgrade
 // guard (arch/esp32/safeboot_esp32.cpp), on by default for ESP32 (harmless on other layouts: no factory partition, no
-// guard). The NSPanel module has its own copy for the same Tasmota layout
+// guard), web /safeboot (migration, update from the release list). On for every ESP32 image, the NSPanel as well
+// (harmless on other layouts: no factory partition, no guard)
 //------------------------------------------------------------------------------
 
 #ifndef SAFEBOOT_SUPPORT
-#if defined(ESP32) && !NSPANEL_SUPPORT
+#if defined(ESP32)
 #define SAFEBOOT_SUPPORT        1
 #else
 #define SAFEBOOT_SUPPORT        0
@@ -156,8 +157,15 @@
 #error "SAFEBOOT_SUPPORT is for ESP32 only"
 #endif
 
-#if SAFEBOOT_SUPPORT && NSPANEL_SUPPORT
-#error "the NSPanel module already handles the safeboot layout"
+// Unstable boots in a row (crashes, watchdogs, restarts ESPurna did not ask for) that switch to the ESPurna safeboot.
+// The NSPanel sits in a wall: it goes at the 3rd one, the same boot that would start the unstable mode
+// (SYSTEM_CHECK_MAX), so the image can be replaced over Wi-Fi instead
+#ifndef SAFEBOOT_CRASH_LOOP_MAX
+#if NSPANEL_SUPPORT
+#define SAFEBOOT_CRASH_LOOP_MAX 3
+#else
+#define SAFEBOOT_CRASH_LOOP_MAX 5
+#endif
 #endif
 
 #if MATTER_SUPPORT && !defined(LIBRETINY) && !defined(ESP32)
@@ -948,8 +956,8 @@
 
 #ifndef OTA_FETCH_SUPPORT
 #define OTA_FETCH_SUPPORT           0           // ESP8266: the image downloads its update itself at boot (/ota/fetch, https
-                                                // with SHA-256, ota_fetch.cpp). Needs room for TLS (~25 KB) and for the
-                                                // update next to the image: the minimal image (1 MB) and 4 MB layouts
+                                                // with SHA-256, ota_fetch.cpp). Needs ~27 KB of heap for TLS, which no full
+                                                // image has: off everywhere, the 1 MB updater is code/mini-app
 #endif
 
 #define OTA_GITHUB_FP               "CA:06:F5:6B:25:8B:7A:0D:4F:2B:05:47:09:39:47:86:51:15:19:84"

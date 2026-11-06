@@ -34,7 +34,7 @@ namespace safeboot {
 namespace {
 
 constexpr uint32_t Magic { 0x53414642 }; // SAFB
-constexpr uint32_t CrashLoopMax { 5 };
+constexpr uint32_t CrashLoopMax { SAFEBOOT_CRASH_LOOP_MAX };
 constexpr uint32_t CrashLoopUptimeMs { 60000 };
 
 RTC_NOINIT_ATTR uint32_t rtc_magic;
@@ -330,13 +330,29 @@ constexpr Entry Entries[] {
     {0x01, 0x03, 0x3F0000, 0x10000, "coredump"},
 };
 
+constexpr uint32_t DataOffset { 0x3B0000 };
+constexpr uint32_t DataEnd { 0x3F0000 };
+
+// The file system stays where it is when it already lies behind app0 (min_spiffs.csv: 128 KB at 0x3D0000), so its
+// files survive the migration (the NSPanel keeps nspanel.json there). Anywhere else (default.csv) it overlaps app0
+// and becomes the empty 256 KB one of esp32_4mb_safeboot.csv
+Entry dataEntry(const Entry& entry) {
+    const auto* part = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_SPIFFS, nullptr);
+    if (part && (part->address >= DataOffset) && ((part->address + part->size) <= DataEnd)) {
+        return Entry{entry.type, entry.subtype, part->address, part->size, entry.label};
+    }
+
+    return entry;
+}
+
 // ESP-IDF partition table: 32-byte entries (0xAA 0x50, type, subtype, offset, size, label[16], flags), then
 // the MD5 entry (0xEB 0xEB, 14 x 0xFF, MD5 of the entries above), 0xFF up to the end
 void table(uint8_t* out) {
     std::memset(out, 0xFF, TableSize);
 
     size_t pos { 0 };
-    for (const auto& entry : Entries) {
+    for (const auto& item : Entries) {
+        const auto entry = (item.offset == DataOffset) ? dataEntry(item) : item;
         auto* row = out + pos;
         std::memset(row, 0, 32);
         row[0] = 0xAA;
@@ -690,6 +706,8 @@ void onStatus(AsyncWebServerRequest* request) {
     out += current ? F("safeboot") : (factory() ? F("other") : F("old"));
     out += F("\",\"running\":\"");
     out += running ? running->label : "?";
+    // what the factory partition holds: "espurna-safeboot ...", or e.g. Tasmota's safeboot on boards installed over
+    // Tasmota (its SHA-256 differs from the release's, the release list installs ours over it first)
     out += F("\",\"safeboot\":\"");
     out += current ? layout::describe(factory()) : String();
     out += F("\",\"url\":\"");
@@ -878,6 +896,11 @@ void command_status(::terminal::CommandContext&& ctx) {
         factory() ? "present" : "missing",
         otaPossible() ? "available" : "missing",
         count_at_boot);
+
+    if (factory()) {
+        const auto image = layout::describe(factory());
+        ctx.output.printf_P(PSTR("factory image: %s\n"), image.length() ? image.c_str() : "none (erased or not an app)");
+    }
 
     if (!layout::current()) {
         String error;

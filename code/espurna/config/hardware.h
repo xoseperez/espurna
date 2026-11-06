@@ -359,7 +359,7 @@
 
 #elif defined(SONOFF_NSPANEL)
 
-    // Sonoff NSPanel gen1 (EU), ESP32-D0WD-V3 4MB, Tasmota safeboot flash layout
+    // Sonoff NSPanel gen1 (EU), ESP32-D0WD-V3 4MB, safeboot flash layout (esp32_4mb_safeboot.csv, Tasmota's offsets)
     // Display (Lovelace UI TFT) and buzzer are handled by the nspanel module, the NTC is an ESPurna sensor
 
     // Info
@@ -404,8 +404,8 @@
     #define NTC_BETA                3950
     #define NTC_SAMPLES             8
 
-    // No second OTA app slot on the Tasmota layout, image is updated from Tasmota safeboot
-    // (ESPurna web /upgrade is answered with an error by the nspanel module)
+    // No second OTA app slot on the safeboot layout, the image is updated through safeboot
+    // (ESPurna web /upgrade is answered with an error by arch/esp32/safeboot_esp32.cpp)
     #ifndef OTA_ARDUINOOTA_SUPPORT
     #define OTA_ARDUINOOTA_SUPPORT  0
     #endif

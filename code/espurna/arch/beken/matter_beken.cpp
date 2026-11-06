@@ -1166,7 +1166,14 @@ bool matter_plug_name(uint8_t plug, char* label, size_t label_size, char* unique
     return true;
 }
 
+// The certificate steps of a pairing (attestation, CSR, AddNOC: ECDSA ~2 s per sign / verify on this chip) keep the
+// higher priority Matter task busy longer than the 10 s the loop has to feed the watchdog: a 4-relay bridge reset at
+// the hub's step 3. 30 s while a controller commissions, the loop value (system_beken.cpp LoopWdtTimeout) after it
 void matter_commissioning(bool active) {
+    constexpr uint32_t LoopWdtMs { 10000 };
+    constexpr uint32_t CommissioningWdtMs { 30000 };
+    lt_wdt_enable(active ? CommissioningWdtMs : LoopWdtMs);
+
     espurna::matter::commissioning_active = active;
     espurna::matter::commissioning(active);
 }

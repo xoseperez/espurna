@@ -4,14 +4,14 @@ NSPANEL MODULE
 
 Sonoff NSPanel (gen1, ESP32) display backend for the OHpanel TFT (nspanel_ohpanel.h) and the
 joBr99 "NSPanel Lovelace UI" TFT (nspanel_lovelace.h), detected automatically,
-plus the board specific bits for the Tasmota safeboot flash layout
+(flash layout and updates: arch/esp32/safeboot_esp32.cpp, as on every ESP32 image)
 
 */
 
 #pragma once
 
 // Early, right after the basic modules (works in the 'unstable' system mode as well):
-// display power, crash-loop guard and the `safeboot` terminal command
+// display power and buzzer pins (safebootSetup() follows with the crash-loop guard and `safeboot`)
 void nspanelBootSetup();
 
 // Display backend, MQTT, web endpoints, weather and temperature

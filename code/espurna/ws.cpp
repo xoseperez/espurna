@@ -26,6 +26,10 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include "libs/WebSocketIncomingBuffer.h"
 
+#if defined(LIBRETINY)
+#include "arch/beken/layout_beken.h"
+#endif
+
 // -----------------------------------------------------------------------------
 // Helpers / utility functions
 // -----------------------------------------------------------------------------
@@ -572,12 +576,17 @@ void _wsUpdate(JsonObject& root) {
 constexpr espurna::duration::Seconds WsUpdateInterval { WS_UPDATE_INTERVAL };
 espurna::time::CoreClock::time_point _ws_last_update;
 
+// wsPause(): the clients stay connected, only the periodic status and the debug log stop going out (every message is
+// a heap buffer per client). Matter commissioning on Beken needs that heap for its certificate checks: a 4-relay bridge
+// ran out of memory in wsSend() of the status update while the hub paired it
+bool _ws_held { false };
+
 void _wsResetUpdateTimer() {
     _ws_last_update = espurna::time::millis() + WsUpdateInterval;
 }
 
 void _wsDoUpdate(const bool connected) {
-    if (!connected) {
+    if (!connected || _ws_held) {
         return;
     }
 
@@ -600,9 +609,6 @@ bool _ws_auth { espurna::web::ws::build::authentication() };
 
 AsyncWebSocket _ws("/ws");
 
-// No web socket clients for a while: their buffers are heap that something else needs right now
-// (Matter commissioning on Beken, ~10 s of certificate checks that run out of memory otherwise)
-bool _ws_paused { false };
 std::queue<espurna::web::ws::PostponedCallback> _ws_queue;
 espurna::web::ws::Callbacks _ws_callbacks;
 
@@ -826,7 +832,7 @@ espurna::web::ws::PostponedDebug _ws_debug;
 } // namespace
 
 bool wsDebugSend(const DebugPrefix& prefix, const char* message, size_t length) {
-    if ((wifiConnected() || wifiApStations()) && wsConnected()) {
+    if (!_ws_held && (wifiConnected() || wifiApStations()) && wsConnected()) {
         _ws_debug.buffer(prefix, message, length);
         return true;
     }
@@ -1061,6 +1067,10 @@ void _wsOnConnected(JsonObject& root) {
     root[F("app_build")] = info.app.build_time;
     // release image this build belongs to, WebUI OTA lists its files from GitHub ("" - local build)
     root[F("fwImage")] = F(ESPURNA_IMAGE);
+#if defined(LIBRETINY)
+    // Beken bootloader ("Tuya" takes an update in two uploads), the WebUI lists the install steps ahead with it
+    root[F("fwLayout")] = espurna::beken::layoutName(espurna::beken::flashLayout().layout);
+#endif
 
     root[F("hostname")] = systemHostname();
     root[F("chipid")] = systemChipId().c_str();
@@ -1111,10 +1121,6 @@ void _wsEvent(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType
     case WS_EVT_CONNECT:
     {
         const auto ip = ipToString(client->remoteIP());
-        if (_ws_paused) {
-            client->close();
-            return;
-        }
 
 #ifndef NOWSAUTH
         if (_ws_auth && !_wsAuth(client)) {
@@ -1297,17 +1303,19 @@ WsClientInfo wsClientInfo(uint32_t client_id) {
     };
 }
 
+// Clients stay connected (closing them showed "Connection lost" in the middle of a Matter pairing); the periodic status
+// and the debug log are held back until the end, ref. _ws_held
 void wsPause(bool paused) {
-    if (_ws_paused == paused) {
+    if (_ws_held == paused) {
         return;
     }
 
-    _ws_paused = paused;
-    if (paused) {
-        _ws.closeAll();
+    if (!paused) {
+        _ws_held = false;
+        _wsResetUpdateTimer();
     }
-
-    DEBUG_MSG_P(PSTR("[WEBSOCKET] %s\n"), paused ? "Paused, clients closed" : "Resumed");
+    DEBUG_MSG_P(PSTR("[WEBSOCKET] %s\n"), paused ? "Status and log updates held" : "Status and log updates resumed");
+    _ws_held = paused;
 }
 
 bool wsConnected() {

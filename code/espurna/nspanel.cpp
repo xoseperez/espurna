@@ -14,8 +14,10 @@ Shared core (this file):
 - config model from /nspanel.json: pages of tiles, groups/scenes, shortcuts, hardware buttons
 - MQTT state map (absolute state topics), local relays, hardware button custom actions
 - Open-Meteo weather task, room temperature (from the ESPurna NTC sensor), buzzer
-- LittleFS on the existing data/spiffs partition (Tasmota layout), /nspanel and /nspanel.json web endpoints
-- Tasmota safeboot layout support: `safeboot` command, crash-loop guard, web OTA guard
+- LittleFS on the existing data/spiffs partition, /nspanel and /nspanel.json web endpoints
+
+Flash layout, `safeboot`, crash-loop guard and updates from the release list: arch/esp32/safeboot_esp32.cpp, as on
+every ESP32 image
 
 */
 
@@ -114,9 +116,6 @@ constexpr uint8_t ConfigNestingLimit { 24 };
 // before parsing; the client gets 503 when no answer is ready after UploadAnswerMs
 constexpr uint32_t UploadWeatherWaitMs { 10000 };
 constexpr uint32_t UploadAnswerMs { 15000 };
-
-constexpr uint32_t CrashLoopMax { 3 };
-constexpr uint32_t CrashLoopUptimeMs { 60000 };
 
 constexpr uint32_t WeatherStack { 12288 };
 constexpr size_t WeatherHeapMin { 50000 };
@@ -1879,109 +1878,6 @@ ParseResult parseConfig(char* text, size_t length, Config& out, String& error, S
 
     return parseInPlace(text, json_size, out, error, warnings);
 }
-
-// -----------------------------------------------------------------------------
-// Boot: crash-loop guard, safeboot (Tasmota factory partition), OTA layout
-// -----------------------------------------------------------------------------
-
-namespace boot {
-
-constexpr uint32_t Magic { 0x4E535042 }; // NSPB
-
-RTC_NOINIT_ATTR uint32_t rtc_magic;
-RTC_NOINIT_ATTR uint32_t rtc_count;
-
-uint32_t count_at_boot { 0 };
-bool cleared { false };
-
-// Only crashes count, plus software restarts that ESPurna did not request itself
-// (ESPurna always stores a custom reason before its own restarts)
-bool counted(esp_reset_reason_t reason) {
-    switch (reason) {
-    case ESP_RST_PANIC:
-    case ESP_RST_INT_WDT:
-    case ESP_RST_TASK_WDT:
-    case ESP_RST_WDT:
-    case ESP_RST_UNKNOWN:
-        return true;
-    case ESP_RST_SW:
-        return customResetReason() == CustomResetReason::None;
-    default:
-        break;
-    }
-
-    return false;
-}
-
-const esp_partition_t* factory() {
-    return esp_partition_find_first(ESP_PARTITION_TYPE_APP, ESP_PARTITION_SUBTYPE_APP_FACTORY, nullptr);
-}
-
-// esp_ota_get_next_update_partition() falls back to the first OTA slot, which is the running
-// one when the table has a single OTA app (Tasmota safeboot layout). Updater would then erase
-// the running image
-bool otaPossible() {
-    const auto* running = esp_ota_get_running_partition();
-    const auto* next = esp_ota_get_next_update_partition(nullptr);
-    return next && running && (next->address != running->address);
-}
-
-bool switchToSafeboot(String& error) {
-    const auto* part = factory();
-    if (!part) {
-        error = F("no factory (safeboot) app partition");
-        return false;
-    }
-
-    const auto* running = esp_ota_get_running_partition();
-    if (running && (running->address == part->address)) {
-        error = F("already running from the factory partition");
-        return false;
-    }
-
-    const auto result = esp_ota_set_boot_partition(part);
-    if (result != ESP_OK) {
-        error = esp_err_to_name(result);
-        return false;
-    }
-
-    return true;
-}
-
-void setup() {
-    const auto reason = esp_reset_reason();
-    if ((rtc_magic != Magic) || (reason == ESP_RST_POWERON)) {
-        rtc_magic = Magic;
-        rtc_count = 0;
-    }
-
-    if (counted(reason)) {
-        ++rtc_count;
-    }
-
-    count_at_boot = rtc_count;
-    if (rtc_count >= build::CrashLoopMax) {
-        rtc_count = 0;
-        DEBUG_MSG_P(PSTR("[NSPANEL] %u unstable boots in a row, switching to safeboot\n"), count_at_boot);
-
-        String error;
-        if (switchToSafeboot(error)) {
-            delay(100);
-            esp_restart();
-        }
-
-        DEBUG_MSG_P(PSTR("[NSPANEL] Safeboot switch failed: %s\n"), error.c_str());
-    }
-}
-
-void loop() {
-    if (!cleared && (millis() >= build::CrashLoopUptimeMs)) {
-        rtc_count = 0;
-        cleared = true;
-    }
-}
-
-} // namespace boot
 
 // -----------------------------------------------------------------------------
 // Filesystem
@@ -5153,18 +5049,6 @@ void onPostConfig(AsyncWebServerRequest* request) {
     }, request);
 }
 
-PROGMEM_STRING(NoOtaMessage,
-    "ERROR: this flash layout (Tasmota safeboot) has no second OTA slot. "
-    "Run the terminal command `safeboot` and upload the image in the Tasmota safeboot web UI\n");
-
-// no shared state, answered without the loop lock
-void onNoOta(AsyncWebServerRequest* request) {
-    request->send(400, "text/plain", NoOtaMessage);
-}
-
-void onNoOtaUpload(AsyncWebServerRequest*, String, size_t, uint8_t*, size_t, bool) {
-}
-
 // active display driver, for the editor's preview
 void onStatus(AsyncWebServerRequest* request) {
     espurna::system::AsyncGuard guard;
@@ -5249,12 +5133,6 @@ void setupWeb() {
     server.on("/nspanel", HTTP_GET, onEditor);
     server.on("/nspanel.json", HTTP_GET, onGetConfig);
     server.on("/nspanel.json", HTTP_POST | HTTP_PUT, onPostConfig, nullptr, onPostBody);
-
-    if (!boot::otaPossible()) {
-        server.rewrite("/upgrade", "/nspanel-noota");
-        server.on("/nspanel-noota", HTTP_ANY, onNoOta, onNoOtaUpload);
-        DEBUG_MSG_P(PSTR("[NSPANEL] No OTA slot, /upgrade is disabled (use `safeboot`)\n"));
-    }
 }
 
 #endif // WEB_SUPPORT
@@ -5264,18 +5142,6 @@ void setupWeb() {
 // -----------------------------------------------------------------------------
 
 #if TERMINAL_SUPPORT
-
-void terminalSafeboot(espurna::terminal::CommandContext&& ctx) {
-    String error;
-    if (!boot::switchToSafeboot(error)) {
-        terminalError(ctx, error);
-        return;
-    }
-
-    ctx.output.print(F("Next boot: factory (safeboot) partition, restarting\n"));
-    terminalOK(ctx);
-    prepareReset(CustomResetReason::Terminal);
-}
 
 void terminalReload(espurna::terminal::CommandContext&& ctx) {
     load();
@@ -5396,13 +5262,6 @@ void terminalInfo(espurna::terminal::CommandContext&& ctx) {
     ctx.output.printf_P(PSTR("Room temperature: %.1f (%s)\n"), ntc::value,
         ntc::reported ? "sensor report" : std::isnan(ntc::value) ? "no reading yet" : "sensor reading");
 
-    const auto* running = esp_ota_get_running_partition();
-    ctx.output.printf_P(PSTR("Boot: running '%s', OTA slot %s, factory %s, unstable boots %u\n"),
-        running ? running->label : "?",
-        boot::otaPossible() ? "available" : "missing",
-        boot::factory() ? "present" : "missing",
-        boot::count_at_boot);
-
     if (flash::state.load() == flash::Running) {
         const auto size = flash::total.load();
         const auto done = flash::sent.load();
@@ -5513,7 +5372,6 @@ void terminalUrl(espurna::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
-PROGMEM_STRING(Safeboot, "SAFEBOOT");
 PROGMEM_STRING(PanelCapture, "NSPANEL.CAPTURE");
 PROGMEM_STRING(PanelEvent, "NSPANEL.EVENT");
 PROGMEM_STRING(PanelReload, "NSPANEL.RELOAD");
@@ -5523,10 +5381,6 @@ PROGMEM_STRING(PanelFlash, "NSPANEL.FLASH");
 PROGMEM_STRING(PanelDetect, "NSPANEL.DETECT");
 PROGMEM_STRING(PanelPage, "NSPANEL.PAGE");
 PROGMEM_STRING(PanelUrl, "NSPANEL.URL");
-
-static constexpr espurna::terminal::Command BootCommands[] PROGMEM {
-    {Safeboot, terminalSafeboot},
-};
 
 static constexpr espurna::terminal::Command PanelCommands[] PROGMEM {
     {PanelReload, terminalReload},
@@ -5545,10 +5399,6 @@ static constexpr espurna::terminal::Command PanelCommands[] PROGMEM {
 // -----------------------------------------------------------------------------
 // Loop
 // -----------------------------------------------------------------------------
-
-void bootLoop() {
-    boot::loop();
-}
 
 void panelLoop() {
     upload::process();
@@ -5584,13 +5434,6 @@ void nspanelBootSetup() {
     pinMode(build::BuzzerPin, OUTPUT);
     digitalWrite(build::BuzzerPin, LOW);
     gpioLock(build::BuzzerPin);
-
-    boot::setup();
-    espurnaRegisterLoop(bootLoop);
-
-#if TERMINAL_SUPPORT
-    espurna::terminal::add(BootCommands);
-#endif
 }
 
 void nspanelSetup() {

@@ -14,7 +14,8 @@
 //   file once more after the reboot
 // - ESP32: the board downloads the -ota.bin itself, through its safeboot image (https, SHA-256 of firmware.json).
 //   The browser only brings the safeboot image of the release when the installed one differs (/safeboot/install),
-//   or, on the old two-slot layout, for the migration to the safeboot layout (/safeboot/migrate with the image URL)
+//   or, on the old two-slot layout, for the migration to the safeboot layout (/safeboot/migrate with the image URL).
+//   Every ESP32 image, the NSPanel one (esp32-matter-nspanel) as well: one safeboot file per release for all of them
 
 import { notifyError } from './notify.mjs';
 import { listenAppConnected } from './connection.mjs';
@@ -345,6 +346,59 @@ export function uploadOutcome(status, text) {
     return 'error';
 }
 
+/**
+ * @typedef {{key: string, text: string}} InstallStep
+ */
+
+/**
+ * Steps of an install by upload (Beken, ESP8266 'upload'), shown ahead as a numbered list
+ * - Tuya bootloader with Matter running: Matter runs from the space the update goes to, the board restarts without it
+ * - Tuya bootloader, another build: the file goes up twice, the firmware first, its Matter code after the restart
+ * @param {{name: string, layout: string, matter: boolean, sameBuild: boolean}} board
+ * @returns {InstallStep[]}
+ */
+export function uploadSteps({name, layout, matter, sameBuild}) {
+    const tuya = (layout === 'Tuya');
+
+    /** @type {InstallStep[]} */
+    const steps = [{key: 'download', text: `Download ${name} from GitHub into this browser`}];
+    if (tuya && matter) {
+        steps.push(
+            {key: 'matter-upload', text: 'Upload: Matter runs from the update space, so the board answers that it restarts without Matter'},
+            {key: 'matter-restart', text: 'The board restarts without Matter'});
+    }
+
+    if (tuya && !sameBuild) {
+        steps.push(
+            {key: 'upload', text: `Upload ${name}: the new firmware`},
+            {key: 'again-restart', text: 'The board restarts into the new firmware, its Matter code is not there yet'},
+            {key: 'again-upload', text: `Upload ${name} once more: the Matter code`});
+    } else {
+        steps.push({key: 'upload', text: `Upload ${name}`});
+    }
+
+    steps.push({key: 'restart', text: 'The board restarts and comes back'});
+    return steps;
+}
+
+/**
+ * Moves the progress to the step, the steps that did not happen are dropped, an unexpected one is added
+ * @param {InstallStep[]} steps
+ * @param {number} current
+ * @param {InstallStep} step
+ * @returns {number} index of the step
+ */
+export function stepTo(steps, current, step) {
+    const index = steps.findIndex((other, position) => (position > current) && (other.key === step.key));
+    if (index < 0) {
+        steps.splice(current + 1, 0, step);
+        return current + 1;
+    }
+
+    steps.splice(current + 1, index - current - 1);
+    return current + 1;
+}
+
 // ---------------------------------------------------------------------------
 // install
 // ---------------------------------------------------------------------------
@@ -361,7 +415,70 @@ const state = {
     busy: false,
     /** @type {import('./connection.mjs').ConnectionUrls | null} */
     urls: null,
+    // Beken bootloader, 'Tuya' or 'Quectel'
+    layout: '',
+    matter: false,
 };
+
+/** steps of the running install, current - the one in progress (-1 before the first) */
+const progress = {
+    /** @type {InstallStep[]} */
+    steps: [],
+    current: -1,
+};
+
+/** Lists the steps under the status line: done, in progress, still to come */
+function showSteps() {
+    for (const id of ['firmware-steps', 'matter-code-steps']) {
+        const list = document.getElementById(id);
+        if (!list) {
+            continue;
+        }
+
+        list.replaceChildren();
+        progress.steps.forEach((step, index) => {
+            const item = document.createElement('li');
+            item.textContent = step.text;
+            item.className = (index < progress.current) ? 'step-done'
+                : (index === progress.current) ? 'step-current' : 'step-pending';
+            list.appendChild(item);
+        });
+    }
+}
+
+/** @param {InstallStep[]} steps */
+function stepsBegin(steps) {
+    progress.steps = steps;
+    progress.current = -1;
+    showSteps();
+}
+
+/** @param {InstallStep} step */
+function stepNow(step) {
+    progress.current = stepTo(progress.steps, progress.current, step);
+    showSteps();
+}
+
+/** all done, nothing in progress */
+function stepsEnd() {
+    progress.current = progress.steps.length;
+    showSteps();
+}
+
+/**
+ * Status line with the step it belongs to
+ * @param {string} detail
+ * @returns {string}
+ */
+function stepText(detail) {
+    const step = progress.steps[progress.current];
+    if (!step) {
+        return detail;
+    }
+
+    const head = `Step ${progress.current + 1} of ${progress.steps.length}: ${step.text}`;
+    return detail ? `${head}. ${detail}` : head;
+}
 
 /**
  * The board reboots on its own while installing, the WebUI must not reload the page meanwhile
@@ -403,10 +520,11 @@ async function fetchTimeout(url, options = {}, timeout = 4000) {
  */
 function setStatus(text, className = '') {
     // ADMIN release list, and the MATTER panel when it installs the Matter code
+    const line = stepText(text);
     for (const id of ['firmware-status', 'matter-code-status']) {
         const status = document.getElementById(id);
         if (status) {
-            status.textContent = text;
+            status.textContent = line;
             status.className = className;
         }
     }
@@ -459,7 +577,8 @@ function upload(url, blob, name, form) {
 
         xhr.upload.addEventListener('progress', (event) => {
             if (event.lengthComputable) {
-                setStatus(`Uploading ${name}: ${Math.round((event.loaded * 100) / event.total)}%`);
+                const percent = Math.round((event.loaded * 100) / event.total);
+                setStatus(progress.steps.length ? `${percent}%` : `Uploading ${name}: ${percent}%`);
             }
         });
 
@@ -492,22 +611,36 @@ async function installUpgrade(urls, blob, name) {
     let matter = 1;
     let again = 1;
 
+    // the steps were planned ahead (uploadSteps()), what the board answers decides which of them happen
+    let next = progress.steps[progress.current + 1] || {key: 'upload', text: `Upload ${name}`};
     for (;;) {
+        stepNow(next);
         const {status, text} = await upload(urls.upgrade, blob, name, true);
         const outcome = uploadOutcome(status, text);
 
+        // Matter was not running after all: that upload was the update itself
+        if ((outcome !== 'matter') && (progress.steps[progress.current]?.key === 'matter-upload')) {
+            progress.steps[progress.current] = {key: 'upload', text: `Upload ${name}`};
+        }
+
         if ((outcome === 'matter') && (matter-- > 0)) {
-            await waitForBoard(urls.auth, 'Matter was running from the OTA space, the board restarts without it, then the same file goes up again');
+            stepNow({key: 'matter-restart', text: 'The board restarts without Matter'});
+            await waitForBoard(urls.auth, 'Waiting for the board');
+            next = {key: 'upload', text: `Upload ${name}`};
             continue;
         }
 
         if ((outcome === 'again') && (again-- > 0)) {
-            await waitForBoard(urls.auth, 'First part written, the board restarts, then the same file goes up once more');
+            stepNow({key: 'again-restart', text: 'The board restarts into the new firmware, its Matter code is not there yet'});
+            await waitForBoard(urls.auth, 'Waiting for the board');
+            next = {key: 'again-upload', text: `Upload ${name} once more: the Matter code`};
             continue;
         }
 
         if (outcome === 'done') {
-            await waitForBoard(urls.auth, 'Uploaded, the board restarts into the new firmware');
+            stepNow({key: 'restart', text: 'The board restarts and comes back'});
+            await waitForBoard(urls.auth, 'Waiting for the board');
+            stepsEnd();
             return;
         }
 
@@ -786,6 +919,12 @@ async function installEsp32(urls, row, choice) {
 
         back = await waitForEspurna(base, 'New flash layout, the board restarts into safeboot');
     } else if (status.layout === 'safeboot') {
+        // boards installed over Tasmota (the NSPanel) may keep Tasmota's safeboot in the factory partition: ESPurna
+        // never switches into it, the release's one goes there first (its SHA-256 differs)
+        const ours = (status.safeboot || '').startsWith('espurna-safeboot');
+        if (!ours && !(safebootFile && safebootFile.sha256)) {
+            throw new Error(`the factory partition holds ${status.safeboot || 'no image'}, not the ESPurna safeboot, and release ${releaseName(row)} has none to install`);
+        }
         if (safebootFile && safebootFile.sha256 && (status.sha256 !== safebootFile.sha256)) {
             const blob = await downloadFile(safebootFile);
             const result = await post(new URL('safeboot/install', base), {}, {blob, name: safebootFile.name});
@@ -839,6 +978,7 @@ async function install(row, choice) {
     }
 
     state.busy = true;
+    stepsBegin([]);
     for (const button of document.querySelectorAll('#firmware-releases button')) {
         /** @type {HTMLButtonElement} */(button).disabled = true;
     }
@@ -851,6 +991,9 @@ async function install(row, choice) {
         } else if ((route === 'fetch') || (route === 'mini')) {
             await installEsp8266(urls, row, choice, route);
         } else {
+            stepsBegin(uploadSteps({
+                name: file.name, layout: state.layout, matter: state.matter, sameBuild: row.running}));
+            stepNow(progress.steps[0]);
             const blob = await downloadFile(file);
             const header = firmwareHeader(new Uint8Array(await blob.slice(0, 8).arrayBuffer()));
             if (!header) {
@@ -1104,6 +1247,12 @@ export function init() {
         },
         'webFwUrl': (_, value) => {
             state.url = String(value);
+        },
+        'fwLayout': (_, value) => {
+            state.layout = String(value);
+        },
+        'matterStarted': (_, value) => {
+            state.matter = (value === true) || (value === 'yes');
         },
     });
 

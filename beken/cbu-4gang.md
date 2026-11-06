@@ -12,8 +12,9 @@ lists what differs.
 
 ## Build
 
-`beken-bk7231n`, the generic image of every Tuya BK7231N board (it maps all GPIOs, P9, P15, P17 and P28 included). From the
-CI release, or built from `code/`:
+`beken-matter`, the image of every BK7231N board (it maps all GPIOs, P9, P15, P17 and P28 included):
+`espurna-beken-initial-tuya.uf2` of the [release](https://github.com/igorufox/espurna/releases/latest) for the first flash,
+`espurna-beken-matter.bin` for updates. Or built from `code/`:
 
 ```
 py -3 -m platformio run -c platformio_beken.ini -e beken-bk7231n

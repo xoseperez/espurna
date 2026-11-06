@@ -1,6 +1,6 @@
-# ESP32 4 MB, asymmetric (Tasmota safeboot) layout: a small factory app with the Tasmota safeboot image (web upload
-# only) and one big OTA app for ESPurna (2880 KB instead of the 1920 KB of min_spiffs.csv). Updates go through
-# safeboot: terminal `safeboot` -> upload the ESPurna image in its web UI -> it writes app0 and boots it.
+# ESP32 4 MB, asymmetric (safeboot) layout: a small factory app with the ESPurna safeboot image (code/safeboot-app)
+# and one big OTA app for ESPurna (2880 KB instead of the 1920 KB of min_spiffs.csv). Updates go through safeboot:
+# the WebUI release list (or terminal `safeboot`) -> safeboot downloads / takes the image, writes app0 and boots it.
 # Same offsets as Tasmota's esp32_partition_app2880k_fs320k.csv (832 KB safeboot: the v16 image is 807 KB, the older
 # 768 KB partition no longer holds it), with the last 64 KB of its file system as coredump
 # Name,   Type, SubType,  Offset,   Size

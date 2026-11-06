@@ -22,11 +22,14 @@ Other Beken boards, with what differs from this guide:
 - [Sparkleiot Mini Smart Switch (XH-CB2S, BK7231M)](sparkleiot-mini.md): no flash encryption and its own 4 MiB layout,
   stock Matter firmware, a second wall switch on a test pad.
 
-## 1. Builds
+## 1. Image
 
-One build, `beken-bk7231n`, for every BK7231N board: every GPIO of the chip, no relays, buttons or LEDs pre-assigned
-(device template or web UI). The firmware finds out at boot which bootloader the chip has (`info` in the terminal shows
-it) and works with its flash layout:
+One image, `beken-matter` (build `beken-bk7231n`), for every BK7231N board: every GPIO of the chip, no relays, buttons or
+LEDs pre-assigned (device template or web UI). The firmware finds out at boot which bootloader the chip has, from the
+CRC32 of its first `0x11000` bytes (Tuya `f684a1dc`, Quectel `64b02979`; `info` in the terminal shows it), and works with
+its flash layout. On an unknown bootloader it runs, but writes nothing to the bootloader's partitions: no OTA, no Matter
+code. The image is linked for 4 MiB of flash (`code/boards_beken/bk7231n-any.json`), so the partitions of the Quectel
+layout are reachable; on a 2 MiB chip only the Tuya ones are used.
 
 | Release file | Build output | What for |
 |--------------|--------------|----------|
@@ -34,17 +37,40 @@ it) and works with its flash layout:
 | `espurna-beken-initial-quectel.uf2` | `espurna-beken-quectel.uf2` | first flash over UART, Quectel bootloader without flash encryption (4 MiB), e.g. the XH-CB2S / BK7231M of the [Sparkleiot Mini](sparkleiot-mini.md) |
 | `espurna-beken-matter.bin` | `espurna-beken.bin` | every update over Wi-Fi, on both: the board writes the part made for its bootloader |
 
-Enabled modules: web UI, API, MQTT, terminal, Home Assistant, Alexa, Domoticz, Thingspeak, scheduler, the RF bridge
-(rc-switch, unused until `rfbRX` is set) and Matter (an On/Off plug, off until `matterAuto 1` or MATTER.START). The Tuya
-TYWRA-RF has no build of its own: `beken-bk7231n` with the *Tuya TYWRA-RF* device template.
+`espurna-beken-matter.bin` is a container (`ESPBEKEN` header with the build id and a table of parts, made by
+[`code/scripts/beken_link_tail.py`](../code/scripts/beken_link_tail.py)): the RBL for the Tuya bootloader (the image
+without its Matter code), the RBL for the Quectel bootloader (the whole image) and the Matter code. Each part has a CRC32.
+How the WebUI installs it: [section 7](#7-updates-over-wi-fi) and [docs/updates.md](../docs/updates.md#beken-the-browser-uploads-the-board-picks-its-part).
 
-Matter on the 2 MiB Tuya layout: the Matter code does not fit next to the rest of the image, it lives in a region of the
-OTA partition of its own. Upload `espurna-beken-matter.bin` twice: the first upload brings the image (the bootloader installs
-it as usual, the form answers "OK, again"), the second one, after the reboot, the Matter code. On the Quectel layout one
-upload does both. `MATTER.TAIL` in the terminal tells whether the Matter code is there and matches the image.
-While Matter runs, a firmware upload is refused once with a reboot without Matter: upload again after it. Boards without
-Matter factory data make their own identity at the first start (development DAC, VID 0xFFF1 / PID 0x8000: controllers
-that accept SDK example devices, such as the speaker hub and python-matter-server, accept it).
+Enabled modules: web UI, API, MQTT, terminal, Home Assistant, Alexa, Domoticz, Thingspeak, scheduler, the RF bridge
+(rc-switch, unused until `rfbRX` is set) and Matter (off until `matterAuto 1` or MATTER.START). ESPurna's own mDNS
+responder is off in this image: the Matter stack answers mDNS itself. The Tuya TYWRA-RF has no build of its own:
+`beken-matter` with the *Tuya TYWRA-RF* device template. The firmware version carries the git revision
+(`1.22.0-git<sha>`, `scripts/beken_version.py`), the WebUI release list finds the running release by it.
+
+**Matter.** One On/Off plug per relay, up to 4. With one relay it is a plain plug on endpoint 1; with more the device is a
+gateway: an Aggregator on endpoint 2 and a bridged plug per relay on endpoints 3 to 6, named after the relay (`relayName`,
+else `<hostname> <n>`). Up to 3 controllers (fabrics). Fabrics live in FlashDB on the `kvs` partition (`0x1D3000`), which
+updates do not touch, so a board stays paired across updates; `MATTER.RESET` forgets them and keeps the identity. The
+MATTER page shows the setup codes, the controllers and an *Open pairing window* button (the window closes after 15
+minutes, or once a controller added the device). While a controller commissions, MQTT disconnects and Alexa pauses for
+up to 5 minutes (quiet mode, the certificate checks need the heap); the web UI stays connected.
+
+Matter on the 2 MiB Tuya layout: the Matter code does not fit next to the rest of the image (the app partition is
+1124 KiB, ESPurna with Matter about 1.4 MiB), it lives in a region of the 664 KiB `download` partition of its own. So the
+same file goes up twice: the first upload brings the image (the bootloader installs it as usual, the form answers
+"OK, again"), the second one, after the reboot, the Matter code. On the Quectel layout one upload does both.
+`MATTER.TAIL` in the terminal tells whether the Matter code is there and matches the image; the MATTER page says it too
+and has *Install the Matter code*. While Matter runs, a firmware upload is refused once (HTTP 409) with a reboot without
+Matter: upload again after it. Boards with Quectel Matter factory data (`0x3E0000`) use it: the certificates and the
+setup code printed on the box. Boards without make their own identity at the first start (development DAC, VID 0xFFF1 /
+PID 0x8000, random setup code): controllers that accept SDK example devices, such as the speaker hub and
+python-matter-server, accept it.
+
+The Matter library (`libMatterApp.a`, connectedhomeip 1.5 for the BK7231N) is not built here: `custom_matter_lib = latest`
+takes the newest `libmatter-*` release of [igorufox/matter-bk7231n](https://github.com/igorufox/matter-bk7231n) (built by
+its GitHub Actions with the gcc 10.3.1 of LibreTiny) and checks it against the `.sha256` asset of that release, ref.
+[`code/scripts/beken_matter_lib.py`](../code/scripts/beken_matter_lib.py) and [docs/updates.md](../docs/updates.md#beken-matter-library).
 
 Static data of ESPurna and of the Matter library lives in the data TCM of the chip (about 37 KiB more heap), see `heap`
 in the terminal and the TCM row on the status page.
@@ -129,6 +155,16 @@ setup below, pick the board on *ADMIN → Device Template* (`tywra` finds the TY
 Only the `app` partition (`0x11000`) is written. The Tuya bootloader and the Tuya config at `0x1EE000` stay where they were,
 so the stock pin map is still on the chip.
 
+The Tuya UART image has no Matter code (it does not fit the app partition). Before Matter can start, upload
+`espurna-beken-matter.bin` of the same release once over Wi-Fi: the board, already running that build, takes only the
+Matter code out of it. *Install the Matter code* on the MATTER page does the same. The Quectel UART image has it.
+
+**A board that already runs ESPurna needs no CEN wire.** The bootloader answers the link check of ltchiptool for a short
+moment after every reboot, and the ESPurna terminal is on the same UART1 at 115200: send `reset` on the port right before
+ltchiptool starts linking, and the chip is caught at its restart. That takes a small wrapper around ltchiptool which
+writes `reset` to the port just before the link check (not in the repository); with the plain ltchiptool reset the chip by
+CEN or by its power as above.
+
 ## 6. First setup
 
 1. Join the Wi-Fi network `ESPURNA-XXXXXX` (the last six digits of the MAC) with the password `fibonacci`.
@@ -137,7 +173,7 @@ so the stock pin map is still on the chip.
 
 A phone should show the "sign in to network" page by itself (captive portal, not checked on a phone yet); otherwise
 open the address by hand.
-The device also answers as `ESPURNA-XXXXXX.local` (mDNS).
+There is no `ESPURNA-XXXXXX.local` name: ESPurna's mDNS responder is off in the Matter image, use the IP address.
 
 Buttons of the TYWRA-RF (ESPurna defaults):
 
@@ -153,10 +189,24 @@ about 50 KB of free heap. There is no VCC row, the module has no supply voltage 
 
 ## 7. Updates over Wi-Fi
 
-Upload `espurna-beken-matter.bin` on **Admin → Upgrade** in the web UI, or pick the release in the list there. It takes about 30 s, plus about 20 s while the
-bootloader installs it, and keeps the settings. On the Tuya bootloader upload the same file once more when the form
-says "OK, again" (the Matter code, see above). A plain LibreTiny `.uf2` is still accepted when it was built for the
-bootloader of the board.
+**From GitHub.** *ADMIN*, OTA, *From GitHub*, *Show releases*, *Install*: the browser downloads `espurna-beken-matter.bin`
+of the release (from GitHub Pages: the board itself cannot download from GitHub, its mbedTLS has no ECDHE) and uploads
+it; the WebUI lists the steps ahead and goes through them by itself:
+
+- Quectel bootloader: one upload, the board restarts into the new firmware.
+- Tuya bootloader: the upload, the board restarts without Matter code, the same file once more for the Matter code, a
+  restart.
+- Tuya bootloader with Matter running: one more upload and restart first, Matter cannot run while its code is replaced.
+
+Up to seven steps and three restarts. Keep the board powered until the last step; when an install stops half-way the
+board keeps its firmware (at worst without Matter) and *Install* can be started again.
+
+**By hand.** Upload `espurna-beken-matter.bin` on **ADMIN → Upgrade**. It takes about 30 s, plus about 20 s while the
+bootloader installs it, and keeps the settings. On the Tuya bootloader upload the same file once more when the form says
+"OK, again" (the Matter code, see above), and once more first when it answers that Matter is running. A plain LibreTiny
+`.uf2` is still accepted when it was built for the bootloader of the board. Either way the board writes only the part of
+the file made for its bootloader, and the first bytes of it last: an interrupted upload leaves nothing for the
+bootloader to install.
 
 ![Admin tab, OTA: Browse and Upgrade](img/webui-ota.webp)
 
@@ -200,9 +250,15 @@ switches the relay.
 - **PMF and WPA3 off** (`CFG_IEEE80211W = 0`, `CFG_WPA3 = 0`). With them on, the SDK supplicant failed the handshake
   (`AUTH_FAIL`) on OpenWrt access points with WPA2-PSK, 802.11r and optional PMF (`ieee80211w=1`). WPA2 networks work as
   before.
-- **AsyncTCP task stack 3072** (`CONFIG_ASYNC_TCP_STACK_SIZE`). FreeRTOS here counts the stack in words, not in bytes as on
-  the ESP32. The library default meant 64 KiB and left 6 KiB of heap, and clients of the access point could not connect.
-  About 59 KB of heap is free after boot.
+- **AsyncTCP task stack 2560 words** (`CONFIG_ASYNC_TCP_STACK_SIZE`, 10 KiB). FreeRTOS here counts the stack in words, not
+  in bytes as on the ESP32. The library default meant 64 KiB and left 6 KiB of heap, and clients of the access point could
+  not connect. Every option is set once in `[beken-common]`: PlatformIO puts `-U` after every `-D`, so `-UX -DX=1` leaves
+  `X` undefined.
+- **Static data in the TCM** (`custom_tcm_bss`, [`scripts/beken_tcm.py`](../code/scripts/beken_tcm.py)): the `.bss` of
+  ESPurna and of the Matter library goes into the 60 KiB data TCM, which only the Wi-Fi driver uses with BLE off.
+- **Thread-safe function-local statics** ([`cxa_guard_beken.cpp`](../code/espurna/arch/beken/cxa_guard_beken.cpp)).
+  LibreTiny's libstdc++ has no threads: two tasks touching the same static for the first time trapped with "undefined
+  instruction"; the second one now waits.
 - **Logs on UART1** (`LT_UART_DEFAULT_PORT=1`): LibreTiny, the SDK and ESPurna all print on the flashing pads.
 - **Patched AsyncTCP** ([`code/lib_beken/AsyncTCP-espurna`](../code/lib_beken/AsyncTCP-espurna)), used instead of the
   registry version. A dropped connection could leave the web server using a freed lwIP connection, and other requests then
@@ -232,10 +288,11 @@ switches the relay.
   terminal command", "after a successful OTA update") and the stability counter are carried in the 16-bit SDK retention
   register instead, so they survive reboots done by ESPurna and crashes; after a hang only `watchdog` is known.
   Relay states are restored from the settings, not from RTC memory.
-- mDNS only announces the device (`<hostname>.local`, HTTP and telnet services); looking up the MQTT broker over mDNS
-  (`mqttServer` left empty) does not work, set the broker address.
+- ESPurna's mDNS responder is off in the Matter image (the Matter stack answers mDNS for itself), so `<hostname>.local`
+  is not announced; looking up the MQTT broker over mDNS (`mqttServer` left empty) does not work either, set the broker
+  address.
 - `wifiTxPwr` (dBm) works, but the SDK calibration caps it: 10 dBm measured about 5 dB below the default 20 dBm.
-- No Alexa, no ArduinoOTA, no OTA from a URL yet.
+- No ArduinoOTA, and the board does not download updates itself: the browser brings the file (see section 7).
 - `GPIO`, `GPIO.MODE`, `GPIO.LOCKS`, `REG.READ`, `REG.WRITE` terminal commands read the BK72xx GPIO registers directly,
   `FUNCTION` marks a pin taken by a peripheral (UART, PWM).
 - The ADC (P23) is not used, and there is no VCC measurement, so the VCC row is hidden on the status page.

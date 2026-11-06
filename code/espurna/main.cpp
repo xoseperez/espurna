@@ -260,7 +260,7 @@ void setup() {
         telnetSetup();
     #endif
 
-    // Display power, crash-loop guard and `safeboot`, also in the unstable mode
+    // NSPanel display power and buzzer pins, also in the unstable mode
     #if NSPANEL_SUPPORT
         nspanelBootSetup();
     #endif
