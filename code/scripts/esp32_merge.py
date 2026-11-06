@@ -104,10 +104,16 @@ def merge_bin(source, target, env):
         app_offset=app_offset,
     )
 
-    # Safeboot layout: the factory partition holds the Tasmota safeboot image. Without it the merged image still
-    # boots (boot_app0 selects ota_0), only the `safeboot` command refuses to switch to an empty partition
-    safeboot = os.path.join(env.subst("$PROJECT_DIR"), "safeboot", "tasmota32-safeboot.bin")
-    if safeboot_offset and os.path.exists(safeboot):
+    # Safeboot layout: the factory partition holds the ESPurna safeboot image (code/safeboot-app, built before
+    # this one: `pio run -d safeboot-app`, or a copy in code/safeboot/). Without it the merged image still boots
+    # (boot_app0 selects ota_0), only the `safeboot` command refuses to switch to an empty partition
+    project = env.subst("$PROJECT_DIR")
+    candidates = (
+        os.path.join(project, "safeboot", "espurna-esp32-safeboot.bin"),
+        os.path.join(project, "safeboot-app", ".pio", "build", "esp32-safeboot", "firmware.bin"),
+    )
+    safeboot = next((path for path in candidates if os.path.exists(path)), None)
+    if safeboot_offset and safeboot:
         cmd += " {} {}".format(safeboot_offset, _quote(safeboot))
 
     print("Running: " + cmd)

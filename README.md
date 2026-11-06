@@ -36,9 +36,9 @@ Boards run on the generic image of their chip; pins come from the device templat
 | Device | Chip | Image / build | Guide |
 |--------|------|---------------|-------|
 | any ESP32 with 4 MB flash | ESP32 | `esp32` / `esp32-generic` | [Tasmota templates](#esp32-tasmota-templates) |
-| LC-Tech ESP32 2-relay | ESP32 | `esp32` / `esp32-relay-x2` | relays GPIO16 / GPIO17, button GPIO0, LED GPIO23 (inverted) |
+| LC-Tech ESP32 2-relay | ESP32 | `esp32` / `esp32-generic` | relays GPIO16 / GPIO17, button GPIO0, LED GPIO23 (inverted); [settings](#esp32-boards-from-the-settings) |
 | Sonoff NSPanel EU (gen1) | ESP32 | `esp32-nspanel` | [Sonoff NSPanel](#sonoff-nspanel), [nspanel/README.md](nspanel/README.md) |
-| Sonoff MINIR4 "Mini Extreme" | ESP32 | `esp32` / `itead-sonoff-minir4` | relay GPIO26, button GPIO0, S1/S2 GPIO27, LED GPIO19 (inverted); [Sonoff MINIR4](#sonoff-minir4) |
+| Sonoff MINIR4 "Mini Extreme" | ESP32 | `esp32` / `esp32-generic` | relay GPIO26, button GPIO0, S1/S2 GPIO27, LED GPIO19 (inverted); [Sonoff MINIR4](#sonoff-minir4), [settings](#esp32-boards-from-the-settings) |
 | any Tuya BK7231N board (CB2S, CB3S, CBU ...) | BK7231N | `beken-bk7231n` | [beken/README.md](beken/README.md) |
 | Tuya TYWRA-RF, 1 relay + 433 MHz | BK7231N (CB3S) | `beken-bk7231n` | [beken/README.md](beken/README.md) |
 | Tuya 4-gang switch module | BK7231N (CBU) | `beken-bk7231n` | [beken/cbu-4gang.md](beken/cbu-4gang.md) |
@@ -86,7 +86,7 @@ cd code
 pio run -c platformio_esp32.ini -e esp32-generic
 ```
 
-The merged image is written to `code/.pio/build/<build>/espurna-<build>.bin` by [`scripts/esp32_merge.py`](code/scripts/esp32_merge.py): bootloader, partition table, `boot_app0` and ESPurna at 0xE0000. With `code/safeboot/tasmota32-safeboot.bin` in place (Tasmota's release image) it goes into the factory partition at 0x10000 too; without it ESPurna runs, only the `safeboot` command has nothing to switch to.
+The merged image is written to `code/.pio/build/<build>/espurna-<build>.bin` by [`scripts/esp32_merge.py`](code/scripts/esp32_merge.py): bootloader, partition table, `boot_app0` and ESPurna at 0xE0000. With the ESPurna safeboot built first (`pio run -d safeboot-app`, plain ESP-IDF, ~720 KB of the 832 KB factory partition) it goes into the factory partition at 0x10000 too; without it ESPurna runs, only the `safeboot` command refuses to switch. Safeboot reads Wi-Fi and the admin password from the ESPurna settings; updates go through the WebUI `/safeboot` page (an http:// URL, or a file uploaded to safeboot itself).
 
 Beken builds have their own build directory (`code/.pio/build_beken`) and produce a `firmware.uf2`:
 
@@ -99,7 +99,7 @@ py -3 -m platformio run -c platformio_beken.ini -e beken-bk7231n
 
 ### ESP32: Tasmota templates
 
-Relays, buttons and LEDs are configured at runtime, so any ESP32 device can run the `esp32` image (`esp32-generic` build) and be set up from a [Tasmota template](https://templates.blakadder.com/) - no rebuild needed. The generic image drives no GPIOs until configured, so it is safe to flash on unknown hardware. The import also works on `esp32-relay-x2`, to re-purpose that board.
+Relays, buttons and LEDs are configured at runtime, so any ESP32 device can run the `esp32` image (`esp32-generic` build) and be set up from a [Tasmota template](https://templates.blakadder.com/) - no rebuild needed. The generic image drives no GPIOs until configured, so it is safe to flash on unknown hardware.
 
 1. Flash `espurna-esp32-full.bin` and connect to the device WebUI.
 2. Go to **Admin → Device Template**, find the device and press **Apply**, or open *Paste a Tasmota template* there and paste the template JSON, e.g.
@@ -125,6 +125,15 @@ panel, and it talks MQTT directly to the devices. No Home Assistant, ioBroker or
 
 Setup, the JSON format and more photos: [nspanel/README.md](nspanel/README.md).
 
+### ESP32 boards from the settings
+
+The LC-Tech relay x2 and the MINIR4 had images of their own before; the generic one needs their pins in the settings. Set them before an update from such an image (they match its built-in values, so nothing changes on the running board), or after the first boot of the generic image, from the terminal of the WebUI (*DEBUG*):
+
+- LC-Tech ESP32 2-relay:
+  `set relayGpio0 16; set relayGpio1 17; set btnGpio0 0; set btnMode0 pushbutton; set btnDefVal0 high; set btnPinMode0 pull-up; set btnRelay0 0; set ledGpio0 23; set ledInv0 1; set sysManufacturer LC_TECH; set sysDevice ESP32_RELAY_X2`
+- Sonoff MINIR4:
+  `set relayGpio0 26; set btnGpio0 0; set btnMode0 pushbutton; set btnDefVal0 high; set btnPinMode0 pull-up; set btnRelay0 0; set btnGpio1 27; set btnMode1 switch; set btnPinMode1 pull-up; set btnDefVal1 initial; set btnRelay1 0; set btnPress1 relay-toggle; set btnRlse1 relay-toggle; set ledGpio0 19; set ledInv0 1; set sysManufacturer ITEAD; set sysDevice SONOFF_MINIR4`
+
 ### Sonoff MINIR4
 
 Tested on a real MINIR4 (stock eWeLink firmware `FWSW-E32R4-MINIR4`, no Matter in it; the Matter model is the MINIR4M, an ESP32-C3 board that this build does not cover).
@@ -133,7 +142,7 @@ Tested on a real MINIR4 (stock eWeLink firmware `FWSW-E32R4-MINIR4`, no Matter i
 - **Backup first** if you may want eWeLink back: `esptool.py --chip esp32 read_flash 0 0x400000 stock.bin`.
 - **Power**: flashing works from the 3V3 of a USB-UART adapter, booting does not - the board resets (`POWERON_RESET`) every time WiFi starts. Run it from mains with the serial wires removed.
 - **Wiring**: the terminal block order differs from the Mini R2, follow the markings on the case.
-- The layout is the usual A/B (app0 / app1 + otadata), so an OTA writes the inactive slot and an interrupted update does not brick the device.
+- The flash layout is the safeboot one of every ESP32 image: an update goes through the ESPurna safeboot, an interrupted update leaves the safeboot to retry from.
 
 |||
 |---|---|

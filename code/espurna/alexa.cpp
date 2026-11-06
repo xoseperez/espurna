@@ -132,7 +132,7 @@ bool body_callback(AsyncWebServerRequest *request, uint8_t *data, size_t len, si
         DEBUG_MSG_P(PSTR("[ALEXA] Ignoring incomplete %s %s from %s (%zu / %zu)\n"),
                 request->methodToString(),
                 request->url().c_str(),
-                request->client()->remoteIP().toString().c_str(),
+                ipToString(request->client()->remoteIP()).c_str(),
                 len, index);
         return false;
     }
@@ -160,8 +160,11 @@ void setup() {
 } // namespace web
 #endif
 
+// Matter commissioning pauses the fauxmo servers (UDP + TCP) to leave the heap to the certificate checks
+bool paused { false };
+
 void configure() {
-    fauxmo.enable(wifiConnected() && alexa::settings::enabled());
+    fauxmo.enable(wifiConnected() && alexa::settings::enabled() && !paused);
 }
 
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
@@ -280,6 +283,11 @@ void setup() {
 
 bool alexaEnabled() {
     return espurna::alexa::settings::enabled();
+}
+
+void alexaPause(bool paused) {
+    espurna::alexa::paused = paused;
+    espurna::alexa::configure();
 }
 
 void alexaSetup() {

@@ -271,6 +271,16 @@ HeapStats systemHeapStats();
 size_t systemFreeHeap();
 size_t systemInitialFreeHeap();
 
+#if defined(LIBRETINY)
+// BK7231N data TCM: the static data placed there (Wi-Fi driver, and ref. scripts/beken_tcm.py), out of its size
+struct TcmStats {
+    size_t used;
+    size_t size;
+};
+
+TcmStats systemTcmStats();
+#endif
+
 [[noreturn]] void forceEraseSDKConfig();
 
 bool eraseSDKConfig();

@@ -16,6 +16,14 @@ WebUI. The Matter stack itself is the backend of the architecture (espurna_matte
 #include "terminal.h"
 #include "ws.h"
 
+#if MQTT_SUPPORT
+#include "mqtt.h"
+#endif
+
+#if ALEXA_SUPPORT
+#include "alexa.h"
+#endif
+
 #if defined(ARDUINO_ARCH_ESP32)
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
@@ -33,6 +41,9 @@ namespace {
 
 bool started { false };
 bool connected { false };
+
+// This boot was asked for by an OTA upload that cannot run while Matter does (ref. matterRebootForUpload())
+bool skip_start { false };
 
 // Relay changes from Matter come from its own task, they are applied in the loop: bit n of `changed` marks
 // relay n, bit n of `values` is its new state
@@ -116,6 +127,48 @@ void print() {
 
 void web_tick();
 
+// Quiet mode while a controller commissions: the certificate checks (PASE / CASE, CSR, NOC) need tens of KB of heap
+// at once, more than is left with every module busy. Web socket clients are closed, MQTT disconnects, the Alexa servers
+// stop; settings stay, everything comes back at the end (or after QuietMaxMs without an end event)
+constexpr uint32_t QuietMaxMs { 5 * 60 * 1000 };
+uint32_t quiet_since { 0 };
+
+#if MQTT_SUPPORT
+bool quiet_mqtt { false };
+#endif
+
+void quiet(bool active) {
+    if (active == (quiet_since != 0)) {
+        return;
+    }
+
+    quiet_since = active ? (millis() | 1) : 0;
+
+#if WEB_SUPPORT
+    // web socket clients hold heap the certificate checks need (Beken: ~10 s of them would run out otherwise)
+    wsPause(active);
+#endif
+
+#if MQTT_SUPPORT
+    if (active) {
+        quiet_mqtt = mqttEnabled();
+        if (quiet_mqtt) {
+            mqttEnabled(false);
+            mqttDisconnect();
+        }
+    } else if (quiet_mqtt) {
+        mqttEnabled(true);
+        quiet_mqtt = false;
+    }
+#endif
+
+#if ALEXA_SUPPORT
+    alexaPause(active);
+#endif
+
+    DEBUG_MSG_P(PSTR("[MATTER] Quiet mode %s, heap %u\n"), active ? "on" : "off", backend::heap());
+}
+
 void loop() {
     const auto mask = changed.exchange(0);
     if (mask) {
@@ -130,10 +183,10 @@ void loop() {
     const auto active = busy.exchange(-1);
     if (active >= 0) {
         DEBUG_MSG_P(PSTR("[MATTER] Commissioning %s\n"), active ? "started" : "ended");
-#if WEB_SUPPORT
-        // web socket clients hold heap the certificate checks need (Beken: ~10 s of them would run out otherwise)
-        wsPause(active != 0);
-#endif
+        quiet(active != 0);
+    } else if (quiet_since && ((millis() - quiet_since) > QuietMaxMs)) {
+        DEBUG_MSG_P(PSTR("[MATTER] No end of commissioning in %u s, resuming\n"), QuietMaxMs / 1000);
+        quiet(false);
     }
 
     if (alive.exchange(false)) {
@@ -167,7 +220,7 @@ void wifi_event(espurna::wifi::Event event) {
         backend::network(true);
         // Bring-up: a crash in Matter must not put the board into a boot loop, so it only starts on
         // MATTER.START until `matterAuto 1` is set
-        if (getSetting("matterAuto", false)) {
+        if (getSetting("matterAuto", false) && !skip_start) {
             start();
         }
         break;
@@ -391,6 +444,12 @@ void log_line(const char* line) {
 }
 
 void setup() {
+    skip_start = getSetting("matterSkip", false);
+    if (skip_start) {
+        delSetting("matterSkip");
+        DEBUG_MSG_P(PSTR("[MATTER] Not started on this boot, it is for an OTA upload\n"));
+    }
+
     log::mutex = xSemaphoreCreateMutex();
     backend::setup();
 #if TERMINAL_SUPPORT
@@ -413,6 +472,16 @@ void setup() {
 
 void matterSetup() {
     espurna::matter::setup();
+}
+
+bool matterStarted() {
+    return espurna::matter::started;
+}
+
+// Matter code lives where the OTA image is written (2 MiB Beken boards): restart once without starting Matter
+void matterRebootForUpload() {
+    setSetting("matterSkip", 1);
+    prepareReset(CustomResetReason::Ota);
 }
 
 #endif

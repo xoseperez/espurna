@@ -813,7 +813,13 @@
 // -----------------------------------------------------------------------------
 
 #ifndef MDNS_SERVER_SUPPORT
+#if defined(LIBRETINY) && MATTER_SUPPORT
+// Beken: the LibreTiny responder is a second one next to the Matter stack's own (both on 5353) and lives in the small
+// lwIP heap the Matter traffic needs. On the ESP32 both share the IDF mdns component, so it stays there
+#define MDNS_SERVER_SUPPORT         0
+#else
 #define MDNS_SERVER_SUPPORT         1           // Publish services using mDNS by default (1.48Kb)
+#endif
 #endif
 
 #ifndef LLMNR_SUPPORT

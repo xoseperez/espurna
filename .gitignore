@@ -25,5 +25,8 @@ firmware*
 # compiler dependency files from ad-hoc builds, diff dumps in the repo root
 *.d
 /*.patch
-# Tasmota safeboot image for the factory partition of the ESP32 merged image (scripts/esp32_merge.py)
+# safeboot image copied for the factory partition of the ESP32 merged image (scripts/esp32_merge.py), and the
+# sdkconfig the ESP-IDF build of code/safeboot-app writes next to its sdkconfig.defaults
 code/safeboot/
+code/safeboot-app/sdkconfig.*
+!code/safeboot-app/sdkconfig.defaults

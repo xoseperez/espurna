@@ -63,6 +63,10 @@ jobs:
       run: |
         # pio libs sometimes use raw hash instead of version, avoid useless warnings
         git config --global advice.detachedHead false
+        # ESP32: the safeboot image first, esp32_merge.py puts it into the factory partition of the merged image
+        if [ "${{ matrix.arch }}" = esp32 ]; then
+          pio run -d safeboot-app
+        fi
         pio run -c ${{ matrix.config }} -e ${{ matrix.env }}
     - name: Collect binaries
       run: |
@@ -76,6 +80,10 @@ jobs:
           cp ${build}/espurna-${env}.bin dist/${name}-full.bin
           # app only, for OTA
           cp ${build}/firmware.bin dist/${name}-ota.bin
+          # safeboot alone, for /safeboot (migration, install / replace), once per release
+          if [ "${env}" = esp32-generic ]; then
+            cp code/safeboot-app/.pio/build/esp32-safeboot/firmware.bin dist/espurna-esp32-safeboot.bin
+          fi
           ;;
         beken)
           build=code/.pio/build_beken/${env}
@@ -131,7 +139,7 @@ jobs:
 
           One image per chip, the board is picked after flashing: WebUI, ADMIN, *Device Template* (Tasmota templates, OpenBeken devices and the boards of this firmware) or *Tasmota Profile Import*.
 
-          ESP32, Arduino-ESP32 core 3 (ESP-IDF 5), Matter On/Off plugs included, Tasmota safeboot flash layout (ESPurna at 0xE0000, 2880 KB; `*-full.bin` - merged image, flash at 0x0, then put the Tasmota safeboot image to 0x10000; `*-ota.bin` - application only, upload it from the safeboot web UI after the `safeboot` command):
+          ESP32, Arduino-ESP32 core 3 (ESP-IDF 5), Matter On/Off plugs included, safeboot flash layout (ESPurna at 0xE0000, 2880 KB; `*-full.bin` - merged image with the ESPurna safeboot, flash at 0x0; `*-ota.bin` - application only, for updates through safeboot: WebUI `/safeboot` page; `espurna-esp32-safeboot.bin` - the safeboot image alone, for the migration of two-slot boards and to replace it from `/safeboot`):
           - `espurna-esp32-*` - any ESP32 with 4 MB flash
           - `espurna-esp32-nspanel-*` - Sonoff NSPanel EU (gen1) with the Lovelace UI TFT, see `nspanel/README.md`
 

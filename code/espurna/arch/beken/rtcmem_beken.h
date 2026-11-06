@@ -45,6 +45,8 @@ enum class RtcmemCrash : uint32_t {
     PrefetchAbort,
     DataAbort,
     Reserved,
+    // Only in the flash record (written by the malloc failed hook), never in the register
+    MallocFailed,
 };
 
 RtcmemCrash rtcmemCrash();

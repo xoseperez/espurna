@@ -29,6 +29,9 @@ of the BK7231N port):
 #include <lwip/igmp.h>
 #include <lwip/netif.h>
 #include <lwip/tcpip.h>
+#if defined(MATTER_UDP_LOG)
+#include <lwip/udp.h>
+#endif
 
 #include <atomic>
 #include <cstring>
@@ -114,11 +117,13 @@ namespace factory {
 
 // Namespace "chip-factory" of the stock key-value store. Table of 64-byte entries, each one
 // {0x55 0xff 0xff 0xff, offset, length, name[32]}, values right after the table
+#if defined(FLASH_MATTER_OFFSET)
 constexpr uint32_t TableOffset { FLASH_MATTER_OFFSET + 0x7000 };
 constexpr uint32_t TableSize { 0x1000 };
 constexpr uint32_t DataOffset { FLASH_MATTER_OFFSET + 0x8000 };
 constexpr uint32_t DataSize { 0x2000 };
 constexpr uint32_t EntryMagic { 0xffffff55 };
+#endif
 
 struct __attribute__((packed)) Entry {
     uint32_t magic;
@@ -132,6 +137,14 @@ static_assert(sizeof(Entry) == 0x40, "");
 
 // Value of a key, or false when there is none. Copies at most size bytes, length is the full one
 bool read(const char* name, uint8_t* out, size_t size, size_t& length) {
+#if !defined(FLASH_MATTER_OFFSET)
+    // no factory data partition in this flash layout (Tuya 2 MiB boards)
+    (void)name;
+    (void)out;
+    (void)size;
+    (void)length;
+    return false;
+#else
     for (uint32_t offset = 0; offset < TableSize; offset += sizeof(Entry)) {
         Entry entry;
         if (lt_flash_read(TableOffset + offset, reinterpret_cast<uint8_t*>(&entry), sizeof(entry)) != sizeof(entry)) {
@@ -157,6 +170,7 @@ bool read(const char* name, uint8_t* out, size_t size, size_t& length) {
     }
 
     return false;
+#endif
 }
 
 bool read(const char* name, std::vector<uint8_t>& out) {
@@ -314,12 +328,30 @@ int clear(const char* ns) {
     return BkOk;
 }
 
+// Matter factory reset: fabrics, ACL, counters... everything but the own identity of the board (namespace
+// "espurna-id" of matter_app.cpp), so the pairing code stays the same
+constexpr char IdentityPrefix[] = "espurna-id/";
+
 int clear_all() {
     if (!init()) {
         return BkFail;
     }
 
-    return (fdb_kv_set_default(&db) == FDB_NO_ERR) ? BkOk : BkFail;
+    std::vector<String> names;
+
+    struct fdb_kv_iterator iterator;
+    fdb_kv_iterator_init(&iterator);
+    while (fdb_kv_iterate(&db, &iterator)) {
+        if (std::strncmp(iterator.curr_kv.name, IdentityPrefix, sizeof(IdentityPrefix) - 1) != 0) {
+            names.emplace_back(iterator.curr_kv.name);
+        }
+    }
+
+    for (const auto& name : names) {
+        fdb_kv_del(&db, name.c_str());
+    }
+
+    return BkOk;
 }
 
 } // namespace kv
@@ -407,6 +439,428 @@ void fill(unsigned char* out, size_t length) {
 } // namespace trng
 
 // ---------------------------------------------------------------------------------------------------------------------
+// Matter code in its own flash region, the 'tail' (scripts/beken_matter_tail.py). On 2 MiB boards it lives in the
+// 'download' partition: the bootloader installs the rest of the image (the head) from there as usual, the tail is
+// written afterwards from the web OTA form. Nothing in the tail may run before it is checked: no Matter call, not
+// even its static constructors, until the build id and the CRC of the tail match this image.
+
+#if MATTER_TAIL_SUPPORT
+} // namespace
+} // namespace matter
+} // namespace espurna
+
+extern "C" {
+typedef void (*matter_tail_init_t)(void);
+extern const uint8_t __matter_tail_start[];
+extern const uint8_t __matter_tail_end[];
+extern matter_tail_init_t __matter_tail_init_start[];
+extern matter_tail_init_t __matter_tail_init_end[];
+extern const uint8_t __build_id_start[];
+} // extern "C"
+
+namespace espurna {
+namespace matter {
+namespace {
+namespace tail {
+
+constexpr uint32_t Magic { 0x314C544D }; // "MTL1"
+constexpr size_t BuildIdSize { 20 };
+
+// Filled in by scripts/beken_link_tail.py, all zeroes here
+struct Header {
+    uint32_t magic;
+    uint32_t size;
+    uint32_t crc;
+    uint32_t reserved;
+    uint8_t build_id[BuildIdSize];
+};
+
+__attribute__((section(".matter_tail_header"), used))
+const Header header {};
+
+enum class State {
+    Unchecked,
+    Missing,
+    OtherBuild,
+    Corrupt,
+    Ready,
+};
+
+State state { State::Unchecked };
+bool constructed { false };
+
+// GNU note of the link: namesz 4, descsz 20, type 3, "GNU\0", then the id
+const uint8_t* build_id() {
+    return __build_id_start + 16;
+}
+
+uint32_t crc32(uint32_t crc, const volatile uint8_t* data, size_t length) {
+    static constexpr uint32_t Table[16] {
+        0x00000000, 0x1DB71064, 0x3B6E20C8, 0x26D930AC, 0x76DC4190, 0x6B6B51F4, 0x4DB26158, 0x5005713C,
+        0xEDB88320, 0xF00F9344, 0xD6D6A3E8, 0xCB61B38C, 0x9B64C2B0, 0x86D3D2D4, 0xA00AE278, 0xBDBDF21C,
+    };
+
+    crc = ~crc;
+    for (size_t index = 0; index < length; ++index) {
+        crc ^= data[index];
+        crc = (crc >> 4) ^ Table[crc & 0xf];
+        crc = (crc >> 4) ^ Table[crc & 0xf];
+    }
+
+    return ~crc;
+}
+
+uint32_t flash_offset(const uint8_t* address) {
+    return reinterpret_cast<uintptr_t>(address) * 34 / 32;
+}
+
+uint32_t flash_size() {
+    return flash_offset(__matter_tail_end) - flash_offset(__matter_tail_start);
+}
+
+// The region is a part of the 'download' partition: an OTA image there overwrites the tail
+bool shares_download() {
+    const auto start = flash_offset(__matter_tail_start);
+    return (start >= FLASH_DOWNLOAD_OFFSET) && (start < (FLASH_DOWNLOAD_OFFSET + FLASH_DOWNLOAD_LENGTH));
+}
+
+// CRC16 of every 32 bytes in the flash (CRC-16/CMS, big endian after the data), as the bootloader and the
+// packager write it
+uint16_t crc16(const uint8_t* data, size_t length) {
+    uint16_t crc { 0xffff };
+    for (size_t index = 0; index < length; ++index) {
+        crc ^= static_cast<uint16_t>(data[index]) << 8;
+        for (int bit = 0; bit < 8; ++bit) {
+            crc = (crc & 0x8000)
+                ? static_cast<uint16_t>((crc << 1) ^ 0x8005)
+                : static_cast<uint16_t>(crc << 1);
+        }
+    }
+
+    return crc;
+}
+
+constexpr size_t BlockSize { 34 };
+
+// Raw reads, block by block. Reading a block with a wrong CRC through the flash mapping stalls the chip until the
+// watchdog resets it (seen on the CB3S with an OTA image or erased flash in the region), so the mapping is only
+// used once every block of the region checks out
+bool blocks_valid(uint32_t offset, uint32_t size) {
+    uint8_t buffer[BlockSize * 16];
+    for (uint32_t done = 0; done < size; done += sizeof(buffer)) {
+        const auto chunk = std::min(static_cast<uint32_t>(sizeof(buffer)), size - done);
+        if (lt_flash_read(offset + done, buffer, chunk) != chunk) {
+            return false;
+        }
+
+        for (size_t block = 0; (block + BlockSize) <= chunk; block += BlockSize) {
+            const uint16_t stored = (static_cast<uint16_t>(buffer[block + 32]) << 8) | buffer[block + 33];
+            if (crc16(&buffer[block], 32) != stored) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+// Through the flash mapping, like the code will be read. Volatile, the compiler knows the header as all zeroes
+State check() {
+    const auto start = flash_offset(__matter_tail_start);
+    if (!blocks_valid(start, BlockSize)) {
+        return State::Missing;
+    }
+
+    if (!blocks_valid(start, flash_size())) {
+        return State::Corrupt;
+    }
+
+    const auto* ptr = reinterpret_cast<const volatile Header*>(__matter_tail_start);
+    if (ptr->magic != Magic) {
+        return State::Missing;
+    }
+
+    for (size_t index = 0; index < BuildIdSize; ++index) {
+        if (ptr->build_id[index] != build_id()[index]) {
+            return State::OtherBuild;
+        }
+    }
+
+    const size_t size = __matter_tail_end - __matter_tail_start;
+    if (ptr->size != size) {
+        return State::Corrupt;
+    }
+
+    const auto* body = reinterpret_cast<const volatile uint8_t*>(__matter_tail_start) + sizeof(Header);
+    if (crc32(0, body, size - sizeof(Header)) != ptr->crc) {
+        return State::Corrupt;
+    }
+
+    return State::Ready;
+}
+
+const char* name(State value) {
+    switch (value) {
+    case State::Unchecked:
+        return "not checked";
+    case State::Missing:
+        return "missing";
+    case State::OtherBuild:
+        return "from another build";
+    case State::Corrupt:
+        return "corrupt";
+    case State::Ready:
+        return "ready";
+    }
+
+    return "?";
+}
+
+// Once, before the first Matter call
+bool ready() {
+    if (state != State::Ready) {
+        state = check();
+        if (state != State::Ready) {
+            DEBUG_MSG_P(PSTR("[MATTER] Matter code (flash 0x%06X) is %s, upload matter-tail.bin of this build\n"),
+                flash_offset(__matter_tail_start), name(state));
+            return false;
+        }
+    }
+
+    if (!constructed) {
+        constructed = true;
+        for (auto* init = __matter_tail_init_start; init != __matter_tail_init_end; ++init) {
+            (*init)();
+        }
+    }
+
+    return true;
+}
+
+String status() {
+    if (state == State::Unchecked) {
+        state = check();
+    }
+
+    char id[9];
+    snprintf_P(id, sizeof(id), PSTR("%02x%02x%02x%02x"),
+        build_id()[0], build_id()[1], build_id()[2], build_id()[3]);
+
+    String out;
+    out.reserve(128);
+    out += F("flash 0x");
+    out += String(flash_offset(__matter_tail_start), 16);
+    out += F(", ");
+    out += String(flash_size(), 10);
+    out += F(" bytes, ");
+    out += name(state);
+    out += F(", build ");
+    out += id;
+    if (shares_download()) {
+        out += F(", in the OTA partition");
+    }
+
+    return out;
+}
+
+// matter-tail.bin: this header, then the tail as it is in the flash (encrypted, CRC'd)
+struct Container {
+    char magic[8];
+    uint32_t version;
+    uint32_t offset;
+    uint32_t length;
+    uint32_t crc;
+    uint8_t build_id[BuildIdSize];
+};
+
+constexpr char ContainerMagic[] = "ESPMTAIL";
+constexpr size_t ContainerSize { 64 };
+constexpr size_t SectorSize { 0x1000 };
+
+struct Upload {
+    uint8_t header[ContainerSize];
+    size_t header_size { 0 };
+    Container container {};
+    size_t written { 0 };
+    uint32_t erased { 0 };
+    uint32_t crc { 0 };
+    bool active { false };
+};
+
+Upload upload;
+
+bool is_container(const uint8_t* data, size_t length) {
+    return (length >= (sizeof(ContainerMagic) - 1))
+        && (std::memcmp(data, ContainerMagic, sizeof(ContainerMagic) - 1) == 0);
+}
+
+const char* upload_begin(bool matter_started) {
+    if (matter_started) {
+        return PSTR("ERROR: Matter is running, upload after a reboot");
+    }
+
+    upload = Upload{};
+    upload.active = true;
+    return nullptr;
+}
+
+const char* upload_header() {
+    std::memcpy(&upload.container, upload.header, sizeof(Container));
+    const auto& container = upload.container;
+    if (container.version != 1) {
+        return PSTR("ERROR: Unknown matter-tail.bin version");
+    }
+
+    if ((container.offset != flash_offset(__matter_tail_start)) || (container.length > flash_size())) {
+        return PSTR("ERROR: matter-tail.bin is for another flash layout");
+    }
+
+    if (std::memcmp(container.build_id, build_id(), BuildIdSize) != 0) {
+        return PSTR("ERROR: matter-tail.bin is from another build, upload the firmware of the same build first");
+    }
+
+    // An OTA image left in the 'download' partition is overwritten from here on. With its header erased the
+    // bootloader sees no update to install, like after LibreTiny reverts an OTA
+    if (shares_download() && !lt_flash_erase_block(FLASH_DOWNLOAD_OFFSET)) {
+        return PSTR("ERROR: Flash erase failed");
+    }
+
+    upload.erased = container.offset;
+    return nullptr;
+}
+
+const char* upload_write(const uint8_t* data, size_t length) {
+    if (!upload.active) {
+        return PSTR("ERROR: No upload");
+    }
+
+    while (length && (upload.header_size < ContainerSize)) {
+        const auto chunk = std::min(length, ContainerSize - upload.header_size);
+        std::memcpy(&upload.header[upload.header_size], data, chunk);
+        upload.header_size += chunk;
+        data += chunk;
+        length -= chunk;
+        if (upload.header_size == ContainerSize) {
+            const auto* error = upload_header();
+            if (error) {
+                upload.active = false;
+                return error;
+            }
+        }
+    }
+
+    if (!length) {
+        return nullptr;
+    }
+
+    if ((upload.written + length) > upload.container.length) {
+        upload.active = false;
+        return PSTR("ERROR: matter-tail.bin is longer than its header says");
+    }
+
+    const uint32_t offset = upload.container.offset + upload.written;
+    while (upload.erased < (offset + length)) {
+        if (!lt_flash_erase_block(upload.erased)) {
+            upload.active = false;
+            return PSTR("ERROR: Flash erase failed");
+        }
+        upload.erased += SectorSize;
+    }
+
+    if (lt_flash_write(offset, data, length) != length) {
+        upload.active = false;
+        return PSTR("ERROR: Flash write failed");
+    }
+
+    upload.crc = crc32(upload.crc, data, length);
+    upload.written += length;
+    return nullptr;
+}
+
+const char* upload_end() {
+    if (!upload.active) {
+        return PSTR("ERROR: No upload");
+    }
+
+    upload.active = false;
+    if ((upload.header_size != ContainerSize) || (upload.written != upload.container.length)) {
+        return PSTR("ERROR: matter-tail.bin is incomplete");
+    }
+
+    if (upload.crc != upload.container.crc) {
+        return PSTR("ERROR: matter-tail.bin CRC mismatch");
+    }
+
+    state = check();
+    if (state != State::Ready) {
+        return PSTR("ERROR: Matter code does not check out after writing");
+    }
+
+    DEBUG_MSG_P(PSTR("[MATTER] Matter code written, %u bytes\n"), upload.written);
+    return nullptr;
+}
+
+void upload_abort() {
+    upload.active = false;
+}
+
+} // namespace tail
+#endif
+
+// ---------------------------------------------------------------------------------------------------------------------
+
+#if defined(MATTER_UDP_LOG)
+// Bring-up aid for boards without a serial wire, off unless built with -DMATTER_UDP_LOG="a.b.c.d": every Matter log
+// line and start step as one UDP packet
+// to MATTER_UDP_LOG (a.b.c.d), port 5514, sent from the tcpip thread, so it works while the loop is stuck
+namespace udplog {
+
+struct Message {
+    size_t length;
+    char text[160];
+};
+
+udp_pcb* pcb { nullptr };
+
+void send_tcpip(void* arg) {
+    auto* message = static_cast<Message*>(arg);
+    if (!pcb) {
+        pcb = udp_new();
+    }
+
+    if (pcb) {
+        auto* buffer = pbuf_alloc(PBUF_TRANSPORT, message->length, PBUF_RAM);
+        if (buffer) {
+            std::memcpy(buffer->payload, message->text, message->length);
+            ip_addr_t address;
+            ipaddr_aton(MATTER_UDP_LOG, &address);
+            udp_sendto(pcb, buffer, &address, 5514);
+            pbuf_free(buffer);
+        }
+    }
+
+    free(message);
+}
+
+void send(const char* text) {
+    auto* message = static_cast<Message*>(malloc(sizeof(Message)));
+    if (!message) {
+        return;
+    }
+
+    message->length = snprintf(message->text, sizeof(message->text), "%u %u %s",
+        static_cast<unsigned>(millis()), static_cast<unsigned>(lt_heap_get_free()), text);
+    message->length = std::min(message->length, sizeof(message->text) - 1);
+    if (tcpip_callback(send_tcpip, message) != ERR_OK) {
+        free(message);
+    }
+}
+
+} // namespace udplog
+#define MATTER_STEP(X) udplog::send(X)
+#else
+#define MATTER_STEP(X)
+#endif
 
 String node_label;
 
@@ -445,8 +899,40 @@ void command_factory(::terminal::CommandContext&& ctx) {
     terminalOK(ctx);
 }
 
+PROGMEM_STRING(Reset, "MATTER.RESET");
+
+// Forget every controller (fabrics, ACL), keep the own identity and its pairing code. Not while Matter runs: it
+// holds all of that in memory and writes it back
+void command_reset(::terminal::CommandContext&& ctx) {
+    if (matterStarted()) {
+        terminalError(ctx, F("Matter is running, reboot first (matterAuto 0 keeps it off)"));
+        return;
+    }
+
+    if (kv::clear_all() != BkOk) {
+        terminalError(ctx, F("Key-value store failed"));
+        return;
+    }
+
+    terminalOK(ctx);
+    prepareReset(CustomResetReason::Terminal);
+}
+
+#if MATTER_TAIL_SUPPORT
+PROGMEM_STRING(Tail, "MATTER.TAIL");
+
+void command_tail(::terminal::CommandContext&& ctx) {
+    ctx.output.printf_P(PSTR("matter code: %s\n"), tail::status().c_str());
+    terminalOK(ctx);
+}
+#endif
+
 static constexpr ::terminal::Command Commands[] PROGMEM {
     {Factory, command_factory},
+    {Reset, command_reset},
+#if MATTER_TAIL_SUPPORT
+    {Tail, command_tail},
+#endif
 };
 #endif
 
@@ -468,13 +954,24 @@ void setup() {
 }
 
 bool start() {
+    MATTER_STEP("start");
+#if MATTER_TAIL_SUPPORT
+    if (!tail::ready()) {
+        return false;
+    }
+    MATTER_STEP("tail ready, constructors done");
+#endif
+
     if (!kv::init()) {
         DEBUG_MSG_P(PSTR("[MATTER] Key-value store failed\n"));
         return false;
     }
 
     node_label = systemHostname();
-    return matter_app_start() == 0;
+    MATTER_STEP("kv ready, matter_app_start");
+    const auto out = matter_app_start() == 0;
+    MATTER_STEP(out ? "matter_app_start OK" : "matter_app_start FAILED");
+    return out;
 }
 
 void network(bool up) {
@@ -557,6 +1054,9 @@ void matter_log(const char* line) {
     char tagged[120];
     snprintf(tagged, sizeof(tagged), "(%u) %s", static_cast<unsigned>(lt_heap_get_free()), line);
     espurna::matter::log_line(tagged);
+#if defined(MATTER_UDP_LOG)
+    espurna::matter::udplog::send(line);
+#endif
 }
 
 // filled by backend::start(), in the loop: settings are not read from the Matter task
@@ -742,5 +1242,32 @@ int mbedtls_hardware_poll(void*, unsigned char* output, size_t len, size_t* olen
 }
 
 } // extern "C"
+
+#if MATTER_TAIL_SUPPORT
+bool matterTailIsUpload(const uint8_t* data, size_t length) {
+    return espurna::matter::tail::is_container(data, length);
+}
+
+// An OTA image in the 'download' partition would overwrite the code Matter runs
+bool matterTailBlocksOta() {
+    return matterStarted() && espurna::matter::tail::shares_download();
+}
+
+const char* matterTailBegin() {
+    return espurna::matter::tail::upload_begin(matterStarted());
+}
+
+const char* matterTailWrite(const uint8_t* data, size_t length) {
+    return espurna::matter::tail::upload_write(data, length);
+}
+
+const char* matterTailEnd() {
+    return espurna::matter::tail::upload_end();
+}
+
+void matterTailAbort() {
+    espurna::matter::tail::upload_abort();
+}
+#endif
 
 #endif

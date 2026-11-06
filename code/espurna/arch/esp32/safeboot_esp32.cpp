@@ -86,10 +86,14 @@ bool switchToSafeboot(String& error) {
         return false;
     }
 
-    // a merged image flashed without the safeboot one leaves the factory partition erased
-    uint8_t magic { 0 };
-    if ((esp_partition_read(part, 0, &magic, sizeof(magic)) != ESP_OK) || (magic != 0xE9)) {
-        error = F("factory (safeboot) partition holds no image");
+    // Only into our own safeboot: it joins Wi-Fi with the ESPurna settings and points the next boot back to app0.
+    // Anything else there may never come back (Tasmota's safeboot without its own settings boots with Wi-Fi off and
+    // stays there: 10.0.5.66, 2026-11-05). An erased partition (merged image without safeboot) is refused as well
+    esp_app_desc_t desc;
+    if ((esp_ota_get_partition_description(part, &desc) != ESP_OK)
+        || (std::strcmp(desc.project_name, "espurna-safeboot") != 0))
+    {
+        error = F("the factory partition does not hold the ESPurna safeboot image, install it first (/safeboot)");
         return false;
     }
 
@@ -135,118 +139,45 @@ void tick() {
     }
 }
 
-// The settings Tasmota's safeboot image reads at boot (NVS namespace "main", blob "Settings", TSettings of
-// Tasmota 16.0.0, tasmota/include/tasmota_types.h). The safeboot build takes the blob as it is (no defaults
-// for a FIRMWARE_MINIMAL build), so everything it needs to join Wi-Fi is filled in here. NVS "otal"/"otal" = 1
-// makes it download OtaUrl into app0 as soon as the network is up, then it boots that image.
-// The blob stays, so later updates through safeboot (`safeboot` command, crash-loop guard) find Wi-Fi as well
-namespace tasmota {
+// ESPurna's own safeboot image (code/safeboot-app) reads Wi-Fi, hostname and the admin password straight from these
+// settings. The only thing passed to it is the URL of an image to download into app0 on its next boot
+namespace request {
 
-constexpr size_t SettingsSize { 4096 };
-constexpr uint32_t Version { 0x10000000 };   // 16.0.0
-constexpr uint16_t CfgHolder { 4617 };
-constexpr size_t TextPool { 0x017 };
-constexpr size_t TextPoolSize { 699 };
-constexpr size_t Baudrate { 0x778 };         // / 300
-constexpr size_t StaConfig { 0xEC7 };        // WIFI_MANAGER: AP at 192.168.4.1 when Wi-Fi fails
-constexpr size_t Webserver { 0xECD };        // 2 = admin
-constexpr size_t Flag4 { 0xEF8 };            // bit 13 network_wifi
-constexpr size_t SerialConfig { 0xEFE };     // TS_SERIAL_8N1
-constexpr size_t WifiOutputPower { 0xEFF };  // MAX_TX_PWR_DBM_54g of the ESP32
+constexpr size_t UrlMax { 240 };
 
-constexpr size_t UrlMax { 140 };             // OtaUrl is copied into a TOPSZ (151) buffer
-
-void put16(uint8_t* out, size_t offset, uint16_t value) {
-    std::memcpy(out + offset, &value, sizeof(value));
-}
-
-void put32(uint8_t* out, size_t offset, uint32_t value) {
-    std::memcpy(out + offset, &value, sizeof(value));
-}
-
-bool nvsBlob(const char* space, const char* key, const void* data, size_t size) {
+bool write(const String& url, String& error) {
     nvs_handle_t handle;
-    if (nvs_open(space, NVS_READWRITE, &handle) != ESP_OK) {
+    if (nvs_open("safeboot", NVS_READWRITE, &handle) != ESP_OK) {
+        error = F("cannot open NVS");
         return false;
     }
 
-    auto result = nvs_set_blob(handle, key, data, size);
+    auto result = nvs_set_str(handle, "url", url.c_str());
     if (result == ESP_OK) {
         result = nvs_commit(handle);
     }
-
     nvs_close(handle);
-    return result == ESP_OK;
-}
 
-// Text pool: \0-separated strings in SettingsTextIndex order
-// SET_OTAURL, SET_MQTTPREFIX1..3, SET_STASSID1, SET_STASSID2, SET_STAPWD1, SET_STAPWD2, SET_HOSTNAME,
-// SET_SYSLOG_HOST, SET_WEBPWD (the rest stays empty)
-bool write(const String& url, String& error) {
-    std::unique_ptr<uint8_t[]> blob(new (std::nothrow) uint8_t[SettingsSize]());
-    if (!blob) {
-        error = F("out of memory");
-        return false;
-    }
-
-    auto* out = blob.get();
-    put16(out, 0x000, CfgHolder);
-    put16(out, 0x002, SettingsSize);
-    put32(out, 0x008, Version);
-
-    const String texts[] {
-        url, String(), String(), String(),
-        getSetting(espurna::settings::Key{"ssid", 0}), getSetting(espurna::settings::Key{"ssid", 1}),
-        getSetting(espurna::settings::Key{"pass", 0}), getSetting(espurna::settings::Key{"pass", 1}),
-        systemHostname(), String(),
-        systemPassword(),
-    };
-
-    size_t pos { TextPool };
-    for (const auto& text : texts) {
-        if ((pos + text.length() + 1) > (TextPool + TextPoolSize)) {
-            error = F("Wi-Fi / hostname / password too long for the safeboot settings");
-            return false;
-        }
-
-        std::memcpy(out + pos, text.c_str(), text.length());
-        pos += text.length() + 1;
-    }
-
-    put16(out, Baudrate, 115200 / 300);
-    out[StaConfig] = 2;
-    out[Webserver] = 2;
-    put32(out, Flag4, 1ul << 13);
-    out[SerialConfig] = 3;
-    out[WifiOutputPower] = 160;
-
-    if (!nvsBlob("main", "Settings", out, SettingsSize)) {
-        error = F("cannot write the safeboot settings (NVS full?)");
-        return false;
-    }
-
-    const uint32_t loader { 1 };
-    if (!nvsBlob("otal", "otal", &loader, sizeof(loader))) {
-        error = F("cannot write the safeboot OTA flag");
+    if (result != ESP_OK) {
+        error = String(F("cannot store the URL: ")) + esp_err_to_name(result);
         return false;
     }
 
     return true;
 }
 
+// the safeboot image has no TLS (it has to fit 832 KB)
 bool validUrl(const String& url) {
-    return (url.length() > 10) && (url.length() <= UrlMax)
-        && (url.startsWith(F("http://")) || url.startsWith(F("https://")))
-        && (url.indexOf('%') < 0);
+    return (url.length() > 10) && (url.length() <= UrlMax) && url.startsWith(F("http://"));
 }
 
-} // namespace tasmota
+} // namespace request
 
 // From the two-slot layouts of the Arduino core (min_spiffs.csv, default.csv) to esp32_4mb_safeboot.csv over Wi-Fi.
 // ESPurna has to run from the second slot: the safeboot image goes over the first one (0x10000, below the new app0),
 // then the partition table at 0x8000 is replaced and otadata erased, so the next boot starts the factory partition.
-// Tasmota's safeboot joins Wi-Fi with the settings above and downloads ESPurna into app0. NVS (0x9000) and otadata
-// (0xE000) keep their place, ESPurna settings stay
+// The safeboot image (code/safeboot-app) joins Wi-Fi with the ESPurna settings and downloads ESPurna into app0 from the
+// stored URL, or waits for an upload in its own web UI. NVS (0x9000) and otadata (0xE000) keep their place
 namespace layout {
 
 constexpr uint32_t TableOffset { 0x8000 };
@@ -439,17 +370,43 @@ bool uploadVerify() {
     }
 
     if ((meta.image.chip_id != ESP_CHIP_ID_ESP32) || (meta.image_len > SafebootSize)) {
-        upload.error = F("not a safeboot image for the ESP32 (tasmota32-safeboot.bin)");
+        upload.error = F("not an ESP32 image that fits the safeboot partition");
+        return false;
+    }
+
+    esp_app_desc_t desc;
+    if ((esp_ota_get_partition_description(upload.part, &desc) != ESP_OK)
+        || (std::strcmp(desc.project_name, "espurna-safeboot") != 0))
+    {
+        upload.error = F("not the ESPurna safeboot image (espurna-esp32-safeboot.bin)");
         return false;
     }
 
     return true;
 }
 
+// what a partition holds: "espurna-safeboot 1.0, built ..." or an empty string
+String describe(const esp_partition_t* part) {
+    esp_app_desc_t desc;
+    if (!part || (esp_ota_get_partition_description(part, &desc) != ESP_OK)) {
+        return String();
+    }
+
+    String out;
+    out += desc.project_name;
+    out += ' ';
+    out += desc.version;
+    out += F(", built ");
+    out += desc.date;
+    out += ' ';
+    out += desc.time;
+    return out;
+}
+
 // in loop(): nothing else touches the flash while the table is replaced
 void migrate() {
     String error;
-    if (!tasmota::write(pending_url, error)) {
+    if (pending_url.length() && !request::write(pending_url, error)) {
         DEBUG_MSG_P(PSTR("[SAFEBOOT] Migration stopped: %s\n"), error.c_str());
         last_error = error;
         return;
@@ -478,7 +435,7 @@ void migrate() {
         esp_partition_erase_range(otadata, 0, otadata->size);
     }
 
-    DEBUG_MSG_P(PSTR("[SAFEBOOT] Layout migrated, restarting into safeboot, it downloads %s\n"), pending_url.c_str());
+    DEBUG_MSG_P(PSTR("[SAFEBOOT] Layout migrated, restarting into safeboot\n"));
     prepareReset(CustomResetReason::Web);
 }
 
@@ -491,12 +448,12 @@ bool updateFromUrl(const String& url, String& error) {
         return false;
     }
 
-    if (!tasmota::validUrl(url)) {
-        error = F("invalid URL (http:// or https://, up to 140 characters, no %)");
+    if (!request::validUrl(url)) {
+        error = F("invalid URL (http:// only, up to 240 characters)");
         return false;
     }
 
-    if (!tasmota::write(url, error)) {
+    if (!request::write(url, error)) {
         return false;
     }
 
@@ -506,8 +463,7 @@ bool updateFromUrl(const String& url, String& error) {
 #if WEB_SUPPORT
 PROGMEM_STRING(NoOtaMessage,
     "ERROR: this flash layout (safeboot) has no second OTA slot. "
-    "Update from an URL on the /safeboot page, or run the terminal command `safeboot` and upload the image "
-    "in the safeboot web UI\n");
+    "Updates go through safeboot, see the /safeboot page\n");
 
 void onNoOta(AsyncWebServerRequest* request) {
     request->send(400, "text/plain", NoOtaMessage);
@@ -516,54 +472,57 @@ void onNoOta(AsyncWebServerRequest* request) {
 void onNoOtaUpload(AsyncWebServerRequest*, String, size_t, uint8_t*, size_t, bool) {
 }
 
-constexpr char DefaultUrl[] PROGMEM =
-#if defined(SAFEBOOT_DEFAULT_URL)
-    SAFEBOOT_DEFAULT_URL;
-#else
-    "https://github.com/igorufox/espurna/releases/latest/download/espurna-esp32-ota.bin";
-#endif
-
-String otaUrl() {
-    return getSetting("sbUrl", DefaultUrl);
-}
-
 PROGMEM_STRING(Page, R"(<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ESPurna flash layout</title><style>
+<title>ESPurna safeboot</title><style>
 body{font-family:sans-serif;max-width:640px;margin:16px auto;padding:0 16px;line-height:1.4}
-input[type=text]{width:100%;box-sizing:border-box}button{margin-top:12px;padding:6px 16px}
-.err{color:#b00}.ok{color:#070}#log{white-space:pre-wrap;background:#f4f4f4;padding:8px;margin-top:12px}
-</style></head><body><h2>Flash layout</h2><div id="info">...</div>
-<div id="migrate" hidden><p>This board has the old two-slot layout: the images with Matter (2.1 MB) no longer fit
-its 1.9 MB slots. The migration below puts the Tasmota safeboot image in front, one 2880 KB slot for ESPurna after it.
-ESPurna then reboots into safeboot, which joins your Wi-Fi and downloads ESPurna from the URL. Settings stay.
-Keep the power on for the next two minutes.</p>
-<label>Tasmota safeboot image (tasmota32-safeboot.bin, <a href="https://github.com/arendst/Tasmota/releases/latest">Tasmota releases</a>)
-<input type="file" id="file" accept=".bin"></label></div>
-<div id="update" hidden><p>Updates go through safeboot: ESPurna reboots into it, safeboot downloads the image
-from the URL into the ESPurna slot and starts it.</p></div>
-<div id="form" hidden><label>ESPurna image URL (the <code>-ota.bin</code> one)<input type="text" id="url"></label>
-<button id="go"></button></div><div id="log" hidden></div>
+input[type=text]{width:100%;box-sizing:border-box}button{margin-top:8px;padding:6px 16px}
+fieldset{margin-top:16px}.err{color:#b00}.ok{color:#070}#log{white-space:pre-wrap;background:#f4f4f4;padding:8px;margin-top:12px}
+</style></head><body><h2>Flash layout and updates</h2><div id="info">...</div>
+<div id="old" hidden><fieldset><legend>Migrate to the safeboot layout</legend><p>This board has the old two-slot layout:
+the images with Matter (2.1 MB) no longer fit its 1.9 MB slots. The migration puts the ESPurna safeboot image in front
+and one 2880 KB slot for ESPurna after it, then restarts into safeboot. With an URL safeboot downloads ESPurna by itself,
+without one it waits for an upload in its own web UI (same address, user admin, the admin password). Settings stay.
+Keep the power on until ESPurna is back.</p>
+<label>ESPurna safeboot image (espurna-esp32-safeboot.bin)<input type="file" id="mfile" accept=".bin"></label>
+<label>ESPurna image URL, optional (http://, the -ota.bin one)<input type="text" id="murl"></label>
+<button id="migrate">Migrate</button></fieldset></div>
+<div id="new" hidden><fieldset><legend>Update ESPurna</legend><p>ESPurna restarts into safeboot, which writes the new
+image into the ESPurna slot and starts it.</p>
+<label>From an URL (http://, the -ota.bin one)<input type="text" id="url"></label><button id="byurl">Update from URL</button>
+<p>Or with a file: <button id="byfile">Restart into safeboot</button> and upload the image there.</p></fieldset>
+<fieldset><legend>Install or replace safeboot</legend><label>ESPurna safeboot image (espurna-esp32-safeboot.bin)
+<input type="file" id="sfile" accept=".bin"></label><button id="install">Install</button></fieldset></div>
+<div id="log" hidden></div>
 <script>
 const $=id=>document.getElementById(id);let st;
 function log(t,c){const l=$('log');l.hidden=false;l.className=c||'';l.textContent=t}
-async function status(){const r=await fetch('safeboot/status',{cache:'no-store'});return r.json()}
-async function back(t0,was){for(;;){await new Promise(r=>setTimeout(r,5000));
- const s=Math.round((Date.now()-t0)/1000);try{const n=await status();
- if(n.layout===was&&n.last){log('Stopped: '+n.last,'err');$('go').disabled=false;return}
- if(n.layout==='safeboot'&&n.running!=='safeboot'){log('Done after '+s+' s: ESPurna runs from '+n.running+'. Reload the WebUI.','ok');return}}
- catch(e){}log('Waiting for ESPurna ('+s+' s). Safeboot works in between: Wi-Fi, download, write. '
- +'If nothing after 5 minutes: safeboot could not join Wi-Fi, it opens its own access point (tasmota-...) at 192.168.4.1.')}}
+async function status(){const r=await fetch('safeboot/status',{cache:'no-store'});if(!r.ok)throw r.status;return r.json()}
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+async function espurna(t0,was){for(;;){await wait(5000);const s=Math.round((Date.now()-t0)/1000);
+ try{const n=await status();if(n.layout===was&&n.last&&was==='old'){log('Stopped: '+n.last,'err');return}
+ if(n.layout==='safeboot'&&n.running!=='safeboot'){log('Done after '+s+' s, ESPurna is back. Reload the WebUI.','ok');return}}
+ catch(e){}log('Waiting for ESPurna ('+s+' s): safeboot joins Wi-Fi, downloads and writes the image. If nothing after '
+ +'5 minutes, open this address again (safeboot UI) or join its access point <hostname>-SAFEBOOT, 192.168.4.1.')}}
+async function safeboot(t0){for(;;){await wait(3000);const s=Math.round((Date.now()-t0)/1000);
+ try{const r=await fetch('/',{cache:'no-store'});if(r.status==401&&(r.headers.get('WWW-Authenticate')||'').startsWith('Basic')){location.href='/';return}}
+ catch(e){}log('Restarting into safeboot ('+s+' s)...')}}
 function send(path,body){return new Promise((ok,no)=>{const x=new XMLHttpRequest();x.open('POST',path);
  x.upload.onprogress=e=>{if(e.lengthComputable)log('Uploading '+Math.round(e.loaded*100/e.total)+'%')};
  x.onload=()=>(x.status==200?ok:no)(x.responseText);x.onerror=()=>no('connection error');x.send(body)})}
-$('go').onclick=async()=>{const url=$('url').value.trim();const f=new FormData();f.append('url',url);
- if(st.layout==='old'){const file=$('file').files[0];if(!file){log('Pick the safeboot image','err');return}f.append('file',file,file.name)}
- $('go').disabled=true;try{const r=await send(st.layout==='old'?'safeboot/migrate':'safeboot/update',f);log(r);back(Date.now(),st.layout)}
- catch(e){log(e,'err');$('go').disabled=false}};
-status().then(s=>{st=s;$('url').value=s.url;
- $('info').textContent='Running: '+s.running+'. Layout: '+(s.layout==='old'?'two OTA slots (old)':s.layout)+'.';
- if(s.layout==='old'){$('migrate').hidden=false;$('go').textContent='Migrate'}else{$('update').hidden=false;$('go').textContent='Update from URL'}
- $('form').hidden=false;if(s.last){log('Last attempt: '+s.last,'err')}if(s.error){log(s.error,'err');$('go').disabled=true}}).catch(e=>log(e,'err'));
+function form(fields){const f=new FormData();for(const k in fields)f.append(k,fields[k]);return f}
+$('migrate').onclick=async()=>{const file=$('mfile').files[0];if(!file){log('Pick the safeboot image','err');return}
+ const f=form({url:$('murl').value.trim()});f.append('file',file,file.name);
+ try{log(await send('safeboot/migrate',f));if($('murl').value.trim())espurna(Date.now(),'old');else safeboot(Date.now())}catch(e){log(e,'err')}};
+$('byurl').onclick=async()=>{try{log(await send('safeboot/update',form({url:$('url').value.trim()})));espurna(Date.now(),'safeboot')}catch(e){log(e,'err')}};
+$('byfile').onclick=async()=>{try{log(await send('safeboot/switch',form({})));safeboot(Date.now())}catch(e){log(e,'err')}};
+$('install').onclick=async()=>{const file=$('sfile').files[0];if(!file){log('Pick the safeboot image','err');return}
+ const f=new FormData();f.append('file',file,file.name);try{log(await send('safeboot/install',f),'ok');show(await status())}catch(e){log(e,'err')}};
+function show(s){st=s;$('url').value=s.url;$('murl').value=s.url;
+ $('info').innerHTML='Running: '+s.running+'<br>Layout: '+(s.layout==='old'?'two OTA slots (old)':s.layout)
+  +(s.layout==='safeboot'?'<br>Safeboot: '+(s.safeboot||'missing'):'');
+ $('old').hidden=s.layout!=='old';$('new').hidden=s.layout!=='safeboot';
+ if(s.last)log('Last attempt: '+s.last,'err');if(s.error){log(s.error,'err');$('migrate').disabled=true}}
+status().then(show).catch(e=>log(e,'err'));
 </script></body></html>)");
 
 bool authenticated(AsyncWebServerRequest* request) {
@@ -595,13 +554,15 @@ void onStatus(AsyncWebServerRequest* request) {
     }
 
     String out;
-    out.reserve(384);
+    out.reserve(512);
     out += F("{\"layout\":\"");
     out += current ? F("safeboot") : (factory() ? F("other") : F("old"));
     out += F("\",\"running\":\"");
     out += running ? running->label : "?";
+    out += F("\",\"safeboot\":\"");
+    out += current ? layout::describe(factory()) : String();
     out += F("\",\"url\":\"");
-    out += otaUrl();
+    out += getSetting("sbUrl");
     out += F("\",\"error\":\"");
     out += error;
     out += F("\",\"last\":\"");
@@ -633,7 +594,24 @@ void onUpdate(AsyncWebServerRequest* request) {
     prepareReset(CustomResetReason::Web);
 }
 
-void onMigrateUpload(AsyncWebServerRequest* request, String, size_t index, uint8_t* data, size_t len, bool final) {
+void onSwitch(AsyncWebServerRequest* request) {
+    if (!authenticated(request)) {
+        return;
+    }
+
+    String error;
+    if (!switchToSafeboot(error)) {
+        request->send(400, "text/plain", error);
+        return;
+    }
+
+    request->send(200, "text/plain", F("Restarting into safeboot"));
+    prepareReset(CustomResetReason::Web);
+}
+
+// One handler for both images that go into the safeboot slot: the migration (old layout, into the first OTA slot
+// that becomes the factory partition) and install / replace (safeboot layout, into the factory partition itself)
+void onSafebootUpload(AsyncWebServerRequest* request, String, size_t index, uint8_t* data, size_t len, bool final) {
     if (!webAuthenticate(request)) {
         return;
     }
@@ -641,7 +619,8 @@ void onMigrateUpload(AsyncWebServerRequest* request, String, size_t index, uint8
     if (!index) {
         layout::upload = layout::Upload{};
         String error;
-        if (!layout::possible(error)) {
+        const bool current = layout::current();
+        if (!current && !layout::possible(error)) {
             layout::upload.error = error;
             return;
         }
@@ -651,7 +630,11 @@ void onMigrateUpload(AsyncWebServerRequest* request, String, size_t index, uint8
             return;
         }
 
-        layout::upload.part = layout::target();
+        layout::upload.part = current ? factory() : layout::target();
+        if (!layout::upload.part) {
+            layout::upload.error = F("no partition for the safeboot image");
+            return;
+        }
     }
 
     if (!layout::upload.part || layout::upload.error.length() || layout::upload.done) {
@@ -668,24 +651,50 @@ void onMigrateUpload(AsyncWebServerRequest* request, String, size_t index, uint8
     }
 }
 
+bool uploadDone(AsyncWebServerRequest* request) {
+    if (!layout::upload.done) {
+        request->send(400, "text/plain",
+            layout::upload.error.length() ? layout::upload.error : String(F("no safeboot image received")));
+        return false;
+    }
+
+    layout::upload.done = false;
+    return true;
+}
+
+void onInstall(AsyncWebServerRequest* request) {
+    if (!authenticated(request)) {
+        return;
+    }
+
+    if (!layout::current()) {
+        request->send(400, "text/plain", F("not the safeboot layout, migrate first"));
+        return;
+    }
+
+    if (uploadDone(request)) {
+        request->send(200, "text/plain", String(F("Safeboot installed: ")) + layout::describe(factory()));
+    }
+}
+
 void onMigrate(AsyncWebServerRequest* request) {
     if (!authenticated(request)) {
         return;
     }
 
     const auto url = formUrl(request);
-    if (!tasmota::validUrl(url)) {
-        request->send(400, "text/plain", F("invalid URL (http:// or https://, up to 140 characters, no %)"));
+    if (url.length() && !request::validUrl(url)) {
+        request->send(400, "text/plain", F("invalid URL (http:// only, up to 240 characters)"));
         return;
     }
 
-    if (!layout::upload.done) {
-        request->send(400, "text/plain", layout::upload.error.length() ? layout::upload.error : String(F("no safeboot image received")));
+    if (!uploadDone(request)) {
         return;
     }
 
-    layout::upload.done = false;
-    setSetting("sbUrl", url);
+    if (url.length()) {
+        setSetting("sbUrl", url);
+    }
     layout::pending_url = url;
     espurnaRegisterOnce(layout::migrate);
 
@@ -838,7 +847,9 @@ void safebootWebSetup() {
     // a handler takes its sub-paths as well ("/safeboot" would answer "/safeboot/status"): specific ones first
     server.on("/safeboot/status", HTTP_GET, onStatus);
     server.on("/safeboot/update", HTTP_POST, onUpdate);
-    server.on("/safeboot/migrate", HTTP_POST, onMigrate, onMigrateUpload);
+    server.on("/safeboot/switch", HTTP_POST, onSwitch);
+    server.on("/safeboot/migrate", HTTP_POST, onMigrate, onSafebootUpload);
+    server.on("/safeboot/install", HTTP_POST, onInstall, onSafebootUpload);
     server.on("/safeboot", HTTP_GET, onPage);
 
     if (!otaPossible()) {

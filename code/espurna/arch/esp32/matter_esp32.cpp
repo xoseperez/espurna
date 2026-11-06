@@ -4,7 +4,8 @@ MATTER BACKEND FOR ESP32 (Arduino-ESP32 core 3.x)
 
 On/Off plug endpoints of the Matter library of Arduino-ESP32 (esp_matter, connectedhomeip). ESPurna keeps Wi-Fi, the
 relays and the web UI (matter.cpp). Commissioning is on-network only: ESPurna is on Wi-Fi already, and the libraries
-are built without CHIPoBLE. The device attestation is the SDK test one (VID 0xFFF1, PID 0x8000)
+are built without CHIPoBLE. Setup codes and device attestation are the board's own (matter_identity_esp32.cpp), under
+the SDK test PAI (VID 0xFFF1, PID 0x8000)
 
 */
 
@@ -13,6 +14,7 @@ are built without CHIPoBLE. The device attestation is the SDK test one (VID 0xFF
 #if defined(ARDUINO_ARCH_ESP32) && MATTER_SUPPORT
 
 #include "espurna_matter.h"
+#include "matter_identity_esp32.h"
 #include "relay.h"
 
 #include <Matter.h>
@@ -112,8 +114,22 @@ bool start() {
         }
     });
 
+    // the SDK test codes stay when NVS fails
+    uint32_t passcode;
+    uint16_t discriminator;
+    if (identity::load(passcode, discriminator)) {
+        Matter.setSetupPasscode(passcode);
+        Matter.setSetupDiscriminator(discriminator);
+    }
+
     Matter.begin();
     begun = true;
+
+    // first start: the key and the certificate take a moment (two signatures)
+    if (!identity::install()) {
+        DEBUG_MSG_P(PSTR("[MATTER] Own device attestation failed, the SDK test one stays\n"));
+    }
+    DEBUG_MSG_P(PSTR("[MATTER] Identity: %s\n"), identity::status().c_str());
 
     return true;
 }

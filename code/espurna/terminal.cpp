@@ -187,6 +187,13 @@ void heap(CommandContext&& ctx) {
     ctx.output.printf_P(PSTR("lwip: size: %u used: %u max: %u errors: %u\n"),
             lwip_stats.mem.avail, lwip_stats.mem.used, lwip_stats.mem.max, lwip_stats.mem.err);
 #endif
+#if defined(LIBRETINY)
+    const auto tcm = systemTcmStats();
+    if (tcm.size) {
+        ctx.output.printf_P(PSTR("tcm: used: %u free: %u size: %u\n"),
+            tcm.used, tcm.size - tcm.used, tcm.size);
+    }
+#endif
 
     terminalOK(ctx);
 }

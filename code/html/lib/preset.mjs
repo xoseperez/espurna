@@ -42,9 +42,12 @@ export const DEFAULT_MODULES = {
     'rpn': true,
     'sch': true,
     'sns': false,
+    // status rows the firmware shows at runtime, only where it has the data (BK7231N TCM, ADC_VCC)
+    'tcm': true,
     'telnet': true,
     'thermostat': false,
     'tspk': true,
+    'vcc': true,
     [MODULE_DEV]: false,
 };
 

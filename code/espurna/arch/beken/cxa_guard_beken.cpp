@@ -43,7 +43,7 @@ struct Pending {
     TaskHandle_t owner;
 };
 
-constexpr size_t PendingMax { 16 };
+constexpr size_t PendingMax { 8 };
 Pending pending_table[PendingMax] {};
 
 // Called with interrupts off

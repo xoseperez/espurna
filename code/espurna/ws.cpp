@@ -1074,6 +1074,15 @@ void _wsOnVisible(JsonObject& root) {
     // supply voltage is only known with the ADC measuring it, the row is hidden otherwise
     wsPayloadModule(root, STRING_VIEW("vcc"));
 #endif
+#if defined(LIBRETINY)
+    // static data in the TCM of the BK7231N, it does not change while running
+    const auto tcm = systemTcmStats();
+    if (tcm.size) {
+        wsPayloadModule(root, STRING_VIEW("tcm"));
+        root[F("tcmUsed")] = tcm.used;
+        root[F("tcmSize")] = tcm.size;
+    }
+#endif
 }
 
 void _wsConnected(uint32_t client_id) {

@@ -15,6 +15,10 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include "web.h"
 #include "ws.h"
 
+#if MATTER_TAIL_SUPPORT
+#include "espurna_matter.h"
+#endif
+
 namespace ota {
 namespace web {
 namespace {
@@ -69,12 +73,31 @@ bool pending { false };
 // 'in progress' and every following upload fails with 400 until the reboot
 AsyncWebServerRequest* owner { nullptr };
 
+#if MATTER_TAIL_SUPPORT
+// Upload is matter-tail.bin, the Matter code of this build, not a firmware image (ref. arch/beken/matter_beken.cpp)
+bool matter_tail { false };
+
+void setTailError(AsyncWebServerRequest* request, const char* error) {
+    matter_tail = false;
+    setStatus(request, 500, String(FPSTR(error)));
+}
+#endif
+
 void onDisconnect(AsyncWebServerRequest* request) {
     if (owner != request) {
         return;
     }
 
     owner = nullptr;
+#if MATTER_TAIL_SUPPORT
+    if (matter_tail) {
+        matter_tail = false;
+        pending = false;
+        matterTailAbort();
+        DEBUG_MSG_P(PSTR("[UPGRADE] Connection closed before the upload finished, aborted\n"));
+        return;
+    }
+#endif
     if (Update.isRunning()) {
         pending = false;
         Update.end();
@@ -103,6 +126,26 @@ void onUpgrade(AsyncWebServerRequest *request) {
     if (pending) {
         pending = false;
         owner = nullptr;
+
+#if MATTER_TAIL_SUPPORT
+        if (matter_tail) {
+            matter_tail = false;
+            const auto* error = complete(request)
+                ? matterTailEnd()
+                : PSTR("ERROR: Incomplete upload");
+            if (error) {
+                matterTailAbort();
+                sendResponse(request, 400, String(FPSTR(error)));
+                return;
+            }
+
+            sendResponse(request, 200);
+            systemRunInLoop([]() {
+                prepareReset(CustomResetReason::Ota);
+            });
+            return;
+        }
+#endif
 
         if (!complete(request)) {
             DEBUG_MSG_P(PSTR("[UPGRADE] Incomplete upload, received %u of %s bytes\n"),
@@ -165,6 +208,56 @@ void onFile(AsyncWebServerRequest *request, String filename, size_t index, uint8
             setStatus(request, 400, F("ERROR: Invalid request"));
             return;
         }
+
+#if MATTER_TAIL_SUPPORT
+        // Matter code is where the OTA image goes: one reboot without Matter first, then upload again
+        if (matterTailBlocksOta()) {
+            setStatus(request, 409, F("ERROR: Matter is running from the OTA partition. Rebooting without Matter, upload again in a minute"));
+            systemRunInLoop([]() {
+                matterRebootForUpload();
+            });
+            return;
+        }
+
+        matter_tail = matterTailIsUpload(data, len);
+        if (matter_tail) {
+            const auto* error = matterTailBegin();
+            if (error) {
+                setTailError(request, error);
+                return;
+            }
+
+            DEBUG_MSG_P(PSTR("[UPGRADE] Matter code: %s\n"), filename.c_str());
+            owner = request;
+            request->onDisconnect([request]() {
+                onDisconnect(request);
+            });
+        }
+    }
+
+    if (matter_tail) {
+        if (request->_tempObject) {
+            return;
+        }
+
+        const auto* error = matterTailWrite(data, len);
+        if (error) {
+            setTailError(request, error);
+            return;
+        }
+
+        if (final) {
+            pending_size = index + len;
+            pending = true;
+        } else {
+            otaProgress(index + len);
+        }
+
+        return;
+    }
+
+    if (!index) {
+#endif
 
         if (!otaVerifyHeader(data, len)) {
             setStatus(request, 400, F("ERROR: No magic byte / invalid flash config"));

@@ -2,80 +2,92 @@
 
 EEPROM MODULE FOR ESP32
 
-The Arduino-ESP32 EEPROM library already maintains a 4 KiB RAM mirror
-backed by an NVS blob. The previous implementation kept its own shadow on
-top of that, doubling RAM usage to ~8 KiB. We now write straight through
-the library's buffer.
+Settings live in a 4 KiB RAM buffer (Embedis, written from the end towards the beginning) and in the NVS blob
+"eeprom" of the namespace "eeprom", like the Arduino-ESP32 EEPROM library keeps them. Only the used end of the buffer
+is written, not all 4 KiB: NVS needs room for a new copy of a blob before the old one goes, and with the Matter
+fabrics (CHIP_KVS) and the PHY calibration in the same 20 KiB partition a 4 KiB blob (131 entries) could no longer be
+rewritten - every commit failed and the settings went back after a reboot.
+
+The buffer is rebuilt as 0xFF and the blob at its end, so a 4096 byte blob of the library reads the same. The ESPurna
+safeboot reads the blob the same way (any length, from its end)
 
 */
 
 #include "espurna.h"
+
+#if defined(ARDUINO_ARCH_ESP32)
+
 #include "storage_eeprom.h"
 
 #if WEB_SUPPORT
 #include "ws.h"
 #endif
 
+#include <nvs.h>
+
+#include <cstring>
 #include <memory>
-
-#if defined(ARDUINO_ARCH_ESP32)
-
-#include <EEPROM.h>
 
 #define EEPROM_SIZE 4096
 
 namespace {
-    bool _eeprom_ready = false;
-    bool _eeprom_dirty = false;       // a write happened since the last commit
-    bool _eeprom_commit_pending = false; // request from eepromCommit() handled in loop
 
-    // Bumped on every write. A write that lands while EEPROM.commit() is still
-    // copying the buffer into NVS must keep the storage dirty, otherwise it is
-    // silently lost after the reboot.
-    uint32_t _eeprom_generation = 0;
+constexpr char Namespace[] = "eeprom";
+constexpr char Key[] = "eeprom";
 
-    void _eepromMarkDirty() {
-        _eeprom_dirty = true;
-        ++_eeprom_generation;
-    }
-
-    // Fallback buffer returned by data() before or when EEPROM.begin() failed. The
-    // settings/embedis layer dereferences data() unconditionally; without a
-    // sentinel a single early read after a boot-time NVS failure crashes.
-    // The buffer is filled with 0xFF (matches an uninitialized NVS region)
-    // so the kv-store reports "empty" instead of corrupting on a wild read.
-    // Allocated only when actually needed and released once NVS is available,
-    // instead of permanently taking 4KiB of RAM next to the EEPROM library own buffer.
-    std::unique_ptr<uint8_t[]> _eeprom_fallback;
-
-    uint8_t* _eepromBuffer() {
-        uint8_t* ptr = EEPROM.getDataPtr();
-        if (ptr) return ptr;
-        if (!_eeprom_fallback) {
-            _eeprom_fallback.reset(new uint8_t[EEPROM_SIZE]);
-            memset(_eeprom_fallback.get(), 0xFF, EEPROM_SIZE);
-        }
-        return _eeprom_fallback.get();
-    }
+// Heap, not .bss: static DRAM of the ESP32 is full on the larger images (NSPanel). An empty store until
+// eepromSetup() loads it (settings may be read before)
+uint8_t* _eepromAllocate() {
+    auto* out = new uint8_t[EEPROM_SIZE];
+    std::memset(out, 0xFF, EEPROM_SIZE);
+    return out;
 }
+
+// on the first use, whichever static initializer or setup() comes first
+uint8_t* _eepromBuffer() {
+    static uint8_t* const buffer = _eepromAllocate();
+    return buffer;
+}
+
+nvs_handle_t _eeprom_handle { 0 };
+
+bool _eeprom_ready = false;
+bool _eeprom_dirty = false;          // a write happened since the last commit
+bool _eeprom_commit_pending = false; // request from eepromCommit() handled in loop
+esp_err_t _eeprom_last_error = ESP_OK;
+
+// Bumped on every write. A write that lands while the blob is being written must keep the storage dirty,
+// otherwise it is silently lost after the reboot
+uint32_t _eeprom_generation = 0;
+
+void _eepromMarkDirty() {
+    _eeprom_dirty = true;
+    ++_eeprom_generation;
+}
+
+// Bytes from the first one that is not 0xFF to the end. Whatever 0xFF bytes are dropped in front are 0xFF again
+// when the buffer is rebuilt, so nothing is lost even when a value starts with one
+size_t _eepromUsed() {
+    size_t start = 0;
+    while ((start < EEPROM_SIZE) && (_eepromBuffer()[start] == 0xFF)) {
+        ++start;
+    }
+
+    // keep at least the end marker of an empty store
+    return std::max<size_t>(EEPROM_SIZE - start, 2);
+}
+
+} // namespace
 
 unsigned char eepromRead(size_t address) {
     if (address >= EEPROM_SIZE) return 0xFF;
-    if (!_eeprom_ready) return _eepromBuffer()[address];
-    return EEPROM.read(address);
+    return _eepromBuffer()[address];
 }
 
 void eepromWrite(size_t address, unsigned char value) {
     if (address >= EEPROM_SIZE) return;
-    // If NVS is unavailable, writes go to the fallback buffer so the
-    // session keeps working in-memory. They will not persist.
-    if (!_eeprom_ready) {
+    if (_eepromBuffer()[address] != value) {
         _eepromBuffer()[address] = value;
-        _eepromMarkDirty();
-        return;
-    }
-    if (EEPROM.read(address) != value) {
-        EEPROM.write(address, value);
         _eepromMarkDirty();
     }
 }
@@ -84,15 +96,23 @@ void _eepromCommit() {
     if (!_eeprom_dirty) {
         return;
     }
-    // EEPROM.begin() never succeeded — writes live in the fallback buffer
-    // and there is no NVS handle to commit through. Without this guard the
-    // 5 s retry loop would call EEPROM.commit() forever on a dead handle.
+
+    // NVS never opened: writes only live in RAM
     if (!_eeprom_ready) {
         return;
     }
-    DEBUG_MSG_P(PSTR("[EEPROM] Committing changes to NVS...\n"));
+
     const auto generation = _eeprom_generation;
-    if (EEPROM.commit()) {
+    const auto used = _eepromUsed();
+
+    DEBUG_MSG_P(PSTR("[EEPROM] Committing %u bytes to NVS...\n"), used);
+    auto err = nvs_set_blob(_eeprom_handle, Key, &_eepromBuffer()[EEPROM_SIZE - used], used);
+    if (err == ESP_OK) {
+        err = nvs_commit(_eeprom_handle);
+    }
+
+    _eeprom_last_error = err;
+    if (err == ESP_OK) {
         if (generation == _eeprom_generation) {
             _eeprom_dirty = false;
             DEBUG_MSG_P(PSTR("[EEPROM] Settings saved successfully.\n"));
@@ -101,10 +121,9 @@ void _eepromCommit() {
             DEBUG_MSG_P(PSTR("[EEPROM] Settings changed during commit, will commit again.\n"));
         }
     } else {
-        // Leave _eeprom_dirty set; eepromLoop() will retry on a 5s backoff
-        // (see _next_retry_ms there) so a transient NVS failure doesn't
-        // silently lose user settings.
-        DEBUG_MSG_P(PSTR("[EEPROM] Error: NVS commit failed, will retry.\n"));
+        // Leave _eeprom_dirty set; eepromLoop() retries on a 5s backoff, so a transient NVS failure doesn't
+        // silently lose user settings
+        DEBUG_MSG_P(PSTR("[EEPROM] Error: NVS commit failed (%s), will retry.\n"), esp_err_to_name(err));
     }
 }
 
@@ -122,14 +141,9 @@ void eepromForceCommit(StorageEEPROM_Rotate&) {
 
 StorageEEPROM_Rotate::StorageEEPROM_Rotate() {}
 
-// Note: settings/embedis writes go directly through this pointer (memmove_P)
-// and then mark the storage dirty. That works because the Arduino-ESP32
-// EEPROM library flushes its full RAM mirror on commit() regardless of how
-// it was mutated. If we ever migrate off EEPROM-on-NVS this contract must
-// be re-checked.
+// Settings / embedis write straight through this pointer (memmove_P) and then mark the storage dirty
 const uint8_t* StorageEEPROM_Rotate::data() const {
-    const uint8_t* ptr = EEPROM.getDataPtr();
-    return ptr ? ptr : _eepromBuffer();
+    return _eepromBuffer();
 }
 
 uint8_t* StorageEEPROM_Rotate::data() {
@@ -141,7 +155,7 @@ void StorageEEPROM_Rotate::setDirty() {
 }
 
 void StorageEEPROM_Rotate::fill(uint8_t value) {
-    memset(_eepromBuffer(), value, EEPROM_SIZE);
+    std::memset(_eepromBuffer(), value, EEPROM_SIZE);
     _eepromMarkDirty();
 }
 
@@ -151,7 +165,6 @@ uint8_t StorageEEPROM_Rotate::read(size_t pos) { return eepromRead(pos); }
 void StorageEEPROM_Rotate::write(size_t pos, uint8_t val) { eepromWrite(pos, val); }
 
 void StorageEEPROM_Rotate::dump(Print& print) const {
-    // Basic dump implementation for ESP32
     print.println("[EEPROM] ESP32 Dump");
 }
 
@@ -173,7 +186,7 @@ String eepromSectors() {
 }
 
 void eepromClear() {
-    memset(_eepromBuffer(), 0xFF, EEPROM_SIZE);
+    std::memset(_eepromBuffer(), 0xFF, EEPROM_SIZE);
     _eepromMarkDirty();
     _eepromCommit();
 }
@@ -191,8 +204,10 @@ static void _eepromCommand(::terminal::CommandContext&& ctx) {
         return;
     }
 
-    ctx.output.printf_P(PSTR("ESP32 EEPROM Active. Size: %u, %s\n"), EEPROM_SIZE,
-        _eeprom_dirty ? PSTR("changes pending") : PSTR("saved"));
+    ctx.output.printf_P(PSTR("ESP32 EEPROM on NVS. Size: %u, used: %u, %s, last commit: %s\n"),
+        EEPROM_SIZE, _eepromUsed(),
+        _eeprom_dirty ? PSTR("changes pending") : PSTR("saved"),
+        esp_err_to_name(_eeprom_last_error));
     terminalOK(ctx);
 }
 
@@ -224,16 +239,14 @@ void eepromLoop() {
         _eeprom_commit_pending = false;
         _eepromCommit();
         if (_eeprom_dirty) {
-            // Commit just failed — schedule a backoff retry. NVS hammering
-            // on a busy flash bus only makes things worse.
+            // Commit just failed - schedule a backoff retry
             _next_retry_ms = millis() + 5000;
         }
         return;
     }
-    // Background retry: if a prior commit failed and the user hasn't
-    // triggered another save in a while, attempt it again with a
-    // 5-second cadence. Without this, transient NVS failures would
-    // silently lose user settings until the next write.
+
+    // Background retry: if a prior commit failed and nothing triggered another save in a while, attempt it again
+    // every 5 seconds
     if (_eeprom_dirty && _next_retry_ms && (long)(millis() - _next_retry_ms) >= 0) {
         _next_retry_ms = millis() + 5000;
         _eepromCommit();
@@ -243,12 +256,46 @@ void eepromLoop() {
     }
 }
 
+namespace {
+
+bool _eepromLoad() {
+    if (nvs_open(Namespace, NVS_READWRITE, &_eeprom_handle) != ESP_OK) {
+        return false;
+    }
+
+    size_t size { 0 };
+    const auto err = nvs_get_blob(_eeprom_handle, Key, nullptr, &size);
+    if (err == ESP_ERR_NVS_NOT_FOUND) {
+        return true;
+    }
+
+    if ((err != ESP_OK) || !size) {
+        return err == ESP_OK;
+    }
+
+    // a longer blob is not ours, read its end
+    if (size > EEPROM_SIZE) {
+        std::unique_ptr<uint8_t[]> blob(new (std::nothrow) uint8_t[size]);
+        if (!blob || (nvs_get_blob(_eeprom_handle, Key, blob.get(), &size) != ESP_OK)) {
+            return false;
+        }
+
+        std::memcpy(_eepromBuffer(), &blob[size - EEPROM_SIZE], EEPROM_SIZE);
+        return true;
+    }
+
+    return nvs_get_blob(_eeprom_handle, Key, &_eepromBuffer()[EEPROM_SIZE - size], &size) == ESP_OK;
+}
+
+} // namespace
+
 void eepromSetup() {
 #if TERMINAL_SUPPORT
     _eepromCommandsSetup();
 #endif
 
-    if (!EEPROM.begin(EEPROM_SIZE)) {
+    if (!_eepromLoad()) {
+        std::memset(_eepromBuffer(), 0xFF, EEPROM_SIZE);
         // Everything keeps working in RAM, make sure it is visible that nothing is actually saved
         DEBUG_MSG_P(PSTR("[EEPROM] Error: Could not initialize NVS! Settings will not be saved.\n"));
 #if WEB_SUPPORT
@@ -259,21 +306,11 @@ void eepromSetup() {
         return;
     }
 
-    // reads before setup() (if any) used the fallback buffer, it is no longer needed
-    _eeprom_fallback.reset();
-
-    size_t ff_count = 0;
-    const uint8_t* ptr = EEPROM.getDataPtr();
-    if (ptr) {
-        for (size_t i = 0; i < EEPROM_SIZE; ++i) {
-            if (ptr[i] == 0xFF) ff_count++;
-        }
-    }
-
-    if (ff_count == EEPROM_SIZE) {
+    const auto used = _eepromUsed();
+    if (used <= 2) {
         DEBUG_MSG_P(PSTR("[EEPROM] Warning: Memory is empty (all 0xFF).\n"));
     } else {
-        DEBUG_MSG_P(PSTR("[EEPROM] Ready. Read %u bytes, %u are not 0xFF\n"), EEPROM_SIZE, EEPROM_SIZE - ff_count);
+        DEBUG_MSG_P(PSTR("[EEPROM] Ready. %u of %u bytes used\n"), used, EEPROM_SIZE);
     }
 
     espurnaRegisterLoop(eepromLoop);

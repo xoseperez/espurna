@@ -151,6 +151,8 @@ String EspCompat::getResetInfo() {
         return String(F("Crash (data abort)"));
     case RtcmemCrash::Reserved:
         return String(F("Crash (reserved exception)"));
+    case RtcmemCrash::MallocFailed:
+        return String(F("Crash (out of memory)"));
     }
 
     return ::ESP.getResetInfo();

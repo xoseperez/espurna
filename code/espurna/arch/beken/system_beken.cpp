@@ -41,6 +41,22 @@ size_t systemFreeHeap() {
     return lt_heap_get_free();
 }
 
+// .tcm output section of bk7231n_bsp.ld, which starts at the beginning of the 'tcm' region (0x003F0000,
+// 60 KiB - 512 in the LibreTiny template). Weak: other chips of the family have no such section
+extern "C" uint8_t _tcmbss_end[] __attribute__((weak));
+
+TcmStats systemTcmStats() {
+    constexpr uintptr_t Start { 0x003F0000 };
+    constexpr size_t Size { 60 * 1024 - 512 };
+
+    const auto end = reinterpret_cast<uintptr_t>(_tcmbss_end);
+    if (!end || (end < Start) || (end > (Start + Size))) {
+        return {0, 0};
+    }
+
+    return {end - Start, Size};
+}
+
 // Same as esp8266, cached on the first call (which is the first thing setup() does)
 size_t systemInitialFreeHeap() {
     static const size_t value = lt_heap_get_free();
