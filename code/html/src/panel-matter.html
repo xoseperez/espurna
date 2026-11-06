@@ -3,7 +3,7 @@
 
         <div class="header">
             <h1>MATTER</h1>
-            <h2>Matter On/Off plug on relay #0, with the device certificates the board came with</h2>
+            <h2>A Matter On/Off plug for every relay, with the device certificates the board came with</h2>
         </div>
 
         <div class="page">
@@ -14,11 +14,6 @@
                 <div class="pure-control-group">
                     <label>Running</label>
                     <span data-key="matterStarted"></span>
-                </div>
-
-                <div class="pure-control-group">
-                    <label>Controllers (fabrics)</label>
-                    <span data-key="matterFabrics"></span>
                 </div>
 
                 <div class="pure-control-group">
@@ -39,12 +34,27 @@
             </fieldset>
 
             <fieldset class="matter-commissioning">
+                <legend>Controllers</legend>
+
+                <div class="pure-control-group">
+                    <span class="pure-form-message">
+                        Apps and hubs this device was added to. Deleting the device in an app does not always reach the
+                        device (the hub's phone app does not tell it): the old entry stays here, and adding the device to the
+                        same app again fails until it is removed.
+                    </span>
+                </div>
+
+                <div class="matter-controllers"></div>
+            </fieldset>
+
+            <fieldset class="matter-commissioning">
                 <legend>Pairing</legend>
 
                 <div class="pure-control-group">
                     <span class="pure-form-message">
                         Add the device in a Matter controller on the same network (pairing over IP, this firmware has no
-                        Bluetooth). The code contains the device setup PIN: show it only to people who may control the device.
+                        Bluetooth). Adding it again to an app that had it before? Remove the app above first.
+                        The code contains the device setup PIN: show it only to people who may control the device.
                     </span>
                 </div>
 

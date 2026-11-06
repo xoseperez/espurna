@@ -1,6 +1,12 @@
 import { notifyMessage } from './notify.mjs';
 import { listenAppConnected } from './connection.mjs';
 import { variableListeners } from './settings.mjs';
+import {
+    firmwareHeader,
+    init as initFirmware,
+    roundedSize,
+    uploadOutcome,
+} from './fwinstall.mjs';
 
 let __free_size = 0;
 
@@ -31,26 +37,10 @@ function describeFlashMode(flash_mode) {
 
 /**
  * @param {Uint8Array} buffer
- * @returns boolean
- */
-function isGzip(buffer) {
-    return (0x1f === buffer[0]) && (0x8b === buffer[1]);
-}
-
-/**
- * @param {Uint8Array} buffer
  * @returns number
  */
 function flashMode(buffer) {
     return buffer[2];
-}
-
-/**
- * @param {Uint8Array} buffer
- * @returns boolean
- */
-function checkMagic(buffer) {
-    return 0xe9 === buffer[0];
 }
 
 /**
@@ -101,8 +91,12 @@ function onButtonClick(event) {
 
         xhr.addEventListener("load",
             () => {
-                if ("OK" === xhr.responseText) {
+                const outcome = uploadOutcome(xhr.status, xhr.responseText);
+                if ("done" === outcome) {
                     alert("Firmware image uploaded, board rebooting. This page will be refreshed in 5 seconds");
+                } else if ("again" === outcome) {
+                    // Beken with the Tuya bootloader: the second part goes up after the reboot
+                    alert("First part written, board rebooting. Upload the same file once more when the board is back");
                 } else {
                     alert(`ERROR while attempting OTA upgrade - ${xhr.status.toString()} ${xhr.statusText}, ${xhr.responseText}`);
                 }
@@ -126,14 +120,6 @@ function onButtonClick(event) {
         xhr.open("POST", url);
         xhr.send(data);
     });
-}
-
-/**
- * @param {number} size
- * @returns {number}
- */
-function roundedSize(size) {
-    return (size - (size % 4096)) + 4096;
 }
 
 /**
@@ -170,18 +156,18 @@ async function onFileChanged(event) {
         return;
     }
 
-    const buffer = await file.slice(0, 3).arrayBuffer();
+    const buffer = await file.slice(0, 8).arrayBuffer();
     const header = new Uint8Array(buffer);
 
-    if (!isGzip(header)) {
-        if (!checkMagic(header)) {
-            alert("Invalid binary header, does not look like firmware .bin");
-            return;
-        }
+    // ESP8266 / ESP32 .bin, gzip'd ESP8266 .bin.gz, Beken .uf2 / ESPBEKEN image / ESPMTAIL Matter code
+    const kind = firmwareHeader(header);
+    if (!kind) {
+        alert("Invalid binary header, does not look like a firmware image (.bin, .bin.gz, .uf2)");
+        return;
+    }
 
-        if (!checkFlashMode(header)) {
-            alert(describeFlashMode(flashMode(header)));
-        }
+    if (("esp" === kind) && !checkFlashMode(header)) {
+        alert(describeFlashMode(flashMode(header)));
     }
 
     button.disabled = false;
@@ -224,4 +210,6 @@ export function init() {
 
     button.addEventListener("click", onButtonClick);
     button.disabled = true;
+
+    initFirmware();
 }

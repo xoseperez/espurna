@@ -27,15 +27,24 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include "libs/fs_math.h"
 #include "libs/Delimiter.h"
 
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
+#if LIGHT_PROVIDER_MY92XX_SUPPORT
 #include <my92xx.h>
 #endif
 
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
+#if LIGHT_PROVIDER_DIMMER_SUPPORT
 #include "pwm.h"
 #endif
 
 // -----------------------------------------------------------------------------
+
+// Hardware driving the channels. Board builds have exactly one, generic images (LIGHT_PROVIDER_ANY)
+// pick it at boot through the `ltProvider` setting
+enum class LightProviderType {
+    None,
+    Dimmer,
+    My92xx,
+    Custom,
+};
 
 namespace espurna {
 namespace light {
@@ -65,6 +74,23 @@ namespace {
 namespace build {
 
 constexpr float WhiteFactor { LIGHT_WHITE_FACTOR };
+
+constexpr long valueStep() {
+    return LIGHT_STEP;
+}
+
+constexpr LightProviderType provider() {
+    return
+#if (LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER) || (LIGHT_PROVIDER == LIGHT_PROVIDER_ANY)
+        LightProviderType::Dimmer;
+#elif LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
+        LightProviderType::My92xx;
+#elif LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
+        LightProviderType::Custom;
+#else
+        LightProviderType::None;
+#endif
+}
 
 constexpr bool color() {
     return 1 == LIGHT_USE_COLOR;
@@ -134,7 +160,7 @@ constexpr bool inverse(size_t index) {
     );
 }
 
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
+#if LIGHT_PROVIDER_MY92XX_SUPPORT
 
 constexpr my92xx_cmd_t my92xxCommand() {
     return MY92XX_COMMAND;
@@ -201,11 +227,23 @@ constexpr unsigned char my92xxChannel(size_t channel) {
 
 namespace settings {
 
+LightProviderType provider() {
+    return getSetting("ltProvider", build::provider());
+}
+
+float whiteFactor() {
+    return getSetting("ltWhiteFactor", build::WhiteFactor);
+}
+
+long valueStep() {
+    return getSetting("ltValueStep", build::valueStep());
+}
+
 unsigned char enablePin() {
     return getSetting("ltEnableGPIO", espurna::light::build::enablePin());
 }
 
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
+#if LIGHT_PROVIDER_DIMMER_SUPPORT
 unsigned char channelPin(size_t index) {
     return getSetting({"ltDimmerGPIO", index}, build::channelPin(index));
 }
@@ -215,7 +253,7 @@ bool inverse(size_t index) {
     return getSetting({"ltInv", index}, build::inverse(index));
 }
 
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
+#if LIGHT_PROVIDER_MY92XX_SUPPORT
 size_t my92xxChannels() {
     return getSetting("ltMy92xxChannels", build::my92xxChannels());
 }
@@ -599,7 +637,24 @@ light::Mireds convert(const String& value) {
     return light::Mireds{ .value = convert<long>(value) };
 }
 
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
+PROGMEM_STRING(LightProviderNone, "none");
+PROGMEM_STRING(LightProviderDimmer, "dimmer");
+PROGMEM_STRING(LightProviderMy92xx, "my92xx");
+PROGMEM_STRING(LightProviderCustom, "custom");
+
+static constexpr std::array<espurna::settings::options::Enumeration<LightProviderType>, 4> LightProviderOptions PROGMEM {
+    {{LightProviderType::None, LightProviderNone},
+     {LightProviderType::Dimmer, LightProviderDimmer},
+     {LightProviderType::My92xx, LightProviderMy92xx},
+     {LightProviderType::Custom, LightProviderCustom}}
+};
+
+template <>
+LightProviderType convert(const String& value) {
+    return convert(LightProviderOptions, value, espurna::light::build::provider());
+}
+
+#if LIGHT_PROVIDER_MY92XX_SUPPORT
 template <>
 my92xx_model_t convert(const String& value) {
     PROGMEM_STRING(MY9291, "9291");
@@ -821,12 +876,24 @@ void _lightProcessNoop(LightChannels&) {
 using LightProcessInputValues = void(*)(LightChannels&);
 LightProcessInputValues _light_process_input_values { _lightProcessNoop };
 
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
+#if LIGHT_PROVIDER_MY92XX_SUPPORT
 std::unique_ptr<my92xx> _my92xx;
 #endif
 
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
+#if LIGHT_PROVIDER_CUSTOM_SUPPORT
 std::unique_ptr<LightProvider> _light_provider;
+#endif
+
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_ANY
+LightProviderType _light_provider_type { LightProviderType::None };
+
+LightProviderType _lightProviderType() {
+    return _light_provider_type;
+}
+#else
+constexpr LightProviderType _lightProviderType() {
+    return espurna::light::build::provider();
+}
 #endif
 
 } // namespace
@@ -909,16 +976,20 @@ private:
 
 // With `useCCT`, balance the value between Warm and Cold channels based on the current `mireds`.
 
-struct LightScaledWhite {
-    static auto constexpr Default = espurna::light::build::WhiteFactor;
+// White channels brightness scale, `ltWhiteFactor` (e.g. 0.1 for the Sonoff B1, white LEDs are way brighter)
+float _light_white_factor { espurna::light::build::WhiteFactor };
 
+// Step of the button / encoder channel and brightness adjustments, `ltValueStep`
+long _light_value_step { espurna::light::build::valueStep() };
+
+struct LightScaledWhite {
     LightScaledWhite() = default;
     explicit LightScaledWhite(float factor) :
         _factor(factor)
     {}
 
     static LightScaledWhite with(float factor) {
-        return LightScaledWhite{factor * Default};
+        return LightScaledWhite{factor * _light_white_factor};
     }
 
     long operator()(long input) const {
@@ -926,7 +997,7 @@ struct LightScaledWhite {
     }
 
 private:
-    float _factor { Default };
+    float _factor { _light_white_factor };
 };
 
 void _lightValuesWithCct(LightChannels& channels) {
@@ -1935,13 +2006,13 @@ constexpr T _lightValueMap(long value, T min, T max) {
     return (value - espurna::light::ValueMin) * (max - min) / (espurna::light::ValueMax - espurna::light::ValueMin) + min;
 }
 
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
+#if LIGHT_PROVIDER_DIMMER_SUPPORT
 
 uint32_t _light_pwm_min;
 uint32_t _light_pwm_max;
 
 // since we expect 0 duty on OFF state, no need to do anything else from here
-void _lightProviderHandleState(bool) {
+void _lightDimmerHandleState(bool) {
 }
 
 // Automatically scale from our value to the internal one used by the PWM
@@ -1951,15 +2022,17 @@ void _lightProviderHandleState(bool) {
 // using two external values which are then used in integer divison
 // TODO: actually check call speed?
 // TODO: any difference between __fixsfsi and lround?
-void _lightProviderHandleValue(size_t channel, float value) {
+void _lightDimmerHandleValue(size_t channel, float value) {
     pwmDuty(channel, _lightValueMap(value, _light_pwm_min, _light_pwm_max));
 }
 
-void _lightProviderHandleUpdate() {
+void _lightDimmerHandleUpdate() {
     pwmUpdate();
 }
 
-#elif LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
+#endif
+
+#if LIGHT_PROVIDER_MY92XX_SUPPORT
 
 constexpr unsigned int _lightMy92xxValueShift(my92xx_cmd_bit_width_t width) {
     return (width == MY92XX_CMD_BIT_WIDTH_16) ? 16 :
@@ -1982,35 +2055,105 @@ constexpr unsigned int _my92xx_value_min = 0;
 constexpr unsigned int _my92xx_value_max =
         _lightMy92xxValueMax(espurna::light::build::my92xxCommand());
 
-void _lightProviderHandleValue(size_t channel, float value) {
+void _lightMy92xxHandleValue(size_t channel, float value) {
     _my92xx->setChannel(
         _light_my92xx_channel_map[channel],
         _lightValueMap(value, _my92xx_value_min, _my92xx_value_max));
 }
 
-void _lightProviderHandleUpdate() {
+void _lightMy92xxHandleUpdate() {
     _my92xx->update();
 }
 
-void _lightProviderHandleState(bool state) {
+void _lightMy92xxHandleState(bool state) {
     _my92xx->setState(state);
 }
 
-#elif LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
+#endif
 
-void _lightProviderHandleState(bool state) {
+#if LIGHT_PROVIDER_CUSTOM_SUPPORT
+
+void _lightCustomHandleState(bool state) {
     _light_provider->state(state);
 }
 
-void _lightProviderHandleValue(size_t channel, float value) {
+void _lightCustomHandleValue(size_t channel, float value) {
     _light_provider->channel(channel, value);
 }
 
-void _lightProviderHandleUpdate() {
+void _lightCustomHandleUpdate() {
     _light_provider->update();
 }
 
 #endif
+
+// Board builds resolve the switch at compile time (_lightProviderType() is constexpr there)
+
+void _lightProviderHandleState(bool state) {
+    switch (_lightProviderType()) {
+#if LIGHT_PROVIDER_DIMMER_SUPPORT
+    case LightProviderType::Dimmer:
+        _lightDimmerHandleState(state);
+        break;
+#endif
+#if LIGHT_PROVIDER_MY92XX_SUPPORT
+    case LightProviderType::My92xx:
+        _lightMy92xxHandleState(state);
+        break;
+#endif
+#if LIGHT_PROVIDER_CUSTOM_SUPPORT
+    case LightProviderType::Custom:
+        _lightCustomHandleState(state);
+        break;
+#endif
+    default:
+        break;
+    }
+}
+
+void _lightProviderHandleValue(size_t channel, float value) {
+    switch (_lightProviderType()) {
+#if LIGHT_PROVIDER_DIMMER_SUPPORT
+    case LightProviderType::Dimmer:
+        _lightDimmerHandleValue(channel, value);
+        break;
+#endif
+#if LIGHT_PROVIDER_MY92XX_SUPPORT
+    case LightProviderType::My92xx:
+        _lightMy92xxHandleValue(channel, value);
+        break;
+#endif
+#if LIGHT_PROVIDER_CUSTOM_SUPPORT
+    case LightProviderType::Custom:
+        _lightCustomHandleValue(channel, value);
+        break;
+#endif
+    default:
+        break;
+    }
+}
+
+void _lightProviderHandleUpdate() {
+    switch (_lightProviderType()) {
+#if LIGHT_PROVIDER_DIMMER_SUPPORT
+    case LightProviderType::Dimmer:
+        _lightDimmerHandleUpdate();
+        break;
+#endif
+#if LIGHT_PROVIDER_MY92XX_SUPPORT
+    case LightProviderType::My92xx:
+        _lightMy92xxHandleUpdate();
+        break;
+#endif
+#if LIGHT_PROVIDER_CUSTOM_SUPPORT
+    case LightProviderType::Custom:
+        _lightCustomHandleUpdate();
+        break;
+#endif
+    default:
+        break;
+    }
+}
 
 void _lightProviderUpdate() {
     if (!_light_provider_update) {
@@ -3138,8 +3281,8 @@ void _lightUpdate() {
 }
 
 void _lightUpdate(LightTransition transition, int report, bool save, bool sequence) {
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
-    if (!_light_provider) {
+#if LIGHT_PROVIDER_CUSTOM_SUPPORT
+    if ((LightProviderType::Custom == _lightProviderType()) && !_light_provider) {
         return;
     }
 #endif
@@ -3320,7 +3463,7 @@ void lightChannelStep(size_t id, long steps, long multiplier) {
 }
 
 void lightChannelStep(size_t id, long steps) {
-    lightChannelStep(id, steps, espurna::light::ValueStep);
+    lightChannelStep(id, steps, _light_value_step);
 }
 
 void lightAdjustChannel(size_t id, espurna::StringView payload) {
@@ -3344,7 +3487,7 @@ void lightBrightnessStep(long steps, long multiplier) {
 }
 
 void lightBrightnessStep(long steps) {
-    lightBrightnessStep(steps, espurna::light::ValueStep);
+    lightBrightnessStep(steps, _light_value_step);
 }
 
 void lightAdjustBrightness(espurna::StringView payload) {
@@ -3452,9 +3595,12 @@ void _lightConfigure() {
     _light_save = espurna::light::settings::save();
     _light_save_delay = espurna::light::settings::saveDelay();
 
+    _light_white_factor = espurna::light::settings::whiteFactor();
+    _light_value_step = espurna::light::settings::valueStep();
+
     _light_use_gamma = espurna::light::settings::gamma();
     for (size_t index = 0; index < Channels; ++index) {
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
+#if LIGHT_PROVIDER_MY92XX_SUPPORT
         _light_my92xx_channel_map[index] = espurna::light::settings::my92xxChannel(index);
 #endif
         _light_channels[index].inverse = espurna::light::settings::inverse(index);
@@ -3525,14 +3671,19 @@ void _lightBoot() {
 
 } // namespace
 
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
+#if LIGHT_PROVIDER_CUSTOM_SUPPORT
 
 // Custom provider is expected to:
 // - register a controller class via `lightSetProvider(...)`
 // - use `lightAdd()` N times to create N channels that will be handled via the controller
 // Once that's done, we 'boot' the provider and disable further calls to the `lightAdd()`
+// Generic images (LIGHT_PROVIDER_ANY) take it only with `ltProvider` set to `custom`
 
 void lightSetProvider(std::unique_ptr<LightProvider>&& ptr) {
+    if (LightProviderType::Custom != _lightProviderType()) {
+        return;
+    }
+
     _light_provider = std::move(ptr);
 }
 
@@ -3542,6 +3693,10 @@ bool lightAdd() {
         Scheduled,
         Done
     };
+
+    if (LightProviderType::Custom != _lightProviderType()) {
+        return false;
+    }
 
     static State state { State::None };
     if (State::Done == state) {
@@ -3570,22 +3725,27 @@ bool lightAdd() {
     return false;
 }
 
-#endif // LIGHT_PROVIDER_CUSTOM
+#endif // LIGHT_PROVIDER_CUSTOM_SUPPORT
 
 namespace {
 
 void _lightProviderDebug() {
-    DEBUG_MSG_P(PSTR("[LIGHT] Provider: "
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_NONE
-        "NONE"
-#elif LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
-        "DIMMER"
-#elif LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
-        "MY92XX"
-#elif LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
-        "CUSTOM"
-#endif
-    "\n"));
+    const char* name = PSTR("NONE");
+    switch (_lightProviderType()) {
+    case LightProviderType::None:
+        break;
+    case LightProviderType::Dimmer:
+        name = PSTR("DIMMER");
+        break;
+    case LightProviderType::My92xx:
+        name = PSTR("MY92XX");
+        break;
+    case LightProviderType::Custom:
+        name = PSTR("CUSTOM");
+        break;
+    }
+
+    DEBUG_MSG_P(PSTR("[LIGHT] Provider: %s\n"), name);
 }
 
 void _lightSettingsMigrate(int version) {
@@ -3639,26 +3799,43 @@ void lightSetup() {
     }
 
     _light_channels.reserve(espurna::light::ChannelsMax);
-    _lightProviderDebug();
 
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX
-    {
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_ANY
+    // Generic image, the provider becomes active only when its pins (or the custom module) are there
+    const auto provider = espurna::light::settings::provider();
+    if (LightProviderType::Custom == provider) {
+        _light_provider_type = provider;
+    }
+#else
+    constexpr auto provider = espurna::light::build::provider();
+#endif
+
+#if LIGHT_PROVIDER_MY92XX_SUPPORT
+    if (LightProviderType::My92xx == provider) {
         // TODO: library API specifies some hard-coded amount of channels, based off of the model and chips
         // we always map channel index 1-to-1, to simplify hw config, but most of the time there are less active channels
         // than the value generated by the lib (ref. `my92xx::getChannels()`)
-        auto channels = espurna::light::settings::my92xxChannels();
-        if (channels) {
+        const auto channels = std::min(
+            espurna::light::settings::my92xxChannels(),
+            espurna::light::ChannelsMax);
+        const auto di = espurna::light::settings::my92xxDiPin();
+        const auto dcki = espurna::light::settings::my92xxDckiPin();
+        if (channels && gpioValid(di) && gpioValid(dcki) && gpioLock(di) && gpioLock(dcki)) {
             _my92xx = std::make_unique<my92xx>(
                     espurna::light::settings::my92xxModel(),
                     espurna::light::settings::my92xxChips(),
-                    espurna::light::settings::my92xxDiPin(),
-                    espurna::light::settings::my92xxDckiPin(),
+                    di, dcki,
                     espurna::light::build::my92xxCommand());
             _light_channels.resize(channels);
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_ANY
+            _light_provider_type = provider;
+#endif
         }
     }
-#elif LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER
-    {
+#endif
+
+#if LIGHT_PROVIDER_DIMMER_SUPPORT
+    if (LightProviderType::Dimmer == provider) {
         // Load up until first invalid pin. Allow settings to override, but not remove values
         std::vector<uint8_t> pins;
         pins.reserve(espurna::light::ChannelsMax);
@@ -3673,15 +3850,19 @@ void lightSetup() {
         }
 
         // The rest is handled by the PWM driver, continue *only* when it actually agrees on selected pins
-        if (pwmInitPins(pins)) {
+        if (pins.size() && pwmInitPins(pins)) {
             const auto range = pwmRange();
             _light_pwm_min = range.min;
             _light_pwm_max = range.max;
             _light_channels.resize(pins.size());
+#if LIGHT_PROVIDER == LIGHT_PROVIDER_ANY
+            _light_provider_type = provider;
+#endif
         }
     }
 #endif
 
+    _lightProviderDebug();
     _lightBoot();
 
     #if WEB_SUPPORT

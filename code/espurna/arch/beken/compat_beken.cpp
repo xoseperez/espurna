@@ -136,7 +136,8 @@ String EspCompat::getResetReason() {
         return String(F("Crash"));
     }
 
-    return ::ESP.getResetReason();
+    // the EspClass of LibreTiny, not ::ESP: here that is the macro of compat_beken.h, this very object
+    return static_cast<EspClass&>(*this).getResetReason();
 }
 
 String EspCompat::getResetInfo() {
@@ -155,7 +156,7 @@ String EspCompat::getResetInfo() {
         return String(F("Crash (out of memory)"));
     }
 
-    return ::ESP.getResetInfo();
+    return static_cast<EspClass&>(*this).getResetInfo();
 }
 
 namespace espurna {

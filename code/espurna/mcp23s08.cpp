@@ -46,6 +46,8 @@ static uint8_t  _mcp23s08RxData[16]  __attribute__((aligned(4)));
 
 namespace {
 
+void _mcp23s08Begin();
+
 class GpioMcp23s08 : public GpioBase {
 public:
     constexpr static size_t Pins { 8ul };
@@ -74,6 +76,7 @@ public:
     }
 
     BasePinPtr pin(unsigned char index) override {
+        _mcp23s08Begin();
         return std::make_unique<McpGpioPin>(index);
     }
 
@@ -83,9 +86,23 @@ private:
 
 } // namespace
 
-void MCP23S08Setup()
-{
+namespace {
+
+// SPI bus (GPIO12 / 13 / 14, CS GPIO15) is set up by the first pin a relay / button / LED asks for,
+// the expander stays idle otherwise (generic images)
+void _mcp23s08Begin() {
+    static bool done { false };
+    if (done) {
+        return;
+    }
+
+    done = true;
     DEBUG_MSG_P(PSTR("[MCP23S08] Initialize SPI bus\n"));
+
+    // HSPI pins are no longer free for anything else
+    for (auto pin : {12, 13, 14, MCP23S08_CS_PIN}) {
+        gpioLock(pin);
+    }
 
     // Expander SPI settings
     SPI.begin();
@@ -95,6 +112,12 @@ void MCP23S08Setup()
 
     pinMode(MCP23S08_CS_PIN, OUTPUT);
     digitalWrite(MCP23S08_CS_PIN, HIGH);
+}
+
+} // namespace
+
+void MCP23S08Setup()
+{
 }
 
 /**

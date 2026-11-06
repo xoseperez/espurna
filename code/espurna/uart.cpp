@@ -265,6 +265,12 @@ namespace internal {
 BasePortPtr ports[build::PortsMax];
 bool used_hardware_ports[2] = {false, false};
 
+// exclusive owner of the port, ref. claim()
+const __FlashStringHelper* owners[build::PortsMax] {};
+
+// serial log and serial terminal
+UartClaimRelease on_claim[4] {};
+
 } // namespace internal
 
 #if defined(ARDUINO_ARCH_ESP32)
@@ -601,11 +607,18 @@ void uart(::terminal::CommandContext&& ctx) {
                 break;
             }
 
+            String owner;
+            if (internal::owners[index]) {
+                owner = F(" owner=");
+                owner += internal::owners[index];
+            }
+
             ctx.output.printf_P(
-                PSTR("%zu - %s{tx=%c rx=%c}\n"),
+                PSTR("%zu - %s{tx=%c rx=%c}%s\n"),
                 index, port_type(port->type).c_str(),
                 port->tx ? 'y' : 'n',
-                port->rx ? 'y' : 'n');
+                port->rx ? 'y' : 'n',
+                owner.c_str());
         }
 
     } else if (ctx.argv.size() == 2) {
@@ -658,6 +671,70 @@ PortPtr port(size_t index) {
     return nullptr;
 }
 
+const __FlashStringHelper* claimed(size_t index) {
+    return (index < std::size(internal::owners))
+        ? internal::owners[index]
+        : nullptr;
+}
+
+void on_claim(UartClaimRelease callback) {
+    for (auto& ptr : internal::on_claim) {
+        if (ptr == callback) {
+            return;
+        }
+
+        if (!ptr) {
+            ptr = callback;
+            return;
+        }
+    }
+}
+
+bool claim(size_t index, const __FlashStringHelper* owner) {
+    if ((index >= std::size(internal::ports)) || !internal::ports[index] || !owner) {
+        return false;
+    }
+
+    auto& current = internal::owners[index];
+    if (current) {
+        if (current == owner) {
+            return true;
+        }
+
+        DEBUG_MSG_P(PSTR("[UART] Port #%zu is already used by %s\n"),
+            index, String(current).c_str());
+        return false;
+    }
+
+    current = owner;
+
+    // owner is set first, nothing reaches the serial log from here on
+    String released;
+    for (const auto& callback : internal::on_claim) {
+        if (!callback) {
+            break;
+        }
+
+        const auto* name = callback(index);
+        if (name) {
+            if (released.length()) {
+                released += F(" and ");
+            }
+            released += FPSTR(name);
+        }
+    }
+
+    if (released.length()) {
+        DEBUG_MSG_P(PSTR("[UART] Port #%zu belongs to %s, %s stopped using it\n"),
+            index, String(owner).c_str(), released.c_str());
+    } else {
+        DEBUG_MSG_P(PSTR("[UART] Port #%zu belongs to %s\n"),
+            index, String(owner).c_str());
+    }
+
+    return true;
+}
+
 void setup() {
 #if TERMINAL_SUPPORT
     terminal::setup();
@@ -698,6 +775,18 @@ espurna::driver::uart::PortPtr uartPort(size_t index) {
 
 void uartSetup() {
     espurna::driver::uart::setup();
+}
+
+void uartOnClaim(UartClaimRelease callback) {
+    espurna::driver::uart::on_claim(callback);
+}
+
+bool uartClaim(size_t index, const __FlashStringHelper* owner) {
+    return espurna::driver::uart::claim(index, owner);
+}
+
+const __FlashStringHelper* uartClaimed(size_t index) {
+    return espurna::driver::uart::claimed(index);
 }
 
 #endif // UART_SUPPORT

@@ -24,14 +24,30 @@ Other Beken boards, with what differs from this guide:
 
 ## 1. Builds
 
-| Build | Board |
-|-------|-------|
-| `beken-bk7231n` | any Tuya BK7231N board (CB1S, CB2S, CB3S, CBU, CB2L ...): Tuya flash layout and keys, every GPIO of the chip, no relays, buttons or LEDs pre-assigned (device template or web UI), 433 MHz receiver (rc-switch) unused until `rfbRX` is set |
-| `beken-bk7231n-nokey` | the same for BK7231N without flash encryption and with a 4 MiB layout of its own bootloader, e.g. the XH-CB2S / BK7231M of the [Sparkleiot Mini](sparkleiot-mini.md); does not start on Tuya chips, and the Tuya builds do not start on it |
-| `tuya-cb3s-relay-rf` | **Tuya TYWRA-RF** with its pins built in: relay P24, button P14, second ("total") button P6, LED P8 (inverted, Wi-Fi status), 433 MHz receiver data on P26. `beken-bk7231n` with the *Tuya TYWRA-RF* device template does the same |
+One build, `beken-bk7231n`, for every BK7231N board: every GPIO of the chip, no relays, buttons or LEDs pre-assigned
+(device template or web UI). The firmware finds out at boot which bootloader the chip has (`info` in the terminal shows
+it) and works with its flash layout:
 
-Both generic images are in the CI release. Enabled modules: web UI, API, MQTT, terminal, Home Assistant, the RF bridge
-(rc-switch).
+| Release file | Build output | What for |
+|--------------|--------------|----------|
+| `espurna-beken-initial-tuya.uf2` | `firmware.uf2` | first flash over UART, Tuya bootloader (CB1S, CB2S, CB3S, CBU, CB2L ...: 2 MiB, encrypted flash) |
+| `espurna-beken-initial-quectel.uf2` | `espurna-beken-quectel.uf2` | first flash over UART, Quectel bootloader without flash encryption (4 MiB), e.g. the XH-CB2S / BK7231M of the [Sparkleiot Mini](sparkleiot-mini.md) |
+| `espurna-beken-matter.bin` | `espurna-beken.bin` | every update over Wi-Fi, on both: the board writes the part made for its bootloader |
+
+Enabled modules: web UI, API, MQTT, terminal, Home Assistant, Alexa, Domoticz, Thingspeak, scheduler, the RF bridge
+(rc-switch, unused until `rfbRX` is set) and Matter (an On/Off plug, off until `matterAuto 1` or MATTER.START). The Tuya
+TYWRA-RF has no build of its own: `beken-bk7231n` with the *Tuya TYWRA-RF* device template.
+
+Matter on the 2 MiB Tuya layout: the Matter code does not fit next to the rest of the image, it lives in a region of the
+OTA partition of its own. Upload `espurna-beken-matter.bin` twice: the first upload brings the image (the bootloader installs
+it as usual, the form answers "OK, again"), the second one, after the reboot, the Matter code. On the Quectel layout one
+upload does both. `MATTER.TAIL` in the terminal tells whether the Matter code is there and matches the image.
+While Matter runs, a firmware upload is refused once with a reboot without Matter: upload again after it. Boards without
+Matter factory data make their own identity at the first start (development DAC, VID 0xFFF1 / PID 0x8000: controllers
+that accept SDK example devices, such as the speaker hub and python-matter-server, accept it).
+
+Static data of ESPurna and of the Matter library lives in the data TCM of the chip (about 37 KiB more heap), see `heap`
+in the terminal and the TCM row on the status page.
 
 Pin numbers are GPIO numbers (`P24` is GPIO 24, set it as `24` in the web UI). Only the pins that the module brings out
 can be used.
@@ -92,14 +108,15 @@ Wi-Fi LED, `remote_io` is the 433 MHz receiver. The `_lv` fields give the active
 
 ## 5. Flash ESPurna
 
-Take `espurna-beken-bk7231n.uf2` from the [release](https://github.com/igorufox/espurna/releases/latest), or build it from
-`code/`:
+Take `espurna-beken-initial-tuya.uf2` (or `-initial-quectel.uf2`, see the table above) from the
+[release](https://github.com/igorufox/espurna/releases/latest), or build it from `code/`:
 
 ```
 py -3 -m platformio run -c platformio_beken.ini -e beken-bk7231n
 ```
 
-The image is `code/.pio/build_beken/beken-bk7231n/firmware.uf2`. It uses its own build directory, so it does not touch
+The image for the Tuya bootloader is `code/.pio/build_beken/beken-bk7231n/firmware.uf2`, for the Quectel one
+`espurna-beken-quectel.uf2` in the same folder. The build uses its own build directory, so it does not touch
 the ESP8266 / ESP32 builds in `.pio/build`. Then flash it:
 
 ```
@@ -136,8 +153,10 @@ about 50 KB of free heap. There is no VCC row, the module has no supply voltage 
 
 ## 7. Updates over Wi-Fi
 
-Upload `firmware.uf2` on **Admin → Upgrade** in the web UI. It takes about 30 s and keeps the settings. The `.bin` files
-from the build are not accepted: Beken OTA uses the LibreTiny UF2 package.
+Upload `espurna-beken-matter.bin` on **Admin → Upgrade** in the web UI, or pick the release in the list there. It takes about 30 s, plus about 20 s while the
+bootloader installs it, and keeps the settings. On the Tuya bootloader upload the same file once more when the form
+says "OK, again" (the Matter code, see above). A plain LibreTiny `.uf2` is still accepted when it was built for the
+bootloader of the board.
 
 ![Admin tab, OTA: Browse and Upgrade](img/webui-ota.webp)
 

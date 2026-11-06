@@ -30,6 +30,34 @@ struct encoder_t {
 std::vector<encoder_t> _encoders;
 unsigned long _encoder_min_delta = 1;
 
+struct EncoderDefault {
+    uint8_t pin1;
+    uint8_t pin2;
+    uint8_t button_pin;
+    uint8_t button_logic;
+    uint8_t button_mode;
+    uint8_t mode;
+    uint8_t channel1;
+    uint8_t channel2;
+};
+
+#define ENCODER_DEFAULT(N) EncoderDefault{\
+    ENCODER##N##_PIN1, ENCODER##N##_PIN2,\
+    ENCODER##N##_BUTTON_PIN, ENCODER##N##_BUTTON_LOGIC, ENCODER##N##_BUTTON_MODE,\
+    ENCODER##N##_MODE, ENCODER##N##_CHANNEL1, ENCODER##N##_CHANNEL2}
+
+constexpr EncoderDefault EncoderDefaults[] {
+    ENCODER_DEFAULT(1),
+    ENCODER_DEFAULT(2),
+    ENCODER_DEFAULT(3),
+    ENCODER_DEFAULT(4),
+    ENCODER_DEFAULT(5),
+};
+
+#undef ENCODER_DEFAULT
+
+constexpr size_t EncodersMax { sizeof(EncoderDefaults) / sizeof(EncoderDefaults[0]) };
+
 void _encoderConfigure() {
 
     _encoder_min_delta = getSetting("encMinDelta", ENCODER_MINIMUM_DELTA);
@@ -44,53 +72,31 @@ void _encoderConfigure() {
     }
     _encoders.clear();
 
-    // TODO: encEnable
-    // TODO: implement reloading without re-allocating objects
-    #if (ENCODER1_PIN1 != GPIO_NONE) && (ENCODER1_PIN2 != GPIO_NONE)
-    {
+    // Pins and modes come from the settings, build values are the defaults (generic images: none, idle)
+    // encAGPIO<N> / encBGPIO<N>   encoder pins
+    // encBtnGPIO<N>               optional button, encBtnLogic<N> (level when NOT pressed), encBtnMode<N> (pinMode value)
+    // encMode<N>                  0 = channel (button selects encChA / encChB), 1 = ratio (button changes the
+    //                             encChA / encChB ratio, otherwise the brightness)
+    // encChA<N> / encChB<N>       light channels, 0-based
+    for (size_t index = 0; index < EncodersMax; ++index) {
+        const auto& defaults = EncoderDefaults[index];
+        const uint8_t pin1 = getSetting({"encAGPIO", index}, defaults.pin1);
+        const uint8_t pin2 = getSetting({"encBGPIO", index}, defaults.pin2);
+        if (!gpioValid(pin1) || !gpioValid(pin2)) {
+            break;
+        }
+
+        const uint8_t button = getSetting({"encBtnGPIO", index}, defaults.button_pin);
         _encoders.push_back({
-            new Encoder(ENCODER1_PIN1, ENCODER1_PIN2),
-            ENCODER1_BUTTON_PIN, ENCODER1_BUTTON_LOGIC, ENCODER1_BUTTON_MODE, ENCODER1_MODE,
-            ENCODER1_CHANNEL1, ENCODER1_CHANNEL2
+            new Encoder(pin1, pin2),
+            gpioValid(button) ? button : static_cast<uint8_t>(GPIO_NONE),
+            getSetting({"encBtnLogic", index}, defaults.button_logic),
+            getSetting({"encBtnMode", index}, defaults.button_mode),
+            getSetting({"encMode", index}, defaults.mode),
+            getSetting({"encChA", index}, defaults.channel1),
+            getSetting({"encChB", index}, defaults.channel2),
         });
     }
-    #endif
-    #if (ENCODER2_PIN1 != GPIO_NONE) && (ENCODER2_PIN2 != GPIO_NONE)
-    {
-        _encoders.push_back({
-            new Encoder(ENCODER2_PIN1, ENCODER2_PIN2),
-            ENCODER2_BUTTON_PIN, ENCODER2_BUTTON_LOGIC, ENCODER2_BUTTON_MODE, ENCODER2_MODE,
-            ENCODER2_CHANNEL1, ENCODER2_CHANNEL2
-        });
-    }
-    #endif
-    #if (ENCODER3_PIN1 != GPIO_NONE) && (ENCODER3_PIN2 != GPIO_NONE)
-    {
-        _encoders.push_back({
-            new Encoder(ENCODER3_PIN1, ENCODER3_PIN2),
-            ENCODER3_BUTTON_PIN, ENCODER3_BUTTON_LOGIC, ENCODER3_BUTTON_MODE, ENCODER3_MODE,
-            ENCODER3_CHANNEL1, ENCODER3_CHANNEL2
-        });
-    }
-    #endif
-    #if (ENCODER4_PIN1 != GPIO_NONE) && (ENCODER4_PIN2 != GPIO_NONE)
-    {
-        _encoders.push_back({
-            new Encoder(ENCODER4_PIN1, ENCODER4_PIN2),
-            ENCODER4_BUTTON_PIN, ENCODER4_BUTTON_LOGIC, ENCODER4_BUTTON_MODE, ENCODER4_MODE,
-            ENCODER4_CHANNEL1, ENCODER4_CHANNEL2
-        });
-    }
-    #endif
-    #if (ENCODER5_PIN1 != GPIO_NONE) && (ENCODER5_PIN2 != GPIO_NONE)
-    {
-        _encoders.push_back({
-            new Encoder(ENCODER5_PIN1, ENCODER5_PIN2),
-            ENCODER5_BUTTON_PIN, ENCODER5_BUTTON_LOGIC, ENCODER5_BUTTON_MODE, ENCODER5_MODE,
-            ENCODER5_CHANNEL1, ENCODER5_CHANNEL2
-        });
-    }
-    #endif
 
     // TODO: manage buttons through debounceevent?
     for (auto& encoder : _encoders) {

@@ -19,6 +19,7 @@ of the BK7231N port):
 #if defined(LIBRETINY) && MATTER_SUPPORT
 
 #include "espurna_matter.h"
+#include "layout_beken.h"
 #include "relay.h"
 #include "terminal.h"
 
@@ -90,9 +91,15 @@ typedef struct {
 } wifi_scan_result_t;
 
 int matter_app_start(void);
+// plug endpoints of the library (1..4); libraries before multi-plug have only endpoint 1 and no such function
+uint8_t matter_app_plugs(void) __attribute__((weak));
 void matter_set_onoff(uint8_t endpoint, bool on);
 bool matter_onboarding_codes(char* manual, size_t manual_size, char* qr, size_t qr_size);
 int matter_fabric_count(void);
+// controller list / removal; libraries before them do not have these
+bool matter_fabric_info(int n, uint8_t* index, uint16_t* vendor, uint64_t* node, char* label, size_t label_size)
+    __attribute__((weak));
+bool matter_remove_fabric(uint8_t index) __attribute__((weak));
 void matter_open_window(void);
 void matter_ping(void);
 
@@ -117,13 +124,12 @@ namespace factory {
 
 // Namespace "chip-factory" of the stock key-value store. Table of 64-byte entries, each one
 // {0x55 0xff 0xff 0xff, offset, length, name[32]}, values right after the table
-#if defined(FLASH_MATTER_OFFSET)
-constexpr uint32_t TableOffset { FLASH_MATTER_OFFSET + 0x7000 };
+// Factory data partition of the board, when its bootloader / layout has one (ref. layout_beken.cpp)
+constexpr uint32_t TableStart { 0x7000 };
 constexpr uint32_t TableSize { 0x1000 };
-constexpr uint32_t DataOffset { FLASH_MATTER_OFFSET + 0x8000 };
+constexpr uint32_t DataStart { 0x8000 };
 constexpr uint32_t DataSize { 0x2000 };
 constexpr uint32_t EntryMagic { 0xffffff55 };
-#endif
 
 struct __attribute__((packed)) Entry {
     uint32_t magic;
@@ -137,14 +143,15 @@ static_assert(sizeof(Entry) == 0x40, "");
 
 // Value of a key, or false when there is none. Copies at most size bytes, length is the full one
 bool read(const char* name, uint8_t* out, size_t size, size_t& length) {
-#if !defined(FLASH_MATTER_OFFSET)
-    // no factory data partition in this flash layout (Tuya 2 MiB boards)
-    (void)name;
-    (void)out;
-    (void)size;
-    (void)length;
-    return false;
-#else
+    const auto& layout = ::espurna::beken::flashLayout();
+    if (!layout.matter_offset) {
+        // no factory data partition in this flash layout (Tuya 2 MiB boards)
+        return false;
+    }
+
+    const uint32_t TableOffset { layout.matter_offset + TableStart };
+    const uint32_t DataOffset { layout.matter_offset + DataStart };
+
     for (uint32_t offset = 0; offset < TableSize; offset += sizeof(Entry)) {
         Entry entry;
         if (lt_flash_read(TableOffset + offset, reinterpret_cast<uint8_t*>(&entry), sizeof(entry)) != sizeof(entry)) {
@@ -170,7 +177,6 @@ bool read(const char* name, uint8_t* out, size_t size, size_t& length) {
     }
 
     return false;
-#endif
 }
 
 bool read(const char* name, std::vector<uint8_t>& out) {
@@ -518,10 +524,20 @@ uint32_t flash_size() {
     return flash_offset(__matter_tail_end) - flash_offset(__matter_tail_start);
 }
 
-// The region is a part of the 'download' partition: an OTA image there overwrites the tail
+// The region is a part of the 'download' partition of this board's bootloader (Tuya 2 MiB layout): an OTA image there
+// overwrites the tail, and the tail is written separately. On the Quectel 4 MiB layout it is inside the application,
+// the bootloader installs it with the rest
 bool shares_download() {
+    const auto& layout = ::espurna::beken::flashLayout();
     const auto start = flash_offset(__matter_tail_start);
-    return (start >= FLASH_DOWNLOAD_OFFSET) && (start < (FLASH_DOWNLOAD_OFFSET + FLASH_DOWNLOAD_LENGTH));
+    return layout.download_length
+        && (start >= layout.download_offset)
+        && (start < (layout.download_offset + layout.download_length));
+}
+
+// Matter code written by ESPurna, not by the bootloader
+bool writable() {
+    return ::espurna::beken::flashLayout().layout == ::espurna::beken::Layout::Tuya;
 }
 
 // CRC16 of every 32 bytes in the flash (CRC-16/CMS, big endian after the data), as the bootloader and the
@@ -699,6 +715,11 @@ const char* upload_begin(bool matter_started) {
         return PSTR("ERROR: Matter is running, upload after a reboot");
     }
 
+    // the tail is encrypted for the Tuya key and the Tuya layout; other boards get it with the firmware
+    if (!writable()) {
+        return PSTR("ERROR: matter-tail.bin is not needed on this board, the firmware has the Matter code");
+    }
+
     upload = Upload{};
     upload.active = true;
     return nullptr;
@@ -721,7 +742,7 @@ const char* upload_header() {
 
     // An OTA image left in the 'download' partition is overwritten from here on. With its header erased the
     // bootloader sees no update to install, like after LibreTiny reverts an OTA
-    if (shares_download() && !lt_flash_erase_block(FLASH_DOWNLOAD_OFFSET)) {
+    if (shares_download() && !lt_flash_erase_block(::espurna::beken::flashLayout().download_offset)) {
         return PSTR("ERROR: Flash erase failed");
     }
 
@@ -863,6 +884,7 @@ void send(const char* text) {
 #endif
 
 String node_label;
+uint8_t plug_count { 1 };
 
 // Commissioning in progress, from the Matter task: the message trace is only logged then
 std::atomic<bool> commissioning_active { false };
@@ -942,9 +964,14 @@ static constexpr ::terminal::Command Commands[] PROGMEM {
 
 namespace backend {
 
-// The data model of libMatterApp has a single plug endpoint
+// A plug endpoint per relay, as many as the data model of libMatterApp has. Asked in start(): the library may live in
+// the Matter tail, not callable before it was checked
+namespace {
+size_t library_plugs { 1 };
+} // namespace
+
 size_t endpoints() {
-    return std::min(relayCount(), static_cast<size_t>(1));
+    return std::min(relayCount(), library_plugs);
 }
 
 void setup() {
@@ -968,6 +995,8 @@ bool start() {
     }
 
     node_label = systemHostname();
+    library_plugs = matter_app_plugs ? matter_app_plugs() : 1;
+    plug_count = endpoints();
     MATTER_STEP("kv ready, matter_app_start");
     const auto out = matter_app_start() == 0;
     MATTER_STEP(out ? "matter_app_start OK" : "matter_app_start FAILED");
@@ -1000,6 +1029,37 @@ bool codes(char* manual, size_t manual_size, char* qr, size_t qr_size) {
 
 int fabrics() {
     return matter_fabric_count();
+}
+
+// only called while Matter runs (matter.cpp): the library may live in the Matter tail
+size_t controllers(Controller* out, size_t size) {
+    if (!matter_fabric_info) {
+        return 0;
+    }
+
+    size_t count { 0 };
+    while (count < size) {
+        auto& entry = out[count];
+        if (!matter_fabric_info(count, &entry.index, &entry.vendor, &entry.node, entry.label, sizeof(entry.label))) {
+            break;
+        }
+        ++count;
+    }
+
+    return count;
+}
+
+bool remove_controller(uint8_t index) {
+    if (!matter_remove_fabric) {
+        return false;
+    }
+
+    const auto out = matter_remove_fabric(index);
+    if (out) {
+        DEBUG_MSG_P(PSTR("[MATTER] Removing controller #%u\n"), index);
+    }
+
+    return out;
 }
 
 void open_window() {
@@ -1064,6 +1124,11 @@ const char* matter_node_label(void) {
     return espurna::matter::node_label.c_str();
 }
 
+// plug endpoints in use (the relays), filled by backend::start() like the label
+uint8_t matter_plug_count(void) {
+    return espurna::matter::plug_count;
+}
+
 void matter_commissioning(bool active) {
     espurna::matter::commissioning_active = active;
     espurna::matter::commissioning(active);
@@ -1071,6 +1136,10 @@ void matter_commissioning(bool active) {
 
 void matter_pong(void) {
     espurna::matter::pong();
+}
+
+void matter_window(bool open) {
+    espurna::matter::window(open);
 }
 
 void matter_onoff_changed(uint8_t endpoint, bool on) {

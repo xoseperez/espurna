@@ -451,15 +451,28 @@ void _curtainUpdate(size_t id, int value) {
 }
 
 size_t _curtainCount() {
-    return 1;
+    return _curtain_port ? 1 : 0;
 }
 
 //------------------------------------------------------------------------------
 void _kingartCurtainSetup() {
-    const auto port = uartPort(KINGART_CURTAIN_PORT - 1);
+    // UART number (1-based) of the KingArt MCU, `curtainPort`. 0 keeps the module idle (generic images default)
+    const auto number = getSetting("curtainPort", static_cast<int>(KINGART_CURTAIN_PORT));
+    if (number <= 0) {
+        return;
+    }
+
+    const auto port = uartPort(number - 1);
     if (!port || (!port->tx || !port->rx)) {
         return;
     }
+
+#if UART_DRIVERS_CLAIM_PORT
+    // serial log and terminal let go of the port (board builds have them compiled out)
+    if (!uartClaim(number - 1, F("KingArt curtain"))) {
+        return;
+    }
+#endif
 
     _curtain_port = port->stream;
 

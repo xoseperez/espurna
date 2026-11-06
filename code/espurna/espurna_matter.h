@@ -24,6 +24,8 @@ namespace matter {
 void onoff_changed(size_t index, bool on);
 void commissioning(bool active);
 void pong();
+// pairing (commissioning) window opened / closed
+void window(bool open);
 
 // From the backend, any task: one log line (the shared part prints it from the loop)
 void log_line(const char* line);
@@ -40,6 +42,18 @@ void network(bool up);
 void set_onoff(size_t index, bool on);
 bool codes(char* manual, size_t manual_size, char* qr, size_t qr_size);
 int fabrics();
+
+// Controllers the device was added to (fabrics): for the WebUI list, and to remove one that the controller app forgot
+// (deleting a device in the hub's phone app does not tell the device; adding it to the same app again then fails)
+struct Controller {
+    uint8_t index;
+    uint16_t vendor;
+    uint64_t node;
+    char label[33];
+};
+
+size_t controllers(Controller* out, size_t size);
+bool remove_controller(uint8_t index);
 void open_window();
 void ping();
 

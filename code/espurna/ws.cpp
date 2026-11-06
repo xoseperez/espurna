@@ -1059,6 +1059,8 @@ void _wsOnConnected(JsonObject& root) {
     root[F("app_name")] = info.app.name;
     root[F("app_version")] = info.app.version;
     root[F("app_build")] = info.app.build_time;
+    // release image this build belongs to, WebUI OTA lists its files from GitHub ("" - local build)
+    root[F("fwImage")] = F(ESPURNA_IMAGE);
 
     root[F("hostname")] = systemHostname();
     root[F("chipid")] = systemChipId().c_str();

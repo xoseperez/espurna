@@ -149,12 +149,14 @@ std::array<Palette, 14> pals {
 
 auto one_color_palette = std::unique_ptr<Palette>(new Palette("White", true, {0xffffff}));
 
+// Build values are the defaults of the `garlandGPIO` and `garlandLeds` settings. Generic images have
+// no pin (GARLAND_DATA_PIN GPIO_NONE), the module stays idle until garlandGPIO is set
 constexpr uint16_t GarlandLeds { GARLAND_LEDS };
 constexpr unsigned char GarlandPin { GARLAND_DATA_PIN };
 constexpr neoPixelType GarlandPixelType { NEO_GRB + NEO_KHZ800 };
 
-Adafruit_NeoPixel pixels(GarlandLeds, GarlandPin, GarlandPixelType);
-Scene<GarlandLeds> scene(&pixels);
+Adafruit_NeoPixel pixels;
+Scene scene(&pixels);
 
 std::array<Anim*, 18> anims {
     new AnimStart(),
@@ -465,37 +467,32 @@ void garlandMqttCallback(unsigned int type, espurna::StringView topic, espurna::
 #define GARLAND_SCENE_TRANSITION_MS      1000    // transition time between animations, ms
 #define GARLAND_SCENE_DEFAULT_BRIGHTNESS 255
 
-template<uint16_t Leds>
-void Scene<Leds>::setPalette(Palette* palette) {
+void Scene::setPalette(Palette* palette) {
     _palette = palette;
     if (setUpOnPalChange) {
         setupImpl();
     }
 }
 
-template<uint16_t Leds>
-void Scene<Leds>::setBrightness(byte value) {
+void Scene::setBrightness(byte value) {
     DEBUG_MSG_P(PSTR("[GARLAND] new brightness = %d\n"), value);
     brightness = value;
 }
 
 // Speed is reverse to cycleFactor and 10x
-template<uint16_t Leds>
-void Scene<Leds>::setSpeed(byte speed) {
+void Scene::setSpeed(byte speed) {
     DEBUG_MSG_P(PSTR("[GARLAND] new speed = %d\n"), speed);
     this->speed = speed;
     cycleFactor = (float)(GARLAND_SCENE_SPEED_MAX - speed) / GARLAND_SCENE_SPEED_FACTOR;
 }
 
-template<uint16_t Leds>
-void Scene<Leds>::setDefault() {
+void Scene::setDefault() {
     DEBUG_MSG_P(PSTR("[GARLAND] set default\n"));
     this->setBrightness(GARLAND_SCENE_DEFAULT_BRIGHTNESS);
     this->setSpeed(GARLAND_SCENE_DEFAULT_SPEED);
 }
 
-template<uint16_t Leds>
-void Scene<Leds>::run() {
+void Scene::run() {
     unsigned long iteration_start_time = micros();
 
     if (state == Calculate || cyclesRemain < 1) {
@@ -528,7 +525,7 @@ void Scene<Leds>::run() {
         Color* leds_prev = (_leds == &_leds1[0]) ? &_leds2[0] : &_leds1[0];
 
         if (transc > 0) {
-            for (int i = 0; i < Leds; i++) {
+            for (int i = 0; i < _numLeds; i++) {
                 // transition is in progress
                 Color c = _leds[i].interpolate(leds_prev[i], transc);
                 byte r = (int)(bri_lvl[c.r]) * brightness / 256;
@@ -537,7 +534,7 @@ void Scene<Leds>::run() {
                 _pixels->setPixelColor(i, _pixels->Color(r, g, b));
             }
         } else {
-            for (int i = 0; i < Leds; i++) {
+            for (int i = 0; i < _numLeds; i++) {
                 // regular operation
                 byte r = (int)(bri_lvl[_leds[i].r]) * brightness / 256;
                 byte g = (int)(bri_lvl[_leds[i].g]) * brightness / 256;
@@ -560,11 +557,11 @@ void Scene<Leds>::run() {
         Soft WDT reset. To avoid wdt reset we need to switch soft wdt off for long strips.
         It is not best practice, but assuming that it is only garland, it can be acceptable.
         Tested up to 300 leds. */
-        if (Leds > NUMLEDS_CAN_CAUSE_WDT_RESET) {
+        if (_numLeds > NUMLEDS_CAN_CAUSE_WDT_RESET) {
             ESP.wdtDisable();
         }
         _pixels->show();
-        if (Leds > NUMLEDS_CAN_CAUSE_WDT_RESET) {
+        if (_numLeds > NUMLEDS_CAN_CAUSE_WDT_RESET) {
             ESP.wdtEnable(5000);
         }
         sum_show_time += (micros() - iteration_start_time);
@@ -575,8 +572,7 @@ void Scene<Leds>::run() {
     --cyclesRemain;
 }
 
-template<uint16_t Leds>
-void Scene<Leds>::setupImpl() {
+void Scene::setupImpl() {
     transms = millis() + GARLAND_SCENE_TRANSITION_MS;
 
     // switch operation buffers (for transition to operate)
@@ -587,12 +583,11 @@ void Scene<Leds>::setupImpl() {
     }
 
     if (_anim) {
-        _anim->Setup(_palette, _pals, _palsNum, Leds, _leds, _ledstmp.data(), _seq.data());
+        _anim->Setup(_palette, _pals, _palsNum, _numLeds, _leds, _ledstmp.data(), _seq.data());
     }
 }
 
-template<uint16_t Leds>
-void Scene<Leds>::setup() {
+void Scene::setup() {
     sum_calc_time = 0;
     sum_pixl_time = 0;
     sum_show_time = 0;
@@ -723,6 +718,17 @@ void garlandDisable() {
 }
 
 void garlandSetup() {
+    const unsigned char pin = getSetting("garlandGPIO", GarlandPin);
+    const uint16_t leds = getSetting("garlandLeds", GarlandLeds);
+    if (!leds || !gpioValid(pin) || !gpioLock(pin)) {
+        return;
+    }
+
+    pixels.updateType(GarlandPixelType);
+    pixels.updateLength(leds);
+    pixels.setPin(pin);
+    scene.begin(leds);
+
     _garlandConfigure();
 
     mqttRegister(garlandMqttCallback);

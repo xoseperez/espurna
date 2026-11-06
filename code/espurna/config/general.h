@@ -274,8 +274,13 @@
 #define GARLAND_SUPPORT             0
 #endif
 
+// default of the `garlandGPIO` setting; generic images have none, the module stays idle until it is set
 #ifndef GARLAND_DATA_PIN
+#if defined(ESP8266_GENERIC)
+#define GARLAND_DATA_PIN            GPIO_NONE
+#else
 #define GARLAND_DATA_PIN            4           // WS2812 data pin (default: D2 / GPIO4)
+#endif
 #endif
 
 #ifndef GARLAND_LEDS
@@ -410,7 +415,18 @@
 #define RELAY_SUPPORT                   1
 #endif
 
-// ESP01-relays with STM co-MCU driving the relays
+// Generic images (board from the settings): UART drivers (Tuya, Sonoff Dual, STM relay, Lightfox, KingArt
+// curtain...) are compiled in, but stay idle until configured. The one that starts takes its port from
+// the serial log / terminal at runtime (uartClaim()), instead of these being compiled out
+#ifndef UART_DRIVERS_CLAIM_PORT
+#if defined(ESP8266_GENERIC) || defined(ESP32_GENERIC) || defined(BEKEN_GENERIC)
+#define UART_DRIVERS_CLAIM_PORT         1
+#else
+#define UART_DRIVERS_CLAIM_PORT         0
+#endif
+#endif
+
+// ESP01-relays with STM co-MCU driving the relays (relayProv<N> stm)
 #ifndef RELAY_PROVIDER_STM_SUPPORT
 #define RELAY_PROVIDER_STM_SUPPORT      0
 #endif
@@ -419,13 +435,26 @@
 #define RELAY_PROVIDER_STM_PORT         1
 #endif
 
-// Sonoff Dual, using serial protocol
+// Sonoff Dual, using serial protocol (relayProv<N> dual)
 #ifndef RELAY_PROVIDER_DUAL_SUPPORT
 #define RELAY_PROVIDER_DUAL_SUPPORT     0
 #endif
 
 #ifndef RELAY_PROVIDER_DUAL_PORT
 #define RELAY_PROVIDER_DUAL_PORT        1
+#endif
+
+// Foxel Lightfox Dual, relays and buttons through the serial protocol (relayProv<N> / btnProv<N> lightfox)
+#ifndef LIGHTFOX_SUPPORT
+#ifdef FOXEL_LIGHTFOX_DUAL
+#define LIGHTFOX_SUPPORT                1
+#else
+#define LIGHTFOX_SUPPORT                0
+#endif
+#endif
+
+#ifndef LIGHTFOX_PORT
+#define LIGHTFOX_PORT                   1
 #endif
 
 // Default boot mode: 0 means OFF, 1 ON and 2 whatever was before
@@ -917,6 +946,12 @@
 #define OTA_WEB_SUPPORT             WEB_SUPPORT             // Support `/upgrade` endpoint and WebUI OTA handler
 #endif
 
+#ifndef OTA_FETCH_SUPPORT
+#define OTA_FETCH_SUPPORT           0           // ESP8266: the image downloads its update itself at boot (/ota/fetch, https
+                                                // with SHA-256, ota_fetch.cpp). Needs room for TLS (~25 KB) and for the
+                                                // update next to the image: the minimal image (1 MB) and 4 MB layouts
+#endif
+
 #define OTA_GITHUB_FP               "CA:06:F5:6B:25:8B:7A:0D:4F:2B:05:47:09:39:47:86:51:15:19:84"
 
 #ifndef OTA_FINGERPRINT
@@ -1230,6 +1265,36 @@
 
 #ifndef LIGHT_PROVIDER
 #define LIGHT_PROVIDER          LIGHT_PROVIDER_NONE
+#endif
+
+// LIGHT_PROVIDER_ANY (generic images) builds every provider, `ltProvider` setting picks one at boot:
+// `dimmer` (default, ltDimmerGPIO<N>), `my92xx` (ltMy92xx* keys) or `custom` (a module such as Tuya
+// registers the channels). Nothing is touched until the respective pins / port are configured
+#define LIGHT_PROVIDER_DIMMER_SUPPORT \
+    ((LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER) || (LIGHT_PROVIDER == LIGHT_PROVIDER_ANY))
+#define LIGHT_PROVIDER_MY92XX_SUPPORT \
+    ((LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX) || (LIGHT_PROVIDER == LIGHT_PROVIDER_ANY))
+#define LIGHT_PROVIDER_CUSTOM_SUPPORT \
+    ((LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM) || (LIGHT_PROVIDER == LIGHT_PROVIDER_ANY))
+
+#ifndef MY92XX_MODEL
+#define MY92XX_MODEL            MY92XX_MODEL_MY9291
+#endif
+
+#ifndef MY92XX_CHIPS
+#define MY92XX_CHIPS            1
+#endif
+
+#ifndef MY92XX_DI_PIN
+#define MY92XX_DI_PIN           GPIO_NONE
+#endif
+
+#ifndef MY92XX_DCKI_PIN
+#define MY92XX_DCKI_PIN         GPIO_NONE
+#endif
+
+#ifndef MY92XX_COMMAND
+#define MY92XX_COMMAND          MY92XX_COMMAND_DEFAULT
 #endif
 
 #ifndef LIGHT_REPORT_DELAY
@@ -1603,9 +1668,26 @@
 // https://tinkerman.cat/adding-rf-to-a-non-rf-itead-sonoff/
 // Also possible to use with SONOFF RF BRIDGE, thanks to @wildwiz
 // https://github.com/xoseperez/espurna/wiki/Hardware-Itead-Sonoff-RF-Bridge---Direct-Hack
+// - RFB_PROVIDER_ANY
+// Both of them, the `rfbProv` setting picks one at boot: `rcswitch` (default, rfbRX / rfbTX pins)
+// or `efm8bb1` (UART RFB_PORT, serial debug and terminal then stay off that port).
+// Default of the generic ESP8266 images, where the board comes from the settings
+#ifndef RFB_PROVIDER_ANY
+#define RFB_PROVIDER_ANY            2
+#endif
+
 #ifndef RFB_PROVIDER
+#if defined(ESP8266_GENERIC)
+#define RFB_PROVIDER                RFB_PROVIDER_ANY
+#else
 #define RFB_PROVIDER                RFB_PROVIDER_RCSWITCH
 #endif
+#endif
+
+#define RFB_PROVIDER_RCSWITCH_SUPPORT \
+    ((RFB_PROVIDER == RFB_PROVIDER_RCSWITCH) || (RFB_PROVIDER == RFB_PROVIDER_ANY))
+#define RFB_PROVIDER_EFM8BB1_SUPPORT \
+    ((RFB_PROVIDER == RFB_PROVIDER_EFM8BB1) || (RFB_PROVIDER == RFB_PROVIDER_ANY))
 
 #ifndef RFB_PORT
 #define RFB_PORT                    1               // If EFM is enabled, use this UART port
@@ -1737,12 +1819,13 @@
 #endif
 
 #ifndef IR_RX_PRESET
-#define IR_RX_PRESET                0               // (number) IR-code-as-button preset to use
+#define IR_RX_PRESET                0               // (number) IR-code-as-button preset to use, default of the
+                                                    // `irRxPreset` setting (every preset is built in)
                                                     // 0 - disabled
                                                     // 1,2,5 - generic remote shipped with the RGB controller
                                                     // 3 - Samsung AA59-00608A for a generic 8CH module
                                                     // 4 - Remote for a generic 1CH module
-                                                    // (~1Kb, see ir.cpp for more info about the presets)
+                                                    // (see ir.cpp for more info about the presets)
 #endif
 
 #ifndef IR_RX_UNKNOWN
@@ -1805,8 +1888,13 @@
 #define RFM69_ENCRYPTKEY            "fibonacci0123456"
 #endif
 
+// default of the `rfm69CsGPIO` setting; generic images have none, the module stays idle until it is set
 #ifndef RFM69_CS_PIN
+#if defined(ESP8266_GENERIC)
+#define RFM69_CS_PIN                GPIO_NONE
+#else
 #define RFM69_CS_PIN                SS
+#endif
 #endif
 
 #ifndef RFM69_IRQ_PIN
@@ -1837,8 +1925,13 @@
 #define TUYA_SUPPORT                0
 #endif
 
+// UART number, default of the `tuyaPort` setting. 0 = off (generic images, set tuyaPort to start the module)
 #ifndef TUYA_PORT
+#if UART_DRIVERS_CLAIM_PORT
+#define TUYA_PORT                   0
+#else
 #define TUYA_PORT                   1
+#endif
 #endif
 
 #ifndef TUYA_FILTER_ENABLED
@@ -1914,8 +2007,13 @@
 #define KINGART_CURTAIN_SUPPORT      0
 #endif
 
+// UART number, default of the `curtainPort` setting. 0 = off (generic images, set curtainPort to start the module)
 #ifndef KINGART_CURTAIN_PORT
+#if UART_DRIVERS_CLAIM_PORT
+#define KINGART_CURTAIN_PORT         0
+#else
 #define KINGART_CURTAIN_PORT         1
+#endif
 #endif
 
 #ifndef KINGART_CURTAIN_BUFFER_SIZE

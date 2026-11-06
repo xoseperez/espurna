@@ -26,14 +26,26 @@ namespace ota {
 namespace basic_web {
 namespace {
 
-const char HomePage[] PROGMEM = R"(
-<!DOCTYPE html>
+// Minimal image (1 MB boards): the release list comes from firmware.json on GitHub Pages (read by the browser,
+// Access-Control-Allow-Origin: *), the board downloads the picked .bin.gz itself (/ota/fetch, ota_fetch.cpp). The full
+// images of the same flash size are listed, with their SHA-256. Or a file upload, as before
+const char HomePageHead[] PROGMEM = R"(<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>ESPurna</title>
+<style>body{font-family:sans-serif;max-width:640px;margin:16px auto;padding:0 16px}fieldset{margin-top:12px}
+input[type=text]{width:100%;box-sizing:border-box;margin:2px 0}button{margin:3px 0}#log{margin-top:12px}</style>
 </head>
 <body>
+<h3 id="h"></h3>
+<div id="info"></div>
+<fieldset><legend>Releases</legend><div id="rel">Reading the release list...</div></fieldset>
+<fieldset><legend>Download</legend>
+<input type="text" id="url" placeholder="https://.../espurna-esp8266-1m.bin.gz">
+<input type="text" id="sha" placeholder="SHA-256 of the file">
+<button id="go">Download and install</button></fieldset>
 <form method="POST" action="/upgrade" enctype="multipart/form-data">
 <fieldset>
 <legend>Firmware upgrade</legend>
@@ -43,7 +55,30 @@ const char HomePage[] PROGMEM = R"(
 <div>
 <button type="submit">Upload</button>
 </div>
+</fieldset>
 </form>
+<div id="log"></div>
+<script>
+)";
+
+const char HomePageScript[] PROGMEM = R"(
+const $=i=>document.getElementById(i),log=t=>{$('log').textContent=t};
+$('h').textContent=S.host+' - '+(S.image||'minimal image');
+$('info').textContent=S.result?'Last download: '+S.result:'';
+async function go(u,h){if(!confirm('Download and install '+u+' ?'))return;
+log('Restarting, then downloading (about a minute)...');
+try{const r=await fetch('/ota/fetch',{method:'POST',body:new URLSearchParams({url:u,sha256:h})});
+log(await r.text());if(r.ok)setTimeout(()=>location.reload(),90000)}catch(e){log(String(e))}}
+$('go').onclick=()=>go($('url').value.trim(),$('sha').value.trim().toLowerCase());
+fetch(M,{cache:'no-store'}).then(r=>r.json()).then(m=>{const d=$('rel');d.textContent='';
+for(const r of m.releases||[])for(const n of I)for(const f of (r.images||{})[n]||[]){
+if(f.kind!=='ota'||!f.sha256)continue;
+const ok=Math.ceil((f.size+1)/4096)*4096<=S.free,b=document.createElement('button');
+b.textContent=r.tag+': '+f.name+' ('+Math.round(f.size/1024)+' KB)'+(ok?'':', does not fit');b.disabled=!ok;
+b.onclick=()=>go(new URL(f.url,M).href,f.sha256);d.append(b,document.createElement('br'))}
+if(!d.childNodes.length)d.textContent='No '+I.join(' / ')+' image in '+M})
+.catch(e=>{$('rel').textContent='Cannot read '+M+': '+e});
+</script>
 </body>
 </html>
 )";
@@ -54,8 +89,19 @@ const char UpgradePageHead[] PROGMEM = R"(
 </head>
 )";
 
+namespace build {
+
+// full images of the minimal one's flash size, ref. TWO_STEP of html/src/fwinstall.mjs
+PROGMEM_STRING(Images, "['esp8266-1m','esp8266-1m-max']");
+
+PROGMEM_STRING(Manifest, "https://igorufox.github.io/espurna/firmware.json");
+
+} // namespace build
+
 namespace handlers {
 namespace internal {
+
+bool denied { false };
 
 struct Result {
     template <typename T>
@@ -99,8 +145,27 @@ Result result;
 
 } // namespace internal
 
+// same user and realm as the WebUI of the full image, the browser keeps using its credentials
+template <typename Server>
+bool authenticated(Server& server) {
+    const auto password = systemPassword();
+    if (server.authenticate("admin", password.c_str())) {
+        return true;
+    }
+
+    const auto realm = systemHostname();
+    server.requestAuthentication(DIGEST_AUTH, realm.c_str());
+    return false;
+}
+
 template <typename Server>
 void result(Server& server) {
+    if (internal::denied) {
+        internal::denied = false;
+        authenticated(server);
+        return;
+    }
+
     internal::result.send(server);
 }
 
@@ -117,6 +182,11 @@ void upload(Server& server) {
         }
 
         internal::result.reset();
+        internal::denied = !server.authenticate("admin", systemPassword().c_str());
+        if (internal::denied) {
+            return;
+        }
+
         const size_t Available { (ESP.getFreeSketchSpace() - 0x1000ul) & 0xfffff000ul };
         if (!Update.begin(Available, U_FLASH)) {
             server.client().stop();
@@ -127,6 +197,10 @@ void upload(Server& server) {
     }
 
     case UPLOAD_FILE_END:
+        if (internal::denied) {
+            break;
+        }
+
         // Request body is the file plus a few hundred bytes of multipart framing. When data is lost
         // below HTTP, the form still ends at the final boundary, only with a shorter file. Anything
         // close to a TCP segment missing means the image is broken, never flash it
@@ -160,6 +234,10 @@ void upload(Server& server) {
         break;
 
     case UPLOAD_FILE_ABORTED:
+        if (internal::denied) {
+            break;
+        }
+
         internal::result.set(500, F("Upload aborted"));
         Update.end();
         eepromRotate(true);
@@ -170,7 +248,59 @@ void upload(Server& server) {
 
 template <typename Server>
 void home(Server& server) {
-    server.send_P(200, PSTR("text/html"), HomePage);
+    if (!authenticated(server)) {
+        return;
+    }
+
+    String page;
+    page.reserve(sizeof(HomePageHead) + sizeof(HomePageScript) + 512);
+    page.concat(HomePageHead, sizeof(HomePageHead) - 1);
+
+    // const S={...status, "host": ...}, I=[images], M="firmware.json URL";
+    auto status = otaFetchStatus();
+    status.remove(status.length() - 1);
+    page += F("const S=");
+    page += status;
+    page += F(",\"host\":\"");
+    page += systemHostname();
+    page += F("\"},I=");
+    page += FPSTR(build::Images);
+    page += F(",M=\"");
+
+    // same setting as in the WebUI of the full image (ADMIN)
+    auto manifest = getSetting("webFwUrl", FPSTR(build::Manifest));
+    if (!manifest.startsWith(F("https://")) || (manifest.indexOf('"') >= 0) || (manifest.indexOf('<') >= 0)) {
+        manifest = FPSTR(build::Manifest);
+    }
+    page += manifest;
+    page += F("\";");
+
+    page.concat(HomePageScript, sizeof(HomePageScript) - 1);
+    server.send(200, PSTR("text/html"), page);
+}
+
+template <typename Server>
+void status(Server& server) {
+    if (authenticated(server)) {
+        server.send(200, PSTR("application/json"), otaFetchStatus());
+    }
+}
+
+// the request is stored and taken at boot, once
+template <typename Server>
+void fetch(Server& server) {
+    if (!authenticated(server)) {
+        return;
+    }
+
+    String error;
+    if (!otaFetchRequest(server.arg(F("url")), server.arg(F("sha256")), error)) {
+        server.send(400, PSTR("text/plain"), String(F("ERROR: ")) + error);
+        return;
+    }
+
+    server.send(200, PSTR("text/plain"), String(F("OK, fetch")));
+    prepareReset(CustomResetReason::Web);
 }
 
 } // namespace handlers
@@ -179,6 +309,14 @@ template <typename Server>
 void begin(Server& server, uint16_t port) {
     server.on("/", HTTP_GET, [&]() {
         handlers::home(server);
+    });
+
+    server.on("/ota/status", HTTP_GET, [&]() {
+        handlers::status(server);
+    });
+
+    server.on("/ota/fetch", HTTP_POST, [&]() {
+        handlers::fetch(server);
     });
 
     server.on("/upgrade", HTTP_POST,

@@ -21,6 +21,7 @@ ref. safeboot_esp32.h
 #include <esp_partition.h>
 #include <esp_rom_md5.h>
 #include <esp_system.h>
+#include <mbedtls/sha256.h>
 #include <nvs.h>
 
 #include <algorithm>
@@ -139,13 +140,14 @@ void tick() {
     }
 }
 
-// ESPurna's own safeboot image (code/safeboot-app) reads Wi-Fi, hostname and the admin password straight from these
-// settings. The only thing passed to it is the URL of an image to download into app0 on its next boot
+// ESPurna's own safeboot image (code/safeboot-app) reads Wi-Fi, hostname, the admin password and webFwUrl straight
+// from these settings. NVS "safeboot" passes the rest: "url" + "sha256" - the image to download into app0 on its next
+// boot; "image" - ESPURNA_IMAGE, its release list shows the files of that image; "result" - written back by safeboot
 namespace request {
 
 constexpr size_t UrlMax { 240 };
 
-bool write(const String& url, String& error) {
+bool write(const String& url, const String& sha256, String& error) {
     nvs_handle_t handle;
     if (nvs_open("safeboot", NVS_READWRITE, &handle) != ESP_OK) {
         error = F("cannot open NVS");
@@ -154,6 +156,15 @@ bool write(const String& url, String& error) {
 
     auto result = nvs_set_str(handle, "url", url.c_str());
     if (result == ESP_OK) {
+        result = sha256.length()
+            ? nvs_set_str(handle, "sha256", sha256.c_str())
+            : nvs_erase_key(handle, "sha256");
+        if (result == ESP_ERR_NVS_NOT_FOUND) {
+            result = ESP_OK;
+        }
+    }
+    if (result == ESP_OK) {
+        nvs_erase_key(handle, "result");
         result = nvs_commit(handle);
     }
     nvs_close(handle);
@@ -166,12 +177,111 @@ bool write(const String& url, String& error) {
     return true;
 }
 
-// the safeboot image has no TLS (it has to fit 832 KB)
+String read(const char* key) {
+    String out;
+
+    nvs_handle_t handle;
+    if (nvs_open("safeboot", NVS_READONLY, &handle) == ESP_OK) {
+        size_t size = 0;
+        if ((nvs_get_str(handle, key, nullptr, &size) == ESP_OK) && (size > 1)) {
+            std::unique_ptr<char[]> value(new (std::nothrow) char[size]);
+            if (value && (nvs_get_str(handle, key, value.get(), &size) == ESP_OK)) {
+                out = value.get();
+            }
+        }
+        nvs_close(handle);
+    }
+
+    return out;
+}
+
+// once per image change, not on every boot
+void image() {
+    const String current(F(ESPURNA_IMAGE));
+    if (current == read("image")) {
+        return;
+    }
+
+    nvs_handle_t handle;
+    if (nvs_open("safeboot", NVS_READWRITE, &handle) == ESP_OK) {
+        if (current.length()) {
+            nvs_set_str(handle, "image", current.c_str());
+        } else {
+            nvs_erase_key(handle, "image");
+        }
+        nvs_commit(handle);
+        nvs_close(handle);
+    }
+}
+
+// the safeboot image downloads http:// and https:// (ESP-IDF certificate bundle)
 bool validUrl(const String& url) {
-    return (url.length() > 10) && (url.length() <= UrlMax) && url.startsWith(F("http://"));
+    return (url.length() > 10) && (url.length() <= UrlMax)
+        && (url.startsWith(F("http://")) || url.startsWith(F("https://")));
+}
+
+// empty, or 64 lower case hex digits
+bool validSha256(const String& value) {
+    if (!value.length()) {
+        return true;
+    }
+
+    if (value.length() != 64) {
+        return false;
+    }
+
+    for (const auto c : value) {
+        if (!(((c >= '0') && (c <= '9')) || ((c >= 'a') && (c <= 'f')))) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 } // namespace request
+
+// SHA-256 of the first `size` bytes of a partition (the image file as it was written), hex
+String partitionSha256(const esp_partition_t* part, size_t size) {
+    if (!part || !size || (size > part->size)) {
+        return String();
+    }
+
+    std::unique_ptr<uint8_t[]> buffer(new (std::nothrow) uint8_t[4096]);
+    if (!buffer) {
+        return String();
+    }
+
+    mbedtls_sha256_context ctx;
+    mbedtls_sha256_init(&ctx);
+    mbedtls_sha256_starts(&ctx, 0);
+
+    bool ok = true;
+    for (size_t offset = 0; ok && (offset < size); offset += 4096) {
+        const size_t len = std::min<size_t>(4096, size - offset);
+        ok = esp_partition_read(part, offset, buffer.get(), len) == ESP_OK;
+        if (ok) {
+            mbedtls_sha256_update(&ctx, buffer.get(), len);
+        }
+    }
+
+    uint8_t digest[32];
+    mbedtls_sha256_finish(&ctx, digest);
+    mbedtls_sha256_free(&ctx);
+    if (!ok) {
+        return String();
+    }
+
+    String out;
+    out.reserve(64);
+    char hex[3];
+    for (const auto value : digest) {
+        snprintf(hex, sizeof(hex), "%02x", value);
+        out += hex;
+    }
+
+    return out;
+}
 
 // From the two-slot layouts of the Arduino core (min_spiffs.csv, default.csv) to esp32_4mb_safeboot.csv over Wi-Fi.
 // ESPurna has to run from the second slot: the safeboot image goes over the first one (0x10000, below the new app0),
@@ -330,6 +440,7 @@ struct Upload {
 
 Upload upload;
 String pending_url;
+String pending_sha256;
 String last_error;
 
 bool uploadWrite(const uint8_t* data, size_t len) {
@@ -406,7 +517,7 @@ String describe(const esp_partition_t* part) {
 // in loop(): nothing else touches the flash while the table is replaced
 void migrate() {
     String error;
-    if (pending_url.length() && !request::write(pending_url, error)) {
+    if (pending_url.length() && !request::write(pending_url, pending_sha256, error)) {
         DEBUG_MSG_P(PSTR("[SAFEBOOT] Migration stopped: %s\n"), error.c_str());
         last_error = error;
         return;
@@ -442,18 +553,23 @@ void migrate() {
 } // namespace layout
 
 // Update through safeboot from an URL (safeboot layout): the same settings, factory as the next boot
-bool updateFromUrl(const String& url, String& error) {
+bool updateFromUrl(const String& url, const String& sha256, String& error) {
     if (!layout::current()) {
         error = F("not the safeboot layout");
         return false;
     }
 
     if (!request::validUrl(url)) {
-        error = F("invalid URL (http:// only, up to 240 characters)");
+        error = F("invalid URL (http:// or https://, up to 240 characters)");
         return false;
     }
 
-    if (!request::write(url, error)) {
+    if (!request::validSha256(sha256)) {
+        error = F("invalid SHA-256 (64 lower case hex digits)");
+        return false;
+    }
+
+    if (!request::write(url, sha256, error)) {
         return false;
     }
 
@@ -484,11 +600,11 @@ and one 2880 KB slot for ESPurna after it, then restarts into safeboot. With an 
 without one it waits for an upload in its own web UI (same address, user admin, the admin password). Settings stay.
 Keep the power on until ESPurna is back.</p>
 <label>ESPurna safeboot image (espurna-esp32-safeboot.bin)<input type="file" id="mfile" accept=".bin"></label>
-<label>ESPurna image URL, optional (http://, the -ota.bin one)<input type="text" id="murl"></label>
+<label>ESPurna image URL, optional (http:// or https://, the -ota.bin one)<input type="text" id="murl"></label>
 <button id="migrate">Migrate</button></fieldset></div>
 <div id="new" hidden><fieldset><legend>Update ESPurna</legend><p>ESPurna restarts into safeboot, which writes the new
 image into the ESPurna slot and starts it.</p>
-<label>From an URL (http://, the -ota.bin one)<input type="text" id="url"></label><button id="byurl">Update from URL</button>
+<label>From an URL (http:// or https://, the -ota.bin one)<input type="text" id="url"></label><button id="byurl">Update from URL</button>
 <p>Or with a file: <button id="byfile">Restart into safeboot</button> and upload the image there.</p></fieldset>
 <fieldset><legend>Install or replace safeboot</legend><label>ESPurna safeboot image (espurna-esp32-safeboot.bin)
 <input type="file" id="sfile" accept=".bin"></label><button id="install">Install</button></fieldset></div>
@@ -567,14 +683,27 @@ void onStatus(AsyncWebServerRequest* request) {
     out += error;
     out += F("\",\"last\":\"");
     out += layout::last_error;
+    // what safeboot did with the last URL ("failed: ..." when it gave up)
+    out += F("\",\"result\":\"");
+    out += request::read("result");
+    // ?size=<bytes of espurna-esp32-safeboot.bin>: SHA-256 of the installed one, to compare with the release list
+    const auto* size = request->getParam("size");
+    if (current && size) {
+        out += F("\",\"sha256\":\"");
+        out += partitionSha256(factory(), size->value().toInt());
+    }
     out += F("\"}");
 
     request->send(200, "application/json", out);
 }
 
-String formUrl(AsyncWebServerRequest* request) {
-    const auto* param = request->getParam("url", true);
+String formValue(AsyncWebServerRequest* request, const char* name) {
+    const auto* param = request->getParam(name, true);
     return param ? param->value() : String();
+}
+
+String formUrl(AsyncWebServerRequest* request) {
+    return formValue(request, "url");
 }
 
 void onUpdate(AsyncWebServerRequest* request) {
@@ -584,7 +713,7 @@ void onUpdate(AsyncWebServerRequest* request) {
 
     const auto url = formUrl(request);
     String error;
-    if (!updateFromUrl(url, error)) {
+    if (!updateFromUrl(url, formValue(request, "sha256"), error)) {
         request->send(400, "text/plain", error);
         return;
     }
@@ -684,7 +813,13 @@ void onMigrate(AsyncWebServerRequest* request) {
 
     const auto url = formUrl(request);
     if (url.length() && !request::validUrl(url)) {
-        request->send(400, "text/plain", F("invalid URL (http:// only, up to 240 characters)"));
+        request->send(400, "text/plain", F("invalid URL (http:// or https://, up to 240 characters)"));
+        return;
+    }
+
+    const auto sha256 = formValue(request, "sha256");
+    if (!request::validSha256(sha256)) {
+        request->send(400, "text/plain", F("invalid SHA-256 (64 lower case hex digits)"));
         return;
     }
 
@@ -696,6 +831,7 @@ void onMigrate(AsyncWebServerRequest* request) {
         setSetting("sbUrl", url);
     }
     layout::pending_url = url;
+    layout::pending_sha256 = sha256;
     espurnaRegisterOnce(layout::migrate);
 
     request->send(200, "text/plain",
@@ -831,6 +967,7 @@ void safebootSetup() {
     using namespace espurna::safeboot;
 
     guard();
+    request::image();
     espurnaRegisterLoop(tick);
 
 #if TERMINAL_SUPPORT

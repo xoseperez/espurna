@@ -88,7 +88,7 @@ namespace tuya {
 
     DpMap switchIds;
 
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
+#if LIGHT_PROVIDER_CUSTOM_SUPPORT
     DpMap channelIds;
     StateId channelStateId;
 #endif
@@ -113,7 +113,7 @@ namespace tuya {
         unsigned char _dp;
     };
 
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
+#if LIGHT_PROVIDER_CUSTOM_SUPPORT
 
     class TuyaLightProvider : public LightProvider {
     public:
@@ -248,7 +248,7 @@ namespace tuya {
     }
 
     void updateState(const DataProtocol<bool>& proto) {
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
+#if LIGHT_PROVIDER_CUSTOM_SUPPORT
         if (channelStateId && (channelStateId.id() == proto.id())) {
             // See above. Ignore the selected state ID while we are sending the data,
             // to avoid resetting the state to ON while we are turning OFF
@@ -304,7 +304,7 @@ namespace tuya {
                 }
                 break;
             case Type::INT:
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
+#if LIGHT_PROVIDER_CUSTOM_SUPPORT
                 if (!channelIds.add(lightChannels(), dp.id)) {
                     DEBUG_MSG_P(PSTR("[TUYA] Channel for DP id=%u already exists\n"), dp.id);
                     goto error;
@@ -320,7 +320,7 @@ namespace tuya {
             }
         }
 
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
+#if LIGHT_PROVIDER_CUSTOM_SUPPORT
         if (channelIds.size()) {
            lightSetProvider(std::make_unique<TuyaLightProvider>(channelIds));
         }
@@ -361,7 +361,7 @@ error:
             if (State::BOOT == state) {
                 if (!configDone) {
                     DEBUG_MSG_P(PSTR("[TUYA] Attempting to configure the board ...\n"));
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
+#if LIGHT_PROVIDER_CUSTOM_SUPPORT
                     setupChannels();
 #endif
                 }
@@ -546,7 +546,7 @@ error:
     // Respective provider setup should be called before state restore,
     // so we can use dummy values
 
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
+#if LIGHT_PROVIDER_CUSTOM_SUPPORT
 
     void setupChannels() {
         bool done { false };
@@ -593,7 +593,7 @@ error:
         }
 
         ctx.output.print(F("\nKnown DP(s):\n"));
-#if LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM
+#if LIGHT_PROVIDER_CUSTOM_SUPPORT
         if (channelStateId) {
             ctx.output.printf_P(
                 PSTR("%u (bool) => lights state\n"),
@@ -633,8 +633,9 @@ error:
     RelayProviderBasePtr makeRelayProvider(size_t index) {
         RelayProviderBasePtr out;
 
-        const auto dpId = build::switchDpId(index);
-        if (!switchIds.add(index, dpId)) {
+        // relayProv<N> tuya, DP id from `tuyaSwitch<N>` (TUYA_RELAY<N+1>_DPID by default)
+        const auto dpId = getSetting({"tuyaSwitch", index}, build::switchDpId(index));
+        if (dpId && switchIds.add(index, dpId)) {
             out = std::make_unique<TuyaRelayProvider>(dpId);
             configDone.set();
         }
@@ -643,12 +644,25 @@ error:
     }
 
     void setup() {
-        const auto port = uartPort(TUYA_PORT - 1);
+        // UART number (1-based) of the Tuya MCU, `tuyaPort`. 0 keeps the module idle (generic images default)
+        const auto number = getSetting("tuyaPort", static_cast<int>(TUYA_PORT));
+        if (number <= 0) {
+            return;
+        }
+
+        const auto port = uartPort(number - 1);
 
         // No point starting up when port is unusable
         if (!port || (!port->tx || !port->rx)) {
             return;
         }
+
+#if UART_DRIVERS_CLAIM_PORT
+        // serial log and terminal let go of the port (board builds have them compiled out)
+        if (!uartClaim(number - 1, F("Tuya"))) {
+            return;
+        }
+#endif
 
         tuyaSerial = new Transport(*port->stream);
 

@@ -1831,7 +1831,7 @@ bool _buttonSetupProvider(size_t index, ButtonProvider provider) {
     }
 
     case ButtonProvider::Lightfox:
-#ifdef FOXEL_LIGHTFOX_DUAL
+#if LIGHTFOX_SUPPORT
         _buttonAdd(_buttonWithPin(index, lightfoxMakeButtonPin(index)));
         result = true;
 #endif

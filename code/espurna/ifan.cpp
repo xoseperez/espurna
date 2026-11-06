@@ -509,8 +509,12 @@ void fanSpeed(FanSpeed speed) {
     espurna::ifan02::update(speed);
 }
 
+// GPIOs (control 12, speed 5 / 4 / 15) are only taken by a relay with relayProv<N> fan,
+// the module stays idle otherwise (generic images)
 void fanSetup() {
-    espurna::ifan02::setup();
+    if (espurna::ifan02::internal::relay_id != RelaysMax) {
+        espurna::ifan02::setup();
+    }
 }
 
 #endif // IFAN_SUPPORT

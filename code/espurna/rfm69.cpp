@@ -16,6 +16,8 @@ Copyright (C) 2016-2017 by Xose Pérez <xose dot perez at gmail dot com>
 #include <RFM69_ATC.h>
 #include <SPI.h>
 
+#include <vector>
+
 #include "rfm69.h"
 #include "mqtt.h"
 #include "ws.h"
@@ -109,6 +111,53 @@ constexpr size_t node(size_t) {
 
 namespace settings {
 
+// Radio. Build values are the defaults; generic images have no CS pin (RFM69_CS_PIN GPIO_NONE) and the
+// module stays idle until rfm69CsGPIO is set. The radio uses the hardware SPI (GPIO12 / 13 / 14)
+uint8_t cs() {
+    return getSetting("rfm69CsGPIO", build::cs());
+}
+
+uint8_t irq() {
+    return getSetting("rfm69IrqGPIO", build::irq());
+}
+
+bool hardware() {
+    return getSetting("rfm69HW", build::hardware());
+}
+
+// 433, 868 or 915 (MHz)
+uint8_t frequency() {
+    const auto mhz = getSetting("rfm69Freq", 0);
+    return (mhz == 433) ? RF69_433MHZ :
+        (mhz == 868) ? RF69_868MHZ :
+        (mhz == 915) ? RF69_915MHZ :
+            build::frequency();
+}
+
+uint16_t nodeId() {
+    return getSetting("rfm69Id", build::nodeId());
+}
+
+uint8_t networkId() {
+    return getSetting("rfm69Net", build::networkId());
+}
+
+uint8_t gatewayId() {
+    return getSetting("rfm69GwId", build::gatewayId());
+}
+
+String encryptionKey() {
+    return getSetting("rfm69EncKey", build::encryptionKey());
+}
+
+bool promiscuous() {
+    return getSetting("rfm69Promisc", build::promiscuous());
+}
+
+bool promiscuousSends() {
+    return getSetting("rfm69PromiscSends", build::promiscuousSends());
+}
+
 String rootTopic() {
     return getSetting("rfm69Topic", build::RootTopic);
 }
@@ -193,7 +242,10 @@ protected:
 namespace {
 
 std::unique_ptr<RFM69Wrap> _rfm69_radio;
-rfm69::Node _rfm69_node_info[rfm69::build::maxNodes()];
+std::vector<rfm69::Node> _rfm69_node_info; // allocated when the radio starts, rfm69::build::maxNodes()
+bool _rfm69_promiscuous { false };
+bool _rfm69_promiscuous_sends { false };
+uint8_t _rfm69_gateway_id { 0 };
 size_t _rfm69_node_count;
 size_t _rfm69_packet_count;
 
@@ -289,7 +341,7 @@ void _rfm69Debug(const char* prefix, const rfm69::Message& message) {
 
 void _rfm69Process(const rfm69::Message& message) {
     // Is node beyond RFM69_MAX_NODES?
-    if (message.senderID >= rfm69::build::maxNodes()) {
+    if (message.senderID >= _rfm69_node_info.size()) {
         return;
     }
 
@@ -347,7 +399,7 @@ void _rfm69Process(const rfm69::Message& message) {
 #endif
 
     // If we are the target of the message, forward it via MQTT, otherwise quit
-    if (!rfm69::build::promiscuousSends() && (rfm69::build::gatewayId() != message.targetID)) {
+    if (!_rfm69_promiscuous_sends && (_rfm69_gateway_id != message.targetID)) {
         return;
     }
 
@@ -388,7 +440,7 @@ void _rfm69Loop() {
 
         // Do not send ACKs in promiscuous mode,
         // we want to listen without being heard
-        if (!rfm69::build::promiscuous()) {
+        if (!_rfm69_promiscuous) {
             if (_rfm69_radio->ACKRequested()) {
                 _rfm69_radio->sendACK();
             }
@@ -440,26 +492,53 @@ void _rfm69SettingsMigrate(int version) {
 // -----------------------------------------------------------------------------
 
 void rfm69Setup() {
-    delay(10);
-
     migrateVersion(_rfm69SettingsMigrate);
+
+    const auto cs = rfm69::settings::cs();
+    const auto irq = rfm69::settings::irq();
+    if (!gpioValid(cs) || !gpioValid(irq)) {
+        return;
+    }
+
+    // HSPI pins, chip select and the interrupt are no longer free for anything else
+    for (auto pin : {12, 13, 14}) {
+        gpioLock(pin);
+    }
+    if (!gpioLock(cs) || !gpioLock(irq)) {
+        DEBUG_MSG_P(PSTR("[RFM69] CS GPIO%hhu or IRQ GPIO%hhu is already used\n"), cs, irq);
+        return;
+    }
+
+    delay(10);
     _rfm69Configure();
 
-    _rfm69_radio = std::make_unique<RFM69Wrap>(rfm69::build::cs(), rfm69::build::irq(), rfm69::build::hardware());
-    _rfm69_radio->initialize(rfm69::build::frequency(), rfm69::build::nodeId(), rfm69::build::networkId());
-    _rfm69_radio->encrypt(rfm69::build::encryptionKey());
-    _rfm69_radio->spyMode(rfm69::build::promiscuous());
+    const auto hardware = rfm69::settings::hardware();
+    const auto frequency = rfm69::settings::frequency();
+    const auto node = rfm69::settings::nodeId();
+    const auto network = rfm69::settings::networkId();
+
+    _rfm69_promiscuous = rfm69::settings::promiscuous();
+    _rfm69_promiscuous_sends = rfm69::settings::promiscuousSends();
+    _rfm69_gateway_id = rfm69::settings::gatewayId();
+    _rfm69_node_info.resize(rfm69::build::maxNodes());
+
+    _rfm69_radio = std::make_unique<RFM69Wrap>(cs, irq, hardware);
+    _rfm69_radio->initialize(frequency, node, network);
+
+    const auto key = rfm69::settings::encryptionKey();
+    _rfm69_radio->encrypt(key.length() ? key.c_str() : nullptr);
+    _rfm69_radio->spyMode(_rfm69_promiscuous);
     _rfm69_radio->enableAutoPower(0);
-    if (rfm69::build::hardware()) {
+    if (hardware) {
         _rfm69_radio->setHighPower();
     }
 
     DEBUG_MSG_P(PSTR("[RFM69] Working at %d MHz\n"),
-            (rfm69::build::frequency() == RF69_433MHZ) ? 433 :
-            (rfm69::build::frequency() == RF69_868MHZ) ? 868 : 915);
-    DEBUG_MSG_P(PSTR("[RFM69] Node %u\n"), rfm69::build::nodeId());
-    DEBUG_MSG_P(PSTR("[RFM69] Network %u\n"), rfm69::build::networkId());
-    if (rfm69::build::promiscuous()) {
+            (frequency == RF69_433MHZ) ? 433 :
+            (frequency == RF69_868MHZ) ? 868 : 915);
+    DEBUG_MSG_P(PSTR("[RFM69] Node %u\n"), node);
+    DEBUG_MSG_P(PSTR("[RFM69] Network %u\n"), network);
+    if (_rfm69_promiscuous) {
         DEBUG_MSG_P(PSTR("[RFM69] Promiscuous mode\n"));
     }
 

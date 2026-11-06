@@ -9,8 +9,9 @@
 # On 4 MiB boards the same address is inside the 'app' partition, there the whole image is installed at once.
 #
 # Enable with `custom_matter_tail = yes` in the env. Outputs next to the firmware:
-# - raw_firmware.bin / *.rbl / *.uf2: the head only (.matter_tail is left out)
+# - raw_firmware.bin / *.rbl / firmware.uf2: the head only (.matter_tail is left out), for the Tuya layout
 # - matter-tail.bin: the tail container, uploaded through the same web OTA form as the firmware
+# - espurna-beken.bin: one OTA file for both layouts, espurna-beken-quectel.uf2 (ref. beken_link_tail.py)
 
 import os
 
@@ -84,7 +85,11 @@ if env.GetProjectOption("custom_matter_tail", "no") in ("yes", "true", "1"):
     for e in (env, projenv):  # noqa: F821
         e.Append(CPPDEFINES=[("MATTER_TAIL_SUPPORT", 1)])
     script = os.path.join(env.subst("$PROJECT_DIR"), "scripts", "beken_link_tail.py")
+    # board json of the other bootloader layout, for the parts of espurna-beken.bin made for it
+    quectel = os.path.join(
+        env.subst("$PROJECT_DIR"),
+        env.GetProjectOption("custom_quectel_board", "boards_beken/xh-cb2s-bk7231m.json"))
     # same as ${LTCHIPTOOL} link2bin, through the wrapper that splits the image
     env.Replace(
-        LINK=f'"${{LTPYTHONEXE}}" "{script}" 0x{TAIL_ORIGIN:X} -r -i 1 -L "${{LT_DIR}}" link2bin ${{BOARD_JSON}} "" ""'
+        LINK=f'"${{LTPYTHONEXE}}" "{script}" 0x{TAIL_ORIGIN:X} "{quectel}" -r -i 1 -L "${{LT_DIR}}" link2bin ${{BOARD_JSON}} "" ""'
     )

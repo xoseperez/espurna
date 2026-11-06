@@ -232,6 +232,8 @@ span.visible {
 .button-garland-set-default,
 .button-ha-enabled,
 .button-lightfox-learn,
+.button-matter-start,
+.button-matter-window,
 .button-rfb-learn,
 .button-settings-backup,
 .button-settings-restore,
@@ -545,4 +547,26 @@ input::placeholder {
 
 .template-result .pure-button {
     padding: 0.2em 0.8em;
+}
+
+#firmware-releases {
+    margin: 0 0 1em 0;
+    font-size: 0.9em;
+}
+
+#firmware-releases > li {
+    margin: 0.5em 0;
+}
+
+#firmware-releases .pure-button {
+    padding: 0.2em 0.8em;
+    margin: 0.2em 0;
+}
+
+#firmware-status.firmware-error {
+    color: #b00;
+}
+
+#firmware-status.firmware-ok {
+    color: #070;
 }

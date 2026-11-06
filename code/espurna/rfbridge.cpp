@@ -24,7 +24,9 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #include <list>
 #include <memory>
 
-#if RFB_PROVIDER == RFB_PROVIDER_RCSWITCH
+#include "uart.h"
+
+#if RFB_PROVIDER_RCSWITCH_SUPPORT
 #include <RCSwitch.h>
 #endif
 
@@ -36,14 +38,34 @@ namespace {
 
 unsigned char _rfb_repeats = RFB_SEND_REPEATS;
 
-#if RFB_PROVIDER == RFB_PROVIDER_RCSWITCH
-std::unique_ptr<RCSwitch> _rfb_modem;
-bool _rfb_receive { false };
-bool _rfb_transmit { false };
+// RFB_PROVIDER_ANY builds both providers, `rfbProv` picks one at boot.
+// Otherwise this is a constant and the other provider is not built
+#if RFB_PROVIDER == RFB_PROVIDER_ANY
+bool _rfb_efm8bb1 { false };
+
+bool _rfbEfm8bb1() {
+    return _rfb_efm8bb1;
+}
 #else
+constexpr bool _rfbEfm8bb1() {
+    return RFB_PROVIDER == RFB_PROVIDER_EFM8BB1;
+}
+#endif
+
+#if RFB_PROVIDER_RCSWITCH_SUPPORT
+std::unique_ptr<RCSwitch> _rfb_modem;
+#endif
+
+#if RFB_PROVIDER_EFM8BB1_SUPPORT
 Stream* _rfb_port { nullptr };
+#endif
+
+#if RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
 constexpr bool _rfb_receive { true };
 constexpr bool _rfb_transmit { true };
+#else
+bool _rfb_receive { false };
+bool _rfb_transmit { false };
 #endif
 
 std::forward_list<RfbCodeHandler> _rfb_code_handlers;
@@ -297,37 +319,26 @@ struct RfbParser {
 // know all of the required data members and can prepare a basic POD struct
 // -----------------------------------------------------------------------------
 
-#if RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
-
 struct RfbMessage {
-    RfbMessage(const RfbMessage&) = default;
-    RfbMessage(RfbMessage&&) = default;
-
-    explicit RfbMessage(uint8_t (&data)[RfbParser::PayloadSizeBasic], unsigned char repeats_) :
-        repeats(repeats_)
-    {
-        std::copy(data, data + sizeof(data), code);
-    }
-
+#if RFB_PROVIDER_EFM8BB1_SUPPORT
+    // EFM8BB1, the payload as it is sent over UART
     uint8_t code[RfbParser::PayloadSizeBasic] { 0u };
-    uint8_t repeats { 1u };
-};
+#endif
 
-#elif RFB_PROVIDER == RFB_PROVIDER_RCSWITCH
-
-struct RfbMessage {
+#if RFB_PROVIDER_RCSWITCH_SUPPORT
+    // rc-switch
     using code_type = decltype(std::declval<RCSwitch>().getReceivedValue());
 
     static constexpr size_t BufferSize = sizeof(code_type) + 5;
 
-    uint8_t protocol;
-    uint16_t timing;
-    uint8_t bits;
-    code_type code;
-    uint8_t repeats;
-};
+    uint8_t protocol { 0u };
+    uint16_t timing { 0u };
+    uint8_t bits { 0u };
+    code_type value { 0u };
+#endif
 
-#endif // RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
+    uint8_t repeats { 1u };
+};
 
 namespace {
 
@@ -422,8 +433,10 @@ namespace {
 
 void _rfbWebSocketOnVisible(JsonObject& root) {
     wsPayloadModule(root, espurna::rfbridge::settings::Prefix);
-#if RFB_PROVIDER == RFB_PROVIDER_RCSWITCH
-    wsPayloadModule(root, STRING_VIEW("rfbdirect"));
+#if RFB_PROVIDER_RCSWITCH_SUPPORT
+    if (!_rfbEfm8bb1()) {
+        wsPayloadModule(root, STRING_VIEW("rfbdirect"));
+    }
 #endif
 }
 
@@ -453,9 +466,11 @@ void _rfbWebSocketOnConnected(JsonObject& root) {
 #if RELAY_SUPPORT
     root["rfbCount"] = relayCount();
 #endif
-#if RFB_PROVIDER == RFB_PROVIDER_RCSWITCH
-    root["rfbRX"] = getSetting("rfbRX", RFB_RX_PIN);
-    root["rfbTX"] = getSetting("rfbTX", RFB_TX_PIN);
+#if RFB_PROVIDER_RCSWITCH_SUPPORT
+    if (!_rfbEfm8bb1()) {
+        root["rfbRX"] = getSetting("rfbRX", RFB_RX_PIN);
+        root["rfbTX"] = getSetting("rfbTX", RFB_TX_PIN);
+    }
 #endif
 }
 
@@ -500,25 +515,25 @@ bool _rfbWebSocketOnKeyCheck(espurna::StringView key, const JsonVariant& value) 
 
 namespace {
 
-#if RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
-
-// we only care about last 6 chars (3 bytes in hex),
-// since in 'default' mode rfbridge only handles a single protocol
 bool _rfbCompare(const char* lhs, const char* rhs, size_t length) {
-    return (0 == std::memcmp((lhs + length - 6), (rhs + length - 6), 6));
+#if RFB_PROVIDER_EFM8BB1_SUPPORT
+    // we only care about last 6 chars (3 bytes in hex),
+    // since in 'default' mode rfbridge only handles a single protocol
+    if (_rfbEfm8bb1()) {
+        return (length >= 6) && (0 == std::memcmp((lhs + length - 6), (rhs + length - 6), 6));
+    }
+#endif
+
+#if RFB_PROVIDER_RCSWITCH_SUPPORT
+    // protocol is [2:4), bit length is [8:10), actual payload is [10:)
+    // protocol is not compared: rc-switch tries every protocol in order and takes the first one
+    // that fits, a jittery sync pulse of the same remote sometimes fits a later one better
+    // (e.g. Princeton 01 received as 17, same bits, same payload) and the press was lost
+    return (length >= 8) && (0 == std::memcmp((lhs + 8), (rhs + 8), length - 8));
+#else
+    return false;
+#endif
 }
-
-#elif RFB_PROVIDER == RFB_PROVIDER_RCSWITCH
-
-// protocol is [2:4), bit length is [8:10), actual payload is [10:)
-// protocol is not compared: rc-switch tries every protocol in order and takes the first one
-// that fits, a jittery sync pulse of the same remote sometimes fits a later one better
-// (e.g. Princeton 01 received as 17, same bits, same payload) and the press was lost
-bool _rfbCompare(const char* lhs, const char* rhs, size_t length) {
-    return (0 == std::memcmp((lhs + 8), (rhs + 8), length - 8));
-}
-
-#endif // RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
 
 #if RELAY_SUPPORT
 
@@ -667,7 +682,7 @@ void _rfbLearnStartFromPayload(espurna::StringView payload) {
 // RF handler implementations
 // -----------------------------------------------------------------------------
 
-#if RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
+#if RFB_PROVIDER_EFM8BB1_SUPPORT
 
 namespace {
 
@@ -677,15 +692,18 @@ void _rfbCode(unsigned char protocol, espurna::StringView code) {
     }
 }
 
-void _rfbEnqueue(uint8_t (&code)[RfbParser::PayloadSizeBasic], unsigned char repeats = 1u) {
+void _rfbEfmEnqueue(uint8_t (&code)[RfbParser::PayloadSizeBasic], unsigned char repeats = 1u) {
     if (!_rfb_transmit) return;
-    _rfb_message_queue.push_back(RfbMessage(code, repeats));
+    RfbMessage message;
+    std::copy(code, code + sizeof(code), message.code);
+    message.repeats = repeats;
+    _rfb_message_queue.push_back(message);
 }
 
-bool _rfbEnqueue(espurna::StringView code, unsigned char repeats = 1u) {
+bool _rfbEfmEnqueue(espurna::StringView code, unsigned char repeats = 1u) {
     uint8_t buffer[RfbParser::PayloadSizeBasic] { 0u };
     if (hexDecode(code.begin(), code.length(), buffer, sizeof(buffer))) {
-        _rfbEnqueue(buffer, repeats);
+        _rfbEfmEnqueue(buffer, repeats);
         return true;
     }
 
@@ -707,7 +725,7 @@ void _rfbAckImpl() {
     _rfb_port->flush();
 }
 
-void _rfbLearnImpl() {
+void _rfbEfmLearn() {
     constexpr uint8_t message[3] {
         CodeStart, CodeLearn, CodeEnd
     };
@@ -717,7 +735,7 @@ void _rfbLearnImpl() {
     _rfb_port->flush();
 }
 
-void _rfbSendImpl(const RfbMessage& message) {
+void _rfbEfmSend(const RfbMessage& message) {
     _rfb_port->write(CodeStart);
     _rfb_port->write(CodeSendBasic);
     _rfbSendRaw(message.code, std::size(message.code));
@@ -796,7 +814,7 @@ void _rfbParse(uint8_t code, const std::vector<uint8_t>& payload) {
 
 RfbParser _rfb_parser(_rfbParse);
 
-void _rfbReceiveImpl() {
+void _rfbEfmReceive() {
 
     while (_rfb_port->available()) {
         auto c = _rfb_port->read();
@@ -814,6 +832,10 @@ void _rfbReceiveImpl() {
 
 // note that we don't care about queue here, just dump raw message as-is
 void _rfbSendRawFromPayload(espurna::StringView raw) {
+    if (!_rfb_port) {
+        return;
+    }
+
     if (raw.length() > (RfbParser::MessageSizeMax * 2)) {
         return;
     }
@@ -842,7 +864,9 @@ void _rfbSendRawFromPayload(espurna::StringView raw) {
 
 } // namespace
 
-#elif RFB_PROVIDER == RFB_PROVIDER_RCSWITCH
+#endif // RFB_PROVIDER_EFM8BB1_SUPPORT
+
+#if RFB_PROVIDER_RCSWITCH_SUPPORT
 
 namespace {
 
@@ -883,12 +907,18 @@ template <>
 }
 #endif
 
-void _rfbEnqueue(uint8_t protocol, uint16_t timing, uint8_t bits, RfbMessage::code_type code, unsigned char repeats = 1u) {
+void _rfbRcsEnqueue(uint8_t protocol, uint16_t timing, uint8_t bits, RfbMessage::code_type code, unsigned char repeats = 1u) {
     if (!_rfb_transmit) return;
-    _rfb_message_queue.push_back(RfbMessage{protocol, timing, bits, code, repeats});
+    RfbMessage message;
+    message.protocol = protocol;
+    message.timing = timing;
+    message.bits = bits;
+    message.value = code;
+    message.repeats = repeats;
+    _rfb_message_queue.push_back(message);
 }
 
-void _rfbEnqueue(espurna::StringView message, unsigned char repeats = 1u) {
+void _rfbRcsEnqueue(espurna::StringView message, unsigned char repeats = 1u) {
     uint8_t buffer[RfbMessage::BufferSize] { 0u };
     if (hexDecode(message.begin(), message.length(), buffer, sizeof(buffer))) {
         const auto bytes = _rfb_bytes_for_bits(buffer[4]);
@@ -899,18 +929,18 @@ void _rfbEnqueue(espurna::StringView message, unsigned char repeats = 1u) {
         RfbMessage::code_type code;
         std::memcpy(&code, raw_code, sizeof(code));
 
-        _rfbEnqueue(buffer[1], (buffer[2] << 8) | buffer[3], buffer[4], _rfb_bswap(code), repeats);
+        _rfbRcsEnqueue(buffer[1], (buffer[2] << 8) | buffer[3], buffer[4], _rfb_bswap(code), repeats);
         return;
     }
 
     DEBUG_MSG_P(PSTR("[RF] Cannot decode the message\n"));
 }
 
-void _rfbLearnImpl() {
+void _rfbRcsLearn() {
     DEBUG_MSG_P(PSTR("[RF] Entering LEARN mode\n"));
 }
 
-void _rfbSendImpl(const RfbMessage& message) {
+void _rfbRcsSend(const RfbMessage& message) {
 
     if (!_rfb_transmit) return;
 
@@ -923,7 +953,7 @@ void _rfbSendImpl(const RfbMessage& message) {
 
     yield();
 
-    _rfb_modem->send(message.code, message.bits);
+    _rfb_modem->send(message.value, message.bits);
     _rfb_modem->resetAvailable();
 
 }
@@ -978,7 +1008,7 @@ void _rfbLearnFromReceived(std::unique_ptr<RfbLearn>& learn, espurna::StringView
 
 #endif
 
-void _rfbReceiveImpl() {
+void _rfbRcsReceive() {
 
     if (!_rfb_receive) return;
 
@@ -1043,9 +1073,59 @@ void _rfbReceiveImpl() {
 
 } // namespace
 
-#endif // RFB_PROVIDER == ...
+#endif // RFB_PROVIDER_RCSWITCH_SUPPORT
 
 namespace {
+
+// the provider of this build, or the one `rfbProv` picked
+
+void _rfbLearnImpl() {
+#if RFB_PROVIDER_EFM8BB1_SUPPORT
+    if (_rfbEfm8bb1()) {
+        _rfbEfmLearn();
+        return;
+    }
+#endif
+#if RFB_PROVIDER_RCSWITCH_SUPPORT
+    _rfbRcsLearn();
+#endif
+}
+
+void _rfbReceiveImpl() {
+#if RFB_PROVIDER_EFM8BB1_SUPPORT
+    if (_rfbEfm8bb1()) {
+        _rfbEfmReceive();
+        return;
+    }
+#endif
+#if RFB_PROVIDER_RCSWITCH_SUPPORT
+    _rfbRcsReceive();
+#endif
+}
+
+void _rfbSendImpl(const RfbMessage& message) {
+#if RFB_PROVIDER_EFM8BB1_SUPPORT
+    if (_rfbEfm8bb1()) {
+        _rfbEfmSend(message);
+        return;
+    }
+#endif
+#if RFB_PROVIDER_RCSWITCH_SUPPORT
+    _rfbRcsSend(message);
+#endif
+}
+
+void _rfbEnqueue(espurna::StringView code, unsigned char repeats) {
+#if RFB_PROVIDER_EFM8BB1_SUPPORT
+    if (_rfbEfm8bb1()) {
+        _rfbEfmEnqueue(code, repeats);
+        return;
+    }
+#endif
+#if RFB_PROVIDER_RCSWITCH_SUPPORT
+    _rfbRcsEnqueue(code, repeats);
+#endif
+}
 
 void _rfbSendQueued() {
     if (!_rfb_transmit) return;
@@ -1110,8 +1190,10 @@ void _rfbMqttCallback(unsigned int type, espurna::StringView topic, espurna::Str
         mqttSubscribe(MQTT_TOPIC_RFLEARN);
 #endif
 
-#if RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
-        mqttSubscribe(MQTT_TOPIC_RFRAW);
+#if RFB_PROVIDER_EFM8BB1_SUPPORT
+        if (_rfbEfm8bb1()) {
+            mqttSubscribe(MQTT_TOPIC_RFRAW);
+        }
 #endif
         if (_rfb_transmit) {
             mqttSubscribe(MQTT_TOPIC_RFOUT);
@@ -1145,8 +1227,8 @@ void _rfbMqttCallback(unsigned int type, espurna::StringView topic, espurna::Str
             return;
         }
 
-#if RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
-        if (t.equals(MQTT_TOPIC_RFRAW)) {
+#if RFB_PROVIDER_EFM8BB1_SUPPORT
+        if (_rfbEfm8bb1() && t.equals(MQTT_TOPIC_RFRAW)) {
             // in case this is RAW message, we should not match anything and just send it as-is to the serial
             _rfbSendRawFromPayload(payload);
             return;
@@ -1194,14 +1276,16 @@ void _rfbApiSetup() {
     );
 #endif
 
-#if RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
-    apiRegister(F(MQTT_TOPIC_RFRAW),
-        apiOk, // just a stub, nothing to return
-        [](ApiRequest& request) {
-            _rfbSendRawFromPayload(request.param(F("value")));
-            return true;
-        }
-    );
+#if RFB_PROVIDER_EFM8BB1_SUPPORT
+    if (_rfbEfm8bb1()) {
+        apiRegister(F(MQTT_TOPIC_RFRAW),
+            apiOk, // just a stub, nothing to return
+            [](ApiRequest& request) {
+                _rfbSendRawFromPayload(request.param(F("value")));
+                return true;
+            }
+        );
+    }
 #endif
 
 }
@@ -1279,10 +1363,15 @@ void _rfbCommandForget(::terminal::CommandContext&& ctx) {
 }
 #endif // if RELAY_SUPPORT
 
-#if RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
+#if RFB_PROVIDER_EFM8BB1_SUPPORT
 PROGMEM_STRING(RfbCommandWrite, "RFB.WRITE");
 
 void _rfbCommandWrite(::terminal::CommandContext&& ctx) {
+    if (!_rfbEfm8bb1()) {
+        terminalError(ctx, F("EFM8BB1 only (rfbProv)"));
+        return;
+    }
+
     if (ctx.argv.size() != 2) {
         terminalError(ctx, F("RFB.WRITE <PAYLOAD>"));
         return;
@@ -1298,7 +1387,7 @@ static constexpr ::terminal::Command RfbCommands[] PROGMEM {
     {RfbCommandLearn, _rfbCommandLearn},
     {RfbCommandForget, _rfbCommandForget},
 #endif
-#if RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
+#if RFB_PROVIDER_EFM8BB1_SUPPORT
     {RfbCommandWrite, _rfbCommandWrite},
 #endif
 };
@@ -1373,7 +1462,7 @@ void rfbForget(size_t id, bool status) {
 // SETUP & LOOP
 // -----------------------------------------------------------------------------
 
-#if RELAY_SUPPORT && (RFB_PROVIDER == RFB_PROVIDER_RCSWITCH)
+#if RELAY_SUPPORT && RFB_PROVIDER_RCSWITCH_SUPPORT
 
 namespace {
 
@@ -1423,22 +1512,53 @@ void _rfbSettingsMigrate(int version) {
 
 #endif
 
-void rfbSetup() {
-#if RFB_PROVIDER == RFB_PROVIDER_EFM8BB1
-    const auto port = uartPort(RFB_PORT - 1);
-    if (!port || (!port->tx || !port->rx)) {
-        return;
-    }
+#if RFB_PROVIDER == RFB_PROVIDER_ANY
+namespace {
 
-    _rfb_port = port->stream;
-    _rfb_parser.reserve(RfbParser::MessageSizeBasic);
-#elif RFB_PROVIDER == RFB_PROVIDER_RCSWITCH
+// UART port of the EFM8BB1, `rcswitch` (the default) uses rfbRX / rfbTX instead
+bool _rfbSettingsEfm8bb1() {
+    STRING_VIEW_INLINE(Key, "rfbProv");
+    STRING_VIEW_INLINE(Efm8bb1, "efm8bb1");
+    return getSetting(Key) == Efm8bb1;
+}
 
-#if RELAY_SUPPORT
-    migrateVersion(_rfbSettingsMigrate);
+} // namespace
 #endif
 
-    {
+void rfbSetup() {
+#if RFB_PROVIDER == RFB_PROVIDER_ANY
+    _rfb_efm8bb1 = _rfbSettingsEfm8bb1();
+    DEBUG_MSG_P(PSTR("[RF] Provider: %s\n"), _rfb_efm8bb1 ? PSTR("efm8bb1") : PSTR("rcswitch"));
+#endif
+
+#if RFB_PROVIDER_EFM8BB1_SUPPORT
+    if (_rfbEfm8bb1()) {
+        const auto port = uartPort(RFB_PORT - 1);
+        if (!port || (!port->tx || !port->rx)) {
+            return;
+        }
+
+#if RFB_PROVIDER == RFB_PROVIDER_ANY
+        // serial log and terminal let go of the port (the board build has them compiled out)
+        if (!uartClaim(RFB_PORT - 1, F("RF Bridge"))) {
+            return;
+        }
+
+        _rfb_receive = true;
+        _rfb_transmit = true;
+#endif
+
+        _rfb_port = port->stream;
+        _rfb_parser.reserve(RfbParser::MessageSizeBasic);
+    }
+#endif
+
+#if RFB_PROVIDER_RCSWITCH_SUPPORT
+    if (!_rfbEfm8bb1()) {
+#if RELAY_SUPPORT
+        migrateVersion(_rfbSettingsMigrate);
+#endif
+
         auto rx = getSetting("rfbRX", RFB_RX_PIN);
         auto tx = getSetting("rfbTX", RFB_TX_PIN);
 
@@ -1461,7 +1581,6 @@ void rfbSetup() {
             DEBUG_MSG_P(PSTR("[RF] RF transmitter on GPIO %u\n"), tx);
         }
     }
-
 #endif
 
 #if RELAY_SUPPORT

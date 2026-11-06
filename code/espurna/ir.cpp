@@ -28,6 +28,7 @@ $ pio run -e ... \
 #include "mqtt.h"
 #include "relay.h"
 #include "terminal.h"
+#include "ws.h"
 
 #include "libs/EphemeralPrint.h"
 #include "libs/PrintString.h"
@@ -1310,217 +1311,179 @@ void setup() {
 #if TERMINAL_SUPPORT
 namespace terminal {
 
-struct ValueCommand {
-    StringView value;
-    StringView command;
-};
-
-#define MAKE_VALUE_COMMAND(VALUE, COMMAND)\
-    (__extension__({\
-        STRING_VIEW_INLINE(Value, VALUE);\
-        STRING_VIEW_INLINE(Command, COMMAND);\
-        ValueCommand{Value, Command};}))
-
-struct Preset {
-    const ValueCommand* const begin;
-    const ValueCommand* const end;
-};
-
-namespace build {
+// Remote control buttons as terminal commands. Every preset is built in, the `irRxPreset`
+// setting picks one (0 = none) and IR_RX_PRESET is its default.
+// Replaced old ir_button.h IR_BUTTON_ACTION_... with an appropriate terminal command
+// Unlike the RFbridge implementation, does not depend on the RELAY_SUPPORT and it's indexes
+//
+// 1, 2 and 5 are the same 24 key remote shipped with RGB controllers, only the codes differ
+// +------+------+------+------+
+// |  UP  | Down | OFF  |  ON  |
+// +------+------+------+------+
+// |  R   |  G   |  B   |  W   |
+// +------+------+------+------+
+// |  1   |  2   |  3   |FLASH |
+// +------+------+------+------+
+// |  4   |  5   |  6   |STROBE|
+// +------+------+------+------+
+// |  7   |  8   |  9   | FADE |
+// +------+------+------+------+
+// |  10  |  11  |  12  |SMOOTH|
+// +------+------+------+------+
+// (FLASH, STROBE, FADE and SMOOTH have no command)
+//
+// 3 - Samsung AA59-00608A for a generic 8CH module, buttons 1...8 toggle relays 0...7
+// (plus, 2 extra buttons E0E0708F and E0E08877, TODO: on each side of 0?)
+// +------+------+------+
+// |  1   |  2   |  3   |
+// +------+------+------+
+// |  4   |  5   |  6   |
+// +------+------+------+
+// |  7   |  8   |  9   |
+// +------+------+------+
+// |      |  0   |      |
+// +------+------+------+
+//
+// 4 - remote of a generic 1CH module, OFF toggles relay 0 (TODO: ...but what's the rest?)
+// +------+------+------+
+// | OFF  | SRC  | MUTE |
+// +------+------+------+
 
 // TODO: have an actual name for presets (remote, device, etc.)?
 // TODO: user-defined presets?
 // TODO: pub-sub through terminal?
 
-// Replaced old ir_button.h IR_BUTTON_ACTION_... with an appropriate terminal command
-// Unlike the RFbridge implementation, does not depend on the RELAY_SUPPORT and it's indexes
+namespace build {
 
-#if IR_RX_PRESET != 0
-
-Preset preset() {
-    static const ValueCommand out[] PROGMEM {
-#if IR_RX_PRESET == 1
-// For the original Remote shipped with the controller
-// +------+------+------+------+
-// |  UP  | Down | OFF  |  ON  |
-// +------+------+------+------+
-// |  R   |  G   |  B   |  W   |
-// +------+------+------+------+
-// |  1   |  2   |  3   |FLASH |
-// +------+------+------+------+
-// |  4   |  5   |  6   |STROBE|
-// +------+------+------+------+
-// |  7   |  8   |  9   | FADE |
-// +------+------+------+------+
-// |  10  |  11  |  12  |SMOOTH|
-// +------+------+------+------+
-
-        MAKE_VALUE_COMMAND("FF906F", "brightness +10"),
-        MAKE_VALUE_COMMAND("FFB847", "brightness -10"),
-        MAKE_VALUE_COMMAND("FFF807", "light off"),
-        MAKE_VALUE_COMMAND("FFB04F", "light on"),
-
-        MAKE_VALUE_COMMAND("FF9867", "rgb #FF0000"),
-        MAKE_VALUE_COMMAND("FFD827", "rgb #00FF00"),
-        MAKE_VALUE_COMMAND("FF8877", "rgb #0000FF"),
-        MAKE_VALUE_COMMAND("FFA857", "rgb #FFFFFF"),
-
-        MAKE_VALUE_COMMAND("FFE817", "rgb #D13A01"),
-        MAKE_VALUE_COMMAND("FF48B7", "rgb #00E644"),
-        MAKE_VALUE_COMMAND("FF6897", "rgb #0040A7"),
-        //MAKE_VALUE_COMMAND("FFB24D", "effect flash"),
-
-        MAKE_VALUE_COMMAND("FF02FD", "rgb #E96F2A"),
-        MAKE_VALUE_COMMAND("FF32CD", "rgb #00BEBF"),
-        MAKE_VALUE_COMMAND("FF20DF", "rgb #56406F"),
-        //MAKE_VALUE_COMMAND("FF00FF", "effect strobe"),
-
-        MAKE_VALUE_COMMAND("FF50AF", "rgb #EE9819"),
-        MAKE_VALUE_COMMAND("FF7887", "rgb #00799A"),
-        MAKE_VALUE_COMMAND("FF708F", "rgb #944E80"),
-        //MAKE_VALUE_COMMAND("FF58A7", "effect fade"),
-
-        MAKE_VALUE_COMMAND("FF38C7", "rgb #FFFF00"),
-        MAKE_VALUE_COMMAND("FF28D7", "rgb #0060A1"),
-        MAKE_VALUE_COMMAND("FFF00F", "rgb #EF45AD"),
-        //MAKE_VALUE_COMMAND("FF30CF", "effect smooth"),
-
-#elif IR_RX_PRESET == 2
-// Another identical IR Remote shipped with another controller
-//  +------+------+------+------+
-//  |  UP  | Down | OFF  |  ON  |
-//  +------+------+------+------+
-//  |  R   |  G   |  B   |  W   |
-//  +------+------+------+------+
-//  |  1   |  2   |  3   |FLASH |
-//  +------+------+------+------+
-//  |  4   |  5   |  6   |STROBE|
-//  +------+------+------+------+
-//  |  7   |  8   |  9   | FADE |
-//  +------+------+------+------+
-//  |  10  |  11  |  12  |SMOOTH|
-//  +------+------+------+------+
-
-        MAKE_VALUE_COMMAND("FF00FF", "brightness +10"),
-        MAKE_VALUE_COMMAND("FF807F", "brightness -10"),
-        MAKE_VALUE_COMMAND("FF40BF", "light off"),
-        MAKE_VALUE_COMMAND("FFC03F", "light on"),
-
-        MAKE_VALUE_COMMAND("FF20DF", "rgb #FF0000"),
-        MAKE_VALUE_COMMAND("FFA05F", "rgb #00FF00"),
-        MAKE_VALUE_COMMAND("FF609F", "rgb #0000FF"),
-        MAKE_VALUE_COMMAND("FFE01F", "rgb #FFFFFF"),
-
-        MAKE_VALUE_COMMAND("FF10EF", "rgb #D13A01"),
-        MAKE_VALUE_COMMAND("FF906F", "rgb #00E644"),
-        MAKE_VALUE_COMMAND("FF50AF", "rgb #0040A7"),
-        //MAKE_VALUE_COMMAND("FFD02F", "effect flash"),
-
-        MAKE_VALUE_COMMAND("FF30CF", "rgb #E96F2A"),
-        MAKE_VALUE_COMMAND("FFB04F", "rgb #00BEBF"),
-        MAKE_VALUE_COMMAND("FF708F", "rgb #56406F"),
-        //MAKE_VALUE_COMMAND("FFF00F", "effect strobe"),
-
-        MAKE_VALUE_COMMAND("FF08F7", "rgb #EE9819"),
-        MAKE_VALUE_COMMAND("FF8877", "rgb #00799A"),
-        MAKE_VALUE_COMMAND("FF48B7", "rgb #944E80"),
-        //MAKE_VALUE_COMMAND("FFC837", "effect fade"),
-
-        MAKE_VALUE_COMMAND("FF28D7", "rgb #FFFF00"),
-        MAKE_VALUE_COMMAND("FFA857", "rgb #0060A1"),
-        MAKE_VALUE_COMMAND("FF6897", "rgb #EF45AD"),
-        //MAKE_VALUE_COMMAND("FFE817", "effect smooth"),
-
-#elif IR_RX_PRESET == 3
-// Samsung AA59-00608A for a generic 8CH module
-//  +------+------+------+
-//  |  1   |  2   |  3   |
-//  +------+------+------+
-//  |  4   |  5   |  6   |
-//  +------+------+------+
-//  |  7   |  8   |  9   |
-//  +------+------+------+
-//  |      |  0   |      |
-//  +------+------+------+
-
-        MAKE_VALUE_COMMAND("E0E020DF", "relay 0 toggle"),
-        MAKE_VALUE_COMMAND("E0E0A05F", "relay 1 toggle"),
-        MAKE_VALUE_COMMAND("E0E0609F", "relay 2 toggle"),
-        MAKE_VALUE_COMMAND("E0E010EF", "relay 3 toggle"),
-        MAKE_VALUE_COMMAND("E0E0906F", "relay 4 toggle"),
-        MAKE_VALUE_COMMAND("E0E050AF", "relay 5 toggle"),
-        MAKE_VALUE_COMMAND("E0E030CF", "relay 6 toggle"),
-        MAKE_VALUE_COMMAND("E0E0B04F", "relay 7 toggle"),
-
-    // Plus, 2 extra buttons (TODO: on each side of 0?)
-    // - E0E0708F
-    // - E0E08877
-#elif IR_RX_PRESET == 4
-//  +------+------+------+
-//  | OFF  | SRC  | MUTE |
-//  +------+------+------+
-//  ...
-//  +------+------+------+
-//  TODO: ...but what's the rest?
-
-        MAKE_VALUE_COMMAND("FFB24D", "relay 0 toggle"),
-
-#elif IR_RX_PRESET == 5
-// Another identical IR Remote shipped with another controller as SET 1 and 2
-// +------+------+------+------+
-// |  UP  | Down | OFF  |  ON  |
-// +------+------+------+------+
-// |  R   |  G   |  B   |  W   |
-// +------+------+------+------+
-// |  1   |  2   |  3   |FLASH |
-// +------+------+------+------+
-// |  4   |  5   |  6   |STROBE|
-// +------+------+------+------+
-// |  7   |  8   |  9   | FADE |
-// +------+------+------+------+
-// |  10  |  11  |  12  |SMOOTH|
-// +------+------+------+------+
-
-        MAKE_VALUE_COMMAND("F700FF", "brightness +10"),
-        MAKE_VALUE_COMMAND("F7807F", "brightness -10"),
-        MAKE_VALUE_COMMAND("F740BF", "light off"),
-        MAKE_VALUE_COMMAND("F7C03F", "light on"),
-
-        MAKE_VALUE_COMMAND("F720DF", "rgb #FF0000"),
-        MAKE_VALUE_COMMAND("F7A05F", "rgb #00FF00"),
-        MAKE_VALUE_COMMAND("F7609F", "rgb #0000FF"),
-        MAKE_VALUE_COMMAND("F7E01F", "rgb #FFFFFF"),
-
-        MAKE_VALUE_COMMAND("F710EF", "rgb #D13A01"),
-        MAKE_VALUE_COMMAND("F7906F", "rgb #00E644"),
-        MAKE_VALUE_COMMAND("F750AF", "rgb #0040A7"),
-        //MAKE_VALUE_COMMAND("F7D02F", "effect flash"),
-
-        MAKE_VALUE_COMMAND("F730CF", "rgb #E96F2A"),
-        MAKE_VALUE_COMMAND("F7B04F", "rgb #00BEBF"),
-        MAKE_VALUE_COMMAND("F7708F", "rgb #56406F"),
-        //MAKE_VALUE_COMMAND("F7F00F", "effect strobe"),
-
-        MAKE_VALUE_COMMAND("F708F7", "rgb #EE9819"),
-        MAKE_VALUE_COMMAND("F78877", "rgb #00799A"),
-        MAKE_VALUE_COMMAND("F748B7", "rgb #944E80"),
-        //MAKE_VALUE_COMMAND("F7C837", "effect fade"),
-
-        MAKE_VALUE_COMMAND("F728D7", "rgb #FFFF00"),
-        MAKE_VALUE_COMMAND("F7A857", "rgb #0060A1"),
-        MAKE_VALUE_COMMAND("F76897", "rgb #EF45AD"),
-        //MAKE_VALUE_COMMAND("F7E817", "effect smooth"),
-#else
-#error "IR_RX_PRESET value out of range, expected 1..5"
-#endif
-    };
-
-    return {std::begin(out), std::end(out)};
+constexpr int preset() {
+    return IR_RX_PRESET;
 }
 
-#endif
-
 } // namespace build
+
+namespace settings {
+
+int preset() {
+    return getSetting("irRxPreset", build::preset());
+}
+
+} // namespace settings
+
+namespace preset {
+
+PROGMEM_STRING(BrightnessUp, "brightness +10");
+PROGMEM_STRING(BrightnessDown, "brightness -10");
+PROGMEM_STRING(LightOff, "light off");
+PROGMEM_STRING(LightOn, "light on");
+
+PROGMEM_STRING(RgbFF0000, "rgb #FF0000");
+PROGMEM_STRING(Rgb00FF00, "rgb #00FF00");
+PROGMEM_STRING(Rgb0000FF, "rgb #0000FF");
+PROGMEM_STRING(RgbFFFFFF, "rgb #FFFFFF");
+
+PROGMEM_STRING(RgbD13A01, "rgb #D13A01");
+PROGMEM_STRING(Rgb00E644, "rgb #00E644");
+PROGMEM_STRING(Rgb0040A7, "rgb #0040A7");
+
+PROGMEM_STRING(RgbE96F2A, "rgb #E96F2A");
+PROGMEM_STRING(Rgb00BEBF, "rgb #00BEBF");
+PROGMEM_STRING(Rgb56406F, "rgb #56406F");
+
+PROGMEM_STRING(RgbEE9819, "rgb #EE9819");
+PROGMEM_STRING(Rgb00799A, "rgb #00799A");
+PROGMEM_STRING(Rgb944E80, "rgb #944E80");
+
+PROGMEM_STRING(RgbFFFF00, "rgb #FFFF00");
+PROGMEM_STRING(Rgb0060A1, "rgb #0060A1");
+PROGMEM_STRING(RgbEF45AD, "rgb #EF45AD");
+
+struct LightKey {
+    uint32_t codes[3]; // presets 1, 2 and 5
+    const char* command;
+};
+
+// constant, nothing is written into flash at runtime
+static constexpr LightKey LightKeys[] PROGMEM {
+    {{0xFF906F, 0xFF00FF, 0xF700FF}, BrightnessUp},
+    {{0xFFB847, 0xFF807F, 0xF7807F}, BrightnessDown},
+    {{0xFFF807, 0xFF40BF, 0xF740BF}, LightOff},
+    {{0xFFB04F, 0xFFC03F, 0xF7C03F}, LightOn},
+
+    {{0xFF9867, 0xFF20DF, 0xF720DF}, RgbFF0000},
+    {{0xFFD827, 0xFFA05F, 0xF7A05F}, Rgb00FF00},
+    {{0xFF8877, 0xFF609F, 0xF7609F}, Rgb0000FF},
+    {{0xFFA857, 0xFFE01F, 0xF7E01F}, RgbFFFFFF},
+
+    {{0xFFE817, 0xFF10EF, 0xF710EF}, RgbD13A01},
+    {{0xFF48B7, 0xFF906F, 0xF7906F}, Rgb00E644},
+    {{0xFF6897, 0xFF50AF, 0xF750AF}, Rgb0040A7},
+    // FLASH FFB24D, FFD02F, F7D02F
+
+    {{0xFF02FD, 0xFF30CF, 0xF730CF}, RgbE96F2A},
+    {{0xFF32CD, 0xFFB04F, 0xF7B04F}, Rgb00BEBF},
+    {{0xFF20DF, 0xFF708F, 0xF7708F}, Rgb56406F},
+    // STROBE FF00FF, FFF00F, F7F00F
+
+    {{0xFF50AF, 0xFF08F7, 0xF708F7}, RgbEE9819},
+    {{0xFF7887, 0xFF8877, 0xF78877}, Rgb00799A},
+    {{0xFF708F, 0xFF48B7, 0xF748B7}, Rgb944E80},
+    // FADE FF58A7, FFC837, F7C837
+
+    {{0xFF38C7, 0xFF28D7, 0xF728D7}, RgbFFFF00},
+    {{0xFF28D7, 0xFFA857, 0xF7A857}, Rgb0060A1},
+    {{0xFFF00F, 0xFF6897, 0xF76897}, RgbEF45AD},
+    // SMOOTH FF30CF, FFE817, F7E817
+};
+
+// index is the relay ID
+static constexpr uint32_t SamsungKeys[] PROGMEM {
+    0xE0E020DF, 0xE0E0A05F, 0xE0E0609F, 0xE0E010EF,
+    0xE0E0906F, 0xE0E050AF, 0xE0E030CF, 0xE0E0B04F,
+};
+
+static constexpr uint32_t GenericKeys[] PROGMEM {
+    0xFFB24D,
+};
+
+// command of the button, empty when the code is not a button of this preset
+String command(int preset, uint64_t value) {
+    switch (preset) {
+    case 1:
+    case 2:
+    case 5: {
+        const size_t column = (preset == 1) ? 0 : (preset == 2) ? 1 : 2;
+        for (const auto& key : LightKeys) {
+            if (key.codes[column] == value) {
+                return String(FPSTR(key.command));
+            }
+        }
+
+        break;
+    }
+
+    case 3:
+    case 4: {
+        const auto* begin = (preset == 3) ? std::begin(SamsungKeys) : std::begin(GenericKeys);
+        const auto* end = (preset == 3) ? std::end(SamsungKeys) : std::end(GenericKeys);
+        for (const auto* it = begin; it != end; ++it) {
+            if (*it == value) {
+                String out;
+                out += STRING_VIEW("relay ");
+                out += static_cast<unsigned>(std::distance(begin, it));
+                out += STRING_VIEW(" toggle");
+                return out;
+            }
+        }
+
+        break;
+    }
+
+    }
+
+    return String();
+}
+
+} // namespace preset
 
 namespace internal {
 
@@ -1535,19 +1498,16 @@ void inject(StringView command) {
 } // namespace internal
 
 void process(rx::DecodeResult& result) {
-    auto value = ir::simple::value::encode(result.value());
-
-#if IR_RX_PRESET != 0
-    auto preset = build::preset();
-    if (preset.begin && preset.end && (preset.begin != preset.end)) {
-        for (auto* it = preset.begin; it != preset.end; ++it) {
-            if ((*it).value == value) {
-                internal::inject((*it).command);
-                return;
-            }
+    const auto preset = settings::preset();
+    if (preset) {
+        const auto command = preset::command(preset, result.value());
+        if (command.length()) {
+            internal::inject(command);
+            return;
         }
     }
-#endif
+
+    const auto value = ir::simple::value::encode(result.value());
 
     String key;
     key += STRING_VIEW("irCmd");
@@ -1712,6 +1672,15 @@ void configure() {
 }
 
 void setup() {
+#if WEB_SUPPORT
+    // irRx, irTx, irRxPreset ... of a device template (WebUI) are saved through the WebSocket,
+    // also when no pin is configured yet
+    wsRegister()
+        .onKeyCheck([](StringView key, const JsonVariant&) {
+            return key.startsWith(STRING_VIEW("ir"));
+        });
+#endif
+
     auto rxPin = gpioRegister(rx::settings::pin());
     if (rxPin) {
         DEBUG_MSG_P(PSTR("[IR] Receiver on GPIO%hhu\n"), rxPin->pin());

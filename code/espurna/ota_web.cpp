@@ -19,6 +19,10 @@ Copyright (C) 2020 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include "espurna_matter.h"
 #endif
 
+#if defined(LIBRETINY)
+#include "arch/beken/ota_beken.h"
+#endif
+
 namespace ota {
 namespace web {
 namespace {
@@ -73,12 +77,27 @@ bool pending { false };
 // 'in progress' and every following upload fails with 400 until the reboot
 AsyncWebServerRequest* owner { nullptr };
 
-#if MATTER_TAIL_SUPPORT
-// Upload is matter-tail.bin, the Matter code of this build, not a firmware image (ref. arch/beken/matter_beken.cpp)
-bool matter_tail { false };
+#if defined(LIBRETINY)
+// Beken uploads that ESPurna writes itself instead of Update: espurna-beken.bin, the image for every bootloader
+// (arch/beken/ota_beken.cpp), and matter-tail.bin, the Matter code of the Tuya layout (arch/beken/matter_beken.cpp).
+// Each function returns nullptr or a PSTR() error
+struct Writer {
+    const char* name;
+    const char* (*begin)();
+    const char* (*write)(const uint8_t*, size_t);
+    const char* (*end)();
+    void (*abort)();
+};
 
-void setTailError(AsyncWebServerRequest* request, const char* error) {
-    matter_tail = false;
+const Writer BekenImage {"image", bekenImageBegin, bekenImageWrite, bekenImageEnd, bekenImageAbort};
+#if MATTER_TAIL_SUPPORT
+const Writer MatterTail {"Matter code", matterTailBegin, matterTailWrite, matterTailEnd, matterTailAbort};
+#endif
+
+const Writer* writer { nullptr };
+
+void setWriterError(AsyncWebServerRequest* request, const char* error) {
+    writer = nullptr;
     setStatus(request, 500, String(FPSTR(error)));
 }
 #endif
@@ -89,11 +108,11 @@ void onDisconnect(AsyncWebServerRequest* request) {
     }
 
     owner = nullptr;
-#if MATTER_TAIL_SUPPORT
-    if (matter_tail) {
-        matter_tail = false;
+#if defined(LIBRETINY)
+    if (writer) {
+        writer->abort();
+        writer = nullptr;
         pending = false;
-        matterTailAbort();
         DEBUG_MSG_P(PSTR("[UPGRADE] Connection closed before the upload finished, aborted\n"));
         return;
     }
@@ -127,19 +146,22 @@ void onUpgrade(AsyncWebServerRequest *request) {
         pending = false;
         owner = nullptr;
 
-#if MATTER_TAIL_SUPPORT
-        if (matter_tail) {
-            matter_tail = false;
+#if defined(LIBRETINY)
+        if (writer) {
+            const auto* current = writer;
+            writer = nullptr;
             const auto* error = complete(request)
-                ? matterTailEnd()
+                ? current->end()
                 : PSTR("ERROR: Incomplete upload");
             if (error) {
-                matterTailAbort();
+                current->abort();
                 sendResponse(request, 400, String(FPSTR(error)));
                 return;
             }
 
-            sendResponse(request, 200);
+            // Tuya layout: the image is in, its Matter code comes with the same file after the reboot
+            sendResponse(request, 200,
+                ((current == &BekenImage) && bekenImageAgain()) ? F("OK, again") : F("OK"));
             systemRunInLoop([]() {
                 prepareReset(CustomResetReason::Ota);
             });
@@ -209,6 +231,7 @@ void onFile(AsyncWebServerRequest *request, String filename, size_t index, uint8
             return;
         }
 
+#if defined(LIBRETINY)
 #if MATTER_TAIL_SUPPORT
         // Matter code is where the OTA image goes: one reboot without Matter first, then upload again
         if (matterTailBlocksOta()) {
@@ -218,31 +241,47 @@ void onFile(AsyncWebServerRequest *request, String filename, size_t index, uint8
             });
             return;
         }
+#endif
 
-        matter_tail = matterTailIsUpload(data, len);
-        if (matter_tail) {
-            const auto* error = matterTailBegin();
+        writer = nullptr;
+        if (bekenImageIsUpload(data, len)) {
+            writer = &BekenImage;
+#if MATTER_TAIL_SUPPORT
+        } else if (matterTailIsUpload(data, len)) {
+            writer = &MatterTail;
+#endif
+        }
+
+        if (writer) {
+            const auto* error = writer->begin();
             if (error) {
-                setTailError(request, error);
+                setWriterError(request, error);
                 return;
             }
 
-            DEBUG_MSG_P(PSTR("[UPGRADE] Matter code: %s\n"), filename.c_str());
+            DEBUG_MSG_P(PSTR("[UPGRADE] Start (%s): %s\n"), writer->name, filename.c_str());
             owner = request;
             request->onDisconnect([request]() {
                 onDisconnect(request);
             });
+        } else {
+            const auto* error = bekenUf2Allowed();
+            if (error) {
+                setStatus(request, 400, String(FPSTR(error)));
+                return;
+            }
         }
     }
 
-    if (matter_tail) {
+    if (writer) {
         if (request->_tempObject) {
             return;
         }
 
-        const auto* error = matterTailWrite(data, len);
+        const auto* error = writer->write(data, len);
         if (error) {
-            setTailError(request, error);
+            writer->abort();
+            setWriterError(request, error);
             return;
         }
 
@@ -316,11 +355,65 @@ void onFile(AsyncWebServerRequest *request, String filename, size_t index, uint8
     }
 }
 
+#if defined(ARDUINO_ARCH_ESP8266)
+// Install from GitHub (fwinstall.mjs): the board downloads the file itself, ota_fetch.cpp
+bool authenticated(AsyncWebServerRequest* request) {
+    if (!webAuthenticate(request)) {
+        request->requestAuthentication(systemHostname().c_str());
+        return false;
+    }
+
+    return true;
+}
+
+void onFetchStatus(AsyncWebServerRequest* request) {
+    if (authenticated(request)) {
+        request->send(200, "application/json", otaFetchStatus());
+    }
+}
+
+String formValue(AsyncWebServerRequest* request, const __FlashStringHelper* name) {
+    const auto* param = request->getParam(String(name), true);
+    return param ? param->value() : String();
+}
+
+// url + sha256 (of firmware.json). "OK, fetch" - restarting, this image downloads it at boot; "OK, mini" - stored
+// for the minimal image (1 MB boards), the browser uploads espurna-esp8266-1m-mini.bin.gz to /upgrade next
+void onFetch(AsyncWebServerRequest* request) {
+    if (!authenticated(request)) {
+        return;
+    }
+
+    if (Update.isRunning()) {
+        sendResponse(request, 409, F("ERROR: Upgrade in progress"));
+        return;
+    }
+
+    String error;
+    if (!otaFetchRequest(formValue(request, F("url")), formValue(request, F("sha256")), error)) {
+        sendResponse(request, 400, String(F("ERROR: ")) + error);
+        return;
+    }
+
+    if (otaFetchSelf()) {
+        sendResponse(request, 200, F("OK, fetch"));
+        prepareReset(CustomResetReason::Web);
+        return;
+    }
+
+    sendResponse(request, 200, F("OK, mini"));
+}
+#endif
+
 } // namespace
 } // namespace web
 } // namespace ota
 
 void otaWebSetup() {
+#if defined(ARDUINO_ARCH_ESP8266)
+    webServer().on("/ota/status", HTTP_GET, ota::web::onFetchStatus);
+    webServer().on("/ota/fetch", HTTP_POST, ota::web::onFetch);
+#endif
     webServer().
         on("/upgrade", HTTP_POST, ota::web::onUpgrade, ota::web::onFile);
     wsRegister().

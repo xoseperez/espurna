@@ -156,15 +156,15 @@ STRING_VIEW_INLINE(State, "digitalDefState");
 } // namespace keys
 
 unsigned char pin(size_t index) {
-    return getSetting(keys::Pin, build::pin(index));
+    return getSetting({keys::Pin, index}, build::pin(index));
 }
 
 Mode mode(size_t index) {
-    return getSetting(keys::Mode, build::mode(index));
+    return getSetting({keys::Mode, index}, build::mode(index));
 }
 
 State state(size_t index) {
-    return getSetting(keys::State, build::state(index));
+    return getSetting({keys::State, index}, build::state(index));
 }
 
 namespace query {

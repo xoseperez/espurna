@@ -5,6 +5,7 @@ import {
     exportTemplate,
     githubTemplates,
     hardwareSettings,
+    hasPins,
     openbekenTemplates,
     openbekenToEspurna,
     parseSettingsBackup,
@@ -314,6 +315,90 @@ test('exported entry is found again in the list with the same settings', () => {
         {arch: 'beken', mcu: 'BK7231N', manufacturer: '', device: ''});
     const [template] = githubTemplates(JSON.parse(JSON.stringify([entry])), 'beken', 'BK7231N');
     expect({...template.settings, ...template.names}).toEqual(entry.settings);
+});
+
+// generated devices.json entries (scripts/boards_to_devices.py), sensor drivers and their pins
+const GENERATED = [
+    {name: 'Generic ESP01S DHT11 10', arch: 'esp8266', mcu: 'ESP8266', image: 'esp8266-1m-sensor', settings: {
+        dhtPin: '2', dhtType: '11', sysManufacturer: 'GENERIC', sysDevice: 'ESP01S_DHT11_V10'}},
+    {name: 'Generic V9261F', arch: 'esp8266', settings: {
+        v9261fPort: '1', uartTx0: '153', uartRx0: '3', uartBaud0: '4800', uartParity0: 'odd', uartInv0: '1'}},
+    {name: 'Ehomediy WT02', arch: 'esp8266', settings: {i2cSDA: '0', i2cSCL: '2', bmx280Number: '1'}},
+    {name: 'Generic PZEM004T', arch: 'esp8266', settings: {
+        pzemPort: '1', uartTx0: '1', uartRx0: '3', uartBaud0: '9600'}},
+    {name: 'Itead Sonoff POW R2', arch: 'esp8266', settings: {
+        relayGpio0: '12', cse7766Port: '1', uartTx0: '153', uartRx0: '3', uartBaud0: '4800',
+        currRatio0: '1.25', voltRatio0: '0.9', pwrPRatio0: '1.1'}},
+    {name: 'Gosund P1', arch: 'esp8266', settings: {
+        btnGpio1: '17', btnProv1: 'analog', btnLevel1: '220',
+        hlw8012SEL: '12', hlw8012CF: '4', hlw8012CF1: '5', hlw8012SelCurr: '1', hlw8012IntMode: '2'}},
+    {name: 'Magichome LED controller', arch: 'esp8266', settings: {
+        ltDimmerGPIO0: '14', irRx: '4', irRxPreset: '1'}},
+    {name: 'PSH WIFI Sensor', arch: 'esp8266', settings: {
+        dhtPin: '14', dhtType: '12', ldrPin: '17', ldrType: '2', ldrOnGround: '0', ldrResistor: '10000',
+        ntcPin: '17', ntcBeta: '3350', ntcR0: '10000', ntcRUp: '0', ntcRDown: '10000'}},
+    {name: 'Sonoff RF Bridge', arch: 'esp8266', settings: {
+        relayDummy: '8', uartTx0: '1', uartRx0: '3', uartBaud0: '19200', rfbProv: 'efm8bb1'}},
+    {name: 'UART off only', arch: 'esp8266', settings: {uartTx0: '153', uartRx0: '153', ech1560Inv: '1'}},
+];
+
+test('every hardware key of the generated entries is applied', () => {
+    for (const entry of GENERATED.filter((x) => x.name !== 'UART off only')) {
+        const {sysManufacturer, sysDevice, ...settings} = /** @type {{[key: string]: string}} */(entry.settings);
+        const [template] = githubTemplates([entry], 'esp8266', 'ESP8266');
+        expect(template?.settings).toEqual(settings);
+        expect(template?.names).toEqual(sysDevice ? {sysManufacturer, sysDevice} : {});
+    }
+});
+
+test('entries with any hardware pin are listed, GPIO_NONE is no pin', () => {
+    expect(githubTemplates(GENERATED, 'esp8266', 'ESP8266').map((x) => x.name))
+        .toEqual(GENERATED.map((x) => x.name).filter((x) => x !== 'UART off only'));
+
+    expect(hasPins({dallasPin: '2'})).toBe(true);
+    expect(hasPins({hlw8012CF1: '5'})).toBe(true);
+    expect(hasPins({irRx: '4'})).toBe(true);
+    expect(hasPins({uartRx0: '3'})).toBe(true);
+    expect(hasPins({uartTx0: '153', rfbProv: 'efm8bb1'})).toBe(false);
+    expect(hasPins({dhtType: '11', pzemPort: '1', ntcBeta: '3350'})).toBe(false);
+    expect(hasPins({relayDummy: '8', sysDevice: 'X'})).toBe(false);
+});
+
+test('summary names RF, IR and the sensor drivers', () => {
+    const summary = (/** @type {string} */name) => settingsSummary(
+        GENERATED.find((x) => x.name === name)?.settings ?? {});
+
+    expect(summary('PSH WIFI Sensor'))
+        .toEqual('0 relay(s), 0 button(s), 0 LED(s), sensor(s): dht, ldr, ntc');
+    expect(summary('Magichome LED controller'))
+        .toEqual('0 relay(s), 0 button(s), 0 LED(s), 1 light channel(s), IR');
+    expect(summary('Gosund P1'))
+        .toEqual('0 relay(s), 1 button(s), 0 LED(s), sensor(s): hlw8012');
+    // UART at 9600 is a meter, not the RF Bridge
+    expect(summary('Generic PZEM004T'))
+        .toEqual('0 relay(s), 0 button(s), 0 LED(s), sensor(s): pzem');
+    expect(summary('Sonoff RF Bridge'))
+        .toEqual('0 relay(s), 0 button(s), 0 LED(s), 8 dummy relay(s), RF 433 MHz');
+});
+
+test('no allow-listed key looks like a secret or a network setting', () => {
+    const keys = Object.keys(hardwareSettings(Object.fromEntries(
+        GENERATED.flatMap((x) => Object.entries(x.settings)))));
+    expect(keys.length).toBeGreaterThan(40);
+
+    // the same test the list itself makes, ref. NEVER_KEYS
+    for (const key of keys) {
+        expect(key).not.toMatch(/pass|key|secret|token|ssid|wifi|mqtt|api|host|topic/i);
+    }
+
+    expect(hardwareSettings({
+        irRx: '4', irRxPreset: '1', irCmdFF906F: 'relay 0 on', irRelayOn0: 'A', irRxMqtt: '1',
+        rfbProv: 'efm8bb1', rfbON0: 'A1B2', rfbRepeat: '3',
+        dhtPin: '2', snsReport: '1', tmpUnits: '1', pwrVoltage: '230', eneTotal0: '100',
+        i2cSDA: '4', i2cSCL: '5', btnLevel1: '220',
+    })).toEqual({
+        irRx: '4', irRxPreset: '1', rfbProv: 'efm8bb1', dhtPin: '2', i2cSDA: '4', i2cSCL: '5', btnLevel1: '220',
+    });
 });
 
 test('hardware keys are allow-listed by name, not by prefix', () => {

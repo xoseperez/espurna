@@ -533,6 +533,20 @@
     #define OTA_ARDUINOOTA_SUPPORT  0
     #define OTA_WEB_SUPPORT         1
 
+    // Downloads the full image itself (https, SHA-256): the second step of the 1 MB update. It replaces the
+    // http-only `OTA <url>` terminal command; no captive portal in the AP mode (the page is at 192.168.4.1).
+    // Every KB counts here: this image (.bin.gz) has to fit next to the biggest full image, and the full image
+    // (.bin.gz, through /upgrade) next to this one
+    #ifndef OTA_FETCH_SUPPORT
+    #define OTA_FETCH_SUPPORT       1
+    #endif
+    #ifndef OTA_CLIENT
+    #define OTA_CLIENT              OTA_CLIENT_NONE
+    #endif
+    #ifndef WIFI_AP_CAPTIVE_SUPPORT
+    #define WIFI_AP_CAPTIVE_SUPPORT 0
+    #endif
+
     // Keep the generic uploader
     #define DEBUG_TELNET_SUPPORT    1
     #define TELNET_AUTHENTICATION   0
@@ -2341,32 +2355,6 @@
     #define UART1_RX_PIN                3
 
     #define ALEXA_SUPPORT               0
-
-// -----------------------------------------------------------------------------
-// ESP-01 generic esp8266 board with 512 kB flash
-// -----------------------------------------------------------------------------
-
-#elif defined(GENERIC_ESP01_512KB)
-
-    // Info
-    #define MANUFACTURER        "GENERIC"
-    #define DEVICE              "ESP01_512KB"
-
-    // Relays
-    #define RELAY1_PIN          2
-    #ifndef RELAY1_TYPE
-    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
-    #endif
-
-    // No need for OTA
-    #define OTA_WEB_SUPPORT          0
-    #define OTA_ARDUINOOTA_SUPPORT   0
-    #define OTA_CLIENT               OTA_CLIENT_NONE
-
-    // Some options result in a pretty large image
-    #define ALEXA_SUPPORT            0
-    #define MDNS_SERVER_SUPPORT      0
-    #define WEB_SUPPORT              0
 
 // -----------------------------------------------------------------------------
 // ESPLive

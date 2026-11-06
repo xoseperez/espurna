@@ -72,7 +72,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        env: [nodemcu-lolin, esp8266-4m-base, esp8266-4m-latest-base]
+        env: [esp8266-4m, esp8266-4m-sdk3-base]
     steps:
     - uses: actions/checkout@v7
     - uses: actions/setup-python@v7
@@ -102,7 +102,7 @@ jobs:
       run: |
         git config --global advice.detachedHead false
         ./ci_install.sh build ${{ matrix.env }}
-    - if: ${{ matrix.env == 'nodemcu-lolin' }}
+    - if: ${{ matrix.env == 'esp8266-4m' }}
       name: Basic build
       run: |
         ./ci_script.sh build ${{ matrix.env }}

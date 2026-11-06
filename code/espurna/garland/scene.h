@@ -28,11 +28,18 @@ Inspired by https://github.com/Vasil-Pahomov/ArWs2812 (currently https://github.
 #define GARLAND_SCENE_SPEED_FACTOR       10
 #define GARLAND_SCENE_DEFAULT_SPEED      40
 
-template <uint16_t Leds>
+// Number of LEDs comes from the settings (garlandLeds), buffers are allocated by begin()
 class Scene {
 public:
     Scene(Adafruit_NeoPixel* pixels) : _pixels(pixels) {}
-    constexpr uint16_t getLeds() const { return Leds; }
+    uint16_t getLeds() const { return _numLeds; }
+    void begin(uint16_t leds) {
+        _numLeds = leds;
+        _leds1.resize(leds);
+        _leds2.resize(leds);
+        _ledstmp.resize(leds);
+        _seq.resize(leds);
+    }
 
     bool finishedAnimCycle() { return _anim ? _anim->finishedycle() : true; }
     unsigned long getAvgCalcTime() { return calc_num > 0 ? sum_calc_time / calc_num : 0; }
@@ -56,16 +63,17 @@ public:
 
 private:
     Adafruit_NeoPixel* _pixels = nullptr;
+    uint16_t           _numLeds = 0;
     //Color arrays - two for making transition
-    std::array<Color, Leds> _leds1;
-    std::array<Color, Leds> _leds2;
+    std::vector<Color> _leds1;
+    std::vector<Color> _leds2;
     // array of Colorfor anim to currently work with
     Color*             _leds = nullptr;
     Anim*              _anim = nullptr;
 
     //auxiliary colors array for mutual usage of anims
-    std::array<Color, Leds> _ledstmp;
-    std::array<byte, Leds>  _seq;
+    std::vector<Color> _ledstmp;
+    std::vector<byte>  _seq;
 
     Palette*           _palette = nullptr;
     Palette*           _pals = nullptr;

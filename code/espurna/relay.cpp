@@ -26,6 +26,7 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include "mqtt.h"
 #include "relay.h"
 #include "fan.h"
+#include "lightfox.h"
 #include "tuya.h"
 #include "rpc.h"
 #include "rtcmem.h"
@@ -1841,6 +1842,12 @@ public:
     bool setup() override {
         static bool once = ([]() {
             const auto port = uartPort(RELAY_PROVIDER_DUAL_PORT - 1);
+#if UART_DRIVERS_CLAIM_PORT
+            // generic images: serial log and terminal let go of the port
+            if (port && !uartClaim(RELAY_PROVIDER_DUAL_PORT - 1, F("Sonoff Dual"))) {
+                return false;
+            }
+#endif
             if (port) {
                 DualProvider::_port = port->stream;
                 espurnaRegisterLoop(loop);
@@ -1970,6 +1977,12 @@ public:
     bool setup() override {
         static bool once = ([]() {
             const auto port = uartPort(RELAY_PROVIDER_STM_PORT - 1);
+#if UART_DRIVERS_CLAIM_PORT
+            // generic images: serial log and terminal let go of the port
+            if (port && !uartClaim(RELAY_PROVIDER_STM_PORT - 1, F("STM relay"))) {
+                return false;
+            }
+#endif
             if (port) {
                 StmProvider::_port = port->stream;
                 espurnaRegisterLoop(loop);
@@ -4168,7 +4181,7 @@ RelayProviderResult _relaySetupProvider(size_t index) {
         break;
 
     case RelayProvider::Lightfox:
-#ifdef FOXEL_LIGHTFOX_DUAL
+#if LIGHTFOX_SUPPORT
         ptr = lightfoxMakeRelayProvider(index);
 #endif
         break;

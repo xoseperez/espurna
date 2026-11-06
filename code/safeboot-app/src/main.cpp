@@ -6,16 +6,18 @@ Small recovery / update image for the factory partition of esp32_4mb_safeboot.cs
 the single big OTA slot (app0) and cannot overwrite itself, so updates go through this image:
 - Wi-Fi (ssid0/pass0, ssid1/pass1, static ip0/gw0/mask0/dns0), hostname and adminPass are read straight from the
   ESPurna settings (NVS "eeprom"/"eeprom", Embedis key-value format written right to left); no settings of its own
-- web UI on port 80, user admin + the ESPurna admin password: upload an image into app0, download one from an URL,
-  boot ESPurna
-- update from an URL without the web UI: ESPurna stores it in NVS "safeboot"/"url" before switching here, the image is
-  downloaded into app0 as soon as Wi-Fi is up and ESPurna boots
+- web UI on port 80, user admin + the ESPurna admin password: pick a release (the list comes from firmware.json on
+  GitHub Pages, read by the browser), upload an image into app0, download one from an URL, boot ESPurna
+- update from an URL without the web UI: ESPurna stores it in NVS "safeboot"/"url" (and its SHA-256 in "sha256")
+  before switching here, the image is downloaded into app0 as soon as Wi-Fi is up and ESPurna boots. http:// and
+  https:// (the ESP-IDF certificate bundle); the result goes to NVS "safeboot"/"result" for ESPurna to show
 - no Wi-Fi in 30 s: own access point <hostname>-SAFEBOOT (WPA2, admin password) at 192.168.4.1
 - the next boot is set back to app0 right at start (when it holds a valid image): a crash or a power cut here always
   returns to ESPurna; nothing done for 15 minutes: back to ESPurna as well
 
 */
 
+#include <esp_crt_bundle.h>
 #include <esp_event.h>
 #include <esp_http_client.h>
 #include <esp_http_server.h>
@@ -31,6 +33,7 @@ the single big OTA slot (app0) and cannot overwrite itself, so updates go throug
 #include <freertos/task.h>
 #include <lwip/inet.h>
 #include <mbedtls/base64.h>
+#include <mbedtls/sha256.h>
 #include <nvs.h>
 #include <nvs_flash.h>
 
@@ -42,6 +45,8 @@ the single big OTA slot (app0) and cannot overwrite itself, so updates go throug
 namespace {
 
 constexpr char DefaultPassword[] = "fibonacci";
+constexpr char DefaultManifest[] = "https://igorufox.github.io/espurna/firmware.json";
+constexpr int DownloadAttempts { 3 };
 constexpr int ConnectTimeoutMs { 30000 };
 constexpr int64_t IdleTimeoutUs { 15LL * 60 * 1000 * 1000 };
 
@@ -56,6 +61,7 @@ struct Settings {
     std::string dns;
     std::string hostname;
     std::string password;
+    std::string manifest;
 };
 
 Settings settings;
@@ -130,6 +136,7 @@ void readSettings() {
                 settings.dns = kv.get("dns0");
                 settings.hostname = kv.get("hostname");
                 settings.password = kv.get("adminPass");
+                settings.manifest = kv.get("webFwUrl");
             }
         }
         nvs_close(handle);
@@ -146,27 +153,71 @@ void readSettings() {
     if (settings.password.empty()) {
         settings.password = DefaultPassword;
     }
+
+    if (settings.manifest.empty()) {
+        settings.manifest = DefaultManifest;
+    }
 }
 
-std::string takeUrl() {
+std::string nvsString(nvs_handle_t handle, const char* key) {
     std::string out;
+
+    size_t size = 0;
+    if ((nvs_get_str(handle, key, nullptr, &size) == ESP_OK) && (size > 1)) {
+        std::unique_ptr<char[]> value(new (std::nothrow) char[size]);
+        if (value && (nvs_get_str(handle, key, value.get(), &size) == ESP_OK)) {
+            out = value.get();
+        }
+    }
+
+    return out;
+}
+
+// what ESPurna asked for before switching here: the image URL and its SHA-256 (hex, optional)
+struct Request {
+    std::string url;
+    std::string sha256;
+};
+
+Request takeRequest() {
+    Request out;
 
     nvs_handle_t handle;
     if (nvs_open("safeboot", NVS_READWRITE, &handle) == ESP_OK) {
-        size_t size = 0;
-        if ((nvs_get_str(handle, "url", nullptr, &size) == ESP_OK) && (size > 1)) {
-            std::unique_ptr<char[]> url(new (std::nothrow) char[size]);
-            if (url && (nvs_get_str(handle, "url", url.get(), &size) == ESP_OK)) {
-                out = url.get();
-            }
-            // one attempt only, a broken URL must not keep the board here
+        out.url = nvsString(handle, "url");
+        out.sha256 = nvsString(handle, "sha256");
+        if (!out.url.empty()) {
+            // taken once: a broken URL must not keep the board here over the next boots
             nvs_erase_key(handle, "url");
+            nvs_erase_key(handle, "sha256");
             nvs_commit(handle);
         }
         nvs_close(handle);
     }
 
     return out;
+}
+
+// the image ESPurna in app0 was built as (ESPURNA_IMAGE, written by ESPurna): the release list shows its files
+std::string runningImage() {
+    std::string out;
+
+    nvs_handle_t handle;
+    if (nvs_open("safeboot", NVS_READONLY, &handle) == ESP_OK) {
+        out = nvsString(handle, "image");
+        nvs_close(handle);
+    }
+
+    return out;
+}
+
+void storeResult(const std::string& result) {
+    nvs_handle_t handle;
+    if (nvs_open("safeboot", NVS_READWRITE, &handle) == ESP_OK) {
+        nvs_set_str(handle, "result", result.c_str());
+        nvs_commit(handle);
+        nvs_close(handle);
+    }
 }
 
 // --- app0 -------------------------------------------------------------------------------------------------------
@@ -202,12 +253,41 @@ bool bootApp(std::string& error) {
     return true;
 }
 
-// One image write into app0: begin with the first chunk (checks the 0xE9 magic), then end() verifies the image
+// One image write into app0: begin with the first chunk (checks the 0xE9 magic), then end() verifies the image.
+// The SHA-256 of everything written is kept for the check against the release list
 struct Writer {
     esp_ota_handle_t handle { 0 };
     const esp_partition_t* part { nullptr };
     size_t written { 0 };
+    size_t expected { 0 };  // Content-Length, 0 - not known (app0 is erased whole then)
     std::string error;
+    mbedtls_sha256_context sha;
+
+    Writer() {
+        mbedtls_sha256_init(&sha);
+        mbedtls_sha256_starts(&sha, 0);
+    }
+
+    ~Writer() {
+        mbedtls_sha256_free(&sha);
+    }
+
+    Writer(const Writer&) = delete;
+    Writer& operator=(const Writer&) = delete;
+
+    std::string digest() {
+        uint8_t out[32];
+        mbedtls_sha256_finish(&sha, out);
+
+        std::string hex;
+        char byte[3];
+        for (const auto value : out) {
+            snprintf(byte, sizeof(byte), "%02x", value);
+            hex += byte;
+        }
+
+        return hex;
+    }
 
     bool write(const char* data, size_t len) {
         if (!part) {
@@ -217,7 +297,15 @@ struct Writer {
             }
 
             part = app();
-            const auto result = part ? esp_ota_begin(part, OTA_SIZE_UNKNOWN, &handle) : ESP_ERR_NOT_FOUND;
+            if (part && expected && (expected > part->size)) {
+                error = "the image is bigger than app0";
+                part = nullptr;
+                return false;
+            }
+
+            // erases only what the image takes when its size is known
+            const auto result = part
+                ? esp_ota_begin(part, expected ? expected : OTA_SIZE_UNKNOWN, &handle) : ESP_ERR_NOT_FOUND;
             if (result != ESP_OK) {
                 error = std::string("begin: ") + esp_err_to_name(result);
                 part = nullptr;
@@ -231,6 +319,7 @@ struct Writer {
             return false;
         }
 
+        mbedtls_sha256_update(&sha, reinterpret_cast<const unsigned char*>(data), len);
         written += len;
         return true;
     }
@@ -267,9 +356,30 @@ struct Writer {
 
 std::string last_result;
 
-bool download(const std::string& url) {
-    if (url.rfind("http://", 0) != 0) {
-        last_result = "only http:// URLs";
+bool validHex(const std::string& value) {
+    if (value.size() != 64) {
+        return false;
+    }
+
+    for (const auto c : value) {
+        if (!(((c >= '0') && (c <= '9')) || ((c >= 'a') && (c <= 'f')))) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+// http:// or https:// (servers checked against the ESP-IDF certificate bundle). sha256: hex, lower case, or empty
+bool download(const std::string& url, const std::string& sha256) {
+    const bool https = url.rfind("https://", 0) == 0;
+    if (!https && (url.rfind("http://", 0) != 0)) {
+        last_result = "only http:// and https:// URLs";
+        return false;
+    }
+
+    if (!sha256.empty() && !validHex(sha256)) {
+        last_result = "the SHA-256 is not 64 lower case hex digits";
         return false;
     }
 
@@ -278,6 +388,9 @@ bool download(const std::string& url) {
     config.timeout_ms = 15000;
     config.buffer_size = 2048;
     config.max_redirection_count = 5;
+    if (https) {
+        config.crt_bundle_attach = esp_crt_bundle_attach;
+    }
 
     auto* client = esp_http_client_init(&config);
     if (!client) {
@@ -288,9 +401,10 @@ bool download(const std::string& url) {
     Writer writer;
     bool ok = false;
     if (esp_http_client_open(client, 0) == ESP_OK) {
-        esp_http_client_fetch_headers(client);
+        const auto length = esp_http_client_fetch_headers(client);
         const int status = esp_http_client_get_status_code(client);
         if (status == 200) {
+            writer.expected = (length > 0) ? static_cast<size_t>(length) : 0;
             std::unique_ptr<char[]> buffer(new char[4096]);
             for (;;) {
                 const int len = esp_http_client_read(client, buffer.get(), 4096);
@@ -299,6 +413,15 @@ bool download(const std::string& url) {
                     break;
                 }
                 if (!len) {
+                    if (writer.expected && (writer.written != writer.expected)) {
+                        writer.error = "connection closed after " + std::to_string(writer.written) + " of "
+                            + std::to_string(writer.expected) + " bytes";
+                        break;
+                    }
+                    if (!sha256.empty() && writer.part && (writer.digest() != sha256)) {
+                        writer.error = "SHA-256 mismatch, not the file of the release list";
+                        break;
+                    }
                     ok = writer.finish();
                     break;
                 }
@@ -310,7 +433,7 @@ bool download(const std::string& url) {
             writer.error = "HTTP " + std::to_string(status);
         }
     } else {
-        writer.error = "cannot connect";
+        writer.error = https ? "cannot connect (or the server certificate is not trusted)" : "cannot connect";
     }
 
     esp_http_client_cleanup(client);
@@ -320,7 +443,8 @@ bool download(const std::string& url) {
         return false;
     }
 
-    last_result = "downloaded " + std::to_string(writer.written) + " bytes";
+    last_result = "downloaded " + std::to_string(writer.written) + " bytes"
+        + (sha256.empty() ? "" : ", SHA-256 checked");
     return true;
 }
 
@@ -460,29 +584,71 @@ void send(httpd_req_t* req, const std::string& body, const char* status = "200 O
     httpd_resp_send(req, out.data(), out.size());
 }
 
-// the image goes up as the raw request body (no multipart), the page script sends the picked file with fetch()
+// a JS string literal, safe inside <script>
+std::string jsString(const std::string& value) {
+    std::string out = "\"";
+    for (const auto c : value) {
+        if ((c == '"') || (c == '\\')) {
+            out += '\\';
+            out += c;
+        } else if ((c == '<') || (c == '>') || (static_cast<unsigned char>(c) < 0x20)) {
+            char escaped[8];
+            snprintf(escaped, sizeof(escaped), "\\x%02x", static_cast<unsigned char>(c));
+            out += escaped;
+        } else {
+            out += c;
+        }
+    }
+    out += '"';
+    return out;
+}
+
+// The image goes up as the raw request body (no multipart), the page script sends the picked file with fetch().
+// Releases: the browser reads firmware.json (GitHub Pages sends it with Access-Control-Allow-Origin: *) and lists the
+// -ota.bin files of the ESPurna image in app0 (all ESP32 images when it is not known); the board downloads the picked
+// one itself (/url) and checks its SHA-256
 constexpr char PageScript[] =
-    "<script>document.getElementById('up').onclick=async()=>{const f=document.getElementById('file').files[0];"
-    "const l=document.getElementById('log');if(!f){l.textContent='Pick a file';return}l.textContent='Uploading...';"
+    "const $=i=>document.getElementById(i);"
+    "$('up').onclick=async()=>{const f=$('file').files[0];"
+    "const l=$('log');if(!f){l.textContent='Pick a file';return}l.textContent='Uploading...';"
     "try{const r=await fetch('/upload',{method:'POST',body:f});l.textContent=await r.text();"
-    "if(r.ok)setTimeout(()=>location.href='/',30000)}catch(e){l.textContent=e}}</script>";
+    "if(r.ok)setTimeout(()=>location.href='/',30000)}catch(e){l.textContent=e}};"
+    "async function get(u,h){const l=$('rlog');l.textContent='Downloading '+u+' (about a minute)...';"
+    "for(const b of document.querySelectorAll('#rel button'))b.disabled=true;"
+    "try{const r=await fetch('/url',{method:'POST',body:new URLSearchParams({url:u,sha256:h||''})});"
+    "l.textContent=(await r.text()).replace(/<[^>]*>/g,' ');if(r.ok)setTimeout(()=>location.href='/',30000)}"
+    "catch(e){l.textContent=e}}"
+    "fetch(M,{cache:'no-store'}).then(r=>r.json()).then(m=>{const d=$('rel');d.textContent='';"
+    "for(const r of m.releases||[]){const im=r.images||{};"
+    "for(const n of Object.keys(im)){if(!n.startsWith('esp32')||(I&&n!==I))continue;"
+    "for(const f of im[n]){if(f.kind!=='ota')continue;const b=document.createElement('button');"
+    "b.textContent=r.tag+': '+f.name+' ('+Math.round(f.size/1024)+' KB)';"
+    "b.onclick=()=>{if(confirm('Install '+f.name+' of '+r.tag+'?'))get(new URL(f.url,M).href,f.sha256)};"
+    "d.append(b,document.createElement('br'))}}}"
+    "if(!d.childNodes.length)d.textContent='No ESP32 image'+(I?' '+I:'')+' in '+M})"
+    ".catch(e=>$('rel').textContent='Cannot read '+M+': '+e);";
 
 esp_err_t onRoot(httpd_req_t* req) {
     if (!authenticated(req)) {
         return ESP_OK;
     }
 
+    const auto image = runningImage();
     std::string body = "<p>ESPurna in app0: " + appInfo() + "</p><p>Wi-Fi: " + wifi_result + "</p>";
     if (!last_result.empty()) {
         body += "<p>Last update: " + last_result + "</p>";
     }
-    body += "<fieldset><legend>Upload an image</legend><input type=\"file\" id=\"file\" accept=\".bin\"><br>"
+    body += "<fieldset><legend>Releases" + (image.empty() ? std::string() : (" of " + image))
+          + "</legend><div id=\"rel\">Reading the release list...</div><div id=\"rlog\"></div></fieldset>"
+            "<fieldset><legend>Upload an image</legend><input type=\"file\" id=\"file\" accept=\".bin\"><br>"
             "<button id=\"up\">Upload and boot</button><div id=\"log\"></div></fieldset>"
             "<fieldset><legend>Download an image</legend><form method=\"post\" action=\"/url\">"
-            "<input type=\"text\" name=\"url\" placeholder=\"http://.../espurna-esp32-ota.bin\">"
+            "<input type=\"text\" name=\"url\" placeholder=\"https://.../espurna-esp32-matter-ota.bin\">"
             "<br><button>Download and boot</button></form></fieldset>"
             "<form method=\"post\" action=\"/boot\"><button>Boot ESPurna</button></form>";
+    body += "<script>const M=" + jsString(settings.manifest) + ",I=" + jsString(image) + ";";
     body += PageScript;
+    body += "</script>";
     send(req, body);
     return ESP_OK;
 }
@@ -503,16 +669,27 @@ esp_err_t onBoot(httpd_req_t* req) {
     return ESP_OK;
 }
 
-// application/x-www-form-urlencoded "url=..."
-std::string formUrl(httpd_req_t* req) {
-    char body[256] {};
-    const int len = httpd_req_recv(req, body, sizeof(body) - 1);
-    if (len <= 0) {
-        return std::string();
+std::string formBody(httpd_req_t* req) {
+    char body[512] {};
+    size_t got = 0;
+    while ((got < (sizeof(body) - 1)) && (got < req->content_len)) {
+        const int len = httpd_req_recv(req, body + got, sizeof(body) - 1 - got);
+        if (len == HTTPD_SOCK_ERR_TIMEOUT) {
+            continue;
+        }
+        if (len <= 0) {
+            break;
+        }
+        got += len;
     }
 
-    char encoded[256] {};
-    if (httpd_query_key_value(body, "url", encoded, sizeof(encoded)) != ESP_OK) {
+    return std::string(body, got);
+}
+
+// application/x-www-form-urlencoded "url=...&sha256=..."
+std::string formValue(const std::string& body, const char* key) {
+    char encoded[400] {};
+    if (httpd_query_key_value(body.c_str(), key, encoded, sizeof(encoded)) != ESP_OK) {
         return std::string();
     }
 
@@ -537,7 +714,10 @@ esp_err_t onUrl(httpd_req_t* req) {
         return ESP_OK;
     }
 
-    if (!download(formUrl(req))) {
+    const auto body = formBody(req);
+    const bool ok = download(formValue(body, "url"), formValue(body, "sha256"));
+    storeResult(last_result);
+    if (!ok) {
         send(req, "<p>" + last_result + "</p><p><a href=\"/\">Back</a></p>", "400 Bad Request");
         return ESP_OK;
     }
@@ -578,6 +758,7 @@ esp_err_t onUpload(httpd_req_t* req) {
     }
 
     last_result = ok ? ("uploaded " + std::to_string(writer.written) + " bytes") : writer.error;
+    storeResult(last_result);
     httpd_resp_set_status(req, ok ? "200 OK" : "400 Bad Request");
     httpd_resp_set_type(req, "text/plain");
     httpd_resp_sendstr(req, ok ? (last_result + ", booting ESPurna").c_str() : last_result.c_str());
@@ -644,10 +825,24 @@ extern "C" void app_main() {
     esp_wifi_set_storage(WIFI_STORAGE_RAM);
 
     if (connect()) {
-        const auto url = takeUrl();
-        if (!url.empty() && download(url)) {
-            vTaskDelay(pdMS_TO_TICKS(100));
-            esp_restart();
+        // picked in the ESPurna WebUI: a few attempts (Wi-Fi, the server), then the result for ESPurna. A failure
+        // before the first written byte leaves ESPurna in app0, it starts again; otherwise the web UI here waits
+        const auto request = takeRequest();
+        if (!request.url.empty()) {
+            bool ok = false;
+            for (int attempt = 1; !ok && (attempt <= DownloadAttempts); ++attempt) {
+                ok = download(request.url, request.sha256);
+                if (!ok && (attempt < DownloadAttempts)) {
+                    vTaskDelay(pdMS_TO_TICKS(3000));
+                }
+            }
+
+            storeResult(ok ? last_result : ("failed: " + last_result));
+            std::string error;
+            if (ok || bootApp(error)) {
+                vTaskDelay(pdMS_TO_TICKS(100));
+                esp_restart();
+            }
         }
     } else {
         accessPoint();

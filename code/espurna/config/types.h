@@ -228,6 +228,7 @@
 #define LIGHT_PROVIDER_MY92XX       1       // works with MY9291 and MY9231
 #define LIGHT_PROVIDER_DIMMER       2
 #define LIGHT_PROVIDER_CUSTOM       3
+#define LIGHT_PROVIDER_ANY          4       // dimmer, my92xx and custom built in, `ltProvider` picks one at boot
 
 // -----------------------------------------------------------------------------
 // IR

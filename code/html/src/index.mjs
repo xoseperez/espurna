@@ -68,6 +68,7 @@ import { init as initMatter } from './matter.mjs';
 import { init as initNspanel } from './nspanel.mjs';
 import { init as initNtp } from './ntp.mjs';
 import { init as initOta } from './ota.mjs';
+import { firmwareInstallRunning } from './fwinstall.mjs';
 import { init as initButton } from './button.mjs';
 import { init as initRelay } from './relay.mjs';
 import { init as initRfbridge } from './rfbridge.mjs';
@@ -334,6 +335,11 @@ function listeners() {
  * @param {CloseEvent} event
  */
 function onConnectionClose(event) {
+    // firmware install from GitHub waits for the reboots itself and reloads the page when done
+    if (firmwareInstallRunning()) {
+        return;
+    }
+
     askAndCall([askReload(event)], () => {
         pageReloadIn(1000);
     });

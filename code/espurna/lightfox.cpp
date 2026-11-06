@@ -8,7 +8,7 @@ Copyright (C) 2019 by Andrey F. Kupreychik <foxle@quickfox.ru>
 
 #include "espurna.h"
 
-#ifdef FOXEL_LIGHTFOX_DUAL
+#if LIGHTFOX_SUPPORT
 
 static_assert(1 == (RELAY_SUPPORT), "");
 static_assert(1 == (BUTTON_SUPPORT), "");
@@ -21,10 +21,6 @@ static_assert(1 == (BUTTON_SUPPORT), "");
 
 #include <array>
 #include <vector>
-
-#ifndef LIGHTFOX_PORT
-#define LIGHTFOX_PORT 1
-#endif
 
 namespace espurna {
 namespace hardware {
@@ -123,8 +119,8 @@ std::vector<RelayProvider*> RelayProvider::_instances;
 void RelayProvider::flush() {
     size_t mask { 0ul };
     for (size_t index = 0; index < _instances.size(); ++index) {
-        bool status { relayStatus(_instances[index]->relayId()) };
-        mask |= (status ? 1ul : 0ul << index);
+        const bool status { relayStatus(_instances[index]->relayId()) == RelayStatus::On };
+        mask |= ((status ? 1ul : 0ul) << index);
     }
 
     DEBUG_MSG_P(PSTR("[LIGHTFOX] DUAL mask: 0x%02X\n"), mask);
@@ -133,7 +129,13 @@ void RelayProvider::flush() {
     internal::port->flush();
 }
 
+bool begin();
+
 RelayProviderBasePtr make_relay(size_t index) {
+    if (!begin()) {
+        return nullptr;
+    }
+
     return std::make_unique<RelayProvider>(index);
 }
 
@@ -290,27 +292,51 @@ private:
 };
 
 BasePinPtr make_button(size_t index) {
+    if (!begin()) {
+        return nullptr;
+    }
+
     return std::make_unique<ButtonPin>(index);
 }
 
 std::vector<ButtonPin::Reading> ButtonPin::_readings;
 
-void setup() {
-    const auto port = uartPort(build::port());
-    if (!port) {
-        return;
-    }
+// Port is opened by the first relay (relayProv<N> lightfox) or button (btnProv<N> lightfox),
+// the module stays idle otherwise
+bool begin() {
+    static bool once = ([]() {
+        const auto port = uartPort(build::port());
+        if (!port) {
+            return false;
+        }
 
-    internal::port = port->stream;
+#if UART_DRIVERS_CLAIM_PORT
+        // serial log and terminal let go of the port (board builds have them compiled out)
+        if (!uartClaim(build::port(), F("Lightfox"))) {
+            return false;
+        }
+#endif
+
+        internal::port = port->stream;
 
 #if WEB_SUPPORT
-    web::setup();
+        web::setup();
 #endif
 #if TERMINAL_SUPPORT
-    terminal::setup();
+        terminal::setup();
 #endif
 
-    ::espurnaRegisterLoop(ButtonPin::loop);
+        ::espurnaRegisterLoop(ButtonPin::loop);
+        return true;
+    })();
+
+    return once;
+}
+
+void setup() {
+#if !UART_DRIVERS_CLAIM_PORT
+    begin();
+#endif
 }
 
 } // namespace

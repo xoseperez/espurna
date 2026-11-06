@@ -33,6 +33,7 @@ WebUI. The Matter stack itself is the backend of the architecture (espurna_matte
 #endif
 
 #include <atomic>
+#include <cstdlib>
 #include <cstring>
 
 namespace espurna {
@@ -54,6 +55,33 @@ std::atomic<bool> alive { false };
 
 // Commissioning in progress (from the Matter task), applied in the loop
 std::atomic<int> busy { -1 };
+
+// Fabrics a device keeps (CHIP_CONFIG_MAX_FABRICS is 5 by default)
+constexpr size_t MaxControllers { 8 };
+
+// Pairing window, from the Matter task (1 opened, 0 closed), applied in the loop. The stack does not tell how long a
+// window stays open: the basic window (button, first boot) closes after 15 minutes, a window a controller opened for
+// another one ends earlier with its close event
+std::atomic<int> window_event { -1 };
+uint32_t window_since { 0 };
+constexpr uint32_t WindowMs { 15 * 60 * 1000 };
+
+// seconds left of the open pairing window, 0 when it is closed
+uint32_t window_left() {
+    if (!window_since) {
+        return 0;
+    }
+
+    const auto elapsed = millis() - window_since;
+    if (elapsed >= WindowMs) {
+        window_since = 0;
+        return 0;
+    }
+
+    return std::max<uint32_t>(1, (WindowMs - elapsed) / 1000);
+}
+
+void web_update();
 
 // Log lines of the Matter task, printed from the loop (ESPurna debug output is not for other tasks).
 // Fixed slots, a line that does not fit is counted as dropped
@@ -193,6 +221,13 @@ void loop() {
         DEBUG_MSG_P(PSTR("[MATTER] Task is alive\n"));
     }
 
+    const auto opened = window_event.exchange(-1);
+    if (opened >= 0) {
+        window_since = opened ? (millis() | 1) : 0;
+        DEBUG_MSG_P(PSTR("[MATTER] Pairing window %s\n"), opened ? "open" : "closed");
+        web_update();
+    }
+
     log::print();
     web_tick();
 }
@@ -245,6 +280,41 @@ void command_status(::terminal::CommandContext&& ctx) {
         started ? "yes" : "no",
         started ? backend::fabrics() : 0,
         backend::heap(), backend::heap_min());
+
+    if (started) {
+        backend::Controller list[MaxControllers];
+        const auto count = backend::controllers(list, MaxControllers);
+        for (size_t index = 0; index < count; ++index) {
+            ctx.output.printf_P(PSTR("controller #%u vendor 0x%04X node 0x%08X%08X label \"%s\"\n"),
+                list[index].index, list[index].vendor,
+                static_cast<uint32_t>(list[index].node >> 32), static_cast<uint32_t>(list[index].node),
+                list[index].label);
+        }
+    }
+
+    terminalOK(ctx);
+}
+
+PROGMEM_STRING(Remove, "MATTER.REMOVE");
+
+// MATTER.REMOVE <#>: the device leaves that controller (the number of the MATTER list)
+void command_remove(::terminal::CommandContext&& ctx) {
+    if (!started) {
+        terminalError(ctx, F("Matter is not started"));
+        return;
+    }
+
+    if (ctx.argv.size() != 2) {
+        terminalError(ctx, F("MATTER.REMOVE <controller #>"));
+        return;
+    }
+
+    const auto index = std::strtoul(ctx.argv[1].c_str(), nullptr, 10);
+    if (!index || (index > 254) || !backend::remove_controller(static_cast<uint8_t>(index))) {
+        terminalError(ctx, F("No such controller"));
+        return;
+    }
+
     terminalOK(ctx);
 }
 
@@ -317,6 +387,7 @@ static constexpr ::terminal::Command Commands[] PROGMEM {
     {Start, command_start},
     {Ping, command_ping},
     {Window, command_window},
+    {Remove, command_remove},
 };
 #endif
 
@@ -344,6 +415,25 @@ void onData(JsonObject& root) {
     root["matterStarted"] = started ? F("yes") : F("no");
     root["matterFabrics"] = started ? backend::fabrics() : 0;
     root["matterProduct"] = backend::product();
+    root["matterWindow"] = started ? window_left() : 0;
+
+    // [[#, vendor id, "node id (hex)", "label"], ...]
+    JsonArray& list = root.createNestedArray("matterControllers");
+    if (started) {
+        backend::Controller controllers[MaxControllers];
+        const auto count = backend::controllers(controllers, MaxControllers);
+        for (size_t index = 0; index < count; ++index) {
+            char node[17];
+            snprintf_P(node, sizeof(node), PSTR("%08X%08X"),
+                static_cast<uint32_t>(controllers[index].node >> 32), static_cast<uint32_t>(controllers[index].node));
+
+            JsonArray& entry = list.createNestedArray();
+            entry.add(controllers[index].index);
+            entry.add(controllers[index].vendor);
+            entry.add(String(node));
+            entry.add(String(controllers[index].label));
+        }
+    }
 
     char manual[24] {};
     char qr[32] {};
@@ -361,11 +451,22 @@ void onConnected(JsonObject& root) {
     onData(root);
 }
 
-void onAction(uint32_t, const char* action, JsonObject&) {
+void onAction(uint32_t, const char* action, JsonObject& data) {
+    if (std::strcmp(action, "matterRemove") == 0) {
+        const auto index = data["index"].as<int>();
+        if (started && (index > 0) && (index < 255)) {
+            backend::remove_controller(static_cast<uint8_t>(index));
+            // the list goes out again from web_tick() when the fabric count changed
+        }
+        return;
+    }
+
     if (std::strcmp(action, "matterWindow") == 0) {
         if (started) {
             backend::open_window();
         }
+        // the button is grey until an answer: the state now, the countdown follows with the open event
+        wsPost(onData);
         return;
     }
 
@@ -410,8 +511,18 @@ void web_tick() {
         }
     }
 }
+
+// pairing window opened or closed
+void web_update() {
+    if (wsConnected()) {
+        wsPost(web::onData);
+    }
+}
 #else
 void web_tick() {
+}
+
+void web_update() {
 }
 #endif
 
@@ -437,6 +548,10 @@ void commissioning(bool active) {
 
 void pong() {
     alive = true;
+}
+
+void window(bool open) {
+    window_event = open ? 1 : 0;
 }
 
 void log_line(const char* line) {

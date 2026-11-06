@@ -40,6 +40,107 @@ bool begun { false };
 String serial;
 String label;
 
+// More than one relay: the device is a bridge (gateway). Every relay plug becomes a Bridged Node with its own name
+// under an Aggregator endpoint, so controllers show one gateway with a plug per relay (the speaker hub showed a single
+// plug for a device with two plug endpoints). The usual bridge layout: Aggregator on endpoint 1, the plugs after it
+// (the hub showed the gateway without plugs when the Aggregator came after them)
+struct BridgedName {
+    char label[esp_matter::cluster::bridged_device_basic_information::k_max_node_label_length + 1];
+    char unique[esp_matter::cluster::bridged_device_basic_information::k_max_unique_id_length + 1];
+};
+
+BridgedName names[MaxPlugs];
+bool bridge { false };
+
+// Relay name (`relayName<n>`), else "<hostname> <n>" counted from 1
+void bridged_name(size_t index, BridgedName& out) {
+    auto name = getSetting({"relayName", index}, String());
+    if (!name.length()) {
+        name = systemHostname();
+        name += ' ';
+        name += String(index + 1);
+    }
+
+    std::strncpy(out.label, name.c_str(), sizeof(out.label) - 1);
+    out.label[sizeof(out.label) - 1] = '\0';
+
+    snprintf(out.unique, sizeof(out.unique), "%s-%u", systemChipId().c_str(), static_cast<unsigned>(index));
+}
+
+// A char string attribute of a cluster: the value of the existing one, or a new one
+void set_text(esp_matter::cluster_t* cluster, uint32_t id, char* value,
+        esp_matter::attribute_t* (*create)(esp_matter::cluster_t*, char*, uint16_t)) {
+    const auto length = static_cast<uint16_t>(std::strlen(value));
+    auto* attribute = esp_matter::attribute::get(cluster, id);
+    if (!attribute) {
+        create(cluster, value, length);
+        return;
+    }
+
+    auto val = esp_matter_char_str(value, length);
+    esp_matter::attribute::set_val(attribute, &val, false);
+}
+
+// The node of the Arduino Matter library is made by its first endpoint; the Aggregator comes before the plugs
+struct MatterNode : public ArduinoMatter {
+    static void init() {
+        _init();
+    }
+};
+
+esp_matter::endpoint_t* make_aggregator() {
+    using namespace esp_matter;
+
+    MatterNode::init();
+    auto* node = node::get();
+    if (!node) {
+        return nullptr;
+    }
+
+    endpoint::aggregator::config_t config;
+    return endpoint::aggregator::create(node, &config, ENDPOINT_FLAG_NONE, nullptr);
+}
+
+bool make_bridge(esp_matter::endpoint_t* aggregator) {
+    using namespace esp_matter;
+
+    auto* node = node::get();
+    if (!node || !aggregator) {
+        return false;
+    }
+
+    for (size_t index = 0; index < count; ++index) {
+        auto* plug = endpoint::get(node, plugs[index].getEndPointId());
+        if (!plug) {
+            return false;
+        }
+
+        endpoint::bridged_node::config_t config;
+        if (endpoint::bridged_node::add(plug, &config) != ESP_OK) {
+            return false;
+        }
+
+        auto* info = cluster::get(plug, chip::app::Clusters::BridgedDeviceBasicInformation::Id);
+        if (!info) {
+            return false;
+        }
+
+        // UniqueID is mandatory, bridged_node::add() creates it empty: set the values of existing attributes
+        bridged_name(index, names[index]);
+        set_text(info, chip::app::Clusters::BridgedDeviceBasicInformation::Attributes::NodeLabel::Id,
+            names[index].label, cluster::bridged_device_basic_information::attribute::create_node_label);
+        set_text(info, chip::app::Clusters::BridgedDeviceBasicInformation::Attributes::UniqueID::Id,
+            names[index].unique, cluster::bridged_device_basic_information::attribute::create_unique_id);
+
+        endpoint::set_parent_endpoint(plug, aggregator);
+    }
+
+    DEBUG_MSG_P(PSTR("[MATTER] Bridge: aggregator endpoint %u, %u bridged plug(s)\n"),
+        endpoint::get_id(aggregator), count);
+
+    return true;
+}
+
 // "https://...qrcode.html?data=MT%3A..." -> "MT:..."
 bool qr_payload(const String& url, char* out, size_t size) {
     const auto start = url.indexOf(F("data="));
@@ -79,6 +180,13 @@ bool start() {
     }
 
     count = endpoints();
+
+    // before Matter.begin(): the data model is fixed once the stack runs
+    esp_matter::endpoint_t* aggregator { nullptr };
+    if (count > 1) {
+        aggregator = make_aggregator();
+    }
+
     for (size_t index = 0; index < count; ++index) {
         plugs[index].begin(relayStatus(index) == RelayStatus::On);
         // Matter task: the relay is switched in the loop
@@ -86,6 +194,13 @@ bool start() {
             onoff_changed(index, value);
             return true;
         });
+    }
+
+    if (count > 1) {
+        bridge = make_bridge(aggregator);
+        if (!bridge) {
+            DEBUG_MSG_P(PSTR("[MATTER] Bridge setup failed, plain plug endpoints\n"));
+        }
     }
 
     // Basic Information: the speaker hub reads the serial number while commissioning and stops when it is missing
@@ -109,6 +224,12 @@ bool start() {
         case MATTER_FAIL_SAFE_TIMER_EXPIRED:
             commissioning(false);
             break;
+        case MATTER_COMMISSIONING_WINDOW_OPEN:
+            window(true);
+            break;
+        case MATTER_COMMISSIONING_WINDOW_CLOSED:
+            window(false);
+            break;
         default:
             break;
         }
@@ -125,6 +246,17 @@ bool start() {
     Matter.begin();
     begun = true;
 
+    // NodeLabel is kept in NVS by the stack, the value of the endpoint before (another relay, an older name) would stay:
+    // the ESPurna relay name is the one
+    if (bridge) {
+        for (size_t index = 0; index < count; ++index) {
+            auto val = esp_matter_char_str(names[index].label, std::strlen(names[index].label));
+            esp_matter::attribute::update(plugs[index].getEndPointId(),
+                chip::app::Clusters::BridgedDeviceBasicInformation::Id,
+                chip::app::Clusters::BridgedDeviceBasicInformation::Attributes::NodeLabel::Id, &val);
+        }
+    }
+
     // first start: the key and the certificate take a moment (two signatures)
     if (!identity::install()) {
         DEBUG_MSG_P(PSTR("[MATTER] Own device attestation failed, the SDK test one stays\n"));
@@ -137,10 +269,25 @@ bool start() {
 void network(bool) {
 }
 
+// The attribute itself, not MatterOnOffPlugin::setOnOff(): that one compares with its own copy of the state, which
+// begin() set from the relay, while the stack loads the value it kept in NVS (the relay state stayed unsent to
+// controllers then, e.g. after the endpoints were renumbered)
 void set_onoff(size_t index, bool on) {
-    if (begun && (index < count)) {
-        plugs[index].setOnOff(on);
+    if (!begun || (index >= count)) {
+        return;
     }
+
+    using namespace chip::app::Clusters;
+    const auto id = plugs[index].getEndPointId();
+
+    esp_matter_attr_val_t val = esp_matter_invalid(nullptr);
+    if ((esp_matter::attribute::get_val(id, OnOff::Id, OnOff::Attributes::OnOff::Id, &val) == ESP_OK)
+        && (val.val.b == on)) {
+        return;
+    }
+
+    val = esp_matter_bool(on);
+    esp_matter::attribute::update(id, OnOff::Id, OnOff::Attributes::OnOff::Id, &val);
 }
 
 bool codes(char* manual, size_t manual_size, char* qr, size_t qr_size) {
@@ -169,6 +316,58 @@ int fabrics() {
     chip::DeviceLayer::PlatformMgr().UnlockChipStack();
 
     return out;
+}
+
+size_t controllers(Controller* out, size_t size) {
+    if (!begun || !size) {
+        return 0;
+    }
+
+    size_t count { 0 };
+    chip::DeviceLayer::PlatformMgr().LockChipStack();
+    for (const auto& fabric : chip::Server::GetInstance().GetFabricTable()) {
+        if (count >= size) {
+            break;
+        }
+
+        auto& entry = out[count++];
+        entry.index = fabric.GetFabricIndex();
+        entry.vendor = static_cast<uint16_t>(fabric.GetVendorId());
+        entry.node = fabric.GetNodeId();
+
+        const auto label = fabric.GetFabricLabel();
+        const auto length = std::min(label.size(), sizeof(entry.label) - 1);
+        std::memcpy(entry.label, label.data(), length);
+        entry.label[length] = '\0';
+    }
+    chip::DeviceLayer::PlatformMgr().UnlockChipStack();
+
+    return count;
+}
+
+// What the RemoveFabric command of a controller does: the server drops the sessions, access entries and group keys of
+// that fabric with it, and opens the pairing window when it was the last one
+bool remove_controller(uint8_t index) {
+    if (!begun) {
+        return false;
+    }
+
+    chip::DeviceLayer::PlatformMgr().LockChipStack();
+    auto& table = chip::Server::GetInstance().GetFabricTable();
+    const bool found = table.FindFabricWithIndex(index) != nullptr;
+    if (found) {
+        const auto err = table.Delete(index);
+        if (err != CHIP_NO_ERROR) {
+            DEBUG_MSG_P(PSTR("[MATTER] Removing controller #%u failed: %s\n"), index, chip::ErrorStr(err));
+        }
+    }
+    chip::DeviceLayer::PlatformMgr().UnlockChipStack();
+
+    if (found) {
+        DEBUG_MSG_P(PSTR("[MATTER] Controller #%u removed\n"), index);
+    }
+
+    return found;
 }
 
 void open_window() {

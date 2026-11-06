@@ -749,6 +749,13 @@ uint8_t i2cFindAndLock(const uint8_t* begin, const uint8_t* end) {
 }
 
 void i2cSetup() {
+    // generic images have no bus until the device template sets both pins (ref. config/sensors.h)
+    if ((espurna::i2c::settings::sda() == GPIO_NONE)
+     || (espurna::i2c::settings::scl() == GPIO_NONE))
+    {
+        return;
+    }
+
     espurna::i2c::init();
 
 #if TERMINAL_SUPPORT

@@ -475,12 +475,34 @@ void port_output(const DebugPrefix& prefix, const char* message, size_t len) {
     internal::port->write(message, len);
 }
 
+constexpr size_t port_index() {
+    return DEBUG_SERIAL_PORT - 1;
+}
+
+// a sensor (or another driver) took the port, ref. uartClaim()
+const char* release(size_t index) {
+    if ((index != port_index()) || !internal::port) {
+        return nullptr;
+    }
+
+    internal::output = null_output;
+    internal::port = nullptr;
+
+#if defined(ESP8266)
+    if (!CoreDebug && settings::sdkDebug()) {
+        uart_set_debug(UART_NO);
+    }
+#endif
+
+    return PSTR("serial log");
+}
+
 void setup() {
     // HardwareSerial::begin() will automatically enable this when
     // `#if defined(DEBUG_ESP_PORT) && !defined(NDEBUG)`
     // Do not interfere when that is the case
-    const auto port = uartPort(DEBUG_SERIAL_PORT - 1);
-    if (!port || !port->tx) {
+    const auto port = uartPort(port_index());
+    if (!port || !port->tx || uartClaimed(port_index())) {
         return;
     }
 
@@ -504,6 +526,7 @@ void setup() {
 
     internal::port = port->stream;
     internal::output = port_output;
+    uartOnClaim(release);
 }
 
 } // namespace serial

@@ -185,7 +185,7 @@ export const PROFILES = [
         ...led(0, '13', true)}},
     {arch: 'esp8266', name: 'Sonoff RF Bridge 433', model: 'ITEAD SONOFF_RFBRIDGE', category: 'misc', settings: {
         relayDummy: '8', ...pushbutton(0, '0', null), ...led(0, '13', true),
-        uartTx0: '1', uartRx0: '3', uartBaud0: '19200'}},
+        uartTx0: '1', uartRx0: '3', uartBaud0: '19200', rfbProv: 'efm8bb1'}},
     {arch: 'esp8266', name: 'Sonoff S20', model: 'ITEAD S20', category: 'plug', settings: {
         ...relay(0, '12'), ...pushbutton(0, '0', 0), ...led(0, '13', true)}},
     {arch: 'esp8266', name: 'Sonoff 1CH Inching', model: 'ITEAD 1CH_INCHING', category: 'relay', settings: {
@@ -379,20 +379,44 @@ export function openbekenTemplates(data, mcu) {
 }
 
 /**
- * Settings describing the board: pins and their modes, button actions and the board names.
- * Indexed keys are listed without the index. Network, passwords, MQTT, topics, sync and
- * the rest are never exported and never applied from a downloaded list
+ * Keys of a pin number. An entry is listed when it sets at least one of them to a pin
+ * (153 is GPIO_NONE, e.g. uartTx0 of an RX-only meter)
+ */
+const PIN_KEYS = new Set([
+    'relayGpio', 'relayResetGpio', 'btnGpio', 'ledGpio', 'ltDimmerGPIO', 'ltEnableGPIO',
+    'uartTx', 'uartRx', 'rfbRX', 'rfbTX', 'irRx', 'irTx', 'i2cSDA', 'i2cSCL',
+    // sensor.cpp load(), hlw8012CF also stands for hlw8012CF1
+    'hlw8012SEL', 'hlw8012CF', 'ech1560CLK', 'ech1560MISO', 'dhtPin', 'dallasPin', 'digitalPin',
+    'eventsPin', 'pulsemeterPin', 'geigerPin', 'analogPin', 'ntcPin', 'ldrPin',
+]);
+
+/**
+ * Settings describing the board: pins and their modes, button actions, drivers and their
+ * calibration, and the board names. Indexed keys are listed without the trailing index
+ * (ntcR is ntcR0). Network, passwords, MQTT, topics, sync and the rest are never exported
+ * and never applied from a downloaded list
  */
 const HARDWARE_KEYS = new Set([
-    'relayGpio', 'relayGpioType', 'relayType', 'relayProv', 'relayResetGpio', 'relayDummy',
-    'btnGpio', 'btnGpioType', 'btnProv', 'btnMode', 'btnPinMode', 'btnDefVal', 'btnRelay',
+    ...PIN_KEYS,
+    'relayGpioType', 'relayType', 'relayProv', 'relayDummy',
+    'btnGpioType', 'btnProv', 'btnMode', 'btnPinMode', 'btnDefVal', 'btnRelay', 'btnLevel',
     'btnPress', 'btnRlse', 'btnClick', 'btnDclk', 'btnTclk', 'btnLclk', 'btnLLclk',
     'btnLclkDel', 'btnLLclkDel', 'btnDebDel', 'btnRepDel',
     'btnFreq', 'btnMinPulses', 'btnMinDuty', 'btnAcConfirm', 'btnAcFreq',
-    'ledGpio', 'ledInv', 'ledMode', 'ledRelay',
-    'ltDimmerGPIO', 'ltEnableGPIO', 'ltInv',
-    'uartTx', 'uartRx', 'uartBaud', 'uartDataBits', 'uartParity', 'uartStopBits', 'uartInv',
-    'rfbRX', 'rfbTX',
+    'ledInv', 'ledMode', 'ledRelay',
+    'ltInv',
+    'uartBaud', 'uartDataBits', 'uartParity', 'uartStopBits', 'uartInv',
+    'rfbProv',
+    'irRxPullup', 'irTxInv', 'irRxPreset',
+    // sensor.cpp load(): pin options, ADC parameters, I2C addresses, UART port numbers
+    'hlw8012SelCurr', 'hlw8012IntMode', 'ech1560Inv', 'dhtType', 'digitalPinMode', 'digitalDefState',
+    'eventsPullUp', 'eventsIntMode', 'eventsDebounce', 'pulsemeterIntMode', 'pulsemeterDebounce',
+    'ntcBeta', 'ntcRUp', 'ntcRDown', 'ntcR', 'ldrType', 'ldrOnGround', 'ldrResistor',
+    'ade7953Addr', 'bmx280Number', 'bmx280Address',
+    'cse7766Port', 'v9261fPort', 'pzemPort', 'pzemv30Port', 'mhz19Port', 'pmsPort', 'pm1006Port',
+    'sds011Port', 'senseairPort', 'sm300d2Port', 't6613Port', 'ezophPort', 'a02yyuPort',
+    // energy meter calibration of the board
+    'currRatio', 'voltRatio', 'pwrPRatio',
     'sysManufacturer', 'sysDevice',
 ]);
 
@@ -494,10 +518,11 @@ export function exportTemplate(backup, {arch, mcu, manufacturer, device}) {
 
 /**
  * @param {Settings} settings
- * @returns {boolean} at least one relay, button, LED or light channel
+ * @returns {boolean} at least one hardware pin: relay, button, LED, light channel, UART, RF, IR, I2C or sensor
  */
-function hasPins(settings) {
-    return Object.keys(settings).some((key) => /^(relayGpio|btnGpio|ledGpio|ltDimmerGPIO)/.test(key));
+export function hasPins(settings) {
+    return Object.entries(settings).some(([key, value]) =>
+        PIN_KEYS.has(key.replace(/\d+$/, '')) && (String(value) !== '') && (String(value) !== '153'));
 }
 
 /**
@@ -537,6 +562,8 @@ export function searchTemplates(templates, query) {
     });
 }
 
+const SENSOR_KEY = /^(hlw8012|cse7766|v9261f|pzemv30|pzem|ech1560|dht|dallas|digital|events|pulsemeter|geiger|analog|ntc|ldr|ade7953|bmx280|mhz19|pms|pm1006|sds011|senseair|sm300d2|t6613|ezoph|a02yyu)[A-Z]/;
+
 /**
  * @param {Settings} settings
  * @returns {string}
@@ -565,8 +592,20 @@ export function settingsSummary(settings) {
         parts.push(`${settings['relayDummy']} dummy relay(s)`);
     }
 
-    if (settings['rfbRX'] || settings['uartBaud0']) {
+    if (settings['rfbRX'] || settings['rfbTX'] || settings['rfbProv']) {
         parts.push('RF 433 MHz');
+    }
+
+    if (settings['irRx'] || settings['irTx']) {
+        parts.push('IR');
+    }
+
+    // drivers of sensor.cpp, by the prefix of their keys
+    const sensors = [...new Set(Object.keys(settings)
+        .map((key) => SENSOR_KEY.exec(key)?.[1])
+        .filter((name) => name))];
+    if (sensors.length) {
+        parts.push(`sensor(s): ${sensors.join(', ')}`);
     }
 
     return parts.join(', ');

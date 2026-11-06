@@ -92,7 +92,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "light.h"
 #endif
 
-#ifdef FOXEL_LIGHTFOX_DUAL
+#if LIGHTFOX_SUPPORT
 #include "lightfox.h"
 #endif
 

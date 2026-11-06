@@ -80,6 +80,34 @@
                     <button type="button" class="pure-button button-upgrade">Upgrade</button>
                     <input name="upgrade" type="file" data-action="none">
                 </div>
+
+                <div class="pure-control-group">
+                    <label>From GitHub</label>
+                    <button type="button" class="pure-button button-firmware-list">Show releases</button>
+                    <span class="pure-form-message">
+                        Image of this board: <strong id="firmware-image">?</strong>.
+                        The newest builds of <a href="https://github.com/igorufox/espurna/releases">igorufox/espurna</a>,
+                        files of this image only. <em>Install</em> downloads the file into this browser and uploads it to the board,
+                        same as <em>Upgrade</em>. With Matter running, or with the Tuya bootloader of Beken boards, the board
+                        restarts in between and the file goes up a second time by itself. ESP32 installs through safeboot,
+                        which may ask for the login: admin and the admin password.
+                    </span>
+                </div>
+
+                <div class="pure-control-group">
+                    <label>&nbsp;</label>
+                    <span id="firmware-status"></span>
+                </div>
+
+                <ul id="firmware-releases"></ul>
+
+                <div class="pure-control-group">
+                    <label>Release list</label>
+                    <input name="webFwUrl" class="pure-input-2-3" type="text" placeholder="https://igorufox.github.io/espurna/firmware.json" spellcheck="false" autocomplete="off">
+                    <span class="pure-form-message">
+                        URL of the <code>firmware.json</code> made by the CI (GitHub Pages of the repository). Empty to use the default one.
+                    </span>
+                </div>
             </fieldset>
 
             <fieldset>

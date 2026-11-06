@@ -85,6 +85,126 @@
 #define SENSOR_LUX_CORRECTION               0.0
 #endif
 
+// Generic images (ESP8266_GENERIC / ESP32_GENERIC / BEKEN_GENERIC) carry the drivers, but no board.
+// Every pin, UART port and enable value below then defaults to 'none', so a compiled-in driver
+// touches nothing (no pinMode, no UART, no I2C bus, no ADC) until the device template or the user
+// writes its settings keys (hlw8012CF, cse7766Port, dhtPin, i2cSDA ...; see sensor.cpp load()).
+// Board builds keep the defaults below, and those become the defaults of the same settings keys.
+#ifndef SENSOR_PINS_FROM_SETTINGS
+#if defined(ESP8266_GENERIC) || defined(ESP32_GENERIC) || defined(BEKEN_GENERIC)
+#define SENSOR_PINS_FROM_SETTINGS           1
+#else
+#define SENSOR_PINS_FROM_SETTINGS           0
+#endif
+#endif
+
+#if SENSOR_PINS_FROM_SETTINGS
+    // GPIO drivers
+    #ifndef ANALOG_PIN
+    #define ANALOG_PIN                      GPIO_NONE
+    #endif
+    #ifndef DALLAS_PIN
+    #define DALLAS_PIN                      GPIO_NONE
+    #endif
+    #ifndef DHT_PIN
+    #define DHT_PIN                         GPIO_NONE
+    #endif
+    #ifndef DIGITAL1_PIN
+    #define DIGITAL1_PIN                    GPIO_NONE
+    #endif
+    #ifndef ECH1560_CLK_PIN
+    #define ECH1560_CLK_PIN                 GPIO_NONE
+    #endif
+    #ifndef ECH1560_MISO_PIN
+    #define ECH1560_MISO_PIN                GPIO_NONE
+    #endif
+    #ifndef EVENTS1_PIN
+    #define EVENTS1_PIN                     GPIO_NONE
+    #endif
+    #ifndef GEIGER_PIN
+    #define GEIGER_PIN                      GPIO_NONE
+    #endif
+    #ifndef HLW8012_SEL_PIN
+    #define HLW8012_SEL_PIN                 GPIO_NONE
+    #endif
+    #ifndef HLW8012_CF_PIN
+    #define HLW8012_CF_PIN                  GPIO_NONE
+    #endif
+    #ifndef HLW8012_CF1_PIN
+    #define HLW8012_CF1_PIN                 GPIO_NONE
+    #endif
+    #ifndef LDR_PIN
+    #define LDR_PIN                         GPIO_NONE
+    #endif
+    #ifndef NTC_PIN
+    #define NTC_PIN                         GPIO_NONE
+    #endif
+    #ifndef PULSEMETER_PIN
+    #define PULSEMETER_PIN                  GPIO_NONE
+    #endif
+
+    // I2C bus (i2c.cpp does not start the bus while either pin is 'none')
+    #ifndef I2C_SDA_PIN
+    #define I2C_SDA_PIN                     GPIO_NONE
+    #endif
+    #ifndef I2C_SCL_PIN
+    #define I2C_SCL_PIN                     GPIO_NONE
+    #endif
+
+    // I2C drivers with an explicit enable value (0 means off)
+    #ifndef ADE7953_ADDRESS
+    #define ADE7953_ADDRESS                 0x00
+    #endif
+    #ifndef BMX280_NUMBER
+    #define BMX280_NUMBER                   0
+    #endif
+
+    // UART drivers, 1-based port number (uartTx0 / uartRx0 ... of the UART module), 0 means off.
+    // 0 also keeps the serial debug log and the terminal in the image (ref. dependencies.h)
+    #ifndef A02YYU_PORT
+    #define A02YYU_PORT                     0
+    #endif
+    #ifndef CSE7766_PORT
+    #define CSE7766_PORT                    0
+    #endif
+    #ifndef EZOPH_PORT
+    #define EZOPH_PORT                      0
+    #endif
+    #ifndef MHZ19_PORT
+    #define MHZ19_PORT                      0
+    #endif
+    #ifndef PM1006_PORT
+    #define PM1006_PORT                     0
+    #endif
+    #ifndef PMS_PORT
+    #define PMS_PORT                        0
+    #endif
+    #ifndef PMSX003_PORT
+    #define PMSX003_PORT                    0
+    #endif
+    #ifndef PZEM004T_PORT
+    #define PZEM004T_PORT                   0
+    #endif
+    #ifndef PZEM004TV30_PORT
+    #define PZEM004TV30_PORT                0
+    #endif
+    #ifndef SDS011_PORT
+    #define SDS011_PORT                     0
+    #endif
+    #ifndef SENSEAIR_PORT
+    #define SENSEAIR_PORT                   0
+    #endif
+    #ifndef SM300D2_PORT
+    #define SM300D2_PORT                    0
+    #endif
+    #ifndef T6613_PORT
+    #define T6613_PORT                      0
+    #endif
+    #ifndef V9261F_PORT
+    #define V9261F_PORT                     0
+    #endif
+#endif
+
 // =============================================================================
 // Specific data for each sensor
 // =============================================================================
@@ -122,6 +242,10 @@
 
 #ifndef ANALOG_SUPPORT
 #define ANALOG_SUPPORT                  0
+#endif
+
+#ifndef ANALOG_PIN
+#define ANALOG_PIN                      A0      // ADC pin (ESP32: any ADC1 GPIO)
 #endif
 
 #ifndef ANALOG_SAMPLES
@@ -802,6 +926,10 @@
 
 #ifndef LDR_SUPPORT
 #define LDR_SUPPORT                     0
+#endif
+
+#ifndef LDR_PIN
+#define LDR_PIN                         A0      // ADC pin
 #endif
 
 #ifndef LDR_SAMPLES

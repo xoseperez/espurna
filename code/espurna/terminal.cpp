@@ -44,6 +44,7 @@ Copyright (C) 2020-2022 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #endif
 #if defined(LIBRETINY)
 #include <lwip/stats.h>
+#include "arch/beken/layout_beken.h"
 #endif
 #include <Stream.h>
 
@@ -223,6 +224,13 @@ void info(CommandContext&& ctx) {
     ctx.output.printf_P(PSTR("mcu: %s chipid: %s freq: %hhumhz\n"),
             lt_cpu_get_model_name(),
             systemChipId().c_str(), system_get_cpu_freq());
+    {
+        // bootloader / flash layout of the board, ref. arch/beken/layout_beken.cpp
+        const auto& layout = ::espurna::beken::flashLayout();
+        ctx.output.printf_P(PSTR("flash: %u KiB, %s bootloader, OTA at 0x%06X\n"),
+            static_cast<unsigned>(lt_flash_get_size() / 1024),
+            ::espurna::beken::layoutName(layout.layout), layout.download_offset);
+    }
 #else
     ctx.output.printf_P(PSTR("mcu: esp8266 chipid: %s freq: %hhumhz\n"),
             systemChipId().c_str(), system_get_cpu_freq());
@@ -556,14 +564,27 @@ void loop() {
     internal::loop();
 }
 
+// a sensor (or another driver) took the port, ref. uartClaim()
+const char* release(size_t index) {
+    if ((index != build::serialPort()) || !internal::stream) {
+        return nullptr;
+    }
+
+    internal::loop = empty_loop;
+    internal::stream = nullptr;
+
+    return PSTR("terminal");
+}
+
 void setup() {
     auto port = uartPort(build::serialPort());
-    if (!port || (!port->rx || !port->tx)) {
+    if (!port || (!port->rx || !port->tx) || uartClaimed(build::serialPort())) {
         return;
     }
 
     internal::stream = port->stream;
     internal::loop = processing_loop;
+    uartOnClaim(release);
 }
 
 } // namespace serial

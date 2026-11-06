@@ -54,23 +54,29 @@ Every push to `esp32-port` is built by [GitHub Actions](https://github.com/igoru
 
 | Image | Files | For |
 |-------|-------|-----|
-| `esp32` | `-full.bin` (serial, at `0x0`), `-ota.bin` (WebUI) | any ESP32 with 4 MB flash |
-| `esp32-nspanel` | same | Sonoff NSPanel EU (gen1), see [nspanel/README.md](nspanel/README.md) |
-| `beken-bk7231n` | `.uf2` (`ltchiptool`, then WebUI) | any Tuya BK7231N board (CB2S, CB3S, CBU ...), 433 MHz receiver included |
-| `beken-bk7231n-nokey` | same | BK7231N without flash encryption and a 4 MiB layout, e.g. the Sparkleiot Mini (XH-CB2S / BK7231M) |
-| `esp8266-1m` | `.bin` (serial at `0x0` or WebUI), `.bin.gz` | relays, buttons, AC mains switches, LEDs, dummy relays |
-| `esp8266-1m-all` | same | + PWM light and Sonoff RF Bridge; no serial debug / terminal, UART0 belongs to the RF chip |
-| `esp8266-4m` | same | boards installed with the 4 MB layout (settings live there), single step OTA |
-| `esp8266-1m-minimal` | same | first step of the 2-step OTA on 1 MB boards, then the `.bin.gz` |
+| `esp32-matter` | `-full.bin` (serial, at `0x0`), `-ota.bin` (WebUI) | any ESP32 with 4 MB flash, Matter On/Off plugs |
+| `esp32-matter-nspanel` | same | Sonoff NSPanel EU (gen1), see [nspanel/README.md](nspanel/README.md) |
+| `beken-matter` | `.bin` (WebUI) | any BK7231N board, Tuya or Quectel bootloader, Matter plug and 433 MHz receiver included |
+| `esp8266-1m` | `.bin` (serial at `0x0` or WebUI), `.bin.gz` | 1 MB boards: relays, buttons, AC mains switches, LEDs, dummy relays |
+| `esp8266-1m-light` | same | + PWM light, IR |
+| `esp8266-1m-sensor` | same | + power meters (HLW8012, CSE7766, PZEM ...), sensors (DHT, Dallas, BMx280, analog ...), RF receiver / Sonoff RF Bridge |
+| `esp8266-4m` | same | boards installed with the 4 MB layout (settings live at the end of 4 MB), single step OTA |
+
+Helper images: `esp8266-1m-mini` - first step of the 2-step OTA on 1 MB boards, then the `.bin.gz`; `esp32-safeboot` - the
+safeboot image alone (the WebUI installs it by itself when it differs); `beken-initial-tuya` / `beken-initial-quectel` -
+the first flash of a Beken chip over UART with `ltchiptool`, per bootloader.
+
+The WebUI updates itself from the releases: *ADMIN*, the release list. ESP32 boards download the picked image
+themselves, through safeboot (https, SHA-256 checked); the safeboot page lists the releases as well.
 
 Sensor drivers (power metering, DHT, I2C ...) are not in the generic images yet: they take their default pins at boot, before any settings, and those pins are relays on many boards. The board builds (`pio run -e itead-sonoff-pow` ...) still have them.
 
-The latest image is always at `https://github.com/igorufox/espurna/releases/latest/download/espurna-<image>...`, e.g. [espurna-esp32-full.bin](https://github.com/igorufox/espurna/releases/latest/download/espurna-esp32-full.bin).
+The latest image is always at `https://github.com/igorufox/espurna/releases/latest/download/espurna-<image>...`, e.g. [espurna-esp32-matter-full.bin](https://github.com/igorufox/espurna/releases/latest/download/espurna-esp32-matter-full.bin).
 
 First flash over serial:
 
 ```
-esptool.py --chip esp32 --baud 460800 write_flash 0x0 espurna-esp32-full.bin
+esptool.py --chip esp32 --baud 460800 write_flash 0x0 espurna-esp32-matter-full.bin
 ```
 
 ### Picking the board
@@ -86,9 +92,9 @@ cd code
 pio run -c platformio_esp32.ini -e esp32-generic
 ```
 
-The merged image is written to `code/.pio/build/<build>/espurna-<build>.bin` by [`scripts/esp32_merge.py`](code/scripts/esp32_merge.py): bootloader, partition table, `boot_app0` and ESPurna at 0xE0000. With the ESPurna safeboot built first (`pio run -d safeboot-app`, plain ESP-IDF, ~720 KB of the 832 KB factory partition) it goes into the factory partition at 0x10000 too; without it ESPurna runs, only the `safeboot` command refuses to switch. Safeboot reads Wi-Fi and the admin password from the ESPurna settings; updates go through the WebUI `/safeboot` page (an http:// URL, or a file uploaded to safeboot itself).
+The merged image is written to `code/.pio/build/<build>/espurna-<build>.bin` by [`scripts/esp32_merge.py`](code/scripts/esp32_merge.py): bootloader, partition table, `boot_app0` and ESPurna at 0xE0000. With the ESPurna safeboot built first (`pio run -d safeboot-app`, plain ESP-IDF, ~720 KB of the 832 KB factory partition) it goes into the factory partition at 0x10000 too; without it ESPurna runs, only the `safeboot` command refuses to switch. Safeboot reads Wi-Fi and the admin password from the ESPurna settings; updates go through safeboot: the WebUI release list or `/safeboot` page (an http:// or https:// URL), or a file uploaded to safeboot itself.
 
-Beken builds have their own build directory (`code/.pio/build_beken`) and produce a `firmware.uf2`:
+Beken builds have their own build directory (`code/.pio/build_beken`) and produce `espurna-beken.bin` (the release's `espurna-beken-matter.bin`) and the two UART images, see [beken/README.md](beken/README.md):
 
 ```
 cd code
@@ -99,9 +105,9 @@ py -3 -m platformio run -c platformio_beken.ini -e beken-bk7231n
 
 ### ESP32: Tasmota templates
 
-Relays, buttons and LEDs are configured at runtime, so any ESP32 device can run the `esp32` image (`esp32-generic` build) and be set up from a [Tasmota template](https://templates.blakadder.com/) - no rebuild needed. The generic image drives no GPIOs until configured, so it is safe to flash on unknown hardware.
+Relays, buttons and LEDs are configured at runtime, so any ESP32 device can run the `esp32-matter` image (`esp32-generic` build) and be set up from a [Tasmota template](https://templates.blakadder.com/) - no rebuild needed. The generic image drives no GPIOs until configured, so it is safe to flash on unknown hardware.
 
-1. Flash `espurna-esp32-full.bin` and connect to the device WebUI.
+1. Flash `espurna-esp32-matter-full.bin` and connect to the device WebUI.
 2. Go to **Admin → Device Template**, find the device and press **Apply**, or open *Paste a Tasmota template* there and paste the template JSON, e.g.
    `{"NAME":"MyDevice","GPIO":[0,0,0,0,0,0,0,0,0,0,0,0,224,225,0,0,0,0,0,544,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"FLAG":0,"BASE":1}`
 3. Check the preview (number of relays / buttons / LEDs found), press **Import Tasmota Template** and reboot.

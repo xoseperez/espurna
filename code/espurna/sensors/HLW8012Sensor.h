@@ -138,6 +138,11 @@ class HLW8012Sensor : public BaseEmonSensor {
             _sel_current = value;
         }
 
+        // RISING, FALLING or CHANGE (CHANGE for the HLW8012, FALLING for the BL0937 / HJL-01)
+        void setInterruptMode(uint8_t mode) {
+            _interrupt_mode = mode;
+        }
+
         // ---------------------------------------------------------------------
 
         double defaultRatio(unsigned char index) const override {
@@ -360,8 +365,8 @@ class HLW8012Sensor : public BaseEmonSensor {
         // ---------------------------------------------------------------------
 
         void _enableInterrupts() {
-            _cf.attach(this, handleCf, HLW8012_INTERRUPT_ON);
-            _cf1.attach(this, handleCf1, HLW8012_INTERRUPT_ON);
+            _cf.attach(this, handleCf, _interrupt_mode);
+            _cf1.attach(this, handleCf1, _interrupt_mode);
         }
 
         void _disableInterrupts() {
@@ -382,6 +387,7 @@ class HLW8012Sensor : public BaseEmonSensor {
 
         unsigned char _sel { GPIO_NONE };
         bool _sel_current { true };
+        uint8_t _interrupt_mode { HLW8012_INTERRUPT_ON };
 
         InterruptablePin _cf{};
         InterruptablePin _cf1{};
