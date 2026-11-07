@@ -229,8 +229,12 @@ void onUpgrade(AsyncWebServerRequest *request) {
 }
 
 void onFile(AsyncWebServerRequest *request, String filename, size_t index, uint8_t *data, size_t len, bool final) {
-    if (!webAuthenticate(request)) {
-        return request->requestAuthentication(systemHostname().c_str());
+    // One answer per request, not one per chunk: the server sends it only after the whole body, and a 401 built for
+    // every chunk of an unauthenticated upload ran an ESP8266 out of heap (abort in AsyncBasicResponse, D390FC 11-07)
+    if (!request->_tempObject && !webAuthenticate(request)) {
+        request->requestAuthentication(systemHostname().c_str());
+        request->_tempObject = malloc(sizeof(bool));
+        return;
     }
 
     // We set this after we are done with the request

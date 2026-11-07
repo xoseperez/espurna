@@ -44,6 +44,9 @@ the ESP8266 mini read the same setting from the ESPurna settings.
   biggest 1 MB image. The other `.bin.gz` files are `gzip -9 -n`.
 - The Pages artifact is named per run attempt (`github-pages-<attempt>`): a re-run otherwise finds the artifact of the
   failed attempt as well and `deploy-pages` stops.
+- **The WebUI is not built by CI.** The firmware embeds `code/espurna/static/index.*.html.ipp`, which are committed:
+  after a change under `code/html/src` run `npx gulp build` in `code/` and commit the `.ipp` files with it, or the
+  release ships the old WebUI.
 - Beken: the Matter library is not built here. It is a release asset of
   [igorufox/matter-bk7231n](https://github.com/igorufox/matter-bk7231n), see [below](#beken-matter-library).
 
@@ -118,7 +121,63 @@ for the bootloader to install.
   `OK, again` and restarts without Matter; the WebUI uploads the same file once more and the board, now running that build,
   writes its Matter code.
 - **Matter running on the Tuya layout**: its code sits where the update goes. The board answers HTTP 409, restarts without
-  Matter for one boot (`matterSkip`), and the WebUI uploads again.
+  Matter for one boot (`matterSkip`), and the WebUI uploads again. The board reads the whole upload before it answers and
+  restarts only after the request ended, so the browser always gets the 409. Firmware older than db3cd5b8 restarted on
+  the first chunk and the browser saw the connection drop (*connection error while uploading*); the WebUI takes such a
+  drop on that step as the 409 and goes on.
+
+**Network watchdog (Beken).** On the Tuya layout a board sometimes stopped receiving right after its Matter code was
+written: on Wi-Fi, address from DHCP, but no ping, no ARP, and the loop kept feeding the watchdog (seen twice on a CB3S,
+once it ended in a *WDT Reset* after a minute, once it stayed deaf for 28 minutes). The likely cause is the lwIP heap
+(16 KiB, every received frame comes from it): when it is full, receiving stops without an error. Not proven, no log of a
+deaf boot exists. Every 20 s while connected with an address the firmware compares the received packet counters
+(ARP, IPv4, IPv6); with nothing new it sends an ARP request to the gateway, and after 6 checks in a row without a packet
+(2 minutes) it restarts with the reason *Reboot after the network stopped receiving* (`arch/beken/wifi_beken.cpp`,
+`netwatch`). After the Matter code the WebUI waits up to 10 minutes for the board (instead of 4) and says it may
+restart by itself: in the tests the deaf boot came twice in a row, about 2.7 minutes each.
+
+#### 2 MiB Tuya boards: where Matter lives
+
+ESPurna with Matter is about 1.5 MiB of code. The Tuya 2 MiB flash has no room for that in one piece:
+
+| Flash (physical) | Size | Partition | Holds |
+|------------------|------|-----------|-------|
+| `0x000000` | 68 KiB | bootloader | Tuya bootloader (CRC32 `f684a1dc`) |
+| `0x011000` | 1124 KiB | app | the **head**: SDK + ESPurna, runs from here |
+| `0x12A000` | 664 KiB | download | an update (RBL, gzip + AES) while it waits for the bootloader, **otherwise the Matter code** |
+| `0x1D0000` | 12 KiB | calibration | RF calibration, MAC |
+| `0x1D3000` | 32 KiB | kvs | Matter fabrics (FlashDB), untouched by updates |
+
+The build is one link split in two (`scripts/beken_matter_tail.py`): the code and constants of `libMatterApp.a` are
+placed at a fixed address in the `download` partition, the **tail** (flash `0x132000` up to `0x1D0000`, logical
+`0x120000`: the chip stores flash in 34-byte blocks, 32 bytes of data + CRC16, so a logical address is the physical one
+times 32/34). The CPU runs the Matter code straight from there (XIP), like the head from `app`. The head alone is the
+usual OTA image (RBL, about 645 KiB compressed); the tail is a separate part of the container (`ESPMTAIL`, about 475 KiB,
+already encrypted and CRC'd the way the bootloader writes the app, so ESPurna copies it to flash as it is).
+
+Why the same file goes up twice: the RBL of the head is written into `download`, i.e. over the tail. At the next boot the
+bootloader unpacks it into `app` and the board runs the new head without any Matter code. The second upload of the same
+file: the board sees that the container's build id is the one it runs, so it takes the tail part this time
+(`ota_beken.cpp`, `select()`), erases the RBL header first (so the bootloader does not install it again) and writes the
+tail. A container of another build always gives the head.
+
+Why Matter has to stop for an update: while it runs, its code executes from the region the new RBL is about to
+overwrite. So the board answers 409, sets `matterSkip` and restarts; that one boot runs without Matter and takes the
+upload.
+
+Nothing from the tail runs before it is checked (`matter_beken.cpp`, `tail::`): its build id must be the head's and its
+CRC32 must match, and the raw 34-byte blocks are read and CRC16-checked first (reading erased or foreign blocks through
+XIP stalls the chip until the watchdog). Only then the tail's static constructors run and Matter may start; a missing or
+foreign tail shows on the MATTER page (*Install the Matter code*) and in `MATTER.TAIL`.
+
+On the Quectel 4 MiB layout the same address `0x132000` is inside `app` (1.6 MiB): the bootloader installs head and tail
+from one RBL, one upload, no `matterSkip`.
+
+**RAM: static data in the TCM.** Next to its 192 KiB main RAM the BK7231N has 60 KiB of data TCM, which the SDK uses only
+for the Wi-Fi driver (13.5 KiB) with BLE off. `scripts/beken_tcm.py` (`custom_tcm_bss`) moves the zero-initialized data
+(`.bss`) of ESPurna and of the Matter library there; the boot code zeroes the TCM, nothing is copied. That gave about
+37 KiB more heap: free with Matter running went from about 8 KiB to about 44 KiB. `heap` in the terminal and the status
+page show the TCM use. Matter's runtime allocations still come from the main heap.
 
 The WebUI does all of that by itself: up to seven steps and three restarts. An install that stops half-way leaves the
 board on its firmware (at worst without Matter, which the MATTER page then says: *Install the Matter code* there, or
@@ -145,6 +204,33 @@ with the 1 MB images that fit, a file upload. Without Wi-Fi in 30 s it opens `<h
 The full images do not download anything themselves (`OTA_FETCH_SUPPORT` is 0): BearSSL needs about 27 KB of heap,
 which a full image never has. Older firmware without `/ota/status` can only take a file that fits; on a 1 MB board upload
 `espurna-esp8266-1m-mini.bin.gz` with *Upgrade* and pick the image on the mini page.
+
+**Memory for the WebUI and uploads.** An ESP8266 image has about 40 KB of heap region; the settings buffer (4 KB), Wi-Fi,
+MQTT and the web server leave 10-20 KB. Two things decide whether the WebUI loads and a browser upload finishes:
+
+- **lwIP 'Lower Memory'** (`PIO_FRAMEWORK_ARDUINO_LWIP2_LOW_MEMORY` in `platformio.ini`, all ESP8266 images): MSS 536,
+  2 KB receive window and 1 KB send buffer per connection. With 'Higher Bandwidth' (MSS 1460: 5.8 KB / 2.9 KB) the page
+  load (page + WebSocket) and an upload ran the heap out: truncated index (`ERR_CONTENT_LENGTH_MISMATCH`), uploads dropped
+  at 41-63 %, abort in `AsyncWebSocket::makeBuffer`. The price is speed: 825 KB take 30-45 s.
+- **WebSocket sends wait for the heap.** The queued WebUI data (the first dump after the page loads) is sent only while
+  the largest free block holds its JSON buffer plus 1.5 KB, and a single message is dropped (debug line) rather than
+  allocated without room: on a Sonoff Basic `new` aborted in `AsyncWebSocket::makeBuffer` right after the admin page
+  loaded.
+- **Modules that are off take no memory.** The API registers its web handlers only when `apiEnabled` is on (they come and
+  go on a settings reload, no restart); about 2 KB on a board without the API.
+
+Measured on a 4 MB ESP-12F (`esp8266-4m`, MQTT and Home Assistant on): largest free block 12-15 KB instead of 6-9 KB.
+On a Sonoff Basic (`esp8266-1m`) the mini upload stopped at 52 % on the old image and went through in 7 s on the new one.
+
+To find what takes memory at boot, build with `-DSETUP_HEAP_PROBE_SUPPORT=1` (for example
+`PLATFORMIO_BUILD_FLAGS=-DSETUP_HEAP_PROBE_SUPPORT=1`): the terminal command `HEAP.SETUP` prints the free heap after every
+module setup and the difference to the one before.
+
+**From ESPurna 1.15.** Old boards (1.15, core 2.7.4) usually have about 10 KB free: a web upload drops half-way, and 1.15
+then keeps the update 'in progress' until the next restart (`reset`). Its terminal takes commands as the WebSocket action
+`dbgcmd`, not `cmd`. What worked on a Sonoff Basic without a wire: back up the keys, `reset`, after 70 s put the mini on it
+with ArduinoOTA (`espota`), then upload the full `espurna-esp8266-1m.bin.gz` on the mini page. The settings migrate at
+the first boot (Wi-Fi, hostname and password stay); apply the board template afterwards.
 
 **From a board build to a generic image.** The generic images take the pins from the settings. Apply the board's
 template (*ADMIN*, *Device Template*) before the update (it writes the values the board build had, nothing changes) or
@@ -179,8 +265,13 @@ lwIP of the firmware is built with the library's `lwipopts.h`.
 - **1 MB margin.** The mini `.bin.gz` has to fit behind the biggest 1 MB image (`esp8266-1m-light`, light + IR), and every
   full `.bin.gz` behind the mini. Every KB added to a 1 MB image or to the mini counts.
 - **esp8266-4m RAM.** Every driver costs static RAM even when idle. With all of them the 4 MB image had about 4 KB of heap
-  left and crashed during an update; it now has relays, buttons, LEDs, RF, MCP23S08 and the sensor drivers only (about
-  15 KB free after 5 minutes on an ESP-12F).
+  left and crashed during an update; it now has relays, buttons, LEDs, RF, MCP23S08 and the sensor drivers only. With
+  lwIP 'Lower Memory' and the API off: 15 KB free, largest block 12-15 KB on an ESP-12F (see
+  [Memory for the WebUI and uploads](#esp8266-upload-or-the-mini-on-1-mb-boards)).
+- **Beken network watchdog** covers a deaf network only once the loop runs: the hardware watchdog is armed from the first
+  `loop()` (`system_beken.cpp`), a hang inside `setup()` still needs a power cycle.
+- **First page load right after a restart**: once on a Sonoff Basic the page loaded but the *ADMIN* menu stayed hidden
+  (WebSocket data incomplete); four minutes later the same took 2 s. Cause not found.
 - **No board-side download on ESP8266 full images**, see above.
 - **Mini TLS** does not validate the certificate; the SHA-256 from `firmware.json` is what protects the image.
 - **Boards that need two 1 MB images**: the Smartlife Mini Smart Socket (light + power meter) and the MagicHome ZJ-WFMN-B11

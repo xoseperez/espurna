@@ -1192,6 +1192,10 @@ void _wsEvent(AsyncWebSocket* server, AsyncWebSocketClient* client, AwsEventType
     }
 }
 
+// Contiguous heap kept free next to a WebSocket message (the AsyncWebSocket buffer, lwIP), see below
+constexpr size_t WsSendHeadroom { 1536 };
+constexpr size_t WsMessageHeadroom { 512 };
+
 void _wsHandlePostponedCallbacks(bool connected) {
     // TODO: make this generic loop method to queue important ws messages?
     //       or, if something uses ticker / async ctx to send messages,
@@ -1232,6 +1236,13 @@ void _wsHandlePostponedCallbacks(bool connected) {
         if (ws_client->queueIsFull()) {
             return;
         }
+    }
+
+    // The JSON buffer and then the message need that much contiguous heap. Right after the page loaded (index, TCP
+    // buffers of every connection) an esp8266-1m board can be below it, and `new` aborts: wait for the heap to come
+    // back instead (Sonoff Basic, abort in AsyncWebSocket::makeBuffer, 2026-11-07)
+    if (systemHeapStats().usable < (callbacks.buffer_hint() + WsSendHeadroom)) {
+        return;
     }
 
     // XXX: block allocation will try to create *2 next time,
@@ -1343,6 +1354,11 @@ espurna::web::ws::Callbacks& wsRegister() {
 
 void wsSend(JsonObject& root) {
     const auto len = root.measureLength();
+    if (systemHeapStats().usable < (len + WsMessageHeadroom)) {
+        DEBUG_MSG_P(PSTR("[WEBSOCKET] No heap for %u bytes, message dropped\n"), len);
+        return;
+    }
+
     auto* buffer = _ws.makeBuffer(len);
 
     if (buffer) {
@@ -1358,6 +1374,11 @@ void wsSend(uint32_t client_id, JsonObject& root) {
     }
 
     const auto len = root.measureLength();
+    if (systemHeapStats().usable < (len + WsMessageHeadroom)) {
+        DEBUG_MSG_P(PSTR("[WEBSOCKET] #%u no heap for %u bytes, message dropped\n"), client_id, len);
+        return;
+    }
+
     auto* buffer = _ws.makeBuffer(len);
 
     if (buffer) {

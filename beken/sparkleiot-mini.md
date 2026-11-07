@@ -93,7 +93,7 @@ ltchiptool flash write -d COM3 -t 120 espurna-beken-initial-quectel.uf2
 It is one piece (the app, padding and the RBL header the bootloader checks) and takes about 3.5 minutes. With the older
 per-board build the last piece of its UF2, the 102-byte RBL header at `0x1B9F9A`, failed with `Writing failed; wrote
 only 0 bytes`; if that happens, flash again. A board that already runs ESPurna can be flashed without the CEN wire, see
-[beken/README.md](README.md#5-flash-espurna).
+[beken/README.md](README.md#4-first-flash-over-uart).
 
 After a write the chip stays in its download mode: power-cycle the board to start ESPurna. The first start from a weak
 5 V supply may reset a few times (`Reset reason: Power-On`) when the access point comes up, then it runs.

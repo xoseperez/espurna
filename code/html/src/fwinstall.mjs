@@ -653,7 +653,12 @@ async function installUpgrade(urls, blob, name) {
 
         if (outcome === 'done') {
             stepNow({key: 'restart', text: 'The board restarts and comes back'});
-            await waitForBoard(urls.auth, 'Waiting for the board');
+            // Beken, Tuya layout: the boot right after the Matter code was written sometimes stays deaf, and the network
+            // watchdog restarts the board after about 2.5 minutes, twice in a row seen (docs/updates.md)
+            const matterCode = (progress.steps[progress.current - 1]?.key === 'again-upload');
+            await waitForBoard(urls.auth,
+                matterCode ? 'Waiting for the board, it may restart by itself once or twice' : 'Waiting for the board',
+                matterCode ? 600000 : 240000);
             stepsEnd();
             return;
         }

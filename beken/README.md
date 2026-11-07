@@ -1,26 +1,23 @@
-# Tuya CB3S (Beken BK7231N) on ESPurna
+# Beken BK7231N on ESPurna
 
-ESPurna on Beken BK72xx chips, the ones inside Tuya CB2S / CB3S / WB2S modules that replaced the ESP8266 in most Tuya
-devices. The port is built with [LibreTiny](https://docs.libretiny.eu/) (PlatformIO platform `libretiny`, Arduino API on top
-of the Beken BDK 3.0.33) and runs next to the ESP8266 and ESP32 builds from the same source. Beken-specific code is under
-[`code/espurna/arch/beken`](../code/espurna/arch/beken), the builds are in
-[`code/platformio_beken.ini`](../code/platformio_beken.ini).
+ESPurna on Beken BK72xx chips, the ones inside Tuya CB2S / CB3S / CBU / WB2S modules that replaced the ESP8266 in most
+Tuya devices, and in clones such as the XH-CB2S. The port is built with [LibreTiny](https://docs.libretiny.eu/)
+(PlatformIO platform `libretiny`, Arduino API on top of the Beken BDK 3.0.33) and runs next to the ESP8266 and ESP32
+builds from the same source. Beken-specific code is under [`code/espurna/arch/beken`](../code/espurna/arch/beken), the
+builds are in [`code/platformio_beken.ini`](../code/platformio_beken.ini). One image for every board; what differs
+between boards is the bootloader (two kinds, found at boot) and the pins (device template).
 
-It was brought up on a Tuya **TYWRA-RF** "Smart Switch": a 1-channel 10 A relay with a 433 MHz receiver, powered by AC/DC
-7-32 V or 5 V micro-USB (CB3S module, BK7231N). Tested on that board:
-relay, both buttons, LED, the 433 MHz remote, Wi-Fi, web UI (direct and behind a reverse proxy), OTA over Wi-Fi, MQTT, HTTP
-API, NTP, serial and telnet terminal, settings kept across reboots and updates.
+## Boards
 
-<p>
-  <img src="img/cb3s-board.webp" width="49%" alt="Tuya TYWRA-RF relay board with a CB3S module and a 433 MHz receiver">
-  <img src="img/cb3s-wired.webp" width="49%" alt="The same board wired to a CP2102 USB-UART adapter, powered from micro-USB">
-</p>
+| Board | Module, chip | Bootloader, flash | Runs ESPurna | Page |
+|-------|--------------|-------------------|--------------|------|
+| Tuya TYWRA-RF Smart Switch: 1 relay 10 A, 433 MHz receiver, 7-32 V | CB3S, BK7231N | Tuya, 2 MiB, encrypted | the board the port was brought up on; Matter with 2 controllers, updates from the WebUI, network watchdog | [tywra-rf.md](tywra-rf.md) |
+| Tuya 4-gang switch module: 4 relays, 4 wall-switch inputs | CBU, BK7231N | Tuya, 2 MiB, encrypted | relays and inputs; relay 1 and the LED sit on the UART1 pins, 5 V needed for flashing | [cbu-4gang.md](cbu-4gang.md) |
+| Sparkleiot Mini Smart Switch: in-wall relay 16 A, S1/S2 input, stock Matter firmware | XH-CB2S, BK7231M (talks as BK7231N) | Quectel, 4 MiB, not encrypted | two units: one with Matter in the speaker hub using the factory certificates, one in a wall since 2026-11-04; second wall switch on a test pad | [sparkleiot-mini.md](sparkleiot-mini.md) |
 
-Other Beken boards, with what differs from this guide:
-
-- [Tuya 4-gang switch module (CBU)](cbu-4gang.md): relay 1 and the LED on the UART1 pins, 5 V needed for flashing;
-- [Sparkleiot Mini Smart Switch (XH-CB2S, BK7231M)](sparkleiot-mini.md): no flash encryption and its own 4 MiB layout,
-  stock Matter firmware, a second wall switch on a test pad.
+Another BK7231N board: back up its stock firmware, read the pins out of the dump ([section 4](#4-first-flash-over-uart)),
+flash the image of its bootloader and set the pins on the web UI or in a device template. An unknown bootloader runs
+ESPurna but gets no updates over Wi-Fi.
 
 ## 1. Image
 
@@ -40,15 +37,19 @@ layout are reachable; on a 2 MiB chip only the Tuya ones are used.
 `espurna-beken-matter.bin` is a container (`ESPBEKEN` header with the build id and a table of parts, made by
 [`code/scripts/beken_link_tail.py`](../code/scripts/beken_link_tail.py)): the RBL for the Tuya bootloader (the image
 without its Matter code), the RBL for the Quectel bootloader (the whole image) and the Matter code. Each part has a CRC32.
-How the WebUI installs it: [section 7](#7-updates-over-wi-fi) and [docs/updates.md](../docs/updates.md#beken-the-browser-uploads-the-board-picks-its-part).
+How the WebUI installs it: [section 6](#6-updates-over-wi-fi) and [docs/updates.md](../docs/updates.md#beken-the-browser-uploads-the-board-picks-its-part).
 
 Enabled modules: web UI, API, MQTT, terminal, Home Assistant, Alexa, Domoticz, Thingspeak, scheduler, the RF bridge
 (rc-switch, unused until `rfbRX` is set) and Matter (off until `matterAuto 1` or MATTER.START). ESPurna's own mDNS
-responder is off in this image: the Matter stack answers mDNS itself. The Tuya TYWRA-RF has no build of its own:
-`beken-matter` with the *Tuya TYWRA-RF* device template. The firmware version carries the git revision
-(`1.22.0-git<sha>`, `scripts/beken_version.py`), the WebUI release list finds the running release by it.
+responder is off in this image: the Matter stack answers mDNS itself. Boards have no builds of their own: `beken-matter`
+with the device template of the board. The firmware version carries the git revision (`1.22.0-git<sha>`, `scripts/beken_version.py`), the WebUI release list finds the running release by it.
 
-**Matter.** One On/Off plug per relay, up to 4. With one relay it is a plain plug on endpoint 1; with more the device is a
+Pin numbers are GPIO numbers (`P24` is GPIO 24, set it as `24` in the web UI). Only the pins that the module brings out
+can be used.
+
+## 2. Matter
+
+One On/Off plug per relay, up to 4. With one relay it is a plain plug on endpoint 1; with more the device is a
 gateway: an Aggregator on endpoint 2 and a bridged plug per relay on endpoints 3 to 6, named after the relay (`relayName`,
 else `<hostname> <n>`). Up to 3 controllers (fabrics). Fabrics live in FlashDB on the `kvs` partition (`0x1D3000`), which
 updates do not touch, so a board stays paired across updates; `MATTER.RESET` forgets them and keeps the identity. The
@@ -57,9 +58,10 @@ minutes, or once a controller added the device). While a controller commissions,
 up to 5 minutes (quiet mode, the certificate checks need the heap); the web UI stays connected.
 
 Matter on the 2 MiB Tuya layout: the Matter code does not fit next to the rest of the image (the app partition is
-1124 KiB, ESPurna with Matter about 1.4 MiB), it lives in a region of the 664 KiB `download` partition of its own. So the
+1124 KiB, ESPurna with Matter about 1.5 MiB), it lives in a region of the 664 KiB `download` partition of its own. So the
 same file goes up twice: the first upload brings the image (the bootloader installs it as usual, the form answers
 "OK, again"), the second one, after the reboot, the Matter code. On the Quectel layout one upload does both.
+How the code is split and checked, the flash map and the TCM: [docs/updates.md](../docs/updates.md#2-mib-tuya-boards-where-matter-lives).
 `MATTER.TAIL` in the terminal tells whether the Matter code is there and matches the image; the MATTER page says it too
 and has *Install the Matter code*. While Matter runs, a firmware upload is refused once (HTTP 409) with a reboot without
 Matter: upload again after it. Boards with Quectel Matter factory data (`0x3E0000`) use it: the certificates and the
@@ -75,12 +77,9 @@ its GitHub Actions with the gcc 10.3.1 of LibreTiny) and checks it against the `
 Static data of ESPurna and of the Matter library lives in the data TCM of the chip (about 37 KiB more heap), see `heap`
 in the terminal and the TCM row on the status page.
 
-Pin numbers are GPIO numbers (`P24` is GPIO 24, set it as `24` in the web UI). Only the pins that the module brings out
-can be used.
+## 3. What you need
 
-## 2. What you need
-
-- a USB-UART adapter with 3.3 V logic (CP2102, CH340, FT232; the photo shows a CP2102);
+- a USB-UART adapter with 3.3 V logic (CP2102, CH340, FT232);
 - four wires soldered to the module pads, or three if you can reach CEN with a wire end by hand;
 - [ltchiptool](https://github.com/libretiny-eu/ltchiptool) for the first flash. It comes with the LibreTiny platform
   (`%USERPROFILE%\.platformio\penv\.libretiny\Scripts\ltchiptool.exe` after the first build) or `pip install ltchiptool`;
@@ -88,54 +87,37 @@ can be used.
 
 The flashing is done once. After that every update goes over Wi-Fi.
 
-## 3. Wiring
+The UART pads, the power for flashing and the CEN pad differ per module: [CB3S](tywra-rf.md#wiring),
+[CBU](cbu-4gang.md#wiring), [XH-CB2S](sparkleiot-mini.md#wiring). The common part:
 
-![CB3S pads: TX1, RX1, GND at the top row, CEN and 3.3V at the bottom row](img/cb3s-pads.webp)
+- UART1 (P10 RX / P11 TX) is where the bootloader listens and where the firmware logs, at 115200 baud, so the same wires
+  give you the boot log and the terminal later.
+- CEN does not need to stay connected. The chip enters its bootloader for a short moment after every reset, and
+  ltchiptool catches it there. Touch CEN to GND briefly while ltchiptool shows `Connecting...`. Unplugging and plugging
+  the power does the same.
 
-| CB3S pad | Connect to |
-|----------|------------|
-| 16, TX1 (P11) | adapter RX |
-| 15, RX1 (P10) | adapter TX |
-| 9, GND | adapter GND |
-| 1, CEN | a loose wire: touch it to GND to reset the chip |
+## 4. First flash over UART
 
-- **Power the board from its micro-USB socket** while flashing. This socket is 5 V power only: the board has no USB-UART
-  chip, and the BK7231N has no USB. The terminal block takes AC/DC 7-32 V (the relay coil itself is 5 V). Leave the adapter's 3.3 V unconnected then. Without USB power, feed pad 8 (3.3 V) from a 3.3 V supply
-  strong enough for Wi-Fi; the 3.3 V pin of most adapters is not.
-- Check the pads with a meter before you solder. Pad 9 (GND) beeps to the minus of the electrolytic capacitor and to the USB
-  shell, pad 8 reads 3.3 V with the board powered. If it is the other way round, the module is rotated.
-- The full CB3S pad order. Top row from the antenna end: 16 TX1 (P11), 15 RX1 (P10), 14 P7, 13 P8, 12 P21, 11 TX2 (P0),
-  10 P9, 9 GND. Bottom row: 1 CEN, 2 P23 (ADC), 3 EN, 4 P14, 5 P26, 6 P24, 7 P6, 8 3.3 V.
-- CEN does not need to stay connected. The chip enters its bootloader for a short moment after every reset, and ltchiptool
-  catches it there. Touch CEN to GND briefly while ltchiptool shows `Connecting...`. Unplugging and plugging the USB power
-  does the same.
-- UART1 (P10 / P11) is also where the firmware logs, at 115200 baud, so the same wires give you the boot log and the
-  terminal later.
-
-## 4. Back up the stock firmware
-
-Do this first. It is the only way back to the Tuya firmware, and it holds the pin map of the board.
+**Back up the stock firmware.** Do this first. It is the only way back to the Tuya firmware, and it holds the pin map of the board.
 
 ```
-ltchiptool flash read -d COM3 -t 45 bk7231n cb3s-stock.bin
+ltchiptool flash read -d COM3 -t 45 bk7231n stock.bin
 ```
 
 `-d` is the adapter's port (COM3, `/dev/ttyUSB0`), `-t 45` waits 45 s for the chip; touch CEN to GND when it says
-`Connecting...`. A full dump is 2 MB.
+`Connecting...`. A full dump is 2 MiB on the Tuya modules, 4 MiB on the XH-CB2S.
 
-On a board that is not in the table above, read the pin map out of the dump:
+On a board that is not in the [table of boards](#boards), read the pin map out of the dump:
 
 ```
-bk7231tools dissect_dump -e --storage cb3s-stock.bin
+bk7231tools dissect_dump -e --storage stock.bin
 ```
 
-`user_param_key.json` in the output lists the pins. `rl1_pin` is relay 1, `bt1_pin` is button 1, `netled1_pin` is the
+`user_param_key.json` in the output lists the pins (Tuya stock firmware). `rl1_pin` is relay 1, `bt1_pin` is button 1, `netled1_pin` is the
 Wi-Fi LED, `remote_io` is the 433 MHz receiver. The `_lv` fields give the active level (`1` = active high).
 
-## 5. Flash ESPurna
-
-Take `espurna-beken-initial-tuya.uf2` (or `-initial-quectel.uf2`, see the table above) from the
-[release](https://github.com/igorufox/espurna/releases/latest), or build it from `code/`:
+**Flash ESPurna.** Take `espurna-beken-initial-tuya.uf2` (or `-initial-quectel.uf2` on a Quectel bootloader, see
+[section 1](#1-image)) from the [release](https://github.com/igorufox/espurna/releases/latest), or build it from `code/`:
 
 ```
 py -3 -m platformio run -c platformio_beken.ini -e beken-bk7231n
@@ -150,10 +132,10 @@ ltchiptool flash write -d COM3 -t 45 code/.pio/build_beken/beken-bk7231n/firmwar
 ```
 
 Touch CEN to GND at `Connecting...` again. The chip starts ESPurna by itself at the end, no reset is needed. After the first
-setup below, pick the board on *ADMIN → Device Template* (`tywra` finds the TYWRA-RF) and reboot.
+setup below, pick the board on *ADMIN → Device Template* and reboot.
 
-Only the `app` partition (`0x11000`) is written. The Tuya bootloader and the Tuya config at `0x1EE000` stay where they were,
-so the stock pin map is still on the chip.
+Only the `app` partition (`0x11000`) is written. The bootloader stays; on Tuya modules the Tuya config at `0x1EE000` stays
+too, so the stock pin map is still on the chip.
 
 The Tuya UART image has no Matter code (it does not fit the app partition). Before Matter can start, upload
 `espurna-beken-matter.bin` of the same release once over Wi-Fi: the board, already running that build, takes only the
@@ -165,7 +147,7 @@ ltchiptool starts linking, and the chip is caught at its restart. That takes a s
 writes `reset` to the port just before the link check (not in the repository); with the plain ltchiptool reset the chip by
 CEN or by its power as above.
 
-## 6. First setup
+## 5. First setup
 
 1. Join the Wi-Fi network `ESPURNA-XXXXXX` (the last six digits of the MAC) with the password `fibonacci`.
 2. Open `http://192.168.4.1`, log in as `admin` / `fibonacci` and set a new password when asked.
@@ -175,19 +157,7 @@ A phone should show the "sign in to network" page by itself (captive portal, not
 open the address by hand.
 There is no `ESPURNA-XXXXXX.local` name: ESPurna's mDNS responder is off in the Matter image, use the IP address.
 
-Buttons of the TYWRA-RF (ESPurna defaults):
-
-| Button | Click | Double click | Long click | Very long click |
-|--------|-------|--------------|------------|-----------------|
-| P14 | toggle the relay | start the access point | reboot | factory reset |
-| P6 | toggle the relay | - | - | - |
-
-![Status page: four relays, network, firmware, BDK core version, heap](img/webui-status.webp)
-
-The status page after setup: the real relay on GPIO 24 and three dummy relays, the Beken BDK as the core version,
-about 50 KB of free heap. There is no VCC row, the module has no supply voltage measurement.
-
-## 7. Updates over Wi-Fi
+## 6. Updates over Wi-Fi
 
 **From GitHub.** *ADMIN*, OTA, *From GitHub*, *Show releases*, *Install*: the browser downloads `espurna-beken-matter.bin`
 of the release (from GitHub Pages: the board itself cannot download from GitHub, its mbedTLS has no ECDHE) and uploads
@@ -212,9 +182,10 @@ bootloader to install.
 
 If the upload stops halfway (Wi-Fi drop, closed tab), the board keeps running the old firmware. Start the upload again.
 
-## 8. The 433 MHz remote
+## 7. 433 MHz receiver
 
-The receiver on P26 is decoded by the chip itself (rc-switch). Every code it hears goes to MQTT `<root>/rfin` and to the
+Boards with a 433 MHz receiver (the [TYWRA-RF](tywra-rf.md) on P26) need no RF MCU: the chip decodes it itself (rc-switch),
+on the pin in `rfbRX` (the device template sets it). Every code it hears goes to MQTT `<root>/rfin` and to the
 debug log, so you can use the remote buttons in Home Assistant or Node-RED without binding them on the board.
 
 To switch relays from the remote:
@@ -242,6 +213,25 @@ add more relays; every new relay gets its own ON / OFF rows here.
 Tested with an 8-button remote (protocol 1, 24 bit): 16 out of 16 presses received. About one press in 16 comes out as
 protocol 17 (a looser sync pulse) with the same bits; codes are matched by bit count and payload only, so it still
 switches the relay.
+
+## 8. Known limitations
+
+- No RAM survives a reset on the BK7231N (the bootloader clears all of it). The custom reset reason ("Reboot from a
+  terminal command", "after a successful OTA update") and the stability counter are carried in the 16-bit SDK retention
+  register instead, so they survive reboots done by ESPurna and crashes; after a hang only `watchdog` is known.
+  Relay states are restored from the settings, not from RTC memory.
+- **Network watchdog.** A board whose network stops receiving (on Wi-Fi, but no packet for 2 minutes, not even the
+  gateway's answer to ARP) restarts with *Reboot after the network stopped receiving*. Seen on the boot right after the
+  Matter code was written on a 2 MiB board, cause not found ([docs/updates.md](../docs/updates.md#beken-the-browser-uploads-the-board-picks-its-part)).
+  The hardware watchdog is armed from the first `loop()`: a hang inside `setup()` still needs a power cycle.
+- ESPurna's mDNS responder is off in the Matter image (the Matter stack answers mDNS for itself), so `<hostname>.local`
+  is not announced; looking up the MQTT broker over mDNS (`mqttServer` left empty) does not work either, set the broker
+  address.
+- `wifiTxPwr` (dBm) works, but the SDK calibration caps it: 10 dBm measured about 5 dB below the default 20 dBm.
+- No ArduinoOTA, and the board does not download updates itself: the browser brings the file (see [section 6](#6-updates-over-wi-fi)).
+- `GPIO`, `GPIO.MODE`, `GPIO.LOCKS`, `REG.READ`, `REG.WRITE` terminal commands read the BK72xx GPIO registers directly,
+  `FUNCTION` marks a pin taken by a peripheral (UART, PWM).
+- The ADC (P23) is not used, and there is no VCC measurement, so the VCC row is hidden on the status page.
 
 ## 9. How this build differs from the stock LibreTiny settings
 
@@ -282,17 +272,3 @@ switches the relay.
 - **Settings** are kept in 8 rotating slots in the `userdata` partition at `0x1DB000`, below the Tuya config. Every slot has
   a CRC, and the newest valid slot is loaded at boot.
 
-## 10. Known limitations
-
-- No RAM survives a reset on the BK7231N (the bootloader clears all of it). The custom reset reason ("Reboot from a
-  terminal command", "after a successful OTA update") and the stability counter are carried in the 16-bit SDK retention
-  register instead, so they survive reboots done by ESPurna and crashes; after a hang only `watchdog` is known.
-  Relay states are restored from the settings, not from RTC memory.
-- ESPurna's mDNS responder is off in the Matter image (the Matter stack answers mDNS for itself), so `<hostname>.local`
-  is not announced; looking up the MQTT broker over mDNS (`mqttServer` left empty) does not work either, set the broker
-  address.
-- `wifiTxPwr` (dBm) works, but the SDK calibration caps it: 10 dBm measured about 5 dB below the default 20 dBm.
-- No ArduinoOTA, and the board does not download updates itself: the browser brings the file (see section 7).
-- `GPIO`, `GPIO.MODE`, `GPIO.LOCKS`, `REG.READ`, `REG.WRITE` terminal commands read the BK72xx GPIO registers directly,
-  `FUNCTION` marks a pin taken by a peripheral (UART, PWM).
-- The ADC (P23) is not used, and there is no VCC measurement, so the VCC row is hidden on the status page.

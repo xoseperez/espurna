@@ -2,7 +2,7 @@
 
 An in-wall 4-gang switch: four relays, four wall-switch inputs on a 5-wire cable, a "total" button and a Wi-Fi LED. The
 Wi-Fi part is a bare (unshielded) Tuya **CBU** module (BK7231N, 2 MB flash, standard Tuya flash layout and keys) soldered
-upright into a small green carrier. Flashing, backup and OTA work as on the CB3S, see [README.md](README.md); this page only
+upright into a small green carrier. Flashing, backup and OTA work as on every Tuya module, see [README.md](README.md); this page only
 lists what differs.
 
 <p>
