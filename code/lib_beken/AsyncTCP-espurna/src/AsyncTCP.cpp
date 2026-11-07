@@ -96,9 +96,14 @@ static uint32_t _closed_index = []() {
 }();
 
 
+// ESPurna: 64 like ESP32Async AsyncTCP 3.x (was 32), see _tcp_poll()
+#ifndef CONFIG_ASYNC_TCP_QUEUE_SIZE
+#define CONFIG_ASYNC_TCP_QUEUE_SIZE 64
+#endif
+
 static inline bool _init_async_event_queue(){
     if(!_async_queue){
-        _async_queue = xQueueCreate(32, sizeof(lwip_event_packet_t *));
+        _async_queue = xQueueCreate(CONFIG_ASYNC_TCP_QUEUE_SIZE, sizeof(lwip_event_packet_t *));
         if(!_async_queue){
             return false;
         }
@@ -106,8 +111,8 @@ static inline bool _init_async_event_queue(){
     return true;
 }
 
-static inline bool _send_async_event(lwip_event_packet_t ** e){
-    return _async_queue && xQueueSend(_async_queue, e, portMAX_DELAY) == pdPASS;
+static inline bool _send_async_event(lwip_event_packet_t ** e, TickType_t wait = portMAX_DELAY){
+    return _async_queue && xQueueSend(_async_queue, e, wait) == pdPASS;
 }
 
 static inline bool _prepend_async_event(lwip_event_packet_t ** e){
@@ -276,13 +281,28 @@ static int8_t _tcp_connected(void * arg, tcp_pcb * pcb, int8_t err) {
     return ERR_OK;
 }
 
+// ESPurna: poll events must never block the lwip thread. It runs this from tcp_slowtmr() holding the core lock,
+// while the async task, the only one that empties the queue, needs that very lock for every tcpip_api_call(). With
+// the queue full (busy network, several connections polled at once) both waited for each other forever, together
+// with every other task that touched lwip (Matter, the loop): no ping, watchdog reset. Seen on a BK7231N 4-relay
+// board while a controller commissioned it (stall record: tcp/ip in _tcp_poll -> xQueueSend, async_tcp in
+// tcpip_api_call -> sys_mutex_lock). Polls repeat every 500 ms, so one can be skipped: not queued at all once the
+// queue is half full, and never waited for. Same as ESP32Async AsyncTCP 3.x
 static int8_t _tcp_poll(void * arg, struct tcp_pcb * pcb) {
     //ets_printf("+P: 0x%08x\n", pcb);
+    if (!_async_queue || (uxQueueMessagesWaiting(_async_queue) > (CONFIG_ASYNC_TCP_QUEUE_SIZE / 2))) {
+        return ERR_OK;
+    }
+
     lwip_event_packet_t * e = (lwip_event_packet_t *)malloc(sizeof(lwip_event_packet_t));
+    if (!e) {
+        return ERR_OK;
+    }
+
     e->event = LWIP_TCP_POLL;
     e->arg = arg;
     e->poll.pcb = pcb;
-    if (!_send_async_event(&e)) {
+    if (!_send_async_event(&e, 0)) {
         free((void*)(e));
     }
     return ERR_OK;

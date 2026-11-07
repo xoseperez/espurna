@@ -47,6 +47,9 @@ enum class RtcmemCrash : uint32_t {
     Reserved,
     // Only in the flash record (written by the malloc failed hook), never in the register
     MallocFailed,
+    // Only in the flash record: the watchdog was about to reset the chip, written by the stall watcher with the
+    // saved context of every task
+    Stall,
 };
 
 RtcmemCrash rtcmemCrash();

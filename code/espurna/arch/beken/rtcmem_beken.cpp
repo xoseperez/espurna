@@ -148,6 +148,8 @@ const char* crash_name(uint32_t kind) {
         return "not used";
     case RtcmemCrash::MallocFailed:
         return "malloc failed";
+    case RtcmemCrash::Stall:
+        return "watchdog not fed";
     case RtcmemCrash::None:
         break;
     }
@@ -166,6 +168,7 @@ uint32_t crash_pc(uint32_t lr, uint32_t spsr, RtcmemCrash kind) {
         return lr - 8;
     case RtcmemCrash::Reserved:
     case RtcmemCrash::MallocFailed:
+    case RtcmemCrash::Stall:
     case RtcmemCrash::None:
         break;
     }
@@ -241,6 +244,14 @@ bool crash_record_read(CrashRecord& out) {
 
 String crash_summary(const CrashRecord& record) {
     char buffer[224];
+    if (record.kind == static_cast<uint32_t>(RtcmemCrash::Stall)) {
+        snprintf_P(buffer, sizeof(buffer),
+            PSTR("%s for %u ms of %u, %u tasks, free=%u uptime=%u build=%.32s"),
+            crash_name(record.kind), record.regs[0], record.regs[1], record.regs[2], record.regs[3],
+            record.uptime, record.build);
+        return String(buffer);
+    }
+
     if (record.kind == static_cast<uint32_t>(RtcmemCrash::MallocFailed)) {
         snprintf_P(buffer, sizeof(buffer),
             PSTR("%s free=%u lowest=%u in=0x%08x sp=0x%08x task=%.16s uptime=%u build=%.32s"),
@@ -363,6 +374,166 @@ void __wrap_vApplicationMallocFailedHook(void) {
 
 } // extern "C"
 
+// A chip that hangs without a fault (two tasks waiting for each other, a task that never gives the CPU back) is only
+// reset by the watchdog, and the reset leaves nothing behind. The watcher task runs above every other task and keeps
+// an eye on the feeding (lt_wdt_* linked with --wrap, ref. platformio_beken.ini). When the watchdog is about to fire it
+// writes a record with the saved context of every task: name, state, priority and the words at its saved stack
+// pointer, i.e. the registers the scheduler saved (pc and lr included) and the frames of the calls it waits in.
+// Once per boot, the watchdog resets the chip right after
+namespace {
+
+namespace stall {
+
+constexpr size_t TableOffset { 1024 };
+constexpr size_t Tasks { 16 };
+constexpr size_t Words { 40 };
+
+struct Entry {
+    char name[8];
+    uint8_t state;
+    uint8_t priority;
+    uint8_t base;
+    uint8_t number;
+    uint32_t top;
+    uint32_t words[Words];
+};
+
+static_assert((TableOffset + Tasks * sizeof(Entry)) <= FLASH_SECTOR_SIZE, "");
+static_assert(sizeof(CrashRecord) <= TableOffset, "");
+
+// periods below this are restart() and its 5 ms reset, not a loop that should feed
+constexpr uint32_t PeriodMin { 3000 };
+// written that much before the watchdog fires (a sector erase and a few writes take well below it)
+constexpr uint32_t Margin { 1500 };
+constexpr uint32_t Interval { 250 };
+
+volatile uint32_t period { 0 };
+volatile TickType_t fed { 0 };
+
+TaskStatus_t statuses[24];
+
+void write() {
+    const auto since = (xTaskGetTickCount() - fed) * portTICK_PERIOD_MS;
+    const auto count = uxTaskGetSystemState(statuses, sizeof(statuses) / sizeof(statuses[0]), nullptr);
+
+    uint32_t regs[CrashRegisters] {};
+    regs[0] = since;
+    regs[1] = period;
+    regs[2] = count;
+    regs[3] = xPortGetFreeHeapSize();
+
+    const uint32_t head[] {
+        CrashRecordMagic,
+        static_cast<uint32_t>(RtcmemCrash::Stall),
+        static_cast<uint32_t>(millis()),
+    };
+
+    char task[sizeof(CrashRecord::task)] {};
+    std::strncpy(task, "stall", sizeof(task) - 1);
+
+    lt_flash_erase(CrashRecordOffset, FLASH_SECTOR_SIZE);
+    crash_flash_write(offsetof(CrashRecord, magic), head, sizeof(head));
+    crash_flash_write(offsetof(CrashRecord, regs), regs, sizeof(regs));
+    crash_flash_write(offsetof(CrashRecord, task), task, sizeof(task));
+    crash_flash_write(offsetof(CrashRecord, build), _crash_build, sizeof(_crash_build));
+
+    for (size_t index = 0; (index < count) && (index < Tasks); ++index) {
+        const auto& status = statuses[index];
+
+        Entry entry {};
+        std::strncpy(entry.name, status.pcTaskName, sizeof(entry.name));
+        entry.state = static_cast<uint8_t>(status.eCurrentState);
+        entry.priority = static_cast<uint8_t>(status.uxCurrentPriority);
+        entry.base = static_cast<uint8_t>(status.uxBasePriority);
+        entry.number = static_cast<uint8_t>(status.xTaskNumber);
+
+        // first member of the TCB, where the context switch left the registers
+        const auto top = *reinterpret_cast<const volatile uint32_t*>(status.xHandle);
+        entry.top = top;
+
+        const auto offset = TableOffset + index * sizeof(Entry);
+        crash_flash_write(offset, &entry, offsetof(Entry, words));
+
+        if (((top & 3) == 0) && (top >= RamBegin) && (top < RamEnd)) {
+            const auto words = std::min<size_t>(Words, (RamEnd - top) / sizeof(uint32_t));
+            crash_flash_write(offset + offsetof(Entry, words), reinterpret_cast<const void*>(top),
+                words * sizeof(uint32_t));
+        }
+    }
+}
+
+void task(void*) {
+    for (;;) {
+        vTaskDelay(pdMS_TO_TICKS(Interval));
+
+        const auto limit = period;
+        if (limit < PeriodMin) {
+            continue;
+        }
+
+        const auto since = (xTaskGetTickCount() - fed) * portTICK_PERIOD_MS;
+        if ((since + Margin) < limit) {
+            continue;
+        }
+
+        write();
+        vTaskDelete(nullptr);
+    }
+}
+
+void start() {
+    fed = xTaskGetTickCount();
+    xTaskCreate(task, "stall", 512, nullptr, configMAX_PRIORITIES - 1, nullptr);
+}
+
+void dump(Print& print) {
+    print.print(F("tasks (state 0 running 1 ready 2 blocked 3 suspended), words at the saved sp:\n"));
+    for (size_t index = 0; index < Tasks; ++index) {
+        Entry entry;
+        lt_flash_read(CrashRecordOffset + TableOffset + index * sizeof(Entry),
+            reinterpret_cast<uint8_t*>(&entry), sizeof(entry));
+        if (static_cast<uint8_t>(entry.name[0]) == 0xff) {
+            break;
+        }
+
+        print.printf_P(PSTR("%.8s #%u state %u prio %u/%u sp 0x%08x\n"),
+            entry.name, entry.number, entry.state, entry.priority, entry.base, entry.top);
+        for (size_t word = 0; word < Words; word += 8) {
+            for (size_t next = word; next < word + 8; ++next) {
+                print.printf_P(PSTR("%08x "), entry.words[next]);
+            }
+            print.print('\n');
+        }
+    }
+}
+
+} // namespace stall
+} // namespace
+
+extern "C" {
+
+bool __real_lt_wdt_enable(uint32_t);
+void __real_lt_wdt_disable();
+void __real_lt_wdt_feed();
+
+bool __wrap_lt_wdt_enable(uint32_t timeout) {
+    stall::fed = xTaskGetTickCount();
+    stall::period = timeout;
+    return __real_lt_wdt_enable(timeout);
+}
+
+void __wrap_lt_wdt_disable() {
+    stall::period = 0;
+    __real_lt_wdt_disable();
+}
+
+void __wrap_lt_wdt_feed() {
+    stall::fed = xTaskGetTickCount();
+    __real_lt_wdt_feed();
+}
+
+} // extern "C"
+
 bool rtcmemStatus() {
     return false;
 }
@@ -396,6 +567,8 @@ void rtcmemCrashSetup() {
     const auto build = buildTime();
     std::memcpy(_crash_build, build.data(), std::min(build.length(), sizeof(_crash_build) - 1));
 
+    stall::start();
+
     CrashRecord record;
     if (!crash_record_read(record) || (record.pending != CrashRecordPending)) {
         return;
@@ -428,6 +601,11 @@ void rtcmemCrashDump(Print& print) {
     }
 
     print.printf_P(PSTR("Last crash: %s\n"), crash_summary(record).c_str());
+
+    if (record.kind == static_cast<uint32_t>(RtcmemCrash::Stall)) {
+        stall::dump(print);
+        return;
+    }
 
     const auto* regs = record.regs;
     print.printf_P(PSTR("cpsr=0x%08x spsr=0x%08x, sp lr of the interrupted mode\n"),
