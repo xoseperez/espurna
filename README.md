@@ -22,14 +22,15 @@ This fork adds the [ESP32 and Beken BK72xx ports](#this-fork) and [a page per ar
 [![esp32 ci](https://github.com/igorufox/espurna/actions/workflows/esp32.yml/badge.svg?branch=esp32-port)](https://github.com/igorufox/espurna/actions/workflows/esp32.yml)
 [![branch](https://img.shields.io/badge/branch-esp32--port-orange.svg)](https://github.com/igorufox/espurna/tree/esp32-port/)
 
-ESP32 and Beken ports and AC wall-switch support are maintained by **@igorufox**. ESPurna itself is the work of Xose Pérez (**@xoseperez**), Max Prokhorov (**@mcspr**) and the upstream contributors, credited below.
+This fork is maintained by **@igorufox**. ESPurna itself is the work of Xose Pérez (**@xoseperez**), Max Prokhorov (**@mcspr**) and the upstream contributors, credited below.
 
-This fork lives in the [`esp32-port`](https://github.com/igorufox/espurna/tree/esp32-port) branch and adds two architectures to the ESP8266 one, from the same source:
+It lives in the [`esp32-port`](https://github.com/igorufox/espurna/tree/esp32-port) branch: three architectures from the same source, a few generic images per chip instead of per-board builds (the board is picked after flashing, see [Picking the board](#picking-the-board)), and updates from the GitHub releases in the WebUI.
 
-- **ESP32** (Arduino-ESP32 core 3 / ESP-IDF 5 via [pioarduino](https://github.com/pioarduino/platform-espressif32), PlatformIO Core 6.2 or newer; Matter On/Off plugs; safeboot flash layout with Tasmota's offsets, [`code/esp32_4mb_safeboot.csv`](code/esp32_4mb_safeboot.csv), and an own safeboot image, [`code/safeboot-app`](code/safeboot-app)), code under [`code/espurna/arch/esp32`](code/espurna/arch/esp32);
-- **Beken BK7231N** (Tuya CB2S / CB3S / CBU and compatible modules, Tuya or Quectel bootloader) through [LibreTiny](https://docs.libretiny.eu/), Matter On/Off plugs, code under [`code/espurna/arch/beken`](code/espurna/arch/beken), builds in [`code/platformio_beken.ini`](code/platformio_beken.ini).
+- **ESP8266 / ESP8285** (Arduino core 3.1.2, NONOS SDK 3.0.5): four generic images instead of the 216 per-board builds, a two-step update through a mini image on 1 MB boards, lwIP and module memory tuned so that the WebUI and uploads fit in the heap, AC mains wall-switch inputs; builds in [`code/platformio.ini`](code/platformio.ini), [esp8266/README.md](esp8266/README.md);
+- **ESP32** (Arduino-ESP32 core 3 / ESP-IDF 5 via [pioarduino](https://github.com/pioarduino/platform-espressif32), PlatformIO Core 6.2 or newer; Matter On/Off plugs; safeboot flash layout with Tasmota's offsets, [`code/esp32_4mb_safeboot.csv`](code/esp32_4mb_safeboot.csv), and an own safeboot image, [`code/safeboot-app`](code/safeboot-app)), code under [`code/espurna/arch/esp32`](code/espurna/arch/esp32), [esp32/README.md](esp32/README.md);
+- **Beken BK7231N** (Tuya CB2S / CB3S / CBU and compatible modules, Tuya or Quectel bootloader) through [LibreTiny](https://docs.libretiny.eu/), Matter On/Off plugs, code under [`code/espurna/arch/beken`](code/espurna/arch/beken), builds in [`code/platformio_beken.ini`](code/platformio_beken.ini), [beken/README.md](beken/README.md).
 
-The ESP8266 side has generic images instead of the 216 per-board builds: the board is picked after flashing, see [Picking the board](#picking-the-board). How updates work on each chip, the releases and CI: [docs/updates.md](docs/updates.md).
+How updates work on each chip, the releases and CI: [docs/updates.md](docs/updates.md).
 
 ### Architectures
 

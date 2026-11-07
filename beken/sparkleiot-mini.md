@@ -23,7 +23,7 @@ the Quectel bootloader: app partition `0x11000` + `0x1A9000`, OTA (`download`) p
 the partition table in the stock bootloader, also in
 [`code/boards_beken/xh-cb2s-bk7231m.json`](../code/boards_beken/xh-cb2s-bk7231m.json)). The first flash over UART takes
 `espurna-beken-initial-quectel.uf2` of the [release](https://github.com/igorufox/espurna/releases/latest), or
-`code/.pio/build_beken/beken-bk7231n/espurna-beken-quectel.uf2` built from `code/`:
+`code/.pio/build_beken/beken-bk7231n/espurna-beken-initial-quectel.uf2` built from `code/`:
 
 ```
 py -3 -m platformio run -c platformio_beken.ini -e beken-bk7231n

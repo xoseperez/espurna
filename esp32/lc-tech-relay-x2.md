@@ -3,7 +3,9 @@
 A 2-relay board with an ESP32-WROOM (ESP32-D0WD-V3, 4 MB flash), 5 V / 7-30 V supply, a pin header with the UART and
 GPIO0.
 
-*Photo: none in the repository yet.*
+![LC-Tech ESP32 relay x2](https://raw.githubusercontent.com/blakadder/templates/master/assets/device_images/ESP32_Relay_X2.webp)
+
+*Photo: [Tasmota Device Templates](https://templates.blakadder.com/ESP32_Relay_X2.html).*
 
 ## Image and pins
 

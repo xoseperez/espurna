@@ -2,7 +2,12 @@
 
 The classic Itead 1-channel relay, 10 A, mains powered. ESP8266 with 1 MB flash.
 
-![Sonoff Basic](../images/devices/itead-sonoff-basic.jpg)
+|||
+|---|---|
+|![Sonoff Basic](https://raw.githubusercontent.com/blakadder/templates/master/assets/device_images/sonoff_basic.webp)|![Sonoff Basic R2](https://raw.githubusercontent.com/blakadder/templates/master/assets/device_images/sonoff_BASICR2.webp)|
+|Basic (R1)|Basic R2|
+
+*Photos: [Tasmota Device Templates](https://templates.blakadder.com/sonoff_basic.html), [Basic R2](https://templates.blakadder.com/sonoff_BASICR2.html).*
 
 ## Image and pins
 

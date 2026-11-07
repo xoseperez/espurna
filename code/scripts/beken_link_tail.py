@@ -8,10 +8,10 @@
 #   flash offset it lives at, in a small container that ESPurna recognizes in the web OTA upload
 # - the link fails when code outside libMatterApp (except the Matter glue of ESPurna) uses anything in the tail,
 #   such code would run before the tail is checked, or without one
-# - one OTA file for every BK7231N bootloader, espurna-beken.bin (ref. arch/beken/ota_beken.cpp): the RBL of the
+# - one OTA file for every BK7231N bootloader, espurna-beken-matter.bin (ref. arch/beken/ota_beken.cpp): the RBL of the
 #   Tuya layout (the image without the tail, as firmware.uf2 has it), the RBL of the Quectel layout (the whole image,
 #   the tail included: it lies inside that layout's application partition) and matter-tail.bin
-# - espurna-beken-quectel.uf2: the whole image for the Quectel layout, for the first flash over UART (ltchiptool) and
+# - espurna-beken-initial-quectel.uf2: the whole image for the Quectel layout, for the first flash over UART (ltchiptool) and
 #   for OTA from firmware built for that layout alone
 
 import json
@@ -240,7 +240,7 @@ def make_image(self, elf, build_id, tail_header):
         table += IMAGE_PART.pack(kind, offset, len(data), zlib.crc32(data) & 0xFFFFFFFF)
         offset += len(data)
 
-    image_path = join(folder, "espurna-beken.bin")
+    image_path = join(folder, "espurna-beken-matter.bin")
     with open(image_path, "wb") as f:
         f.write(IMAGE_HEADER.pack(IMAGE_MAGIC, 1, len(parts), build_id))
         f.write(table)
@@ -290,7 +290,7 @@ def make_image(self, elf, build_id, tail_header):
         f.write(bytes([0xFF]) * padding)
         f.write(rblh_data)
 
-    uf2_path = join(folder, "espurna-beken-quectel.uf2")
+    uf2_path = join(folder, "espurna-beken-initial-quectel.uf2")
     subprocess.run(
         [
             sys.executable, "-m", "ltchiptool", "uf2", "write",

@@ -2,7 +2,9 @@
 
 A 2-relay board with an ESP-12F (4 MB flash), 5 V / 7-30 V supply.
 
-*Photo: none in the repository yet.*
+![LC-Tech ESP-12F relay x2](https://raw.githubusercontent.com/blakadder/templates/master/assets/device_images/ESP12F_Relay_X2.webp)
+
+*Photo: [Tasmota Device Templates](https://templates.blakadder.com/ESP12F_Relay_X2.html).*
 
 ## Image and pins
 

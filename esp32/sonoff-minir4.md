@@ -4,6 +4,10 @@ An in-wall 1-channel relay with an S1 / S2 wall-switch input. ESP32 on a small v
 eWeLink firmware `FWSW-E32R4-MINIR4` (no Matter in it; the Matter model MINIR4M is an ESP32-C3 board that this build
 does not cover).
 
+![Sonoff MINIR4](https://raw.githubusercontent.com/blakadder/templates/master/assets/device_images/sonoff_MINIR4.webp)
+
+*Photo: [Tasmota Device Templates](https://templates.blakadder.com/sonoff_MINIR4.html).*
+
 |||
 |---|---|
 |![MINIR4 daughter board serial pads](../images/devices/itead-sonoff-minir4-serial-esp32.webp)|![MINIR4 3V3 at the U2 pad](../images/devices/itead-sonoff-minir4-serial-3v3.webp)|

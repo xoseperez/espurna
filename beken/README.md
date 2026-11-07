@@ -28,11 +28,11 @@ its flash layout. On an unknown bootloader it runs, but writes nothing to the bo
 code. The image is linked for 4 MiB of flash (`code/boards_beken/bk7231n-any.json`), so the partitions of the Quectel
 layout are reachable; on a 2 MiB chip only the Tuya ones are used.
 
-| Release file | Build output | What for |
-|--------------|--------------|----------|
-| `espurna-beken-initial-tuya.uf2` | `firmware.uf2` | first flash over UART, Tuya bootloader (CB1S, CB2S, CB3S, CBU, CB2L ...: 2 MiB, encrypted flash) |
-| `espurna-beken-initial-quectel.uf2` | `espurna-beken-quectel.uf2` | first flash over UART, Quectel bootloader without flash encryption (4 MiB), e.g. the XH-CB2S / BK7231M of the [Sparkleiot Mini](sparkleiot-mini.md) |
-| `espurna-beken-matter.bin` | `espurna-beken.bin` | every update over Wi-Fi, on both: the board writes the part made for its bootloader |
+| File | What for |
+|------|----------|
+| `espurna-beken-initial-tuya.uf2` | first flash over UART, Tuya bootloader (CB1S, CB2S, CB3S, CBU, CB2L ...: 2 MiB, encrypted flash) |
+| `espurna-beken-initial-quectel.uf2` | first flash over UART, Quectel bootloader without flash encryption (4 MiB), e.g. the XH-CB2S / BK7231M of the [Sparkleiot Mini](sparkleiot-mini.md) |
+| `espurna-beken-matter.bin` | every update over Wi-Fi, on both: the board writes the part made for its bootloader |
 
 `espurna-beken-matter.bin` is a container (`ESPBEKEN` header with the build id and a table of parts, made by
 [`code/scripts/beken_link_tail.py`](../code/scripts/beken_link_tail.py)): the RBL for the Tuya bootloader (the image
@@ -40,7 +40,9 @@ without its Matter code), the RBL for the Quectel bootloader (the whole image) a
 How the WebUI installs it: [section 6](#6-updates-over-wi-fi) and [docs/updates.md](../docs/updates.md#beken-the-browser-uploads-the-board-picks-its-part).
 
 Enabled modules: web UI, API, MQTT, terminal, Home Assistant, Alexa, Domoticz, Thingspeak, scheduler, the RF bridge
-(rc-switch, unused until `rfbRX` is set) and Matter (off until `matterAuto 1` or MATTER.START). ESPurna's own mDNS
+(rc-switch, unused until `rfbRX` is set) and Matter (off until `matterAuto 1` or MATTER.START; with `matterAuto 1` it
+starts `matterDelay` seconds after the board got its address, 75 by default, 5 minutes after a restart by the network
+watchdog). ESPurna's own mDNS
 responder is off in this image: the Matter stack answers mDNS itself. Boards have no builds of their own: `beken-matter`
 with the device template of the board. The firmware version carries the git revision (`1.22.0-git<sha>`, `scripts/beken_version.py`), the WebUI release list finds the running release by it.
 
@@ -123,12 +125,12 @@ Wi-Fi LED, `remote_io` is the 433 MHz receiver. The `_lv` fields give the active
 py -3 -m platformio run -c platformio_beken.ini -e beken-bk7231n
 ```
 
-The image for the Tuya bootloader is `code/.pio/build_beken/beken-bk7231n/firmware.uf2`, for the Quectel one
-`espurna-beken-quectel.uf2` in the same folder. The build uses its own build directory, so it does not touch
+The build writes the three files of the table under the same names to `code/.pio/build_beken/beken-bk7231n/`
+(`firmware.uf2` there is LibreTiny's own name of the Tuya UART image, the target of `pio run -t upload`). The build uses its own build directory, so it does not touch
 the ESP8266 / ESP32 builds in `.pio/build`. Then flash it:
 
 ```
-ltchiptool flash write -d COM3 -t 45 code/.pio/build_beken/beken-bk7231n/firmware.uf2
+ltchiptool flash write -d COM3 -t 45 code/.pio/build_beken/beken-bk7231n/espurna-beken-initial-tuya.uf2
 ```
 
 Touch CEN to GND at `Connecting...` again. The chip starts ESPurna by itself at the end, no reset is needed. After the first

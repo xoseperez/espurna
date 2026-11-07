@@ -4,7 +4,57 @@ The architecture ESPurna started on. This fork builds it with Arduino core 3.1.2
 inside its Wi-Fi stack on the home fleet) and replaces the 216 per-board builds with a few generic images: the board is
 picked after flashing, from a device template or the settings. Builds: [`code/platformio.ini`](../code/platformio.ini).
 
-## Boards
+## Images: four instead of 216
+
+Upstream ESPurna had a build per board: 216 environments in `platformio.ini`, each with the pins and drivers of one
+device compiled in. This fork has **four generic images**. The pins are not in the build: the board is chosen after
+flashing (*ADMIN → Device Template*, or the settings), so one image runs every board with the same kind of hardware.
+The drivers are split over the images by what fits a 1 MB flash and the ESP8266 heap:
+
+| Image | Size (`.bin` / `.bin.gz`, release 76dc912) | What is in it |
+|-------|-------------------|---------------|
+| `esp8266-1m` | 754 KB / 543 KB | relays, buttons, LEDs, dummy relays, **AC mains wall-switch inputs**, 433 MHz receiver (rc-switch) and the **Sonoff RF Bridge** (EFM8BB1), relay MCUs over UART (**Sonoff Dual**, STM relay boards, **LightFox**, **iFan02**, **KingArt** curtain), the MCP23S08 expander |
+| `esp8266-1m-light` | 810 KB / 571 KB | relays, buttons, LEDs + **lights** (`ltProvider`: PWM dimmer up to 5 channels, MY92XX, ...), **IR** receiver / transmitter, rotary **encoder** |
+| `esp8266-1m-sensor` | 772 KB / 541 KB | relays, buttons, LEDs + **power meters** (HLW8012, CSE7766, V9261F, ECH1560, PZEM-004T v1/v3, ADE7953), **sensors** (DHT, Dallas DS18B20, BMx280, analog, NTC, digital input), analog buttons |
+| `esp8266-4m` | 826 KB / 589 KB | for boards installed with the 4 MB layout: relays, buttons, LEDs, RF receiver, MCP23S08 and the drivers of `-1m-sensor` plus LDR, events and pulse meter; no light, IR or relay MCUs (their static RAM left too little heap) |
+| `esp8266-1m-mini` | 303 KB / 219 KB | not for running a board: the first step of the two-step update on 1 MB boards ([`code/mini-app`](../code/mini-app)), it downloads the full image itself |
+
+All four have the WebUI, API, MQTT, Home Assistant, the terminal (serial, telnet, web), NTP, scheduler, Domoticz,
+ThingSpeak, Alexa and web / ArduinoOTA. Every driver stays idle until its pins or its port are set: sensor pins
+(`dhtPin`, `dallasPin`, `ntcPin` ...), `rfbProv` / `rfbRX` (RF), `irRx` / `irRxPreset` (IR), `ltProvider` (light),
+`relayProv` (relay MCUs). A UART driver (power meters, RF Bridge, relay MCUs) claims the port configured with `uartTx` /
+`uartRx`; the serial log and terminal stop using that port then. Unknown hardware is safe to flash: no GPIO is driven
+until configured.
+
+## Which board on which image
+
+The [espurna-devices](https://github.com/igorufox/espurna-devices) list names the image of every board (178 ESP8266
+entries from `hardware.h`); the device search and the *Apply* confirmation show it. *Apply* does not check it, the
+device cannot tell which image it runs.
+
+| The board has | Image | Boards (examples) |
+|---------------|-------|-------------------|
+| relays, buttons, LEDs only | `esp8266-1m` (68 boards) | Sonoff Basic, Mini, S20, 4CH / 4CH Pro, T1 1-3CH, Touch, 1CH Inching, Slampher, SV, S31 Lite; Shelly 1 / 2; Moes MS-104B; Gosund WP3 / WS1; LC-Tech ESP-12F relay x4; the ESP-01S relay; most plain Wi-Fi plugs and wall switches |
+| an RF receiver, the Sonoff RF Bridge | `esp8266-1m` | Sonoff RF, Sonoff RF Bridge (with the stock EFM8BB1 or the direct mod) |
+| a relay MCU on UART | `esp8266-1m` | Sonoff Dual R2, STM relay boards, Foxel LightFox, Sonoff iFan02, KingArt curtain switch |
+| a light (PWM, MY92XX), IR, an encoder | `esp8266-1m-light` (37 boards) | Sonoff B1 / LED, AiLight-type bulbs, Arilux LC01-LC11, MagicHome LED controllers, H801 / H802, LSC, Mirabella Genio, GU10 / E14 / E27 bulbs, AG-L4 |
+| a power meter | `esp8266-1m-sensor` (41 boards) | Sonoff Pow / Pow R2 / R3, S31, Shelly 1PM / 2.5, BlitzWolf SHP, Gosund SP111 / P1, Teckin SP20 / SP22 / SP23, Maxcio, Hykker, Homecube |
+| a sensor, analog buttons | `esp8266-1m-sensor` | Sonoff TH, Sonoff Basic with DHT / DS18B20, ESP-01S DHT11 / DS18B20 shields, PZEM-004T / V9261F / ECH1560 on an ESP-01 |
+| 4 MB flash and the 4 MB layout of its old build | `esp8266-4m` (32 boards) | Wemos D1 mini (+ relay shield), NodeMCU, Witty Cloud, ESPurna H, EXS relays, Electrodragon, HW-622, LC-Tech ESP-12F relay x2, the ESP-12E power meter shields |
+
+How to choose when a board fits more than one row:
+
+- **Light + power meter or light + RF** (Smartlife Mini Smart Socket, MagicHome ZJ-WFMN-B11): no 1 MB image has both.
+  They run `esp8266-1m-light`, the other part stays off.
+- **A 4 MB board** (ESP-12E/F modules, Wemos, NodeMCU) can run a 1 MB image too, but its settings are where its old build
+  kept them: a board installed with the 4 MB layout stays on `esp8266-4m`, or loses its settings when it moves.
+- **2 MB boards** (Shelly 1 / 2 / 1PM / 2.5, Euromate V2) run the 1 MB images, but their settings sit elsewhere in the
+  2 MB layout: back up the settings (*ADMIN*, *Backup*) before the switch.
+- **`esp8266-1m-light` and the two-step update**: the mini (219 KB) has to fit behind the running image, and behind the
+  810 KB light image about 6 KB are missing. A light board does not update from the WebUI in two steps yet: put the
+  mini on it with ArduinoOTA or over serial. The other 1 MB images leave 250-270 KB for it.
+
+## Boards run on these images
 
 | Board | Chip, flash | Image | Runs | Page |
 |-------|-------------|-------|------|------|
@@ -17,35 +67,6 @@ picked after flashing, from a device template or the settings. Builds: [`code/pl
 The other boards of [`hardware.h`](../code/espurna/config/hardware.h) (Sonoff, Shelly, BlitzWolf, ...) have device
 templates in [espurna-devices](https://github.com/igorufox/espurna-devices); most of them were not run on hardware since
 the move to generic images.
-
-## Images
-
-| Image | For |
-|-------|-----|
-| `esp8266-1m` | 1 MB boards: relays, buttons (AC mains switches too), LEDs, dummy relays, RF receiver and Sonoff RF Bridge, relay MCUs (Sonoff Dual, STM relays, LightFox, iFan, KingArt curtain), MCP23S08 |
-| `esp8266-1m-light` | 1 MB, relays, buttons, LEDs + lights (`ltProvider`: PWM dimmer, MY92XX ...), IR, rotary encoder |
-| `esp8266-1m-sensor` | 1 MB, relays, buttons, LEDs + power meters (HLW8012, CSE7766, V9261F, ECH1560, PZEM-004T, ADE7953), sensors (DHT, Dallas, BMx280, analog, NTC, digital), analog buttons |
-| `esp8266-4m` | boards with the 4 MB layout (their settings sit at the end of 4 MB): relays, buttons, LEDs, RF receiver, MCP23S08 and the drivers of `-1m-sensor` (plus LDR, events, pulse meter); no light, IR, relay MCUs |
-| `esp8266-1m-mini` | helper: the first step of the two-step update on 1 MB boards ([`code/mini-app`](../code/mini-app)) |
-
-Which one a board needs:
-
-| The board has | Image |
-|---------------|-------|
-| relays, buttons, LEDs, AC mains switches, RF receiver, Sonoff RF Bridge, Sonoff Dual / STM relays / LightFox / iFan / KingArt, MCP23S08 | `esp8266-1m` |
-| a light (PWM, MY92XX), IR, an encoder | `esp8266-1m-light` |
-| a power meter, a sensor, analog buttons | `esp8266-1m-sensor` |
-| 4 MB flash and the 4 MB layout of its old build (development boards, ESPurna H, NodeMCU ...) | `esp8266-4m` |
-
-Every espurna-devices entry names its image; *Apply* does not check it, the device cannot tell which image it runs. Two
-boards need two 1 MB images (light and power meter / RF): the Smartlife Mini Smart Socket and the MagicHome ZJ-WFMN-B11
-run `esp8266-1m-light`, their other part stays off. 2 MB boards (Shelly 1 / 2 / 1PM / 2.5, Euromate V2) run the 1 MB
-images, but their settings sit elsewhere in the 2 MB layout: back up the settings (*ADMIN*, *Backup*) before the switch.
-
-Every driver of a generic image stays idle until its pins or its port are set: sensor pins (`dhtPin`, `dallasPin`,
-`ntcPin` ...), `rfbProv` / `rfbRX` (RF), `irRx` / `irRxPreset` (IR), `ltProvider` (light), `relayProv` (relay MCUs). A
-UART driver (power meters, RF Bridge, relay MCUs) claims the port configured with `uartTx` / `uartRx`; the serial log and
-terminal stop using that port then. Unknown hardware is safe to flash: no GPIO is driven until configured.
 
 ## First flash
 

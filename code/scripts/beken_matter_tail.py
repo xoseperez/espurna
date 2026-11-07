@@ -11,7 +11,8 @@
 # Enable with `custom_matter_tail = yes` in the env. Outputs next to the firmware:
 # - raw_firmware.bin / *.rbl / firmware.uf2: the head only (.matter_tail is left out), for the Tuya layout
 # - matter-tail.bin: the tail container, uploaded through the same web OTA form as the firmware
-# - espurna-beken.bin: one OTA file for both layouts, espurna-beken-quectel.uf2 (ref. beken_link_tail.py)
+# - espurna-beken-matter.bin: one OTA file for both layouts, espurna-beken-initial-quectel.uf2 (ref. beken_link_tail.py)
+# - espurna-beken-initial-tuya.uf2: a copy of firmware.uf2 (LibreTiny's name, its upload target), the release name
 
 import os
 
@@ -85,7 +86,7 @@ if env.GetProjectOption("custom_matter_tail", "no") in ("yes", "true", "1"):
     for e in (env, projenv):  # noqa: F821
         e.Append(CPPDEFINES=[("MATTER_TAIL_SUPPORT", 1)])
     script = os.path.join(env.subst("$PROJECT_DIR"), "scripts", "beken_link_tail.py")
-    # board json of the other bootloader layout, for the parts of espurna-beken.bin made for it
+    # board json of the other bootloader layout, for the parts of espurna-beken-matter.bin made for it
     quectel = os.path.join(
         env.subst("$PROJECT_DIR"),
         env.GetProjectOption("custom_quectel_board", "boards_beken/xh-cb2s-bk7231m.json"))
@@ -93,3 +94,11 @@ if env.GetProjectOption("custom_matter_tail", "no") in ("yes", "true", "1"):
     env.Replace(
         LINK=f'"${{LTPYTHONEXE}}" "{script}" 0x{TAIL_ORIGIN:X} "{quectel}" -r -i 1 -L "${{LT_DIR}}" link2bin ${{BOARD_JSON}} "" ""'
     )
+
+    # the build outputs carry the names of the release files (beken_link_tail.py writes the other two)
+    def copy_initial_tuya(target, source, env):
+        import shutil
+        uf2 = str(target[0])
+        shutil.copyfile(uf2, os.path.join(os.path.dirname(uf2), "espurna-beken-initial-tuya.uf2"))
+
+    env.AddPostAction(os.path.join("$BUILD_DIR", "firmware.uf2"), copy_initial_tuya)

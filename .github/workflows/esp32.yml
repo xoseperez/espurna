@@ -95,10 +95,9 @@ jobs:
         beken)
           build=code/.pio/build_beken/${env}
           # first flash over UART1 with ltchiptool, one file per bootloader (scripts/beken_link_tail.py)
-          cp ${build}/firmware.uf2 dist/espurna-beken-initial-tuya.uf2
-          cp ${build}/espurna-beken-quectel.uf2 dist/espurna-beken-initial-quectel.uf2
+          cp ${build}/espurna-beken-initial-tuya.uf2 ${build}/espurna-beken-initial-quectel.uf2 dist/
           # OTA from the WebUI, any bootloader: the board takes its part (and the Matter code) out of it
-          cp ${build}/espurna-beken.bin dist/${name}.bin
+          cp ${build}/espurna-beken-matter.bin dist/
           # LibreTiny links raw_firmware.elf
           cp ${build}/raw_firmware.elf ${build}/firmware.elf
           ;;

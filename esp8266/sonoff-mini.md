@@ -3,7 +3,12 @@
 An in-wall 1-channel relay, 10 A, with an S1 / S2 input for the wall switch. ESP8285 (ESP8266 with 1 MB of flash inside
 the chip). R1 and R2 run the same image; they cannot be told apart over the network.
 
-*Photo: none in the repository yet.*
+|||
+|---|---|
+|![Sonoff Mini (R1)](https://user-images.githubusercontent.com/5904370/63218127-3610e000-c154-11e9-9ae9-8ed36009dda4.png)|![Sonoff Mini R2](https://raw.githubusercontent.com/blakadder/templates/master/assets/device_images/sonoff_MINIR2.webp)|
+|Mini (R1)|Mini R2|
+
+*Photos: [Tasmota Device Templates](https://templates.blakadder.com/sonoff_mini.html), [Mini R2](https://templates.blakadder.com/sonoff_MINIR2.html). The boards here are in walls.*
 
 ## Image and pins
 
