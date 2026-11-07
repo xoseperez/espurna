@@ -3,6 +3,10 @@
 #include <WiFi.h>
 #include <IPAddress.h>
 #include <lwip/dns.h>
+#include <lwip/etharp.h>
+#include <lwip/netif.h>
+#include <lwip/stats.h>
+#include <lwip/tcpip.h>
 
 #include <algorithm>
 #include <atomic>
@@ -2163,6 +2167,84 @@ static constexpr ::terminal::Command WifiCommands[] PROGMEM {
 };
 #endif
 
+
+// The Wi-Fi link can stay associated while the IP stack receives nothing at all: 10.0.5.116 2026-11-07, first boot after
+// the Matter code was written by an install, DHCP done, then no ARP / ping answers for 28 min. The loop kept running and
+// feeding the watchdog, so nothing reset it; a deauth from the AP did. Every Interval, while connected with an address,
+// whatever arrived (ARP + IPv4 + IPv6 packets) is compared with the last check. Nothing new => an ARP request goes to
+// the gateway (answers within ms, so a healthy stack always sees traffic by the next check); Misses checks in a row
+// without a single received packet => restart
+namespace netwatch {
+namespace {
+
+constexpr auto Interval = espurna::duration::Seconds(20);
+constexpr int Misses = 6;
+
+uint32_t last_rx { 0 };
+int misses { 0 };
+timer::SystemTimer timer;
+
+uint32_t received() {
+    uint32_t out { 0 };
+#if ETHARP_STATS
+    out += lwip_stats.etharp.recv;
+#endif
+#if IP_STATS
+    out += lwip_stats.ip.recv;
+#endif
+#if IP6_STATS
+    out += lwip_stats.ip6.recv;
+#endif
+    return out;
+}
+
+// tcpip thread
+void probe(void*) {
+    auto* netif = netif_default;
+    if (netif && netif_is_up(netif) && !ip4_addr_isany_val(*netif_ip4_gw(netif))) {
+        etharp_request(netif, netif_ip4_gw(netif));
+    }
+}
+
+bool addressed() {
+    const auto* netif = netif_default;
+    return (WiFi.status() == WL_CONNECTED)
+        && netif && netif_is_up(netif)
+        && !ip4_addr_isany_val(*netif_ip4_addr(netif));
+}
+
+void check() {
+    const auto now = received();
+    if (!addressed() || (now != last_rx)) {
+        last_rx = now;
+        misses = 0;
+        return;
+    }
+
+    ++misses;
+    if (misses >= Misses) {
+        DEBUG_MSG_P(PSTR("[WIFI] Nothing received for %lu s while connected, restarting\n"),
+            static_cast<unsigned long>(Interval.count() * Misses));
+        timer.stop();
+        prepareReset(CustomResetReason::Network);
+        return;
+    }
+
+    DEBUG_MSG_P(PSTR("[WIFI] Nothing received for %lu s, asking the gateway\n"),
+        static_cast<unsigned long>(Interval.count() * misses));
+    // a full tcpip mailbox is the same story, the next check counts it
+    tcpip_try_callback(probe, nullptr);
+}
+
+} // namespace
+
+void setup() {
+    last_rx = received();
+    timer.repeat(Interval, check);
+}
+
+} // namespace netwatch
+
 void _wifiSetup() {
     query::setup();
 
@@ -2241,6 +2323,8 @@ void _wifiSetup() {
     espurnaRegisterLoop([]() {
         _wifiLoop();
     });
+
+    netwatch::setup();
 }
 
 } // namespace

@@ -615,7 +615,21 @@ async function installUpgrade(urls, blob, name) {
     let next = progress.steps[progress.current + 1] || {key: 'upload', text: `Upload ${name}`};
     for (;;) {
         stepNow(next);
-        const {status, text} = await upload(urls.upgrade, blob, name, true);
+        /** @type {number} */
+        let status;
+        let text = '';
+        try {
+            ({status, text} = await upload(urls.upgrade, blob, name, true));
+        } catch (e) {
+            // Matter running: firmware before 2026-11-07 answers 409 on the first chunk and reboots right away, the
+            // browser sees the connection drop while it still sends. The board does restart without Matter
+            if ((progress.steps[progress.current]?.key !== 'matter-upload') || (matter <= 0)) {
+                throw e;
+            }
+
+            status = 409;
+        }
+
         const outcome = uploadOutcome(status, text);
 
         // Matter was not running after all: that upload was the update itself

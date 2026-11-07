@@ -201,6 +201,54 @@ void loop() {
     espurna::time::delay(internal::loop_delay);
 }
 
+// -DSETUP_HEAP_PROBE_SUPPORT=1: free heap after every module setup, `HEAP.SETUP` prints it (finding the modules that
+// take memory while they are not configured)
+#if SETUP_HEAP_PROBE_SUPPORT
+namespace heap_probe {
+namespace {
+
+struct Probe {
+    const char* name;
+    uint32_t heap;
+};
+
+Probe probes[96];
+size_t count { 0 };
+
+PROGMEM_STRING(HeapSetup, "HEAP.SETUP");
+
+void print(::terminal::CommandContext&& ctx) {
+    uint32_t last = systemInitialFreeHeap();
+    for (size_t index = 0; index < count; ++index) {
+        ctx.output.printf_P(PSTR("%-16s %6u %6d\n"), probes[index].name, probes[index].heap,
+            static_cast<int>(last) - static_cast<int>(probes[index].heap));
+        last = probes[index].heap;
+    }
+    terminalOK(ctx);
+}
+
+static constexpr espurna::terminal::Command Commands[] PROGMEM {
+    {HeapSetup, print},
+};
+
+} // namespace
+
+void add(const char* name) {
+    if (count < (sizeof(probes) / sizeof(probes[0]))) {
+        probes[count++] = Probe{name, ESP.getFreeHeap()};
+    }
+}
+
+void setup() {
+    espurna::terminal::add(Commands);
+}
+
+} // namespace heap_probe
+#define SETUP_HEAP_PROBE(NAME) heap_probe::add(NAME)
+#else
+#define SETUP_HEAP_PROBE(NAME)
+#endif
+
 void setup() {
     system::LoopGuard guard;
 
@@ -213,22 +261,28 @@ void setup() {
 
     // Init debug & logging routines
     debugSetup();
+    SETUP_HEAP_PROBE("debug");
 
     // Init GPIO functions
     gpioSetup();
+    SETUP_HEAP_PROBE("gpio");
 
     // Init RTCMEM
     rtcmemSetup();
+    SETUP_HEAP_PROBE("rtcmem");
 
     // Init EEPROM
     eepromSetup();
+    SETUP_HEAP_PROBE("eeprom");
 
     // Init persistance
     settingsSetup();
+    SETUP_HEAP_PROBE("settings");
 
     // Init hardware / software UART ports
     #if UART_SUPPORT
         uartSetup();
+        SETUP_HEAP_PROBE("uart");
     #endif
 
     // Extra configuration after settings can be used
@@ -237,19 +291,26 @@ void setup() {
     // Crash dump only when debugging is supported as well
     #if DEBUG_SUPPORT
         crashSetup();
+        SETUP_HEAP_PROBE("crash");
     #endif
 
     // Init Serial, SPIFFS and system check
     systemSetup();
+    SETUP_HEAP_PROBE("system");
 
     // Init terminal features
     #if TERMINAL_SUPPORT
         terminalSetup();
+        SETUP_HEAP_PROBE("terminal");
     #endif
 
     networkSetup();
+
+    SETUP_HEAP_PROBE("network");
     wifiSetup();
+    SETUP_HEAP_PROBE("wifi");
     otaSetup();
+    SETUP_HEAP_PROBE("ota");
 
     // Our app banner (usually, for uart)
     #if DEBUG_SUPPORT
@@ -258,16 +319,19 @@ void setup() {
 
     #if TELNET_SUPPORT
         telnetSetup();
+        SETUP_HEAP_PROBE("telnet");
     #endif
 
     // NSPanel display power and buzzer pins, also in the unstable mode
     #if NSPANEL_SUPPORT
         nspanelBootSetup();
+        SETUP_HEAP_PROBE("nspanelBoot");
     #endif
 
     // Asymmetric (safeboot) flash layout: crash-loop guard and `safeboot`, also in the unstable mode
     #if SAFEBOOT_SUPPORT
         safebootSetup();
+        SETUP_HEAP_PROBE("safeboot");
     #endif
 
     // -------------------------------------------------------------------------
@@ -288,158 +352,204 @@ void setup() {
     // Init webserver required before any module that uses API
     #if WEB_SUPPORT
         webSetup();
+        SETUP_HEAP_PROBE("web");
         wsSetup();
+        SETUP_HEAP_PROBE("ws");
         #if DEBUG_WEB_SUPPORT
             debugWebSetup();
+            SETUP_HEAP_PROBE("debugWeb");
         #endif
         #if OTA_WEB_SUPPORT
             otaWebSetup();
+            SETUP_HEAP_PROBE("otaWeb");
         #endif
         #if SAFEBOOT_SUPPORT
             safebootWebSetup();
+            SETUP_HEAP_PROBE("safebootWeb");
         #endif
     #endif
 
     // Multiple modules depend on the generic 'API' services
     #if API_SUPPORT || TERMINAL_WEB_API_SUPPORT || PROMETHEUS_SUPPORT
         apiCommonSetup();
+        SETUP_HEAP_PROBE("apiCommon");
     #endif
 
     #if API_SUPPORT
         apiSetup();
+        SETUP_HEAP_PROBE("api");
     #endif
 
     // Run terminal command and send back the result
     #if TERMINAL_WEB_API_SUPPORT
         terminalWebApiSetup();
+        SETUP_HEAP_PROBE("terminalWebApi");
     #endif
 
     // Special HTTP metrics endpoint
     #if PROMETHEUS_SUPPORT
         prometheusSetup();
+        SETUP_HEAP_PROBE("prometheus");
     #endif
 
     // Hardware GPIO expander, needs to be available for modules down below
     #if MCP23S08_SUPPORT
         MCP23S08Setup();
+        SETUP_HEAP_PROBE("MCP23S08");
     #endif
 
     // PWM driver
     #if PWM_SUPPORT
         pwmSetup();
+        SETUP_HEAP_PROBE("pwm");
     #endif
 
     // lightSetup must be called before relaySetup
     #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
         lightSetup();
+        SETUP_HEAP_PROBE("light");
     #endif
     // rpnSetup must be called before relaySetup
     #if RPN_RULES_SUPPORT
         rpnSetup();
+        SETUP_HEAP_PROBE("rpn");
     #endif
     #if RELAY_SUPPORT
         relaySetup();
+        SETUP_HEAP_PROBE("relay");
     #endif
     #if BUTTON_SUPPORT
         buttonSetup();
+        SETUP_HEAP_PROBE("button");
     #endif
     #if ENCODER_SUPPORT && (LIGHT_PROVIDER != LIGHT_PROVIDER_NONE)
         encoderSetup();
+        SETUP_HEAP_PROBE("encoder");
     #endif
     #if LED_SUPPORT
         ledSetup();
+        SETUP_HEAP_PROBE("led");
     #endif
 
     #if MQTT_SUPPORT
         mqttSetup();
+        SETUP_HEAP_PROBE("mqtt");
     #endif
     #if MATTER_SUPPORT
         matterSetup();
+        SETUP_HEAP_PROBE("matter");
     #endif
     #if MDNS_SERVER_SUPPORT
         mdnsServerSetup();
+        SETUP_HEAP_PROBE("mdnsServer");
     #endif
     #if LLMNR_SUPPORT
         llmnrSetup();
+        SETUP_HEAP_PROBE("llmnr");
     #endif
     #if NETBIOS_SUPPORT
         netbiosSetup();
+        SETUP_HEAP_PROBE("netbios");
     #endif
     #if SSDP_SUPPORT
         ssdpSetup();
+        SETUP_HEAP_PROBE("ssdp");
     #endif
     #if NTP_SUPPORT
         ntpSetup();
+        SETUP_HEAP_PROBE("ntp");
     #endif
     #if I2C_SUPPORT
         i2cSetup();
+        SETUP_HEAP_PROBE("i2c");
     #endif
     #if ONE_WIRE_SUPPORT
         oneWireSetup();
+        SETUP_HEAP_PROBE("oneWire");
     #endif
     #if RFB_SUPPORT
         rfbSetup();
+        SETUP_HEAP_PROBE("rfb");
     #endif
     #if ALEXA_SUPPORT
         alexaSetup();
+        SETUP_HEAP_PROBE("alexa");
     #endif
     #if NOFUSS_SUPPORT
         nofussSetup();
+        SETUP_HEAP_PROBE("nofuss");
     #endif
     #if SENSOR_SUPPORT
         sensorSetup();
+        SETUP_HEAP_PROBE("sensor");
     #endif
     #if INFLUXDB_SUPPORT
         idbSetup();
+        SETUP_HEAP_PROBE("idb");
     #endif
     #if THINGSPEAK_SUPPORT
         tspkSetup();
+        SETUP_HEAP_PROBE("tspk");
     #endif
     #if RFM69_SUPPORT
         rfm69Setup();
+        SETUP_HEAP_PROBE("rfm69");
     #endif
     #if IR_SUPPORT
         irSetup();
+        SETUP_HEAP_PROBE("ir");
     #endif
     #if DOMOTICZ_SUPPORT
         domoticzSetup();
+        SETUP_HEAP_PROBE("domoticz");
     #endif
     #if HOMEASSISTANT_SUPPORT
         haSetup();
+        SETUP_HEAP_PROBE("ha");
     #endif
     #if SCHEDULER_SUPPORT
         schSetup();
+        SETUP_HEAP_PROBE("sch");
     #endif
     #if UART_MQTT_SUPPORT
         uartMqttSetup();
+        SETUP_HEAP_PROBE("uartMqtt");
     #endif
     #if LIGHTFOX_SUPPORT
         lightfoxSetup();
+        SETUP_HEAP_PROBE("lightfox");
     #endif
     #if THERMOSTAT_SUPPORT
         thermostatSetup();
+        SETUP_HEAP_PROBE("thermostat");
     #endif
     #if THERMOSTAT_DISPLAY_SUPPORT
         displaySetup();
+        SETUP_HEAP_PROBE("display");
     #endif
     #if TUYA_SUPPORT
         tuya::setup();
     #endif
     #if CURTAIN_SUPPORT
         curtainSetup();
+        SETUP_HEAP_PROBE("curtain");
     #endif
     #if FAN_SUPPORT
         fanSetup();
+        SETUP_HEAP_PROBE("fan");
     #endif
     #if GARLAND_SUPPORT
         garlandSetup();
+        SETUP_HEAP_PROBE("garland");
     #endif
     #if NSPANEL_SUPPORT
         nspanelSetup();
+        SETUP_HEAP_PROBE("nspanel");
     #endif
 
     #if USE_EXTRA
         extraSetup();
+        SETUP_HEAP_PROBE("extra");
     #endif
 
     // Update `cfg` version
@@ -448,6 +558,10 @@ void setup() {
     // Set up delay() after loop callbacks are finished
     // Notice that this requires settings storage to be available and must be **after** settingsSetup()!
     internal::loop_delay = settings::loopDelay();
+    SETUP_HEAP_PROBE("end");
+#if SETUP_HEAP_PROBE_SUPPORT
+    heap_probe::setup();
+#endif
 }
 
 } // namespace main

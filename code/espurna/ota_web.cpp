@@ -96,6 +96,20 @@ const Writer MatterTail {"Matter code", matterTailBegin, matterTailWrite, matter
 
 const Writer* writer { nullptr };
 
+#if MATTER_TAIL_SUPPORT
+// 409 sent, the reboot without Matter is due once its request ended (body read or connection gone)
+bool matterReboot { false };
+
+void matterRebootNow() {
+    if (matterReboot) {
+        matterReboot = false;
+        systemRunInLoop([]() {
+            matterRebootForUpload();
+        });
+    }
+}
+#endif
+
 void setWriterError(AsyncWebServerRequest* request, const char* error) {
     writer = nullptr;
     setStatus(request, 500, String(FPSTR(error)));
@@ -148,6 +162,9 @@ void onUpgrade(AsyncWebServerRequest *request) {
     }
 
     if (request->_tempObject) {
+#if defined(LIBRETINY) && MATTER_TAIL_SUPPORT
+        matterRebootNow();
+#endif
         return;
     }
 
@@ -244,9 +261,12 @@ void onFile(AsyncWebServerRequest *request, String filename, size_t index, uint8
 #if MATTER_TAIL_SUPPORT
         // Matter code is where the OTA image goes: one reboot without Matter first, then upload again
         if (matterTailBlocksOta()) {
+            // the reboot waits for the end of the request: a reboot while the browser still sends drops the
+            // connection and the browser never reads the 409
             setStatus(request, 409, F("ERROR: Matter is running from the OTA partition. Rebooting without Matter, upload again in a minute"));
-            systemRunInLoop([]() {
-                matterRebootForUpload();
+            matterReboot = true;
+            request->onDisconnect([]() {
+                matterRebootNow();
             });
             return;
         }

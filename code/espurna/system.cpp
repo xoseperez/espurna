@@ -352,6 +352,8 @@ String serialize(CustomResetReason reason) {
         break;
     case CustomResetReason::Stability:
         ptr = PSTR("Reboot after changing stability counter");
+        break;    case CustomResetReason::Network:
+        ptr = PSTR("Reboot after the network stopped receiving");
         break;
     }
 

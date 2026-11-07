@@ -48,6 +48,7 @@ enum class CustomResetReason : uint8_t {
     Terminal,  // terminal command action
     Web,       // webui action
     Stability, // stable counter action
+    Network,   // the network stack stopped receiving while Wi-Fi stayed connected
 };
 
 namespace espurna {
