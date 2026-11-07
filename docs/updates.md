@@ -12,11 +12,18 @@ releases are kept, older ones are deleted with their tags; releases of hand-made
 
 | Build (matrix) | Release files | Image name (`ESPURNA_IMAGE`) |
 |----------------|---------------|------------------------------|
-| `esp32-generic` of `platformio_esp32.ini` | `espurna-esp32-matter-full.bin`, `-ota.bin`, `espurna-esp32-safeboot.bin` | `esp32-matter` |
-| `esp32-nspanel` | `espurna-esp32-matter-nspanel-full.bin`, `-ota.bin` | `esp32-matter-nspanel` |
+| `esp32-generic` of `platformio_esp32.ini` | `espurna-esp32-matter.bin` | `esp32-matter` |
+| `esp32-nspanel` | `espurna-esp32-matter-nspanel.bin` | `esp32-matter-nspanel` |
 | `beken-bk7231n` of `platformio_beken.ini` | `espurna-beken-matter.bin`, `espurna-beken-initial-tuya.uf2`, `espurna-beken-initial-quectel.uf2` | `beken-matter` |
-| `esp8266-1m`, `-1m-light`, `-1m-sensor`, `-4m` of `platformio.ini` | `espurna-<image>.bin`, `.bin.gz` | the same as the build |
-| `code/mini-app` | `espurna-esp8266-1m-mini.bin`, `.bin.gz` | `esp8266-1m-mini` |
+| `esp8266-1m`, `-1m-light`, `-1m-sensor`, `-4m` of `platformio.ini` | `espurna-<image>.bin` | the same as the build |
+| `code/mini-app` | `espurna-esp8266-1m-mini.bin` | `esp8266-1m-mini` |
+
+**One file per image.** The ESP32 `.bin` is the merged image (bootloader, partition table, safeboot, ESPurna): serial
+flash at `0x0`, and the same file for every update, the safeboot writes only its ESPurna part (the `ota_0` entry of the
+partition table inside the file) into app0. Releases before 2026-11-08 had `-full.bin`, `-ota.bin` and
+`espurna-esp32-safeboot.bin` instead; the WebUI and the safeboot take both. The board-side copies are made for GitHub
+Pages only (next section): the ESP8266 `.bin.gz`, the ESP32 `-safeboot.bin` and `-app.bin` (ESPurna alone, for
+Tasmota's safeboot when ESPurna replaces Tasmota).
 
 The firmware knows the image it was built as (`ESPURNA_IMAGE`, `fwImage` in the WebUI) and its version carries the git
 revision (`1.22.0-git<sha>`; on Beken through `scripts/beken_version.py`). The WebUI finds the running release by that
@@ -26,7 +33,10 @@ revision and lists only the files of the running image.
 
 The `pages` job copies the kept releases to GitHub Pages and writes
 [`firmware.json`](https://igorufox.github.io/espurna/firmware.json): per release the tag, date, commit and, per image,
-its files with kind (`ota`, `serial`, `safeboot`), size and SHA-256. The release assets themselves cannot be used by the
+its files with kind (`ota`, `serial`, `safeboot`, `app`), size and SHA-256. Besides the release files the folder of a
+release on Pages has the copies the boards need: `.bin.gz` of every ESP8266 image (OTA on 1 MB boards), and of every
+ESP32 image its `-safeboot.bin` and `-app.bin`, cut out of the merged `.bin` along its partition table (each ESP32 build
+has its own safeboot build). The release assets themselves cannot be used by the
 update code: GitHub serves them without CORS (the browser may not read them) and only with ECDHE ciphers (the Beken
 mbedTLS has none). Pages sends `Access-Control-Allow-Origin: *`.
 
@@ -39,8 +49,8 @@ the ESP8266 mini read the same setting from the ESPurna settings.
   The PlatformIO cache key has `py313` in it, the caches of the 3.15 runs hold a broken LibreTiny venv.
 - PlatformIO Core 6.2 or newer (pioarduino needs it).
 - ESP32: `pio run -d safeboot-app` runs first, `scripts/esp32_merge.py` puts the safeboot into the factory partition of the
-  `-full.bin`.
-- The mini `.bin.gz` is made with `pigz -11` (zopfli), about 4 KB smaller than `gzip -9`: it has to fit behind the
+  merged `.bin`.
+- The mini `.bin.gz` (made for Pages) is `pigz -11` (zopfli), about 4 KB smaller than `gzip -9`: it has to fit behind the
   biggest 1 MB image. The other `.bin.gz` files are `gzip -9 -n`.
 - The Pages artifact is named per run attempt (`github-pages-<attempt>`): a re-run otherwise finds the artifact of the
   failed attempt as well and `deploy-pages` stops.
@@ -69,30 +79,30 @@ of Tasmota): the ESPurna safeboot ([`code/safeboot-app`](../code/safeboot-app), 
 with an error and every update goes through safeboot:
 
 1. The WebUI asks `/safeboot/status` for the flash layout and the SHA-256 of the installed safeboot.
-2. When the release's `espurna-esp32-safeboot.bin` differs (SHA-256), the browser downloads it and uploads it to
-   `/safeboot/install`; the SHA-256 is checked again after the write.
-3. `/safeboot/update` with the URL and SHA-256 of the `-ota.bin` (from `firmware.json`): ESPurna stores them in NVS
+2. When the release's safeboot of this image (`-safeboot.bin` on Pages) differs (SHA-256), the browser downloads it and
+   uploads it to `/safeboot/install`; the SHA-256 is checked again after the write.
+3. `/safeboot/update` with the URL and SHA-256 of the image's `.bin` (from `firmware.json`): ESPurna stores them in NVS
    (`safeboot`/`url`, `sha256`, `image`) and restarts into safeboot.
 4. Safeboot joins Wi-Fi with the ESPurna settings (`ssid0`/`pass0`, `ssid1`/`pass1`, static IP, hostname), downloads the
-   `-ota.bin` over https (ESP-IDF certificate bundle), up to 3 attempts, checks the SHA-256, writes app0 and boots
-   ESPurna. The result goes to NVS `safeboot`/`result`, the WebUI shows it.
+   `.bin` over https (ESP-IDF certificate bundle), up to 3 attempts, checks the SHA-256 of the whole file, writes its
+   ESPurna part into app0 and boots ESPurna. The result goes to NVS `safeboot`/`result`, the WebUI shows it.
 
 **Two-slot boards** (older ESP32 builds, `min_spiffs.csv` / `default.csv`): the Matter images no longer fit their slots.
 The WebUI migrates them over Wi-Fi: the browser uploads the safeboot image to `/safeboot/migrate` together with the
-`-ota.bin` URL; ESPurna writes the safeboot over the first slot, replaces the partition table and erases otadata, the
+image URL; ESPurna writes the safeboot over the first slot, replaces the partition table and erases otadata, the
 board restarts into safeboot, which downloads ESPurna into the new app0. NVS keeps its place, so the settings stay.
 ESPurna has to run from the second slot for that; on the first slot it asks for one update more first.
 
 **Safeboot itself**: web page on port 80 (user `admin`, the ESPurna admin password): the releases of the running image
-(from `firmware.json`, read by the browser), an upload of an `-ota.bin` into app0, a download from a URL. Without Wi-Fi in
+(from `firmware.json`, read by the browser), an upload of the image (the merged `.bin`, or an application image) into
+app0, a download from a URL. Without Wi-Fi in
 30 s it opens its own access point `<hostname>-SAFEBOOT` (WPA2, admin password) at 192.168.4.1. The next boot is set back
 to app0 right at its start, so a crash or a power cut in safeboot returns to ESPurna; after 15 minutes without activity it
 boots ESPurna as well. Other ways in: the `safeboot` terminal command, the `/safeboot` page of ESPurna, and the crash-loop
 guard (5 crashes in a row in the first minute after boot switch to safeboot, 3 on the NSPanel). ESPurna switches only
 into the ESPurna safeboot: a factory partition with anything else (Tasmota's safeboot, nothing) is refused.
 
-NSPanel: the same module and the same steps as every ESP32 (`esp32-matter-nspanel` gets the release's one
-`espurna-esp32-safeboot.bin` like the other ESP32 images). By what the panel has:
+NSPanel: the same module and the same steps as every ESP32 (its safeboot comes out of its own `.bin`). By what the panel has:
 - flashed with the full image (ESPurna safeboot in the factory partition): step 3 only, step 2 when the release brings a
   newer safeboot;
 - installed over Tasmota (Tasmota's safeboot in the factory partition, same offsets): `/safeboot/status` says
@@ -206,7 +216,8 @@ with the 1 MB images that fit, a file upload. Without Wi-Fi in 30 s it opens `<h
 
 The full images do not download anything themselves (`OTA_FETCH_SUPPORT` is 0): BearSSL needs about 27 KB of heap,
 which a full image never has. Older firmware without `/ota/status` can only take a file that fits; on a 1 MB board upload
-`espurna-esp8266-1m-mini.bin.gz` with *Upgrade* and pick the image on the mini page.
+`espurna-esp8266-1m-mini.bin.gz` with *Upgrade* and pick the image on the mini page. The `.bin.gz` files are on GitHub
+Pages next to `firmware.json`, not in the release: `https://igorufox.github.io/espurna/<tag>/espurna-<image>.bin.gz`.
 
 **Memory for the WebUI and uploads.** An ESP8266 image has about 40 KB of heap region; the settings buffer (4 KB), Wi-Fi,
 MQTT and the web server leave 10-20 KB. Two things decide whether the WebUI loads and a browser upload finishes:

@@ -37,10 +37,12 @@ the single big OTA slot (app0) and cannot overwrite itself, so updates go throug
 #include <nvs.h>
 #include <nvs_flash.h>
 
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace {
 
@@ -274,13 +276,23 @@ bool bootApp(std::string& error) {
     return true;
 }
 
-// One image write into app0: begin with the first chunk (checks the 0xE9 magic), then end() verifies the image.
-// The SHA-256 of everything written is kept for the check against the release list
+// One image write into app0, from the application image (0xE9 magic byte first) or from the merged image of a release
+// (the whole flash from 0x0: bootloader, partition table at 0x8000, safeboot, ESPurna): of that one only the part at
+// the offset of ota_0 in its own partition table goes into app0. end() verifies the image. The SHA-256 is taken over
+// every byte received, the whole file, for the check against the release list
+constexpr size_t MergedTableOffset { 0x8000 };
+constexpr size_t MergedTableSize { 0xC00 };
+
 struct Writer {
     esp_ota_handle_t handle { 0 };
     const esp_partition_t* part { nullptr };
-    size_t written { 0 };
-    size_t expected { 0 };  // Content-Length, 0 - not known (app0 is erased whole then)
+    size_t written { 0 };    // into app0
+    size_t received { 0 };   // of the file
+    size_t expected { 0 };   // Content-Length of the file, 0 - not known (app0 is erased whole then)
+    size_t app_offset { 0 }; // where the application starts in the file
+    bool merged { false };
+    bool located { false };
+    std::vector<uint8_t> head; // merged image, up to the end of its partition table
     std::string error;
     mbedtls_sha256_context sha;
 
@@ -310,28 +322,62 @@ struct Writer {
         return hex;
     }
 
-    bool write(const char* data, size_t len) {
-        if (!part) {
-            if (!len || (static_cast<uint8_t>(data[0]) != 0xE9)) {
-                error = "not an ESP32 image (no 0xE9 magic byte)";
-                return false;
+    // ota_0 entry of the partition table in the merged image (entries of 32 bytes: magic 0x50AA, type, subtype,
+    // offset, size, label, flags; the table ends at the first entry without the magic)
+    bool locate() {
+        const uint8_t* table = head.data() + MergedTableOffset;
+        for (size_t entry = 0; (entry + 32) <= MergedTableSize; entry += 32) {
+            const uint8_t* e = table + entry;
+            if ((e[0] != 0xAA) || (e[1] != 0x50)) {
+                break;
             }
+            const uint32_t offset = e[4] | (e[5] << 8) | (e[6] << 16) | (static_cast<uint32_t>(e[7]) << 24);
+            if ((e[2] == ESP_PARTITION_TYPE_APP) && (e[3] == ESP_PARTITION_SUBTYPE_APP_OTA_0)) {
+                app_offset = offset;
+                located = true;
+                return true;
+            }
+        }
 
-            part = app();
-            if (part && expected && (expected > part->size)) {
-                error = "the image is bigger than app0";
-                part = nullptr;
-                return false;
-            }
+        error = "a merged image without an ota_0 application in its partition table";
+        return false;
+    }
 
-            // erases only what the image takes when its size is known
-            const auto result = part
-                ? esp_ota_begin(part, expected ? expected : OTA_SIZE_UNKNOWN, &handle) : ESP_ERR_NOT_FOUND;
-            if (result != ESP_OK) {
-                error = std::string("begin: ") + esp_err_to_name(result);
-                part = nullptr;
-                return false;
-            }
+    bool begin(const char* data, size_t len) {
+        if (!len || (static_cast<uint8_t>(data[0]) != 0xE9)) {
+            error = merged
+                ? "no ESP32 application at the ota_0 offset of the merged image"
+                : "not an ESP32 image (no 0xE9 magic byte, no merged image)";
+            return false;
+        }
+
+        const size_t size = (expected > app_offset) ? (expected - app_offset) : 0;
+        part = app();
+        if (part && size && (size > part->size)) {
+            error = "the image is bigger than app0";
+            part = nullptr;
+            return false;
+        }
+
+        // erases only what the image takes when its size is known
+        const auto result = part
+            ? esp_ota_begin(part, size ? size : OTA_SIZE_UNKNOWN, &handle) : ESP_ERR_NOT_FOUND;
+        if (result != ESP_OK) {
+            error = std::string("begin: ") + esp_err_to_name(result);
+            part = nullptr;
+            return false;
+        }
+
+        return true;
+    }
+
+    bool writeApp(const char* data, size_t len) {
+        if (!len) {
+            return true;
+        }
+
+        if (!part && !begin(data, len)) {
+            return false;
         }
 
         const auto result = esp_ota_write(handle, data, len);
@@ -340,9 +386,51 @@ struct Writer {
             return false;
         }
 
-        mbedtls_sha256_update(&sha, reinterpret_cast<const unsigned char*>(data), len);
         written += len;
         return true;
+    }
+
+    bool write(const char* data, size_t len) {
+        if (!len) {
+            return true;
+        }
+
+        // the first byte decides: an application image, or a merged one starting with the erased area before the
+        // bootloader (0xFF up to 0x1000)
+        if (!received && !part) {
+            merged = static_cast<uint8_t>(data[0]) == 0xFF;
+        }
+
+        const size_t at = received;
+        received += len;
+        mbedtls_sha256_update(&sha, reinterpret_cast<const unsigned char*>(data), len);
+
+        if (!merged) {
+            return writeApp(data, len);
+        }
+
+        if (!located) {
+            const size_t want = MergedTableOffset + MergedTableSize;
+            const size_t take = std::min(len, want - head.size());
+            head.insert(head.end(), data, data + take);
+            if (head.size() < want) {
+                return true;
+            }
+            if (!locate()) {
+                return false;
+            }
+            head.clear();
+            head.shrink_to_fit();
+        }
+
+        // the part of this chunk at or after the application offset
+        const size_t end = at + len;
+        if (end <= app_offset) {
+            return true;
+        }
+
+        const size_t skip = (at < app_offset) ? (app_offset - at) : 0;
+        return writeApp(data + skip, len - skip);
     }
 
     bool finish() {
@@ -435,8 +523,8 @@ bool download(const std::string& url, const std::string& sha256) {
                     break;
                 }
                 if (!len) {
-                    if (writer.expected && (writer.written != writer.expected)) {
-                        writer.error = "connection closed after " + std::to_string(writer.written) + " of "
+                    if (writer.expected && (writer.received != writer.expected)) {
+                        writer.error = "connection closed after " + std::to_string(writer.received) + " of "
                             + std::to_string(writer.expected) + " bytes";
                         break;
                     }
@@ -465,7 +553,8 @@ bool download(const std::string& url, const std::string& sha256) {
         return false;
     }
 
-    last_result = "downloaded " + std::to_string(writer.written) + " bytes"
+    last_result = "downloaded " + std::to_string(writer.received) + " bytes"
+        + (writer.merged ? ", " + std::to_string(writer.written) + " of them ESPurna" : "")
         + (sha256.empty() ? "" : ", SHA-256 checked");
     return true;
 }
@@ -627,8 +716,8 @@ std::string jsString(const std::string& value) {
 
 // The image goes up as the raw request body (no multipart), the page script sends the picked file with fetch().
 // Releases: the browser reads firmware.json (GitHub Pages sends it with Access-Control-Allow-Origin: *) and lists the
-// -ota.bin files of the ESPurna image in app0 (all ESP32 images when it is not known); the board downloads the picked
-// one itself (/url) and checks its SHA-256
+// update files ("ota": the merged image of a release, -ota.bin of the older ones) of the ESPurna image in app0 (all
+// ESP32 images when it is not known); the board downloads the picked one itself (/url) and checks its SHA-256
 constexpr char PageScript[] =
     "const $=i=>document.getElementById(i);"
     // the answers are whole pages: their first paragraph is the result
@@ -668,7 +757,7 @@ esp_err_t onRoot(httpd_req_t* req) {
             "<fieldset><legend>Upload an image</legend><input type=\"file\" id=\"file\" accept=\".bin\"><br>"
             "<button id=\"up\">Upload and boot</button><div id=\"log\"></div></fieldset>"
             "<fieldset><legend>Download an image</legend><form method=\"post\" action=\"/url\">"
-            "<input type=\"text\" name=\"url\" placeholder=\"https://.../espurna-esp32-matter-ota.bin\">"
+            "<input type=\"text\" name=\"url\" placeholder=\"https://.../espurna-esp32-matter.bin\">"
             "<br><button>Download and boot</button></form></fieldset>"
             "<form method=\"post\" action=\"/boot\"><button>Boot ESPurna</button></form>";
     body += "<script>const M=" + jsString(settings.manifest) + ",I=" + jsString(image) + ";";
@@ -758,6 +847,7 @@ esp_err_t onUpload(httpd_req_t* req) {
     }
 
     Writer writer;
+    writer.expected = req->content_len;
     std::unique_ptr<char[]> buffer(new char[4096]);
     size_t remaining = req->content_len;
     bool ok = remaining > 0;

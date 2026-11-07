@@ -518,17 +518,17 @@ Every ESP32 image of this fork, the panel's `esp32-matter-nspanel` included, use
   client are disabled in the NSPanel build. The *From GitHub* release list of the WebUI needs ESPurna's `/safeboot`
   endpoints, which the NSPanel image does not have (its module keeps its own `safeboot` command and crash-loop guard).
 - Updates: terminal (telnet / web debug) `safeboot` → the panel reboots into the image of the factory partition → its
-  web UI → the new `espurna-esp32-matter-nspanel-ota.bin` (built: `code/.pio/build/esp32-nspanel/firmware.bin`, the app
-  image only, **not** the merged `-full.bin`).
+  web UI → the new `espurna-esp32-matter-nspanel.bin` (the ESPurna safeboot takes the merged image and writes only its
+  ESPurna part; built: `code/.pio/build/esp32-nspanel/espurna-esp32-nspanel.bin`).
 
 ### Serial flash (recommended)
 
-Flash the merged image (`espurna-esp32-matter-nspanel-full.bin` of the release, or `espurna-esp32-nspanel.bin` of a
+Flash the merged image (`espurna-esp32-matter-nspanel.bin` of the release, or `espurna-esp32-nspanel.bin` of a
 build: bootloader, partition table, the ESPurna safeboot, ESPurna) once over the J1 header (3V3, ESP_TX, ESP_RX, GND, IO0;
 hold IO0 low at power-up). The display is powered from the 5 V of the relay board, so it stays dark on a USB-UART adapter
 alone. Example:
 
-`esptool.py --chip esp32 --port COMx --baud 460800 write_flash --erase-all -z 0x0 espurna-esp32-matter-nspanel-full.bin`
+`esptool.py --chip esp32 --port COMx --baud 460800 write_flash --erase-all -z 0x0 espurna-esp32-matter-nspanel.bin`
 
 Then configure WiFi from the ESPurna AP, set MQTT and NTP, upload `/nspanel.json`. The factory partition holds the ESPurna
 safeboot (`code/safeboot-app`): after `safeboot` it joins WiFi with the ESPurna settings, its page (user `admin`, the
@@ -540,13 +540,16 @@ A panel with Tasmota already has the same layout with the Tasmota safeboot in th
 
 Install from Tasmota (first time):
 1. In the Tasmota console, check the TFT version first: `CustomSend pageType~pageStartup`, expect `{"CustomRecv":"event,startup,51,eu"}`.
-2. Tasmota web UI → Firmware Upgrade → upload `espurna-esp32-matter-nspanel-ota.bin`. Tasmota restarts into safeboot, writes
-   the image into `app0`, boots it.
+2. Tasmota web UI → Firmware Upgrade → upload ESPurna alone, `espurna-esp32-matter-nspanel-app.bin` from the GitHub
+   Pages copy of the release (`https://igorufox.github.io/espurna/<tag>/espurna-esp32-matter-nspanel-app.bin`, also as an
+   OTA URL): Tasmota's safeboot takes application images only, not the merged `.bin`. Tasmota restarts into safeboot,
+   writes the image into `app0`, boots it.
 3. ESPurna starts its AP (no WiFi credentials yet): connect, configure WiFi, MQTT, NTP time zone, password.
 4. Open `http://<panel>/nspanel`, paste `nspanel.json`, Save.
 
 Update later: `safeboot` → the panel reboots into Tasmota safeboot (it uses Tasmota's own WiFi settings, still in NVS
-unless NVS was erased) → its web UI → upload the new `-ota.bin`.
+unless NVS was erased) → its web UI → upload the new `-app.bin` (or let *From GitHub* replace Tasmota's safeboot with
+the ESPurna one, which takes the release `.bin`).
 
 Crash-loop guard: when the panel boots 3 times in a row with a crash reset (panic / watchdog, or a software restart ESPurna did not
 request itself) without reaching 60 s uptime, it switches the boot partition to safeboot and restarts. The counter lives in RTC memory

@@ -83,14 +83,10 @@ jobs:
         case "${{ matrix.arch }}" in
         esp32)
           build=code/.pio/build/${env}
-          # merged image (bootloader + partitions + boot_app0 + app), flash at 0x0
-          cp ${build}/espurna-${env}.bin dist/${name}-full.bin
-          # app only, for OTA
-          cp ${build}/firmware.bin dist/${name}-ota.bin
-          # safeboot alone, for /safeboot (migration, install / replace), once per release
-          if [ "${env}" = esp32-generic ]; then
-            cp code/safeboot-app/.pio/build/esp32-safeboot/firmware.bin dist/espurna-esp32-safeboot.bin
-          fi
+          # one file: the merged image (bootloader, partitions, boot_app0, safeboot, ESPurna). Serial flash at 0x0,
+          # and every update: the safeboot writes only the ESPurna part of it into app0. The safeboot alone, which the
+          # WebUI installs when it differs, is cut out of it for GitHub Pages (pages job below)
+          cp ${build}/espurna-${env}.bin dist/${name}.bin
           ;;
         beken)
           build=code/.pio/build_beken/${env}
@@ -103,17 +99,14 @@ jobs:
           ;;
         esp8266-mini)
           build=code/mini-app/.pio/build/${env}
+          # the .bin.gz for OTA on 1 MB boards is made for GitHub Pages (pages job), not a release file
           cp ${build}/firmware.bin dist/${name}.bin
-          # zopfli (pigz -11): the mini .gz has to fit behind the biggest 1 MB image, gzip -9 is ~4 KB bigger
-          sudo apt-get install -y -qq pigz > /dev/null
-          pigz -11 -n -c ${build}/firmware.bin > dist/${name}.bin.gz
           ;;
         esp8266)
           build=code/.pio/build/${env}
-          # serial flash at 0x0, and OTA from the WebUI
+          # serial flash at 0x0, and OTA from the WebUI. The compressed copy for OTA on 1 MB boards is made for
+          # GitHub Pages (pages job), not a release file
           cp ${build}/firmware.bin dist/${name}.bin
-          # compressed, OTA on 1 MB boards after the minimal image (eboot unpacks gzip)
-          gzip -9 -n -c ${build}/firmware.bin > dist/${name}.bin.gz
           ;;
         esac
         cp ${build}/firmware.elf dist/${name}.elf
@@ -155,17 +148,16 @@ jobs:
 
           One image per chip, the board is picked after flashing: WebUI, ADMIN, *Device Template* (Tasmota templates, OpenBeken devices and the boards of this firmware) or *Tasmota Profile Import*.
 
-          ESP32, Arduino-ESP32 core 3 (ESP-IDF 5), Matter On/Off plugs, safeboot flash layout (ESPurna at 0xE0000, 2880 KB). `*-full.bin` - merged image with the safeboot, flash at 0x0; `*-ota.bin` - the application, for updates through safeboot (WebUI: ADMIN, the release list, or the `/safeboot` page):
-          - `espurna-esp32-matter-*` - any ESP32 with 4 MB flash
-          - `espurna-esp32-matter-nspanel-*` - Sonoff NSPanel EU (gen1) with the Lovelace UI TFT, see `nspanel/README.md`
-          - `espurna-esp32-safeboot.bin` - the safeboot image alone: migration of two-slot boards, replacing it
+          ESP32, Arduino-ESP32 core 3 (ESP-IDF 5), Matter On/Off plugs, safeboot flash layout (ESPurna at 0xE0000, 2880 KB). One file per image: serial flash at 0x0, and the same file for updates (WebUI: ADMIN, the release list, or the `/safeboot` page; the safeboot writes only the ESPurna part of it):
+          - `espurna-esp32-matter.bin` - any ESP32 with 4 MB flash
+          - `espurna-esp32-matter-nspanel.bin` - Sonoff NSPanel EU (gen1) with the Lovelace UI TFT, see `nspanel/README.md`
 
           Beken BK7231N, Matter On/Off plug and 433 MHz receiver, one image for both bootloaders (see `beken/README.md`):
           - `espurna-beken-matter.bin` - OTA from the WebUI; on the Tuya bootloader it goes up twice, the second upload ("OK, again") writes the Matter code
           - `espurna-beken-initial-tuya.uf2` - first flash over UART1 with `ltchiptool`, Tuya bootloader (CB2S, CB3S, CBU ...)
           - `espurna-beken-initial-quectel.uf2` - first flash over UART1, Quectel bootloader without flash encryption (XH-CB2S / BK7231M, `beken/sparkleiot-mini.md`)
 
-          ESP8266, core 3.1.2 + SDK 3.0.5 (`*.bin` - serial flash at 0x0 or OTA; `*.bin.gz` - compressed OTA):
+          ESP8266, core 3.1.2 + SDK 3.0.5 (`*.bin` - serial flash at 0x0 or OTA; the WebUI update of 1 MB boards takes its compressed copy from the release list by itself):
           - `espurna-esp8266-1m` - 1 MB boards: relays, buttons, AC mains switches, LEDs, dummy relays, RF receiver / Sonoff RF Bridge, relay MCUs (Sonoff Dual, STM, LightFox, iFan, KingArt)
           - `espurna-esp8266-1m-light` - 1 MB, + PWM light, IR
           - `espurna-esp8266-1m-sensor` - 1 MB, + power meters (HLW8012, CSE7766, PZEM ...), sensors (DHT, Dallas, BMx280, analog ...), analog buttons
@@ -225,6 +217,71 @@ jobs:
           gh release view "${tag}" --repo "${GITHUB_REPOSITORY}" --json tagName,publishedAt,targetCommitish,url \
             > "site/${tag}/release.json"
         done < site/tags.txt
+    # A release has one file per image; the board-side copies the WebUI needs are made here, for Pages only:
+    # - ESP8266 .bin.gz: OTA on 1 MB boards (eboot unpacks it), the mini one with zopfli (pigz -11, ~4 KB smaller than
+    #   gzip -9: it has to fit behind the biggest 1 MB image)
+    # - ESP32 -safeboot.bin: the factory partition of the image's merged .bin (each ESP32 build has its own safeboot
+    #   build), installed by the WebUI when the board's one differs
+    - name: Pages copies (.bin.gz, safeboot)
+      run: |
+        sudo apt-get install -y -qq pigz > /dev/null
+        for bin in site/*/espurna-esp8266-*.bin; do
+          [ -e "${bin}" ] || continue
+          [ -e "${bin}.gz" ] && continue
+          case "${bin}" in
+          *-mini.bin) pigz -11 -n -c "${bin}" > "${bin}.gz" ;;
+          *) gzip -9 -n -c "${bin}" > "${bin}.gz" ;;
+          esac
+        done
+        python3 - <<'PY'
+        import glob, os, struct
+
+        # partition table at 0x8000 of the merged image: entries of 32 bytes (magic 0x50AA, type, subtype, offset, size)
+        def partition(data, wanted):
+            for at in range(0x8000, 0x8000 + 0xC00, 32):
+                if data[at:at + 2] != b"\xaa\x50":
+                    return None
+                ptype, subtype, offset, _ = struct.unpack_from("<BBII", data, at + 2)
+                if ptype == 0 and subtype == wanted:
+                    return offset
+            return None
+
+        # ESP image length: header, segments, checksum on a 16-byte boundary, SHA-256 when appended
+        def image_length(data, start):
+            pos = 24
+            for _ in range(data[start + 1]):
+                _, length = struct.unpack_from("<II", data, start + pos)
+                pos += 8 + length
+            pos += 15 - (pos % 16)
+            pos += 1
+            if data[start + 23] == 1:
+                pos += 32
+            return pos
+
+        for path in glob.glob("site/*/espurna-esp32-*.bin"):
+            name = os.path.basename(path)
+            if name.endswith(("-ota.bin", "-full.bin", "-safeboot.bin", "-app.bin")):
+                continue
+            with open(path, "rb") as f:
+                data = f.read()
+            if data[:1] != b"\xff":
+                continue
+            # the safeboot (factory partition)
+            offset = partition(data, 0x00)
+            if offset is not None and data[offset] == 0xE9:
+                out = path[:-len(".bin")] + "-safeboot.bin"
+                with open(out, "wb") as f:
+                    f.write(data[offset:offset + image_length(data, offset)])
+                print(out, os.path.getsize(out))
+            # ESPurna alone (ota_0, the rest of the file): for Tasmota's safeboot, which takes application images only
+            # (installing ESPurna over Tasmota, nspanel/reference.md)
+            offset = partition(data, 0x10)
+            if offset is not None and data[offset:offset + 1] == b"\xe9":
+                out = path[:-len(".bin")] + "-app.bin"
+                with open(out, "wb") as f:
+                    f.write(data[offset:])
+                print(out, os.path.getsize(out))
+        PY
         ls -lR site
     - name: Write firmware.json
       run: |
@@ -233,14 +290,18 @@ jobs:
 
         SITE = "site"
 
-        # espurna-<image>-ota.bin / -full.bin / .bin / .bin.gz / .uf2 / -initial-<loader>.uf2, <image> = the dist name
-        # of the build matrix and the ESPURNA_IMAGE of the firmware (WebUI picks the files of the running image)
+        # espurna-<image>.bin / -safeboot.bin / .bin.gz / .uf2 / -initial-<loader>.uf2 (and -ota.bin / -full.bin of the
+        # older releases), <image> = the dist name of the build matrix and the ESPURNA_IMAGE of the firmware (WebUI
+        # picks the files of the running image)
         SUFFIXES = (
-            ("-ota.bin", "ota"),          # ESP32 application, through safeboot
-            ("-full.bin", "serial"),      # ESP32 merged image, flash at 0x0
+            ("-ota.bin", "ota"),          # ESP32 application of the older releases, through safeboot
+            ("-full.bin", "serial"),      # ESP32 merged image of the older releases, flash at 0x0
+            ("-safeboot.bin", "safeboot"),  # ESP32 safeboot cut out of the image's merged .bin (Pages only)
+            ("-app.bin", "app"),          # ESP32 ESPurna alone, for Tasmota's safeboot (Pages only)
             ("-matter-tail.bin", "ota"),  # Beken Matter code of the older releases, uploaded after the image
-            (".bin.gz", "ota"),           # ESP8266 compressed OTA
-            (".bin", "ota"),              # ESP8266 (also serial at 0x0), Beken OTA image
+            (".bin.gz", "ota"),           # ESP8266 compressed OTA (Pages only since one file per image)
+            (".bin", "ota"),              # ESP32 merged image (safeboot takes its ESPurna part), ESP8266 (also serial
+                                          # at 0x0), Beken OTA image
             (".uf2", "ota"),              # Beken, older releases
         )
 
@@ -268,7 +329,7 @@ jobs:
                     digest.update(chunk)
             return digest.hexdigest()
 
-        KIND_ORDER = {"ota": 0, "serial": 1, "safeboot": 2}
+        KIND_ORDER = {"ota": 0, "serial": 1, "safeboot": 2, "app": 3}
 
         releases = []
         with open(os.path.join(SITE, "tags.txt")) as f:

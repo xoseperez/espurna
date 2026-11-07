@@ -48,15 +48,15 @@ How updates work on each chip, the releases and CI: [docs/updates.md](docs/updat
 
 ### Download
 
-Every push to `esp32-port` is built by [GitHub Actions](https://github.com/igorufox/espurna/actions/workflows/esp32.yml) and published as one [release](https://github.com/igorufox/espurna/releases/latest) for all chips, tag `esp32-YYMMDD-<sha7>`; the newest 5 are kept. The same files with their SHA-256 are listed in [`firmware.json`](https://igorufox.github.io/espurna/firmware.json) on GitHub Pages, which the WebUI reads. The latest image is always at `https://github.com/igorufox/espurna/releases/latest/download/espurna-<image>...`, e.g. [espurna-esp32-matter-full.bin](https://github.com/igorufox/espurna/releases/latest/download/espurna-esp32-matter-full.bin). Which image and how to flash it the first time: the page of the architecture.
+Every push to `esp32-port` is built by [GitHub Actions](https://github.com/igorufox/espurna/actions/workflows/esp32.yml) and published as one [release](https://github.com/igorufox/espurna/releases/latest) for all chips, tag `esp32-YYMMDD-<sha7>`; the newest 5 are kept. The same files with their SHA-256 are listed in [`firmware.json`](https://igorufox.github.io/espurna/firmware.json) on GitHub Pages, which the WebUI reads. The latest image is always at `https://github.com/igorufox/espurna/releases/latest/download/espurna-<image>...`, e.g. [espurna-esp32-matter.bin](https://github.com/igorufox/espurna/releases/latest/download/espurna-esp32-matter.bin). Which image and how to flash it the first time: the page of the architecture.
 
 ### Updating
 
 WebUI, *ADMIN*, OTA: *Upgrade* with a file as before, or *From GitHub*, *Show releases*: the kept releases with the files of the image the board runs, *Install*. The WebUI lists the steps ahead and goes through them by itself; the board restarts during the install.
 
-- **ESP32**: through the safeboot, which downloads the `-ota.bin` itself; two-slot boards are migrated on the way.
+- **ESP32**: through the safeboot, which downloads the image's `.bin` itself and writes its ESPurna part; two-slot boards are migrated on the way.
 - **Beken**: the browser uploads `espurna-beken-matter.bin`, the board writes the part for its bootloader; on 2 MiB Tuya boards in up to three uploads of the same file, because the Matter code lives in the update partition ([how](docs/updates.md#2-mib-tuya-boards-where-matter-lives)).
-- **ESP8266**: one upload on the 4 MB layout; on 1 MB boards the mini first, which downloads the full `.bin.gz` from GitHub.
+- **ESP8266**: one upload on the 4 MB layout; on 1 MB boards the mini first, which downloads the compressed full image from GitHub Pages.
 
 Details, limits and what happens when an install stops half-way: [docs/updates.md](docs/updates.md).
 

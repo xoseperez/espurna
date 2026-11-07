@@ -12,7 +12,8 @@
 // - Beken (and ESP8266 'upload'): POST /upgrade. HTTP 409 - Matter was running from the OTA partition, the board
 //   reboots without it and the same file goes up once more; "OK, again" - Beken with the Tuya bootloader, the same
 //   file once more after the reboot
-// - ESP32: the board downloads the -ota.bin itself, through its safeboot image (https, SHA-256 of firmware.json).
+// - ESP32: the board downloads the image itself (the merged .bin, -ota.bin of older releases), through its safeboot
+//   image (https, SHA-256 of firmware.json), which writes the ESPurna part of it.
 //   The browser only brings the safeboot image of the release when the installed one differs (/safeboot/install),
 //   or, on the old two-slot layout, for the migration to the safeboot layout (/safeboot/migrate with the image URL).
 //   Every ESP32 image, the NSPanel one (esp32-matter-nspanel) as well: one safeboot file per release for all of them
@@ -1144,7 +1145,8 @@ function showRows(list, rows) {
         }
 
         const files = document.createElement('ul');
-        for (const choice of row.choices) {
+        // 'app': ESPurna alone (ESP32), only for installing over Tasmota by hand, not a choice here
+        for (const choice of row.choices.filter((other) => other.file.kind !== 'app')) {
             files.appendChild(choiceItem(row, choice));
         }
 

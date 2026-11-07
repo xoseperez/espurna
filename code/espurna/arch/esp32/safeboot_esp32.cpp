@@ -461,12 +461,24 @@ bool writeTable(const uint8_t* data) {
     return false;
 }
 
+// The safeboot image alone, or the merged image of a release (the whole flash from 0x0, the one file per image):
+// of that one only its factory partition is written, found in its own partition table at 0x8000
+constexpr size_t MergedTableOffset { 0x8000 };
+constexpr size_t MergedTableSize { 0xC00 };
+
 struct Upload {
     const esp_partition_t* part { nullptr };
     size_t written { 0 };
     size_t erased { 0 };
     bool done { false };
     String error;
+
+    size_t received { 0 };
+    bool merged { false };
+    bool located { false };
+    size_t from { 0 };   // factory partition in the merged image
+    size_t until { 0 };
+    std::unique_ptr<uint8_t[]> table;
 };
 
 Upload upload;
@@ -499,6 +511,72 @@ bool uploadWrite(const uint8_t* data, size_t len) {
     return true;
 }
 
+// factory entry of the partition table (entries of 32 bytes: magic 0x50AA, type, subtype, offset, size)
+bool uploadLocate() {
+    const auto* table = upload.table.get();
+    for (size_t entry = 0; (entry + 32) <= MergedTableSize; entry += 32) {
+        const uint8_t* e = table + entry;
+        if ((e[0] != 0xAA) || (e[1] != 0x50)) {
+            break;
+        }
+        if ((e[2] == ESP_PARTITION_TYPE_APP) && (e[3] == ESP_PARTITION_SUBTYPE_APP_FACTORY)) {
+            uint32_t offset;
+            uint32_t size;
+            std::memcpy(&offset, e + 4, sizeof(offset));
+            std::memcpy(&size, e + 8, sizeof(size));
+            upload.from = offset;
+            upload.until = offset + std::min<size_t>(size, SafebootSize);
+            upload.located = true;
+            upload.table.reset();
+            return true;
+        }
+    }
+
+    upload.error = F("a merged image without a safeboot (factory) partition in its partition table");
+    return false;
+}
+
+bool uploadFeed(const uint8_t* data, size_t len) {
+    if (!len) {
+        return true;
+    }
+
+    const size_t at = upload.received;
+    upload.received += len;
+    if (!upload.merged) {
+        return uploadWrite(data, len);
+    }
+
+    if (!upload.located) {
+        const size_t begin = std::max(at, MergedTableOffset);
+        const size_t end = std::min(at + len, MergedTableOffset + MergedTableSize);
+        if (begin < end) {
+            if (!upload.table) {
+                upload.table.reset(new (std::nothrow) uint8_t[MergedTableSize]);
+                if (!upload.table) {
+                    upload.error = F("out of memory");
+                    return false;
+                }
+            }
+            std::memcpy(upload.table.get() + (begin - MergedTableOffset), data + (begin - at), end - begin);
+        }
+        if ((at + len) < (MergedTableOffset + MergedTableSize)) {
+            return true;
+        }
+        if (!uploadLocate()) {
+            return false;
+        }
+    }
+
+    const size_t begin = std::max(at, upload.from);
+    const size_t end = std::min(at + len, upload.until);
+    if (begin >= end) {
+        return true;
+    }
+
+    return uploadWrite(data + (begin - at), end - begin);
+}
+
 bool uploadVerify() {
     const esp_partition_pos_t pos {
         .offset = upload.part->address,
@@ -520,7 +598,7 @@ bool uploadVerify() {
     if ((esp_ota_get_partition_description(upload.part, &desc) != ESP_OK)
         || (std::strcmp(desc.project_name, "espurna-safeboot") != 0))
     {
-        upload.error = F("not the ESPurna safeboot image (espurna-esp32-safeboot.bin)");
+        upload.error = F("not the ESPurna safeboot image");
         return false;
     }
 
@@ -630,14 +708,14 @@ the images with Matter (2.1 MB) no longer fit its 1.9 MB slots. The migration pu
 and one 2880 KB slot for ESPurna after it, then restarts into safeboot. With an URL safeboot downloads ESPurna by itself,
 without one it waits for an upload in its own web UI (same address, user admin, the admin password). Settings stay.
 Keep the power on until ESPurna is back.</p>
-<label>ESPurna safeboot image (espurna-esp32-safeboot.bin)<input type="file" id="mfile" accept=".bin"></label>
-<label>ESPurna image URL, optional (http:// or https://, the -ota.bin one)<input type="text" id="murl"></label>
+<label>The release image (espurna-esp32-*.bin, its safeboot is used) or a safeboot image<input type="file" id="mfile" accept=".bin"></label>
+<label>ESPurna image URL, optional (http:// or https://, the .bin of the release)<input type="text" id="murl"></label>
 <button id="migrate">Migrate</button></fieldset></div>
 <div id="new" hidden><fieldset><legend>Update ESPurna</legend><p>ESPurna restarts into safeboot, which writes the new
 image into the ESPurna slot and starts it.</p>
-<label>From an URL (http:// or https://, the -ota.bin one)<input type="text" id="url"></label><button id="byurl">Update from URL</button>
+<label>From an URL (http:// or https://, the .bin of the release)<input type="text" id="url"></label><button id="byurl">Update from URL</button>
 <p>Or with a file: <button id="byfile">Restart into safeboot</button> and upload the image there.</p></fieldset>
-<fieldset><legend>Install or replace safeboot</legend><label>ESPurna safeboot image (espurna-esp32-safeboot.bin)
+<fieldset><legend>Install or replace safeboot</legend><label>The release image (espurna-esp32-*.bin, its safeboot is used) or a safeboot image
 <input type="file" id="sfile" accept=".bin"></label><button id="install">Install</button></fieldset></div>
 <div id="log" hidden></div>
 <script>
@@ -719,7 +797,7 @@ void onStatus(AsyncWebServerRequest* request) {
     // what safeboot did with the last URL ("failed: ..." when it gave up)
     out += F("\",\"result\":\"");
     out += request::read("result");
-    // ?size=<bytes of espurna-esp32-safeboot.bin>: SHA-256 of the installed one, to compare with the release list
+    // ?size=<bytes of the release safeboot>: SHA-256 of the installed one, to compare with the release list
     const auto* size = request->getParam("size");
     if (current && size) {
         out += F("\",\"sha256\":\"");
@@ -787,10 +865,13 @@ void onSafebootUpload(AsyncWebServerRequest* request, String, size_t index, uint
             return;
         }
 
-        if (!len || (data[0] != 0xE9)) {
-            layout::upload.error = F("not an ESP32 image (no 0xE9 magic byte)");
+        // the safeboot image itself, or the merged image of a release starting with the erased area before its
+        // bootloader
+        if (!len || ((data[0] != 0xE9) && (data[0] != 0xFF))) {
+            layout::upload.error = F("not an ESP32 image (no 0xE9 magic byte, no merged image)");
             return;
         }
+        layout::upload.merged = data[0] == 0xFF;
 
         layout::upload.part = current ? factory() : layout::target();
         if (!layout::upload.part) {
@@ -803,7 +884,7 @@ void onSafebootUpload(AsyncWebServerRequest* request, String, size_t index, uint
         return;
     }
 
-    if (!layout::uploadWrite(data, len)) {
+    if (!layout::uploadFeed(data, len)) {
         layout::upload.part = nullptr;
         return;
     }

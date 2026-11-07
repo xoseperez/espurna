@@ -20,9 +20,13 @@ GPIO until configured, so it is safe to flash on unknown hardware.
 
 | Image | Files | For |
 |-------|-------|-----|
-| `esp32-matter` | `-full.bin` (serial, at `0x0`, with the safeboot), `-ota.bin` (updates) | any ESP32 with 4 MB flash, Matter On/Off plugs |
-| `esp32-matter-nspanel` | same | Sonoff NSPanel EU (gen1) |
-| `esp32-safeboot` | `.bin` | the safeboot alone (the WebUI installs it when it differs, and migrates two-slot boards with it) |
+| `esp32-matter` | `espurna-esp32-matter.bin` | any ESP32 with 4 MB flash, Matter On/Off plugs |
+| `esp32-matter-nspanel` | `espurna-esp32-matter-nspanel.bin` | Sonoff NSPanel EU (gen1) |
+
+One file per image, the merged image (bootloader, partition table, safeboot, ESPurna): serial flash at `0x0`, and the
+same file for updates, the safeboot writes only its ESPurna part into app0. The `/safeboot` page of ESPurna takes it for
+installing the safeboot too (the safeboot part of it is used). Releases before 2026-11-08 had `-full.bin`, `-ota.bin`
+and `espurna-esp32-safeboot.bin`.
 
 Enabled modules: WebUI, API, MQTT, terminal, Home Assistant, Domoticz, Alexa, sensors, PWM and Matter.
 
@@ -30,8 +34,8 @@ Enabled modules: WebUI, API, MQTT, terminal, Home Assistant, Domoticz, Alexa, se
 
 Tasmota's safeboot offsets ([`code/esp32_4mb_safeboot.csv`](../code/esp32_4mb_safeboot.csv)): bootloader, partition
 table, `boot_app0`, the ESPurna safeboot in the factory partition at `0x10000` (832 KB) and ESPurna at `0xE0000`. An
-update goes through the safeboot: the board restarts into it, it downloads the `-ota.bin` over https (certificate bundle),
-checks the SHA-256 and boots ESPurna; an interrupted update leaves the safeboot to retry from. Safeboot reads Wi-Fi, the
+update goes through the safeboot: the board restarts into it, it downloads the image's `.bin` over https (certificate
+bundle), checks its SHA-256, writes the ESPurna part into app0 and boots ESPurna; an interrupted update leaves the safeboot to retry from. Safeboot reads Wi-Fi, the
 hostname, the admin password and `webFwUrl` from the ESPurna settings and has none of its own; its page
 (`http://<board>/` while in safeboot) lists the releases too. Boards on the old two-slot layout are migrated over Wi-Fi on
 the first update. Details: [docs/updates.md](../docs/updates.md#esp32-through-safeboot).
@@ -39,7 +43,7 @@ the first update. Details: [docs/updates.md](../docs/updates.md#esp32-through-sa
 ## First flash
 
 ```
-esptool.py --chip esp32 --baud 460800 write_flash 0x0 espurna-esp32-matter-full.bin
+esptool.py --chip esp32 --baud 460800 write_flash 0x0 espurna-esp32-matter.bin
 ```
 
 ## Tasmota templates
@@ -47,7 +51,7 @@ esptool.py --chip esp32 --baud 460800 write_flash 0x0 espurna-esp32-matter-full.
 Relays, buttons and LEDs are configured at runtime, so any ESP32 device can be set up from a
 [Tasmota template](https://templates.blakadder.com/) without a rebuild:
 
-1. Flash `espurna-esp32-matter-full.bin` and connect to the device WebUI.
+1. Flash `espurna-esp32-matter.bin` and connect to the device WebUI.
 2. **Admin → Device Template**, find the device and press **Apply**, or open *Paste a Tasmota template* and paste the
    template JSON, e.g.
    `{"NAME":"MyDevice","GPIO":[0,0,0,0,0,0,0,0,0,0,0,0,224,225,0,0,0,0,0,544,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"FLAG":0,"BASE":1}`
@@ -73,10 +77,11 @@ LED settings.
 
 ```
 cd code
-pio run -d safeboot-app               # the safeboot first, it goes into the -full image
+pio run -d safeboot-app               # the safeboot first, it goes into the merged image
 pio run -c platformio_esp32.ini -e esp32-generic
 ```
 
 The merged image is written to `code/.pio/build/<build>/espurna-<build>.bin` by
-[`scripts/esp32_merge.py`](../code/scripts/esp32_merge.py); `firmware.bin` next to it is the `-ota.bin`. Without the
+[`scripts/esp32_merge.py`](../code/scripts/esp32_merge.py) (the release `.bin`); `firmware.bin` next to it is ESPurna
+alone (an application image, what Tasmota's safeboot takes). Without the
 safeboot built first ESPurna still runs, only the `safeboot` command refuses to switch.
