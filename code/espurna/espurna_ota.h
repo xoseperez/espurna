@@ -34,6 +34,11 @@ String otaFetchStatus();
 String otaFetchResult();
 #endif
 
+#if OTA_WEB_SUPPORT
+// An upload to /upgrade is being received, or went in and the board is about to restart into it
+bool otaWebUploading();
+#endif
+
 void otaPrintError();
 bool otaFinalize(size_t size, CustomResetReason reason, bool evenIfRemaining);
 bool otaFinalize(size_t size, CustomResetReason reason);

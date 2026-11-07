@@ -135,7 +135,8 @@ deaf boot exists. Every 20 s while connected with an address the firmware compar
 (2 minutes) it restarts with the reason *Reboot after the network stopped receiving* (`arch/beken/wifi_beken.cpp`,
 `netwatch`). The deaf boots came when Matter started by itself at boot and both controllers reconnected at once
 (CASE sessions, subscriptions) next to DHCP, MQTT and the WebUI: the automatic start now waits `matterDelay` seconds
-after the board got its address (75 by default, 0 on ESP32), and at least 5 minutes after a restart by the watchdog. After the Matter code the WebUI waits up to 10 minutes for the board (instead of 4) and says it may
+after the board got its address (75 by default, 0 on ESP32), and at least 5 minutes after a restart by the watchdog
+([beken/README.md](../beken/README.md#2-matter)). After the Matter code the WebUI waits up to 10 minutes for the board (instead of 4) and says it may
 restart by itself: in the tests the deaf boot came twice in a row, about 2.7 minutes each.
 
 #### 2 MiB Tuya boards: where Matter lives

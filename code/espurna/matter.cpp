@@ -12,6 +12,7 @@ WebUI. The Matter stack itself is the backend of the architecture (espurna_matte
 #if MATTER_SUPPORT
 
 #include "espurna_matter.h"
+#include "espurna_ota.h"
 #include "relay.h"
 #include "terminal.h"
 #include "ws.h"
@@ -32,6 +33,7 @@ WebUI. The Matter stack itself is the backend of the architecture (espurna_matte
 #include <semphr.h>
 #endif
 
+#include <algorithm>
 #include <atomic>
 #include <cstdlib>
 #include <cstring>
@@ -45,6 +47,20 @@ bool connected { false };
 
 // This boot was asked for by an OTA upload that cannot run while Matter does (ref. matterRebootForUpload())
 bool skip_start { false };
+
+// The automatic start (`matterAuto`) waits `matterDelay` seconds after the station got its address. On the 2 MiB Beken
+// boards the start right at boot, with both controllers reconnecting at once (CASE, subscriptions, reads) while
+// DHCP, MQTT and the WebUI were busy too, filled the 16 KiB lwIP heap and receiving stopped: the board went deaf until
+// the network watchdog restarted it, often twice in a row. After such a restart the start waits at least 5 minutes.
+#if defined(LIBRETINY)
+constexpr uint32_t DefaultStartDelay { 75 };
+#else
+constexpr uint32_t DefaultStartDelay { 0 };
+#endif
+constexpr uint32_t NetworkResetStartDelay { 300 };
+
+// millis() | 1 of the automatic start that is due, 0 when none
+uint32_t start_at { 0 };
 
 // Relay changes from Matter come from its own task, they are applied in the loop: bit n of `changed` marks
 // relay n, bit n of `values` is its new state
@@ -198,7 +214,18 @@ void quiet(bool active) {
     DEBUG_MSG_P(PSTR("[MATTER] Quiet mode %s, heap %u\n"), active ? "on" : "off", backend::heap());
 }
 
+void start();
+
 void loop() {
+    if (start_at && connected && (static_cast<int32_t>(millis() - start_at) >= 0) && !pendingDeferredReset()
+#if OTA_WEB_SUPPORT
+        && !otaWebUploading()
+#endif
+    ) {
+        start_at = 0;
+        start();
+    }
+
     const auto mask = changed.exchange(0);
     if (mask) {
         const auto state = values.load();
@@ -256,8 +283,18 @@ void wifi_event(espurna::wifi::Event event) {
         backend::network(true);
         // Bring-up: a crash in Matter must not put the board into a boot loop, so it only starts on
         // MATTER.START until `matterAuto 1` is set
-        if (getSetting("matterAuto", false) && !skip_start) {
-            start();
+        if (getSetting("matterAuto", false) && !skip_start && !started && !start_at) {
+            auto delay = getSetting("matterDelay", DefaultStartDelay);
+            if (customResetReason() == CustomResetReason::Network) {
+                delay = std::max(delay, NetworkResetStartDelay);
+            }
+
+            if (!delay) {
+                start();
+            } else {
+                DEBUG_MSG_P(PSTR("[MATTER] Starting in %u s\n"), delay);
+                start_at = (millis() + (delay * 1000)) | 1;
+            }
         }
         break;
 

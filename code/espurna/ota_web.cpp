@@ -72,13 +72,16 @@ void setStatus(AsyncWebServerRequest *request, int code, const String& payload =
 size_t pending_size { 0 };
 bool pending { false };
 
+// An upload went in and the board restarts into it (the reset is requested from the loop a moment later)
+bool installed { false };
+
 // Upload that started the running Update. When its connection is closed before the upload is
 // finished (client gone, request timed out), nothing else ends the Update. It would then stay
 // 'in progress' and every following upload fails with 400 until the reboot
 AsyncWebServerRequest* owner { nullptr };
 
 #if defined(LIBRETINY)
-// Beken uploads that ESPurna writes itself instead of Update: espurna-beken.bin, the image for every bootloader
+// Beken uploads that ESPurna writes itself instead of Update: espurna-beken-matter.bin, the image for every bootloader
 // (arch/beken/ota_beken.cpp), and matter-tail.bin, the Matter code of the Tuya layout (arch/beken/matter_beken.cpp).
 // Each function returns nullptr or a PSTR() error
 struct Writer {
@@ -188,6 +191,7 @@ void onUpgrade(AsyncWebServerRequest *request) {
             // Tuya layout: the image is in, its Matter code comes with the same file after the reboot
             sendResponse(request, 200,
                 ((current == &BekenImage) && bekenImageAgain()) ? F("OK, again") : F("OK"));
+            installed = true;
             systemRunInLoop([]() {
                 prepareReset(CustomResetReason::Ota);
             });
@@ -212,6 +216,7 @@ void onUpgrade(AsyncWebServerRequest *request) {
             // debug output) belongs to loop() and happens there. Never the case on esp8266.
             const auto size = pending_size;
             const auto success = Update.isRunning() && Update.end(true);
+            installed = success;
             systemRunInLoop([size, success]() {
                 if (success) {
                     DEBUG_MSG_P(PSTR("[OTA] Success: %7u bytes\n"), size);
@@ -443,6 +448,10 @@ void onFetch(AsyncWebServerRequest* request) {
 } // namespace
 } // namespace web
 } // namespace ota
+
+bool otaWebUploading() {
+    return (ota::web::owner != nullptr) || ota::web::pending || ota::web::installed;
+}
 
 void otaWebSetup() {
 #if defined(ARDUINO_ARCH_ESP8266)

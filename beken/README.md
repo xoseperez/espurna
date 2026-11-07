@@ -41,9 +41,7 @@ How the WebUI installs it: [section 6](#6-updates-over-wi-fi) and [docs/updates.
 
 Enabled modules: web UI, API, MQTT, terminal, Home Assistant, Alexa, Domoticz, Thingspeak, scheduler, the RF bridge
 (rc-switch, unused until `rfbRX` is set) and Matter (off until `matterAuto 1` or MATTER.START; with `matterAuto 1` it
-starts `matterDelay` seconds after the board got its address, 75 by default, 5 minutes after a restart by the network
-watchdog). ESPurna's own mDNS
-responder is off in this image: the Matter stack answers mDNS itself. Boards have no builds of their own: `beken-matter`
+starts with a delay, see [Matter](#2-matter)). ESPurna's own mDNS responder is off in this image: the Matter stack answers mDNS itself. Boards have no builds of their own: `beken-matter`
 with the device template of the board. The firmware version carries the git revision (`1.22.0-git<sha>`, `scripts/beken_version.py`), the WebUI release list finds the running release by it.
 
 Pin numbers are GPIO numbers (`P24` is GPIO 24, set it as `24` in the web UI). Only the pins that the module brings out
@@ -58,6 +56,13 @@ updates do not touch, so a board stays paired across updates; `MATTER.RESET` for
 MATTER page shows the setup codes, the controllers and an *Open pairing window* button (the window closes after 15
 minutes, or once a controller added the device). While a controller commissions, MQTT disconnects and Alexa pauses for
 up to 5 minutes (quiet mode, the certificate checks need the heap); the web UI stays connected.
+
+**Delayed start.** With `matterAuto 1` Matter starts `matterDelay` seconds (default 75 on Beken) after the board got its
+address, not at boot. Then the controllers (each one opens its CASE session again, renews its subscriptions and reads
+the state) do not hit the board while DHCP, MQTT and the WebUI are busy as well: on the 2 MiB boards all of that at once
+filled the 16 KiB lwIP heap and the board stopped receiving. After a restart by the network watchdog the start waits at
+least 5 minutes. It also waits while a firmware upload runs or a restart is due. `MATTER.START` starts it at once;
+`set matterDelay 0` gives the old start at boot.
 
 Matter on the 2 MiB Tuya layout: the Matter code does not fit next to the rest of the image (the app partition is
 1124 KiB, ESPurna with Matter about 1.5 MiB), it lives in a region of the 664 KiB `download` partition of its own. So the
