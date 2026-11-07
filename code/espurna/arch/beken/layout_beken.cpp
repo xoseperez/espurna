@@ -3,7 +3,7 @@
 BK7231N FLASH LAYOUT, PICKED AT BOOT
 
 One image for the boards of both bootloaders. The bootloader is told apart by the CRC32 of its flash region, the same
-on every board of a vendor (checked against the stock dumps: CB3S and CBU, two XH-CB2S). An unknown bootloader gets
+on every board of a vendor (checked against the stock dumps: CB3S and CBU, two XH-CB2S; a second Tuya bootloader build on a slot board). An unknown bootloader gets
 no layout at all: nothing is written to its partitions then (no OTA, no Matter code).
 
 */
@@ -29,6 +29,12 @@ constexpr Known KnownLayouts[] {
     {0xf684a1dc, {Layout::Tuya, 0x200000,
         0x12A000, 0xA6000,      // download
         0x011000, 0x119000,     // app
+        0, 0}},
+    // another build of the Tuya bootloader, same partitions (black relay board with the module upright in a slot,
+    // 2026-11-07: app 0x10000+0x108700 and download 0x12A000+0xA6000 in its partition table)
+    {0x6802f257, {Layout::Tuya, 0x200000,
+        0x12A000, 0xA6000,
+        0x011000, 0x119000,
         0, 0}},
     {0x64b02979, {Layout::Quectel, 0x400000,
         0x286000, 0x15A000,

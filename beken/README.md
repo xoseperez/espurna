@@ -14,6 +14,7 @@ between boards is the bootloader (two kinds, found at boot) and the pins (device
 | Tuya TYWRA-RF Smart Switch: 1 relay 10 A, 433 MHz receiver, 7-32 V | CB3S, BK7231N | Tuya, 2 MiB, encrypted | the board the port was brought up on; Matter with 2 controllers, updates from the WebUI, network watchdog | [tywra-rf.md](tywra-rf.md) |
 | Tuya 4-gang switch module: 4 relays, 4 wall-switch inputs | CBU, BK7231N | Tuya, 2 MiB, encrypted | relays and inputs; relay 1 and the LED sit on the UART1 pins, 5 V needed for flashing | [cbu-4gang.md](cbu-4gang.md) |
 | Sparkleiot Mini Smart Switch: in-wall relay 16 A, S1/S2 input, stock Matter firmware | XH-CB2S, BK7231M (talks as BK7231N) | Quectel, 4 MiB, not encrypted | two units: one with Matter in the speaker hub using the factory certificates, one in a wall since 2026-11-04; second wall switch on a test pad | [sparkleiot-mini.md](sparkleiot-mini.md) |
+| In-wall relay 86-TDQ: 1 relay 16 A, S1/S2 input | CB2S-type module upright in a slot, BK7231N | Tuya (another bootloader build), 2 MiB | relay, button, wall switch, Matter with its own identity; flashed over UART at 921600 | [86-tdq.md](86-tdq.md) |
 
 Another BK7231N board: back up its stock firmware, read the pins out of the dump ([section 4](#4-first-flash-over-uart)),
 flash the image of its bootloader and set the pins on the web UI or in a device template. An unknown bootloader runs
@@ -23,7 +24,7 @@ ESPurna but gets no updates over Wi-Fi.
 
 One image, `beken-matter` (build `beken-bk7231n`), for every BK7231N board: every GPIO of the chip, no relays, buttons or
 LEDs pre-assigned (device template or web UI). The firmware finds out at boot which bootloader the chip has, from the
-CRC32 of its first `0x11000` bytes (Tuya `f684a1dc`, Quectel `64b02979`; `info` in the terminal shows it), and works with
+CRC32 of its first `0x11000` bytes (Tuya `f684a1dc` and `6802f257`, Quectel `64b02979`; `info` in the terminal shows it), and works with
 its flash layout. On an unknown bootloader it runs, but writes nothing to the bootloader's partitions: no OTA, no Matter
 code. The image is linked for 4 MiB of flash (`code/boards_beken/bk7231n-any.json`), so the partitions of the Quectel
 layout are reachable; on a 2 MiB chip only the Tuya ones are used.
@@ -135,8 +136,12 @@ The build writes the three files of the table under the same names to `code/.pio
 the ESP8266 / ESP32 builds in `.pio/build`. Then flash it:
 
 ```
-ltchiptool flash write -d COM3 -t 45 code/.pio/build_beken/beken-bk7231n/espurna-beken-initial-tuya.uf2
+ltchiptool flash write -d COM3 -b 921600 -t 45 code/.pio/build_beken/beken-bk7231n/espurna-beken-initial-tuya.uf2
 ```
+
+`-b 921600` writes in about 30 s; at the default 115200 one board lost the link at the same point (about 1 min 50 s,
+`No response received`) twice. The 3.3 V pin of the adapter is enough for the bootloader, not for ESPurna's Wi-Fi: power
+the board from its own 5 V rail (or a 3.3 V supply of 500 mA) for the first boot.
 
 Touch CEN to GND at `Connecting...` again. The chip starts ESPurna by itself at the end, no reset is needed. After the first
 setup below, pick the board on *ADMIN → Device Template* and reboot.

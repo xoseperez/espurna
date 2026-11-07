@@ -53,12 +53,11 @@ From the stock Tuya config (`user_param_key` in the backup, see the CB3S guide):
 | "total" button (active low) | P23 | `total_bt_pin` |
 | Wi-Fi LED (active high) | P11 | `netled1_pin` |
 
-**Relay 1 sits on RX1 and the LED on TX1**, the same pins as the serial port. Turn the UART off, or the serial terminal owns
-P10 / P11 and relay 1 never switches. Wire flashing still works afterwards, the ROM bootloader does not care.
+**Relay 1 sits on RX1 and the LED on TX1**, the same pins as the serial port. Since 2026-11-07 the serial port leaves
+both pins to the relay and the LED by itself (RELAYS → *Serial port* shows it); older firmware needed `uartTx0 153` and
+`uartRx0 153`, which still work. Wire flashing still works afterwards, the ROM bootloader does not care.
 
 ```
-set uartTx0 153
-set uartRx0 153
 set relayGpio0 10
 set relayGpio1 24
 set relayGpio2 26
