@@ -36,6 +36,13 @@ constexpr Known KnownLayouts[] {
         0x12A000, 0xA6000,
         0x011000, 0x119000,
         0, 0}},
+    // Tuya's bootloader 3.00 of the Matter firmware (MOES MS-104B Matter, 2026-11-07): the app at the same place,
+    // but its updates are diff2ya packages (XZ / bspatch, manage sector at 0x1E1000), not our RBL. The Matter code is
+    // still written by ESPurna itself; the firmware only over UART (ref. beken/moes-ms-104b-matter.md)
+    {0x39afde9f, {Layout::Tuya, 0x200000,
+        0x12A000, 0xA6000,
+        0x011000, 0x119000,
+        0, 0, false}},
     {0x64b02979, {Layout::Quectel, 0x400000,
         0x286000, 0x15A000,
         0x011000, 0x1A9000,

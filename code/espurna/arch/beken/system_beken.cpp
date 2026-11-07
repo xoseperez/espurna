@@ -20,6 +20,7 @@ Chip specific part, common part is in system.cpp
 
 #include "espurna.h"
 #include "rtcmem.h"
+#include "layout_beken.h"
 #include "storage_eeprom.h"
 
 // LibreTiny main task runs setup() and loop(), remembered by the first pre_setup() call.
@@ -210,6 +211,130 @@ uint32_t hardware_random() {
     return out;
 }
 
+// Tuya Matter firmware keeps the RF calibration block in another sector than the LibreTiny 'calibration' partition
+// (MOES MS-104B Matter with a CBU module, 2026-11-07: 0x1E3000, 0x1D0000 blank). Without it the SDK runs on its
+// defaults and the radio is too weak for even the softAP to be seen. The block goes where the SDK reads it, on the first
+// boot: our settings slots (storage_eeprom_beken.cpp, 0x1DB000..0x1EB000) cover that sector and erase it later on
+constexpr uint32_t OtherCalibrationOffsets[] { 0x1E3000 };
+
+bool is_ours(const uint8_t* header) {
+    Block block;
+    std::memcpy(&block, header, sizeof(block));
+    return (block.magic == BlockMagic)
+        && (block.length == (sizeof(Block) - 8))
+        && (block.group == ChipInfoGroup)
+        && (block.item == MacItem);
+}
+
+// a whole block of the vendor, not only a MAC like ours
+bool is_vendor_block(uint32_t offset) {
+    uint32_t header[2];
+    if (lt_flash_read(offset, reinterpret_cast<uint8_t*>(&header), sizeof(header)) != sizeof(header)) {
+        return false;
+    }
+
+    return (header[0] == BlockMagic)
+        && (header[1] > (sizeof(Block) - 8))
+        && (header[1] <= (FLASH_CALIBRATION_LENGTH - 8));
+}
+
+bool copy_calibration(uint32_t from) {
+    if (!lt_flash_erase(FLASH_CALIBRATION_OFFSET, FLASH_CALIBRATION_LENGTH)) {
+        return false;
+    }
+
+    // the header goes last, a copy cut short by a power loss is not taken for a block and is made again
+    uint8_t chunk[256];
+    for (uint32_t offset = 0; offset < FLASH_CALIBRATION_LENGTH; offset += sizeof(chunk)) {
+        if (lt_flash_read(from + offset, chunk, sizeof(chunk)) != sizeof(chunk)) {
+            return false;
+        }
+
+        const size_t skip = (offset == 0) ? 8 : 0;
+        if (lt_flash_write(FLASH_CALIBRATION_OFFSET + offset + skip, chunk + skip, sizeof(chunk) - skip)
+                != (sizeof(chunk) - skip)) {
+            return false;
+        }
+    }
+
+    if (lt_flash_read(from, chunk, 8) != 8) {
+        return false;
+    }
+
+    if (lt_flash_write(FLASH_CALIBRATION_OFFSET, chunk, 8) != 8) {
+        return false;
+    }
+
+    uint8_t copied[256];
+    for (uint32_t offset = 0; offset < FLASH_CALIBRATION_LENGTH; offset += sizeof(chunk)) {
+        if ((lt_flash_read(from + offset, chunk, sizeof(chunk)) != sizeof(chunk))
+            || (lt_flash_read(FLASH_CALIBRATION_OFFSET + offset, copied, sizeof(copied)) != sizeof(copied))
+            || (std::memcmp(chunk, copied, sizeof(chunk)) != 0))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+enum class Calibration {
+    InPlace,
+    Copied,
+    Failed,
+};
+
+Calibration calibration { Calibration::InPlace };
+uint32_t calibration_from { 0 };
+
+// before the SDK reads the block (the first WiFi.mode() of pre_setup()) and before the MAC below
+void ensure_calibration() {
+    if (::espurna::beken::flashLayout().layout != ::espurna::beken::Layout::Tuya) {
+        return;
+    }
+
+    uint8_t header[sizeof(Block)];
+    if (lt_flash_read(FLASH_CALIBRATION_OFFSET, header, sizeof(header)) != sizeof(header)) {
+        return;
+    }
+
+    // a block of the vendor already is where the SDK looks, or a MAC of ours over nothing at all
+    uint32_t magic;
+    std::memcpy(&magic, header, sizeof(magic));
+    if ((magic == BlockMagic) && !is_ours(header)) {
+        return;
+    }
+
+    for (const auto offset : OtherCalibrationOffsets) {
+        if ((offset + FLASH_CALIBRATION_LENGTH) > lt_flash_get_size()) {
+            continue;
+        }
+
+        if (is_vendor_block(offset)) {
+            calibration_from = offset;
+            calibration = copy_calibration(offset)
+                ? Calibration::Copied
+                : Calibration::Failed;
+            return;
+        }
+    }
+}
+
+void report_calibration() {
+    switch (calibration) {
+    case Calibration::InPlace:
+        break;
+    case Calibration::Copied:
+        DEBUG_MSG_P(PSTR("[MAIN] RF calibration block copied from 0x%06X to 0x%06X\n"),
+            calibration_from, FLASH_CALIBRATION_OFFSET);
+        break;
+    case Calibration::Failed:
+        DEBUG_MSG_P(PSTR("[MAIN] RF calibration block at 0x%06X could not be copied to 0x%06X\n"),
+            calibration_from, FLASH_CALIBRATION_OFFSET);
+        break;
+    }
+}
+
 // once, from whichever comes first: the chip id (the boot log asks for it before system setup) or pre_setup()
 void ensure_unique() {
     static bool done { false };
@@ -218,6 +343,8 @@ void ensure_unique() {
     }
 
     done = true;
+
+    ensure_calibration();
 
     // lt_rand_bytes() and our RandomDevice are rand() as well
     srand(hardware_random());
@@ -261,6 +388,8 @@ void apply() {
 }
 
 void report() {
+    report_calibration();
+
     switch (result) {
     case Result::Stored:
         break;

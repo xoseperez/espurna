@@ -227,9 +227,15 @@ void info(CommandContext&& ctx) {
     {
         // bootloader / flash layout of the board, ref. arch/beken/layout_beken.cpp
         const auto& layout = ::espurna::beken::flashLayout();
-        ctx.output.printf_P(PSTR("flash: %u KiB, %s bootloader, OTA at 0x%06X\n"),
-            static_cast<unsigned>(lt_flash_get_size() / 1024),
-            ::espurna::beken::layoutName(layout.layout), layout.download_offset);
+        if (layout.installs_rbl) {
+            ctx.output.printf_P(PSTR("flash: %u KiB, %s bootloader, OTA at 0x%06X\n"),
+                static_cast<unsigned>(lt_flash_get_size() / 1024),
+                ::espurna::beken::layoutName(layout.layout), layout.download_offset);
+        } else {
+            ctx.output.printf_P(PSTR("flash: %u KiB, %s bootloader 3.00, no firmware OTA (UART only)\n"),
+                static_cast<unsigned>(lt_flash_get_size() / 1024),
+                ::espurna::beken::layoutName(layout.layout));
+        }
     }
 #else
     ctx.output.printf_P(PSTR("mcu: esp8266 chipid: %s freq: %hhumhz\n"),

@@ -32,6 +32,9 @@ struct FlashLayout {
     // Matter factory data of the stock firmware, 0 when there is none
     uint32_t matter_offset;
     uint32_t matter_length;
+    // the bootloader installs our OTA image (RBL). Tuya's bootloader 3.00 of the Matter firmware takes only its own
+    // diff2ya packages: firmware updates over UART there, or after its replacement by the standard Tuya one
+    bool installs_rbl { true };
 };
 
 const FlashLayout& flashLayout();

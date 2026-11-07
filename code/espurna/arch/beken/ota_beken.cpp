@@ -112,6 +112,9 @@ const char* select() {
     case Layout::Tuya:
         // the image is running already: what is left is its Matter code
         wanted = same_build() ? Kind::MatterTail : Kind::RblTuya;
+        if ((wanted == Kind::RblTuya) && !layout.installs_rbl) {
+            return PSTR("ERROR: Tuya bootloader 3.00 does not install this image, update over UART or replace the bootloader");
+        }
         break;
     case Layout::Quectel:
         wanted = Kind::RblQuectel;

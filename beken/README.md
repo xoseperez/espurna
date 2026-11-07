@@ -15,6 +15,7 @@ between boards is the bootloader (two kinds, found at boot) and the pins (device
 | Tuya 4-gang switch module: 4 relays, 4 wall-switch inputs | CBU, BK7231N | Tuya, 2 MiB, encrypted | relays and inputs; relay 1 and the LED sit on the UART1 pins, 5 V needed for flashing | [cbu-4gang.md](cbu-4gang.md) |
 | Sparkleiot Mini Smart Switch: in-wall relay 16 A, S1/S2 input, stock Matter firmware | XH-CB2S, BK7231M (talks as BK7231N) | Quectel, 4 MiB, not encrypted | two units: one with Matter in the speaker hub using the factory certificates, one in a wall since 2026-11-04; second wall switch on a test pad | [sparkleiot-mini.md](sparkleiot-mini.md) |
 | In-wall relay 86-TDQ: 1 relay 16 A, S1/S2 input | CB2S-type module upright in a slot, BK7231N | Tuya (another bootloader build), 2 MiB | relay, button, wall switch, Matter with its own identity; flashed over UART at 921600 | [86-tdq.md](86-tdq.md) |
+| MOES MS-104B Matter (larger board than the ESP8266 MS-104B, Tuya FNHDM20003) | CBU, BK7231N | Tuya bootloader 3.00 of the Matter firmware, replaced by the standard one; 2 MiB | 2 relays, Matter in the speaker hub with the MOES factory identity from the Tuya key-value store. **Not worth it**: relay block to desolder, unstable power for flashing | [moes-ms-104b-matter.md](moes-ms-104b-matter.md) |
 
 Another BK7231N board: back up its stock firmware, read the pins out of the dump ([section 4](#4-first-flash-over-uart)),
 flash the image of its bootloader and set the pins on the web UI or in a device template. An unknown bootloader runs
@@ -24,7 +25,9 @@ ESPurna but gets no updates over Wi-Fi.
 
 One image, `beken-matter` (build `beken-bk7231n`), for every BK7231N board: every GPIO of the chip, no relays, buttons or
 LEDs pre-assigned (device template or web UI). The firmware finds out at boot which bootloader the chip has, from the
-CRC32 of its first `0x11000` bytes (Tuya `f684a1dc` and `6802f257`, Quectel `64b02979`; `info` in the terminal shows it), and works with
+CRC32 of its first `0x11000` bytes (Tuya `f684a1dc` and `6802f257`, Quectel `64b02979`; Tuya `39afde9f` is the bootloader
+3.00 of Tuya's Matter firmware, which does not install our updates, ref. [moes-ms-104b-matter.md](moes-ms-104b-matter.md#bootloader-300);
+`info` in the terminal shows it), and works with
 its flash layout. On an unknown bootloader it runs, but writes nothing to the bootloader's partitions: no OTA, no Matter
 code. The image is linked for 4 MiB of flash (`code/boards_beken/bk7231n-any.json`), so the partitions of the Quectel
 layout are reachable; on a 2 MiB chip only the Tuya ones are used.
@@ -158,6 +161,31 @@ moment after every reboot, and the ESPurna terminal is on the same UART1 at 1152
 ltchiptool starts linking, and the chip is caught at its restart. That takes a small wrapper around ltchiptool which
 writes `reset` to the port just before the link check (not in the repository); with the plain ltchiptool reset the chip by
 CEN or by its power as above.
+
+### RF calibration and MAC
+
+The Wi-Fi radio of the BK7231N runs on a calibration block that the module maker writes at the factory: a `TLV` block
+(`TLV\0`, its length, then groups of items) with the RF calibration values and the **MAC address** of the board. The SDK
+reads it once, at the first start of Wi-Fi, from the LibreTiny `calibration` partition at **`0x1D0000`** (2 MiB layout).
+Without it the radio runs on its defaults: weak, on one board even the access point of ESPurna could not be seen from a
+meter away, and every such board gets the same MAC `C8:47:8C:42:00:48`.
+
+Where the block is on the boards of these pages:
+
+| Board | Block | What ESPurna does on its first boot |
+|-------|-------|-------------------------------------|
+| Tuya CB3S, CBU, 86-TDQ (Tuya bootloader 1.0.1 builds) | `0x1D0000`, about 500 bytes | nothing, the SDK finds it |
+| MOES MS-104B Matter (Tuya Matter firmware, bootloader 3.00) | `0x1E3000`, `0x1D0000` blank | copies the block to `0x1D0000` (log: `RF calibration block copied from 0x1E3000 to 0x1D0000`), header written last so a power loss halfway is redone on the next boot |
+| Sparkleiot XH-CB2S (Quectel) | none | writes a block with only a MAC of its own (`CA:47:8C` + 3 random bytes from the chip's TRNG), so two boards do not share one; RF values stay the SDK defaults |
+
+The copy has to happen on the first boot: on the Tuya 2 MiB layout the settings slots of ESPurna (`0x1DB000`-`0x1EB000`)
+cover `0x1E3000`, the stock block there is gone after a few saves of the settings. Tested 2026-11-07 on the MOES board:
+the stock state (block only at `0x1E3000`, `0x1D0000` blank) written back over UART, the next boot copied it, the board
+came up with its factory MAC (`38:A5:C9:...`) and -25 dBm next to the access point.
+
+To check a board: `info` shows the chip id, which is the MAC (`38A5C9...` = Tuya's, `CA478C...` = made by ESPurna,
+`C8478C420048` = no block at all). Keep a dump of the stock flash before the first flash: the calibration of a board
+cannot be made again.
 
 ## 5. First setup
 
