@@ -15,29 +15,36 @@ a daughterboard (REV2.0) over it.
 
 <p>
   <img src="img/moes-ms-104b-matter-label.webp" width="24%" alt="Label: Moes Smart Switch Module, Model MS-104B, Wireless Protocol Matter WiFi, S2 L S1 L L N">
-  <img src="img/moes-ms-104b-matter-top.webp" width="24%" alt="Main board, relay daughterboard removed: terminal block, power supply, button, wires on the CBU pads">
-  <img src="img/moes-ms-104b-matter-bottom.webp" width="24%" alt="Main board from below: the CBU module, marking 104Matter, 5 V wires for flashing">
-  <img src="img/moes-ms-104b-matter-cbu.webp" width="24%" alt="CBU module of the board: TX1, RX1, CEN on the top row, 3V3 and GND on the left">
+  <img src="img/moes-ms-104b-matter-assembled.webp" width="36%" alt="Main board with the relay daughterboard: terminal block, two FANHAR relays, button, CBU pads next to the relays">
+  <img src="img/moes-ms-104b-matter-top.webp" width="36%" alt="Main board, relay daughterboard removed: terminal block, power supply, button S1, LED D0, the CBU pads">
 </p>
 <p>
+  <img src="img/moes-ms-104b-matter-bottom.webp" width="24%" alt="Main board from below: the CBU module, marking 104Matter">
+  <img src="img/moes-ms-104b-matter-pads.webp" width="24%" alt="CBU pads: 3V3, GND, TX1, RX1, CEN on the edge next to the relay daughterboard">
+  <img src="img/moes-ms-104b-matter-cbu.webp" width="24%" alt="CBU module of the board: TX1, RX1, CEN on the top row, 3V3 and GND on the left">
   <img src="img/moes-ms-104b-matter-top-wired.webp" width="24%" alt="Flashing setup: the board with the USB-UART adapter wired to TX1, RX1, CEN, 3V3, GND and 5 V">
-  <img src="img/moes-ms-104b-matter-top-side.webp" width="32%" alt="Main board from the side of the button and the CBU">
-  <img src="img/moes-ms-104b-matter-relays.webp" width="32%" alt="Relay daughterboard: two FANHAR W11-1A2STLE-H 5 V relays, J5 and J9">
-  <img src="img/moes-ms-104b-matter-relay-pcb.webp" width="32%" alt="Relay daughterboard from below, REV2.0, desoldered from the main board">
+</p>
+<p>
+  <img src="img/moes-ms-104b-matter-relays.webp" width="36%" alt="Relay daughterboard: two FANHAR W11-1A2STLE-H 5 V relays, J5 and J9">
+  <img src="img/moes-ms-104b-matter-relay-pcb.webp" width="36%" alt="Relay daughterboard from below, REV2.0, desoldered from the main board">
 </p>
 
 ## Image and pins
 
-`beken-matter`, after the bootloader is replaced (below). Pins from the stock config:
+`beken-matter`, after the bootloader is replaced (below). Pins from the stock config, the button checked on the board:
 
 | Function | Pin | Keys |
 |----------|-----|------|
 | relay 1 (active high) | P8 | `relayGpio0 8` |
 | relay 2 (active high) | P7 | `relayGpio1 7` |
-| button 1 (active low) | P14 | `btnGpio0 14`, `btnMode0 pushbutton`, `btnPinMode0 pull-up`, `btnDefVal0 high`, `btnRelay0 0` |
-| button 2 (active low) | P16 | `btnGpio1 16`, `btnMode1 pushbutton`, `btnPinMode1 pull-up`, `btnDefVal1 high`, `btnRelay1 1` |
+| wall switch input S1 (230 V) | P14 | `btnGpio0 14`, `btnMode0 pushbutton`, `btnPinMode0 pull-up`, `btnDefVal0 high`, `btnRelay0 0` |
+| wall switch input S2 (230 V) | P16 | `btnGpio1 16`, `btnMode1 pushbutton`, `btnPinMode1 pull-up`, `btnDefVal1 high`, `btnRelay1 1` |
+| button on the board (S1 on the silkscreen, "total" button of the stock firmware) | P10 (RX1) | `btnGpio2 10`, `btnMode2 pushbutton`, `btnPinMode2 pull-up`, `btnDefVal2 high`, `btnRelay2 0` |
 | Wi-Fi LED (inverted) | P24 | `ledGpio0 24`, `ledInv0 1` |
-| "total" button of the stock firmware | P10 (RX1) | not mapped, ESPurna has no "all relays" action |
+
+The button on the board toggles relay 1 here (the stock firmware switched both; ESPurna has no "all relays" action). It
+sits on RX1: the serial port leaves the pin to the button, the log stays on TX1. The S1 / S2 inputs are not tested
+(mains): their mode may need `switch` instead of `pushbutton` once a wall switch is wired.
 
 The same as a device template in the [ESPurna devices list](https://github.com/igorufox/espurna-devices).
 
@@ -118,4 +125,5 @@ switch the station off and on, add again.
 
 Backup (2 MiB, stock dump and eFuse kept locally), Tuya key-value store decrypted, bootloader 3.00 diff2ya install,
 bootloader replaced, UART flash, RF calibration copied from `0x1E3000` on the first boot, Wi-Fi, pins from the stock config, update over Wi-Fi
-in two uploads (firmware, then the Matter code), Matter with the MOES identity and On/Off Light endpoints in the speaker hub. Not tested: the relays switching mains (desoldered).
+in two uploads (firmware, then the Matter code), Matter with the MOES identity and On/Off Light endpoints in the speaker hub. Not tested: the relays switching mains, and the S1 / S2 wall-switch inputs, which take 230 V like on the
+ESP8266 MS-104B (the input modes above come from the stock config, not from a test).
