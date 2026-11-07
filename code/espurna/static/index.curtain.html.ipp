@@ -1,7 +1,7 @@
 #pragma once
 #include "pgmspace_orch.h"
 #include <cstdint>
-alignas(4) static constexpr char webui_last_modified[] PROGMEM = "Sat, 07 Nov 2026 09:53:09 GMT";
+alignas(4) static constexpr char webui_last_modified[] PROGMEM = "Sat, 07 Nov 2026 22:31:56 GMT";
 alignas(4) static constexpr char webui_content_encoding[] PROGMEM = "gzip";
 alignas(4) static constexpr uint8_t webui_data[] PROGMEM = {
 0x1f,0x8b,0x08,0x00,0x00,0x00,0x00,0x00,0x02,0xff,0xec,0xbd,0xeb,0x76,0xdb,0x38,0xb6,0x30,0xf8,0xbf,
