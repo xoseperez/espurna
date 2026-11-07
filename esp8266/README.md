@@ -62,6 +62,7 @@ How to choose when a board fits more than one row:
 | Sonoff Mini (R1 / R2) | ESP8285, 1 MB | `esp8266-1m` | seven in walls, a second wall switch on a spare pin and a dummy relay mirroring another board; on a board build of this fork | [sonoff-mini.md](sonoff-mini.md) |
 | Moes MS-104B, AC mains wall switches | ESP8266, 1 MB | `esp8266-1m` | four in walls, AC mains switch inputs; on a board build of this fork | [moes-ms-104b.md](moes-ms-104b.md) |
 | HW-622 (ESP-12F, 1 relay, opto input) | ESP8266, 4 MB | `esp8266-4m` | the test board of the generic 4 MB image: memory work, updates from the WebUI | [hw-622.md](hw-622.md) |
+| LC-Tech ESP-12F relay x4 (4 relays, AC or 7-30 V) | ESP8266, 4 MB used as 1 MB | `esp8266-1m` | on a board build of this fork; relays through jumpers RY1-RY4 | [esp12f-relay-x4.md](esp12f-relay-x4.md) |
 | LC-Tech ESP-12F relay x2 | ESP8266, 4 MB | `esp8266-4m` | one in a wall, per-relay buttons in *follow* and *switch* mode; on a board build of this fork | [esp12f-relay-x2.md](esp12f-relay-x2.md) |
 
 The other boards of [`hardware.h`](../code/espurna/config/hardware.h) (Sonoff, Shelly, BlitzWolf, ...) have device
@@ -102,6 +103,9 @@ Both from *ADMIN → From GitHub* by themselves. Details, the mini's own page, a
 - **In-wall boards on weak supplies.** A two-step update over ArduinoOTA bricked one Sonoff Mini whose power supply was
   dying (it rebooted in the middle of step 2). Before an update read `last reset reason` in `info`: anything but power on,
   terminal, web or OTA means the board is unstable, update it on the bench.
+- **Serial pins for inputs.** The serial port (GPIO1 TX, GPIO3 RX) leaves a pin to a button, a relay or an LED set up on
+  it (`btnGpio`, `relayGpio`, `relayBtnGpio`, `ledGpio`), e.g. a wall switch on RX of a Sonoff Mini R2; `uartTx0` /
+  `uartRx0` set by hand win. *RELAYS → Serial port* shows the pins and which setting took one.
 - **ESPurna 1.15 boards** (core 2.7.4) have about 10 KB free: a web upload drops half-way and the update stays 'in
   progress' until a restart. Their terminal takes commands as the WebSocket action `dbgcmd`.
 

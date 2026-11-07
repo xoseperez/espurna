@@ -82,6 +82,7 @@ import { init as initThingspeak } from './thingspeak.mjs';
 import { init as initDev } from './dev.mjs';
 import { init as initTasmota } from './tasmota.mjs';
 import { init as initTemplates } from './templates.mjs';
+import { init as initUart } from './uart.mjs';
 
 /** @type {number | null} */
 let KeepTime = null;
@@ -433,6 +434,7 @@ async function init() {
     if (MODULE_RELAY) {
         initRelay();
         initButton();
+        initUart();
     }
 
     if (MODULE_RFM69) {

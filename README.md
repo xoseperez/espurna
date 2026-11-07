@@ -40,7 +40,7 @@ or the settings, not from the build.
 
 | Architecture | Images | Boards run on it | Page |
 |--------------|--------|------------------|------|
-| **ESP8266 / ESP8285** | `esp8266-1m`, `-1m-light`, `-1m-sensor`, `-4m` (+ the mini) | Sonoff Basic, Sonoff Mini R1/R2, Moes MS-104B, HW-622, LC-Tech ESP-12F relay x2 | [esp8266/README.md](esp8266/README.md) |
+| **ESP8266 / ESP8285** | `esp8266-1m`, `-1m-light`, `-1m-sensor`, `-4m` (+ the mini) | Sonoff Basic, Sonoff Mini R1/R2, Moes MS-104B, HW-622, LC-Tech ESP-12F relay x2 and x4 | [esp8266/README.md](esp8266/README.md) |
 | **ESP32** | `esp32-matter`, `esp32-matter-nspanel` (+ the safeboot) | LC-Tech ESP32 relay x2, Sonoff MINIR4, Sonoff NSPanel | [esp32/README.md](esp32/README.md) |
 | **Beken BK7231N** | `beken-matter` (+ two UART images) | Tuya TYWRA-RF (CB3S), Tuya 4-gang (CBU), Sparkleiot Mini (XH-CB2S) | [beken/README.md](beken/README.md) |
 

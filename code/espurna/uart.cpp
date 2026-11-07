@@ -13,6 +13,10 @@ Copyright (C) 2022 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include "uart.h"
 #include "utils.h"
 
+#if WEB_SUPPORT
+#include "ws.h"
+#endif
+
 #if UART_SOFTWARE_SUPPORT
 #include <SoftwareSerial.h>
 #endif
@@ -219,11 +223,100 @@ PROGMEM_STRING(Invert, "uartInv");
 
 } // namespace keys
 
+} // namespace settings
+
+// The first port leaves its default pin to a button, a relay or an LED set up on it, unless uartTx0 / uartRx0 says
+// otherwise: a wall switch on GPIO3 (RX) of a Sonoff Mini R2, relay 1 and the LED on P10 / P11 of a Tuya CBU.
+// Without this the port took the pin at boot, before the buttons, and the input never worked
+namespace release {
+
+STRING_VIEW_INLINE(Button, "btnGpio");
+STRING_VIEW_INLINE(Relay, "relayGpio");
+STRING_VIEW_INLINE(RelayButton, "relayBtnGpio");
+STRING_VIEW_INLINE(Led, "ledGpio");
+
+// key of the setting that took the pin, empty when the pin stays with the port
+String tx_user;
+String rx_user;
+
+bool digits(StringView value) {
+    if (!value.length()) {
+        return false;
+    }
+
+    for (const auto c : value) {
+        if ((c < '0') || (c > '9')) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+// only <prefix><index> = <pin>, not btnGpioType0 & co
+String user(uint8_t pin) {
+    String out;
+    if (pin == GPIO_NONE) {
+        return out;
+    }
+
+    espurna::settings::foreach_prefix(
+        [&](StringView prefix, String key, const espurna::settings::kvs_type::ReadResult& value) {
+            if (out.length()) {
+                return;
+            }
+
+            if (!digits(StringView(key.begin() + prefix.length(), key.end()))) {
+                return;
+            }
+
+            const auto pin_value = value.toString();
+            if (digits(pin_value) && (static_cast<uint8_t>(pin_value.toInt()) == pin)) {
+                out = std::move(key);
+            }
+        },
+        {Button, Relay, RelayButton, Led});
+
+    return out;
+}
+
+void setup() {
+    if (!hasSetting(espurna::settings::Key{settings::keys::TxPin, size_t{0}})) {
+        tx_user = user(build::tx(0));
+    }
+
+    if (!hasSetting(espurna::settings::Key{settings::keys::RxPin, size_t{0}})) {
+        rx_user = user(build::rx(0));
+    }
+
+    if (tx_user.length()) {
+        DEBUG_MSG_P(PSTR("[UART] GPIO%hhu is used by %s, the serial port leaves it\n"),
+            build::tx(0), tx_user.c_str());
+    }
+
+    if (rx_user.length()) {
+        DEBUG_MSG_P(PSTR("[UART] GPIO%hhu is used by %s, the serial port leaves it\n"),
+            build::rx(0), rx_user.c_str());
+    }
+}
+
+} // namespace release
+
+namespace settings {
+
 uint8_t tx(size_t index) {
+    if ((index == 0) && release::tx_user.length()) {
+        return GPIO_NONE;
+    }
+
     return getSetting({keys::TxPin, index}, build::tx(index));
 }
 
 uint8_t rx(size_t index) {
+    if ((index == 0) && release::rx_user.length()) {
+        return GPIO_NONE;
+    }
+
     return getSetting({keys::RxPin, index}, build::rx(index));
 }
 
@@ -735,11 +828,43 @@ bool claim(size_t index, const __FlashStringHelper* owner) {
     return true;
 }
 
+#if WEB_SUPPORT
+namespace web {
+
+// RELAYS panel: the pins of the first port, what the build gives it and who took one of them (ref. html/src/uart.mjs)
+void onConnected(JsonObject& root) {
+    JsonObject& pins = root.createNestedObject(F("uartPins"));
+    pins[F("tx")] = build::tx(0);
+    pins[F("rx")] = build::rx(0);
+    pins[F("txUser")] = release::tx_user;
+    pins[F("rxUser")] = release::rx_user;
+
+    root[String(FPSTR(settings::keys::TxPin)) + '0'] = settings::tx(0);
+    root[String(FPSTR(settings::keys::RxPin)) + '0'] = settings::rx(0);
+}
+
+bool onKeyCheck(StringView key, const JsonVariant&) {
+    return key.startsWith(settings::Prefix);
+}
+
+void setup() {
+    wsRegister()
+        .onConnected(onConnected)
+        .onKeyCheck(onKeyCheck);
+}
+
+} // namespace web
+#endif
+
 void setup() {
 #if TERMINAL_SUPPORT
     terminal::setup();
 #endif
     settings::query::setup();
+    release::setup();
+#if WEB_SUPPORT
+    web::setup();
+#endif
 
     bool disable_uart0_rx = false;
 

@@ -2,12 +2,15 @@
 
 The classic Itead 1-channel relay, 10 A, mains powered. ESP8266 with 1 MB flash.
 
-|||
-|---|---|
-|![Sonoff Basic](https://raw.githubusercontent.com/blakadder/templates/master/assets/device_images/sonoff_basic.webp)|![Sonoff Basic R2](https://raw.githubusercontent.com/blakadder/templates/master/assets/device_images/sonoff_BASICR2.webp)|
-|Basic (R1)|Basic R2|
+<p>
+  <img src="img/sonoff-basic-case.webp" width="32%" alt="Sonoff Basic case: Input L N, Output L N, 10 A">
+  <img src="img/sonoff-basic-board.webp" width="32%" alt="Board: relay, LED, button, the 4-pin header J1 and the pin row U4, printed Sonoff TH_V1.1 2017-5-9">
+  <img src="img/sonoff-basic-board-back.webp" width="32%" alt="Back: the ESP8266, the VCC RST C2D GND pads, mains tracks">
+</p>
 
-*Photos: [Tasmota Device Templates](https://templates.blakadder.com/sonoff_basic.html), [Basic R2](https://templates.blakadder.com/sonoff_BASICR2.html).*
+The board of the unit here is printed *Sonoff TH_V1.1 2017-5-9* (no sensor jack fitted) and runs with the pins below.
+Other revisions: the
+[Basic R2](https://templates.blakadder.com/sonoff_BASICR2.html) (Tasmota Device Templates).
 
 ## Image and pins
 
@@ -28,6 +31,8 @@ on GPIO16 is a modification of the board, not stock.
 The header next to the button has 3V3, RX, TX, GND (and GPIO14 on the original Basic). Hold the button while powering up
 from the adapter's 3.3 V (never from mains with the adapter connected) and write `espurna-esp8266-1m.bin` at `0x0`. After
 that every update goes over Wi-Fi in two steps (the mini first), from *ADMIN → From GitHub*.
+
+<img src="img/sonoff-basic-wired.webp" width="49%" alt="Sonoff Basic with the USB-UART adapter on the header J1">
 
 ## From ESPurna 1.15, without a wire
 

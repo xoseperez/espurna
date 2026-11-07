@@ -59,6 +59,27 @@
                 </div>
             </fieldset>
 
+            <fieldset id="uartPins" hidden>
+                <legend>Serial port</legend>
+
+                <span class="pure-form-message">
+                    The serial log and terminal use these pins. A button, a relay or an LED set up on one of them takes it by itself
+                    (e.g. a wall switch on GPIO3 / RX of a Sonoff Mini R2); here the pins are given up by hand. Takes effect after a reboot.
+                </span>
+
+                <span id="uartRelease" class="pure-form-message" hidden></span>
+
+                <div class="pure-control-group">
+                    <label>TX</label>
+                    <select name="uartTx0" class="pure-input-1-2"></select>
+                </div>
+
+                <div class="pure-control-group">
+                    <label>RX</label>
+                    <select name="uartRx0" class="pure-input-1-2"></select>
+                </div>
+            </fieldset>
+
             <fieldset id="buttonAcGlobal" hidden>
                 <legend>AC mains switches</legend>
 

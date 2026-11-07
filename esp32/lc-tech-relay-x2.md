@@ -1,11 +1,20 @@
 # LC-Tech ESP32 relay x2 on ESPurna
 
-A 2-relay board with an ESP32-WROOM (ESP32-D0WD-V3, 4 MB flash), 5 V / 7-30 V supply, a pin header with the UART and
-GPIO0.
+A 2-relay board, printed **ESP32_Relay_AC_X2 (303E32AC210)**: mains powered (its own AC/DC converter, 2-pin input
+terminal), two 10 A relays with NO / COM / NC terminals, an ESP32-32E module (ESP32-D0WD-V3, 4 MB flash), buttons IO0 and
+EN, every GPIO on two pin rows, and a 6-pin header P4 for flashing: IO0, GND, GND, RX, TX, 5V. There are also DC-powered
+variants of the same layout ([ESP32_Relay_X2](https://templates.blakadder.com/ESP32_Relay_X2.html) in Tasmota Device
+Templates).
 
-![LC-Tech ESP32 relay x2](https://raw.githubusercontent.com/blakadder/templates/master/assets/device_images/ESP32_Relay_X2.webp)
+<p>
+  <img src="img/lc-tech-relay-x2.webp" width="49%" alt="ESP32_Relay_AC_X2: two relays, ESP32-32E module, IO0 and EN buttons, header P4">
+  <img src="img/lc-tech-relay-x2-back.webp" width="49%" alt="Back: NO1 COM1 NC1 NO2 COM2 NC2, the P4 header IO0 GND GND RX TX 5V, the GPIO names">
+</p>
 
-*Photo: [Tasmota Device Templates](https://templates.blakadder.com/ESP32_Relay_X2.html).*
+**Flashing** goes over the P4 header (RX / TX to the adapter, GND); hold IO0 while pressing EN to enter the ROM
+bootloader. P4 also has 5V; powering the board from it instead of mains was not tried here.
+
+<img src="img/lc-tech-relay-x2-wired.webp" width="49%" alt="ESP32_Relay_AC_X2 with the adapter wires on the P4 header">
 
 ## Image and pins
 

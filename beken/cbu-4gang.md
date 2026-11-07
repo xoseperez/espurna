@@ -5,9 +5,13 @@ Wi-Fi part is a bare (unshielded) Tuya **CBU** module (BK7231N, 2 MB flash, stan
 upright into a small green carrier. Flashing, backup and OTA work as on every Tuya module, see [README.md](README.md); this page only
 lists what differs.
 
+Sold as **WiFi Switch Module MINI-W1-4CH**: AC 100-240 V, 4 × 2.5 A, terminals L-out1 to L-out4, L-in, N-in, and the
+wall-switch cable S1 to S4 + COM.
+
 <p>
-  <img src="img/cbu-module.webp" width="49%" alt="CBU module on its green carrier, the white 5-wire cable goes to the wall switches">
-  <img src="img/cbu-pads.webp" width="49%" alt="CBU pads: TX1, RX1, CEN on the left edge, 3.3V and GND on the top edge">
+  <img src="img/cbu-4gang-case.webp" width="32%" alt="MINI-W1-4CH case: L-out1..4, L-in, N-in terminals, cable S1 S2 S3 S4 COM">
+  <img src="img/cbu-module.webp" width="32%" alt="CBU module on its green carrier, the white 5-wire cable goes to the wall switches">
+  <img src="img/cbu-pads.webp" width="32%" alt="CBU pads: TX1, RX1, CEN on the left edge, 3.3V and GND on the top edge">
 </p>
 
 ## Build

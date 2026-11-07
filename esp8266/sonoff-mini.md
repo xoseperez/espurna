@@ -3,12 +3,15 @@
 An in-wall 1-channel relay, 10 A, with an S1 / S2 input for the wall switch. ESP8285 (ESP8266 with 1 MB of flash inside
 the chip). R1 and R2 run the same image; they cannot be told apart over the network.
 
-|||
-|---|---|
-|![Sonoff Mini (R1)](https://user-images.githubusercontent.com/5904370/63218127-3610e000-c154-11e9-9ae9-8ed36009dda4.png)|![Sonoff Mini R2](https://raw.githubusercontent.com/blakadder/templates/master/assets/device_images/sonoff_MINIR2.webp)|
-|Mini (R1)|Mini R2|
+<p>
+  <img src="img/sonoff-mini-case.webp" width="32%" alt="Two Sonoff Mini cases, terminals N-in N-in L-in L-out S1 S2">
+  <img src="img/sonoff-mini-board.webp" width="32%" alt="Top: Mini V1.2 2019.06.25 (R1) with added wires, below Mini V2.0 2021.04.27 (R2)">
+  <img src="img/sonoff-mini-board-back.webp" width="32%" alt="Back of both boards: the ESP8285, KEY_IN, S_IN, S_OUT, mains tracks">
+</p>
 
-*Photos: [Tasmota Device Templates](https://templates.blakadder.com/sonoff_mini.html), [Mini R2](https://templates.blakadder.com/sonoff_MINIR2.html). The boards here are in walls.*
+Top: a Mini **V1.2 2019.06.25** (R1) with a wire on its GPIO16 pad for an extra button, below: a Mini **V2.0
+2021.04.27** (R2), its S1 / S2 terminals are the grey pair. They are told apart by
+the version printed on the board, not over the network.
 
 ## Image and pins
 
@@ -27,10 +30,12 @@ Seven Minis in the walls of one house run with a second wall switch and a *dummy
 mirrors the lamp of another board over MQTT (both relays publish and subscribe the same topic, so either switch turns
 either lamp). The second switch goes on a spare pin:
 
-- **Mini R2**: GPIO3 (RX): `btnGpio2 3`, `btnMode2 switch`, `btnDefVal2 initial`, `btnPinMode2 pull-up`,
-  `btnPress2 relay-toggle`, `btnRlse2 relay-toggle`, `btnRelay2 1`, plus `uartRx0 153` so the serial port does not take
-  GPIO3;
-- **Mini R1**: GPIO16 (`btnGpio2 16`), GPIO3 is not reachable there.
+- **Mini R1**: GPIO16 is brought out to a pad, a wire there takes an external button or a second wall switch without
+  touching the serial port: `btnGpio2 16` plus the button keys below.
+- **Mini R2**: no free pad, the extra input goes on GPIO3 (RX): `btnGpio2 3`, `btnMode2 switch`, `btnDefVal2 initial`,
+  `btnPinMode2 pull-up`, `btnPress2 relay-toggle`, `btnRlse2 relay-toggle`, `btnRelay2 1`. The serial port leaves GPIO3
+  to the button by itself (the log says `[UART] GPIO3 is used by btnGpio2, the serial port leaves it`), the serial log
+  and terminal keep TX. Older firmware needed `uartRx0 153` for that; the RELAYS panel shows the pins under *Serial port*.
 
 These keys belong to the board, not to a build: keep them across reflashes.
 
