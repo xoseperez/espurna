@@ -25,6 +25,8 @@ import io
 import json
 import os
 import re
+import time
+import urllib.error
 import urllib.request
 import zipfile
 
@@ -45,10 +47,25 @@ def unpacked(folder):
     return all(os.path.isfile(os.path.join(folder, name)) for name in FILES)
 
 
-def download(url, headers=None, timeout=120):
+def download(url, headers=None, timeout=120, attempts=5):
+    # GitHub answers 502 / 503 / 504 now and then (two CI runs of 2026-11-07/08 died on one): retry those and network
+    # errors, 5 / 10 / 20 / 40 s apart; 4xx (not found, rate limit) fail at once
     request = urllib.request.Request(url, headers={"User-Agent": "espurna-build", **(headers or {})})
-    with urllib.request.urlopen(request, timeout=timeout) as response:
-        return response.read()
+    for attempt in range(attempts):
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                return response.read()
+        except urllib.error.HTTPError as error:
+            if (error.code < 500) or (attempt + 1 == attempts):
+                raise
+            reason = f"HTTP {error.code}"
+        except (urllib.error.URLError, TimeoutError, ConnectionError) as error:
+            if attempt + 1 == attempts:
+                raise
+            reason = str(error)
+        wait = 5 * (2 ** attempt)
+        print(f"Matter library: {url}: {reason}, again in {wait} s")
+        time.sleep(wait)
 
 
 def fetch(url, expected, folder):

@@ -63,6 +63,8 @@ jobs:
         # LDF deep+ evaluates preprocessor expressions with python eval, and '\e' (ESC)
         # in some framework header spams SyntaxWarning on python >= 3.12
         PYTHONWARNINGS: ignore::SyntaxWarning
+        # Beken: scripts/beken_matter_lib.py asks the GitHub API for the latest Matter library release, authenticated
+        GITHUB_TOKEN: ${{ github.token }}
       run: |
         # pio libs sometimes use raw hash instead of version, avoid useless warnings
         git config --global advice.detachedHead false
