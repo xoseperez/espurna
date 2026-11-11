@@ -13,6 +13,10 @@ Copyright (C) 2022 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include "uart.h"
 #include "utils.h"
 
+#if WEB_SUPPORT
+#include "ws.h"
+#endif
+
 #if UART_SOFTWARE_SUPPORT
 #include <SoftwareSerial.h>
 #endif
@@ -219,11 +223,100 @@ PROGMEM_STRING(Invert, "uartInv");
 
 } // namespace keys
 
+} // namespace settings
+
+// The first port leaves its default pin to a button, a relay or an LED set up on it, unless uartTx0 / uartRx0 says
+// otherwise: a wall switch on GPIO3 (RX) of a Sonoff Mini R2, relay 1 and the LED on P10 / P11 of a Tuya CBU.
+// Without this the port took the pin at boot, before the buttons, and the input never worked
+namespace release {
+
+STRING_VIEW_INLINE(Button, "btnGpio");
+STRING_VIEW_INLINE(Relay, "relayGpio");
+STRING_VIEW_INLINE(RelayButton, "relayBtnGpio");
+STRING_VIEW_INLINE(Led, "ledGpio");
+
+// key of the setting that took the pin, empty when the pin stays with the port
+String tx_user;
+String rx_user;
+
+bool digits(StringView value) {
+    if (!value.length()) {
+        return false;
+    }
+
+    for (const auto c : value) {
+        if ((c < '0') || (c > '9')) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+// only <prefix><index> = <pin>, not btnGpioType0 & co
+String user(uint8_t pin) {
+    String out;
+    if (pin == GPIO_NONE) {
+        return out;
+    }
+
+    espurna::settings::foreach_prefix(
+        [&](StringView prefix, String key, const espurna::settings::kvs_type::ReadResult& value) {
+            if (out.length()) {
+                return;
+            }
+
+            if (!digits(StringView(key.begin() + prefix.length(), key.end()))) {
+                return;
+            }
+
+            const auto pin_value = value.toString();
+            if (digits(pin_value) && (static_cast<uint8_t>(pin_value.toInt()) == pin)) {
+                out = std::move(key);
+            }
+        },
+        {Button, Relay, RelayButton, Led});
+
+    return out;
+}
+
+void setup() {
+    if (!hasSetting(espurna::settings::Key{settings::keys::TxPin, size_t{0}})) {
+        tx_user = user(build::tx(0));
+    }
+
+    if (!hasSetting(espurna::settings::Key{settings::keys::RxPin, size_t{0}})) {
+        rx_user = user(build::rx(0));
+    }
+
+    if (tx_user.length()) {
+        DEBUG_MSG_P(PSTR("[UART] GPIO%hhu is used by %s, the serial port leaves it\n"),
+            build::tx(0), tx_user.c_str());
+    }
+
+    if (rx_user.length()) {
+        DEBUG_MSG_P(PSTR("[UART] GPIO%hhu is used by %s, the serial port leaves it\n"),
+            build::rx(0), rx_user.c_str());
+    }
+}
+
+} // namespace release
+
+namespace settings {
+
 uint8_t tx(size_t index) {
+    if ((index == 0) && release::tx_user.length()) {
+        return GPIO_NONE;
+    }
+
     return getSetting({keys::TxPin, index}, build::tx(index));
 }
 
 uint8_t rx(size_t index) {
+    if ((index == 0) && release::rx_user.length()) {
+        return GPIO_NONE;
+    }
+
     return getSetting({keys::RxPin, index}, build::rx(index));
 }
 
@@ -265,8 +358,99 @@ namespace internal {
 BasePortPtr ports[build::PortsMax];
 bool used_hardware_ports[2] = {false, false};
 
+// exclusive owner of the port, ref. claim()
+const __FlashStringHelper* owners[build::PortsMax] {};
+
+// serial log and serial terminal
+UartClaimRelease on_claim[4] {};
+
 } // namespace internal
 
+#if defined(ARDUINO_ARCH_ESP32)
+// Any pins are routed through the GPIO matrix. UART0 keeps its default pins (1 & 3, serial
+// console / debug), UART2 is used for everything else (UART1 default pins are the flash ones).
+// Unlike esp8266, HardwareSerial::begin() takes (baud, config, rx, tx, invert) and there is no
+// separate mode or swap(). -1 leaves the pin unused.
+BasePortPtr hardware_port(
+        uint32_t baudrate, uint8_t tx, uint8_t rx, Config config, bool invert)
+{
+    if ((tx == GPIO_NONE) && (rx == GPIO_NONE)) {
+        return nullptr;
+    }
+
+    const int number = build::uart0_normal(tx, rx) ? 0 : 2;
+    const int slot = (number == 0) ? 0 : 1;
+    if (internal::used_hardware_ports[slot]) {
+        return nullptr;
+    }
+
+    internal::used_hardware_ports[slot] = true;
+
+    auto* ptr = new HardwareSerial(number);
+    ptr->begin(baudrate,
+        from_config<types::HardwareConfig>(config),
+        (rx == GPIO_NONE) ? -1 : static_cast<int8_t>(rx),
+        (tx == GPIO_NONE) ? -1 : static_cast<int8_t>(tx),
+        invert);
+
+    return std::make_unique<BasePort>(
+        BasePort{
+            .type = (number == 0) ? Type::Uart0 : Type::Uart1,
+            .tx = (tx != GPIO_NONE),
+            .rx = (rx != GPIO_NONE),
+            .stream = StreamPtr(ptr),
+        });
+}
+#elif defined(LIBRETINY)
+// Pins are fixed, UART1 is P11 (TX) & P10 (RX), same pads are used for flashing.
+// UART2 is P0 (TX) & P1 (RX), SDK and LibreTiny log there by default.
+// Unlike esp8266, config is ArduinoCore-API SERIAL_... values
+constexpr uint16_t libretiny_config(Config config) {
+    return ((config.data_bits == 5) ? SERIAL_DATA_5 :
+            (config.data_bits == 6) ? SERIAL_DATA_6 :
+            (config.data_bits == 7) ? SERIAL_DATA_7 : SERIAL_DATA_8)
+        | ((config.parity == Parity::Even) ? SERIAL_PARITY_EVEN :
+            (config.parity == Parity::Odd) ? SERIAL_PARITY_ODD : SERIAL_PARITY_NONE)
+        | ((config.stop_bits == 2) ? SERIAL_STOP_BIT_2 : SERIAL_STOP_BIT_1);
+}
+
+BasePortPtr hardware_port(
+        uint32_t baudrate, uint8_t tx, uint8_t rx, Config config, bool)
+{
+    const auto pins = [&](uint8_t port_tx, uint8_t port_rx) {
+        return ((tx == port_tx) || (tx == GPIO_NONE))
+            && ((rx == port_rx) || (rx == GPIO_NONE))
+            && ((tx != GPIO_NONE) || (rx != GPIO_NONE));
+    };
+
+    const int number =
+        pins(11, 10) ? 1 :
+        pins(0, 1) ? 2 : -1;
+    if (number < 0) {
+        return nullptr;
+    }
+
+    const int slot = number - 1;
+    if (internal::used_hardware_ports[slot]) {
+        return nullptr;
+    }
+
+    internal::used_hardware_ports[slot] = true;
+
+    auto* ptr = new SerialClass(number,
+        (rx == GPIO_NONE) ? PIN_INVALID : rx,
+        (tx == GPIO_NONE) ? PIN_INVALID : tx);
+    ptr->begin(baudrate, libretiny_config(config));
+
+    return std::make_unique<BasePort>(
+        BasePort{
+            .type = (number == 1) ? Type::Uart0 : Type::Uart1,
+            .tx = (tx != GPIO_NONE),
+            .rx = (rx != GPIO_NONE),
+            .stream = StreamPtr(ptr),
+        });
+}
+#else
 BasePortPtr hardware_port(
         uint32_t baudrate, uint8_t tx, uint8_t rx, Config config, bool invert)
 {
@@ -304,7 +488,9 @@ BasePortPtr hardware_port(
         tx, invert);
     if ((number == 0) && (build::uart0_swapped(tx, rx))) {
         ptr->flush();
+#if defined(ESP8266)
         ptr->swap();
+#endif
     }
 
     return std::make_unique<BasePort>(
@@ -315,6 +501,7 @@ BasePortPtr hardware_port(
             .stream = StreamPtr(ptr),
         });
 }
+#endif
 
 // based on the values in v6 of the lib. still, return bits instead of the octal notation used there
 #if UART_SOFTWARE_SUPPORT
@@ -396,12 +583,17 @@ BasePortPtr make_port(size_t index) {
     const auto baudrate = settings::baudrate(index);
     const auto invert = settings::invert(index);
 
+#if defined(LIBRETINY)
+    // esp8266 pin pairs mean nothing here, hardware_port() checks the BK72xx ones itself
+    out = hardware_port(baudrate, tx, rx, config, invert);
+#else
     if (build::uart0_normal(tx, rx)
      || build::uart0_swapped(tx, rx)
      || build::uart1_normal(tx, rx))
     {
         out = hardware_port(baudrate, tx, rx, config, invert);
     }
+#endif
 
 #if UART_SOFTWARE_SUPPORT
     if (!out) {
@@ -508,11 +700,18 @@ void uart(::terminal::CommandContext&& ctx) {
                 break;
             }
 
+            String owner;
+            if (internal::owners[index]) {
+                owner = F(" owner=");
+                owner += internal::owners[index];
+            }
+
             ctx.output.printf_P(
-                PSTR("%zu - %s{tx=%c rx=%c}\n"),
+                PSTR("%zu - %s{tx=%c rx=%c}%s\n"),
                 index, port_type(port->type).c_str(),
                 port->tx ? 'y' : 'n',
-                port->rx ? 'y' : 'n');
+                port->rx ? 'y' : 'n',
+                owner.c_str());
         }
 
     } else if (ctx.argv.size() == 2) {
@@ -565,11 +764,107 @@ PortPtr port(size_t index) {
     return nullptr;
 }
 
+const __FlashStringHelper* claimed(size_t index) {
+    return (index < std::size(internal::owners))
+        ? internal::owners[index]
+        : nullptr;
+}
+
+void on_claim(UartClaimRelease callback) {
+    for (auto& ptr : internal::on_claim) {
+        if (ptr == callback) {
+            return;
+        }
+
+        if (!ptr) {
+            ptr = callback;
+            return;
+        }
+    }
+}
+
+bool claim(size_t index, const __FlashStringHelper* owner) {
+    if ((index >= std::size(internal::ports)) || !internal::ports[index] || !owner) {
+        return false;
+    }
+
+    auto& current = internal::owners[index];
+    if (current) {
+        if (current == owner) {
+            return true;
+        }
+
+        DEBUG_MSG_P(PSTR("[UART] Port #%zu is already used by %s\n"),
+            index, String(current).c_str());
+        return false;
+    }
+
+    current = owner;
+
+    // owner is set first, nothing reaches the serial log from here on
+    String released;
+    for (const auto& callback : internal::on_claim) {
+        if (!callback) {
+            break;
+        }
+
+        const auto* name = callback(index);
+        if (name) {
+            if (released.length()) {
+                released += F(" and ");
+            }
+            released += FPSTR(name);
+        }
+    }
+
+    if (released.length()) {
+        DEBUG_MSG_P(PSTR("[UART] Port #%zu belongs to %s, %s stopped using it\n"),
+            index, String(owner).c_str(), released.c_str());
+    } else {
+        DEBUG_MSG_P(PSTR("[UART] Port #%zu belongs to %s\n"),
+            index, String(owner).c_str());
+    }
+
+    return true;
+}
+
+#if WEB_SUPPORT
+namespace web {
+
+// RELAYS panel: the pins of the first port, what the build gives it and who took one of them (ref. html/src/uart.mjs)
+void onConnected(JsonObject& root) {
+    JsonObject& pins = root.createNestedObject(F("uartPins"));
+    pins[F("tx")] = build::tx(0);
+    pins[F("rx")] = build::rx(0);
+    pins[F("txUser")] = release::tx_user;
+    pins[F("rxUser")] = release::rx_user;
+
+    root[String(FPSTR(settings::keys::TxPin)) + '0'] = settings::tx(0);
+    root[String(FPSTR(settings::keys::RxPin)) + '0'] = settings::rx(0);
+}
+
+bool onKeyCheck(StringView key, const JsonVariant&) {
+    return key.startsWith(settings::Prefix);
+}
+
+void setup() {
+    wsRegister()
+        .onConnected(onConnected)
+        .onKeyCheck(onKeyCheck);
+}
+
+} // namespace web
+#endif
+
 void setup() {
 #if TERMINAL_SUPPORT
     terminal::setup();
 #endif
     settings::query::setup();
+    release::setup();
+#if WEB_SUPPORT
+    web::setup();
+#endif
 
     bool disable_uart0_rx = false;
 
@@ -587,7 +882,9 @@ void setup() {
     }
 
     if (disable_uart0_rx) {
+#if defined(ESP8266)
         ets_isr_mask(1 << ETS_UART_INUM);
+#endif
     }
 }
 
@@ -605,4 +902,17 @@ void uartSetup() {
     espurna::driver::uart::setup();
 }
 
+void uartOnClaim(UartClaimRelease callback) {
+    espurna::driver::uart::on_claim(callback);
+}
+
+bool uartClaim(size_t index, const __FlashStringHelper* owner) {
+    return espurna::driver::uart::claim(index, owner);
+}
+
+const __FlashStringHelper* uartClaimed(size_t index) {
+    return espurna::driver::uart::claimed(index);
+}
+
 #endif // UART_SUPPORT
+

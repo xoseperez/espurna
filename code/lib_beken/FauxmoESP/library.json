@@ -1,0 +1,21 @@
+{
+  "name": "FauxmoESP",
+  "description": "fauxmoESP 3.4.1 (Amazon Alexa as a Belkin WeMo / Hue bridge) for LibreTiny: the ESP32 code paths with WiFi.h / AsyncTCP.h, the MD5 functions of the LibreTiny core instead of MD5Builder, which LibreTiny does not have, and the SSDP listener on a lwIP udp_pcb instead of WiFiUDP (about 3.5 KiB less heap, closed while paused)",
+  "keywords": "alexa,amazon,echo,fauxmo,wemo",
+  "authors": {
+    "name": "Paul Vint",
+    "email": "paul@vintlabs.com",
+    "url": "http://vintlabs.com",
+    "maintainer": true
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vintlabs/fauxmoESP"
+  },
+  "version": "3.4.1",
+  "license": "MIT",
+  "frameworks": "arduino",
+  "platforms": [
+    "libretiny"
+  ]
+}

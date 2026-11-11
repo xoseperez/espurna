@@ -51,3 +51,4 @@ struct PrintString final : public Print, public String {
 private:
     size_t _reserved;
 };
+

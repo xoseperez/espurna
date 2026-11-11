@@ -25,9 +25,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "config/all.h"
 
 #include "compat.h"
+#if defined(ESP32)
+#include "compat_esp32.h"
+#elif defined(LIBRETINY)
+#include "compat_beken.h"
+#endif
 
 #include "build.h"
-#include "types.h"
+#include "types_orch.h"
 #include "debug.h"
 #include "gpio.h"
 #include "storage_eeprom.h"
@@ -36,8 +41,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "terminal.h"
 #include "uart.h"
 #include "utils.h"
-#include "network.h"
-#include "wifi.h"
+#include "espurna_network.h"
+#include "wifi_orch.h"
 
 #include <functional>
 #include <algorithm>
@@ -62,6 +67,9 @@ void espurnaReload();
 using LoopCallback = void (*)();
 void espurnaRegisterLoop(LoopCallback);
 
+// what loop() runs right now: a loop or reload callback's address, 1 for the once callbacks, 0 between passes
+uintptr_t espurnaLoopCurrent();
+
 void espurnaRegisterOnce(espurna::Callback);
 void espurnaRegisterOnceUnique(espurna::Callback::Type);
 
@@ -69,3 +77,4 @@ espurna::duration::Milliseconds espurnaLoopDelay();
 void espurnaLoopDelay(espurna::duration::Milliseconds);
 
 void extraSetup();
+

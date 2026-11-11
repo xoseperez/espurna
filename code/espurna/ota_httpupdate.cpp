@@ -15,7 +15,7 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #if OTA_CLIENT == OTA_CLIENT_HTTPUPDATE
 
 #include "mqtt.h"
-#include "ota.h"
+#include "espurna_ota.h"
 #include "system.h"
 #include "terminal.h"
 
@@ -220,3 +220,4 @@ void otaClientSetup() {
 }
 
 #endif // OTA_CLIENT == OTA_CLIENT_HTTPUPDATE
+

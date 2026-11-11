@@ -7,7 +7,7 @@ Part of the LED MODULE
 #pragma once
 
 #include <cstddef>
-#include "system_time.h"
+#include "system_time_orch.h"
 
 namespace espurna {
 namespace led {
@@ -37,3 +37,4 @@ enum class LedMode {
     Relays,
     RelaysWiFi,
 };
+

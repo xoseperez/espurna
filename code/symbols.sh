@@ -4,7 +4,7 @@
 # CONFIGURATION
 # ------------------------------------------------------------------------------
 
-ENVIRONMENT="wemos-d1mini-relayshield"
+ENVIRONMENT="esp8266-4m"
 READELF="xtensa-lx106-elf-readelf"
 NUMBER=20
 

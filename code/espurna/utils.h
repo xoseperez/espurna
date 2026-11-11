@@ -9,8 +9,9 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 #pragma once
 
 #include <Arduino.h>
+#include <IPAddress.h>
 
-#include "types.h"
+#include "types_orch.h"
 
 String prettyDuration(espurna::duration::Seconds);
 
@@ -33,6 +34,13 @@ struct ParseUnsignedResult {
 ParseUnsignedResult parseUnsigned(espurna::StringView, int base);
 ParseUnsignedResult parseUnsigned(espurna::StringView);
 String formatUnsigned(uint32_t value, int base);
+
+// Same as IPAddress::toString(), which ArduinoCore-API (LibreTiny) does not have.
+// LibreTiny provides it (wiring_compat.h)
+String ipToString(const IPAddress&);
+
+// Same as String::equalsConstantTime(), which ArduinoCore-API (LibreTiny) does not have
+bool equalsConstantTime(const String& lhs, const String& rhs);
 
 long adjustNumber(long, espurna::StringView operation);
 
@@ -74,3 +82,4 @@ bool tryParseIdPath(espurna::StringView, size_t limit, size_t& out);
 espurna::StringView stripNewline(espurna::StringView);
 
 size_t consumeAvailable(Stream&);
+

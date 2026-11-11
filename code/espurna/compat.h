@@ -8,6 +8,14 @@ COMPATIBILITY BETWEEN 2.3.0 and latest versions
 
 #include <Arduino.h>
 
+// Network callbacks (AsyncTCP, WiFi events, SNTP) run in tasks of their own, in parallel with loop().
+// esp8266 runs them from the same context as loop(), nothing has to be synchronized there
+#if defined(ARDUINO_ARCH_ESP32) || defined(LIBRETINY)
+#define ESPURNA_ASYNC_TASKS 1
+#else
+#define ESPURNA_ASYNC_TASKS 0
+#endif
+
 // -----------------------------------------------------------------------------
 // Core version 2.4.2 and higher changed the cont_t structure to a pointer:
 // https://github.com/esp8266/Arduino/commit/5d5ea92a4d004ab009d5f642629946a0cb8893dd#diff-3fa12668b289ccb95b7ab334833a4ba8L35
@@ -15,6 +23,7 @@ COMPATIBILITY BETWEEN 2.3.0 and latest versions
 // https://github.com/esp8266/Arduino/commit/0e0e34c614fe8a47544c9998201b1d9b3c24eb18
 // -----------------------------------------------------------------------------
 
+#if defined(ESP8266)
 extern "C" {
     #include <cont.h>
 #if defined(ARDUINO_ESP8266_RELEASE_2_3_0) \
@@ -29,6 +38,7 @@ extern "C" {
     #define getFreeStack() ESP.getFreeContStack()
 #endif
 }
+#endif
 
 #include <pgmspace.h>
 
@@ -203,3 +213,4 @@ constexpr Type to_underlying(Enum value) {
 #if defined(ESP8266) and not defined(INPUT_PULLDOWN)
 #define INPUT_PULLDOWN 0x3
 #endif
+

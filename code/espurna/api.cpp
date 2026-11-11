@@ -16,7 +16,9 @@ Copyright (C) 2020-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #endif
 
 #if WEB_SUPPORT
+#if defined(ESP8266)
 #include <ESPAsyncTCP.h>
+#endif
 #include <ArduinoJson.h>
 
 #include "web.h"
@@ -439,11 +441,11 @@ public:
         _put(std::forward<Put>(put))
     {}
 
-    bool isRequestHandlerTrivial() override {
+    bool isRequestHandlerTrivial() WEB_HANDLER_CONST override {
         return true;
     }
 
-    bool canHandle(AsyncWebServerRequest* request) override {
+    bool canHandle(AsyncWebServerRequest* request) WEB_HANDLER_CONST override {
         if (!apiEnabled()) {
             return false;
         }
@@ -529,10 +531,19 @@ public:
             return;
         }
 
+        // buffer belongs to the request, only the setter itself needs the lock
         auto& helper = *reinterpret_cast<RequestHelper*>(request->_tempObject);
         if (total != (len + index)) {
             auto& buffer = helper.reserved_buffer(BufferSize);
             buffer.append(data, len);
+            return;
+        }
+
+        // Setters are bound to the request (params, path, response), they cannot run later
+        // from loop(). Without the lock, nothing is changed and the client should retry.
+        espurna::system::AsyncGuard guard;
+        if (!guard.locked()) {
+            webSendBusy(request);
             return;
         }
 
@@ -545,6 +556,7 @@ public:
     }
 
     void handleRequest(AsyncWebServerRequest* request) override {
+        espurna::system::AsyncGuard guard;
         if (!accepts_json(request)) {
             request->send(406,
                 content_type::Text.toString(),
@@ -560,6 +572,12 @@ public:
             return;
 
         case HTTP_GET: {
+            // getters read module state and settings, 503 when busy
+            if (!guard.locked()) {
+                webSendBusy(request);
+                return;
+            }
+
             auto apireq = helper.request();
             _handleGet(request, apireq);
             return;
@@ -598,11 +616,11 @@ public:
         _put(std::forward<Put>(put))
     {}
 
-    bool isRequestHandlerTrivial() override {
+    bool isRequestHandlerTrivial() WEB_HANDLER_CONST override {
         return false;
     }
 
-    bool canHandle(AsyncWebServerRequest* request) override {
+    bool canHandle(AsyncWebServerRequest* request) WEB_HANDLER_CONST override {
         if (!apiEnabled()) {
             return false;
         }
@@ -630,6 +648,14 @@ public:
     }
 
     void handleRequest(AsyncWebServerRequest* request) override {
+        // Authentication reads settings, and both setters and getters are bound to the request,
+        // so they cannot be handed over to loop(). 503 when busy, client should retry.
+        espurna::system::AsyncGuard guard;
+        if (!guard.locked()) {
+            webSendBusy(request);
+            return;
+        }
+
         if (!apiAuthenticate(request)) {
             request->send(403);
             return;
@@ -719,6 +745,19 @@ namespace internal {
 
 std::forward_list<BaseWebHandler*> list;
 
+// API off (the default): a web handler with its parsed path costs ~200 bytes of heap, ~20 of them are registered.
+// Until the API is enabled only the path and the callbacks are kept, the handlers are made on the settings reload
+// that enables it
+template <typename Handler>
+struct Pending {
+    String path;
+    Handler get;
+    Handler put;
+};
+
+std::forward_list<Pending<BasicHandler>> pending_basic;
+std::forward_list<Pending<JsonHandler>> pending_json;
+
 } // namespace internal
 
 namespace simple {
@@ -760,9 +799,49 @@ void add(StringView path, Get&& get, Put&& put) {
         std::forward<Put>(put));
 }
 
+template <typename WebHandler, typename Handler>
+void make_pending(std::forward_list<internal::Pending<Handler>>& pending) {
+    // registration order, emplace_front() reversed it
+    pending.reverse();
+    for (auto& entry : pending) {
+        add<WebHandler>(std::move(entry.path), std::move(entry.get), std::move(entry.put));
+    }
+
+    pending.clear();
+}
+
+void reload() {
+    if (apiEnabled()) {
+        make_pending<BasicWebHandler>(internal::pending_basic);
+        make_pending<JsonWebHandler>(internal::pending_json);
+    }
+}
+
+void register_basic(String path, BasicHandler&& get, BasicHandler&& put) {
+    if (apiEnabled()) {
+        add<BasicWebHandler>(std::move(path), std::move(get), std::move(put));
+        return;
+    }
+
+    internal::pending_basic.emplace_front(
+        internal::Pending<BasicHandler>{std::move(path), std::move(get), std::move(put)});
+}
+
+void register_json(String path, JsonHandler&& get, JsonHandler&& put) {
+    if (apiEnabled()) {
+        add<JsonWebHandler>(std::move(path), std::move(get), std::move(put));
+        return;
+    }
+
+    internal::pending_json.emplace_front(
+        internal::Pending<JsonHandler>{std::move(path), std::move(get), std::move(put)});
+}
+
 void setup() {
-    add<BasicWebHandler, BasicHandler>(
-        STRING_VIEW("list"),
+    espurnaRegisterReload(reload);
+
+    register_basic(
+        STRING_VIEW("list").toString(),
         [](Request& request) {
             String paths;
             for (auto& api : internal::list) {
@@ -776,8 +855,8 @@ void setup() {
         nullptr
     );
 
-    add<BasicWebHandler, BasicHandler>(
-        STRING_VIEW("rpc"),
+    register_basic(
+        STRING_VIEW("rpc").toString(),
         nullptr,
         [](Request& request) {
             STRING_VIEW_INLINE(Action, "action");
@@ -796,13 +875,11 @@ void setup() {
 // -----------------------------------------------------------------------------
 
 void apiRegister(String path, espurna::api::BasicHandler&& get, espurna::api::BasicHandler&& put) {
-    using namespace espurna::api;
-    add<BasicWebHandler>(std::move(path), std::move(get), std::move(put));
+    espurna::api::register_basic(std::move(path), std::move(get), std::move(put));
 }
 
 void apiRegister(String path, espurna::api::JsonHandler&& get, espurna::api::JsonHandler&& put) {
-    using namespace espurna::api;
-    add<JsonWebHandler>(std::move(path), std::move(get), std::move(put));
+    espurna::api::register_json(std::move(path), std::move(get), std::move(put));
 }
 
 void apiSetup() {
@@ -818,3 +895,4 @@ bool apiError(ApiRequest& request) {
 }
 
 #endif // API_SUPPORT
+

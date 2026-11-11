@@ -567,3 +567,4 @@ constexpr espurna::duration::Milliseconds BMX280Sensor::StatusDelay;
 #endif
 
 #endif // SENSOR_SUPPORT && BMX280_SUPPORT
+

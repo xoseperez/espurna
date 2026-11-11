@@ -10,3 +10,4 @@ enum class AsyncClientState {
     Connected,
     Disconnecting
 };
+

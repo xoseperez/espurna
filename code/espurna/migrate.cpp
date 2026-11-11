@@ -102,3 +102,4 @@ void migrateVersion(MigrateVersionCallback callback) {
 void migrate() {
     espurna::settings::migrate::run();
 }
+

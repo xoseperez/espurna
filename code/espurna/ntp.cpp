@@ -16,12 +16,37 @@ Copyright (C) 2019 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #if NTP_SUPPORT
 
 #include <Arduino.h>
+#if defined(ESP8266)
 #include <coredecls.h>
+#endif
 
 #include <ctime>
 #include <errno.h>
+#if defined(ESP8266)
 #include <lwip/apps/sntp.h>
 #include <TZ.h>
+#endif
+#if defined(ESP32)
+// esp_sntp.h includes lwip's sntp.h itself; ESP-IDF 5 (core 3.x) declares the sntp_* wrappers there and they
+// conflict with a direct include of lwip/apps/sntp.h
+#include <esp_sntp.h>
+#include <lwip/tcpip.h>
+
+#if ESP_IDF_VERSION_MAJOR >= 5
+// ESP-IDF 5 kept sntp_init() and friends as wrappers, but not these two
+inline void sntp_stop() {
+    esp_sntp_stop();
+}
+
+inline bool sntp_enabled() {
+    return esp_sntp_enabled();
+}
+#endif
+#endif
+#if defined(LIBRETINY)
+#include <lwip/apps/sntp.h>
+#include <lwip/tcpip.h>
+#endif
 
 #include <algorithm>
 #include <forward_list>
@@ -434,10 +459,28 @@ String activeServer() {
 
     server = sntp_getservername(0);
     if (!server.length()) {
+    #if defined(ESP8266)
         auto ip = IPAddress(sntp_getserver(0));
-        if (ip) {
+        if (ip.isSet()) {
             server = ip.toString();
         }
+    #elif defined(ESP32)
+        const ip_addr_t* addr = sntp_getserver(0);
+        if (addr) {
+            auto ip = IPAddress(addr->u_addr.ip4.addr);
+            if ((uint32_t)ip != 0) {
+                server = ip.toString();
+            }
+        }
+    #elif defined(LIBRETINY)
+        const ip_addr_t* addr = sntp_getserver(0);
+        if (addr) {
+            auto ip = IPAddress(ip_addr_get_ip4_u32(addr));
+            if ((uint32_t)ip != 0) {
+                server = ipToString(ip);
+            }
+        }
+    #endif
     }
 
     return server;
@@ -486,6 +529,8 @@ Datetime make_datetime() {
 
     return out;
 }
+
+void onSystemTimeSynced();
 
 #if TERMINAL_SUPPORT
 namespace terminal {
@@ -560,6 +605,11 @@ void set_simple(::terminal::CommandContext&& ctx) {
     auto value = parse::timestamp(ctx.argv[1]);
     if (value && setTimestamp(value.timestamp())) {
         internal::status.update(value.timestamp());
+#if defined(ESP32)
+        // esp8266 settimeofday_cb() fires for any settimeofday(), ESP32 sync notification is
+        // SNTP-only. Without this ticks (and scheduler) never start when time is set manually
+        ::espurnaRegisterOnce(onSystemTimeSynced);
+#endif
         terminalOK(ctx);
         return;
     }
@@ -642,6 +692,8 @@ void schedule_now() {
 } // namespace debug
 #endif
 
+void onSystemTimeSynced();
+
 namespace tick {
 
 // Never allow delays less than a second, or greater than a minute
@@ -663,6 +715,26 @@ void add(NtpTickCallback callback) {
 }
 
 void schedule(espurna::duration::Seconds offset);
+
+#if defined(ESP32)
+void sntp_sync_notification(struct timeval *tv) {
+    espurnaRegisterOnce(onSystemTimeSynced);
+}
+#endif
+
+#if defined(LIBRETINY)
+// Plain lwip SNTP has no sync notification, it only calls settimeofday() (ref. LibreTiny lwipopts.h),
+// which LibreTiny already wraps. Clock is millis() + epoch offset there, a changed offset is a new sync
+void watch_sync() {
+    static time_t last { 0 };
+
+    const auto offset = ::time(nullptr) - static_cast<time_t>(::millis() / 1000);
+    if ((offset - last > 1) || (last - offset > 1)) {
+        last = offset;
+        onSystemTimeSynced();
+    }
+}
+#endif
 
 void callback() {
     if (!synced()) {
@@ -716,6 +788,7 @@ void schedule(espurna::duration::Seconds offset) {
 
 void onSystemTimeSynced() {
     internal::status.update(::time(nullptr));
+    DEBUG_MSG_P(PSTR("[NTP] Time synchronized: %s\n"), format_datetime().c_str());
     tick::schedule_now();
 
 #if WEB_SUPPORT
@@ -790,6 +863,12 @@ void configure() {
     // When enabled, it is possible that lwip will replace the NTP server pointer from under us
     sntp_servermode_dhcp(espurna::ntp::settings::dhcp());
 
+#if defined(ESP32)
+    // esp8266 lwip asks sntp_update_delay_MS_rfc_not_less_than_15000() every time, IDF has its
+    // own interval instead (3 hours by default) and ntpUpdateIntvl would be ignored otherwise
+    sntp_set_sync_interval(espurna::ntp::update_interval());
+#endif
+
     // Reduce the number of times we call `tzset()` when timezone remains the same
     const auto cfg_tz = espurna::ntp::settings::tz();
 
@@ -823,7 +902,26 @@ void configure() {
     }
 }
 
-void onStationModeGotIP(WiFiEventStationModeGotIP) {
+#if defined(ESP32) || defined(LIBRETINY)
+// esp8266 lwip2 glue restarts SNTP every time the netif gets a valid address (sntp_stop + sntp_init
+// from the netif status callback), IDF does not. sntp_init() from setup() runs before the station is
+// up, the first request fails and lwip falls back to its retry backoff (15s, 30s, ...), so the first
+// sync used to happen up to ~30s after the IP was assigned. MQTT heartbeat (and relay status reports)
+// are held back until NTP syncs, at most 10s after MQTT connects, and are then postponed until the
+// next heartbeat interval. Kick SNTP from the tcpip thread, same as esp8266 does.
+void restartOnGotIP() {
+    tcpip_callback(
+        [](void*) {
+            if (sntp_enabled()) {
+                sntp_stop();
+                sntp_init();
+            }
+        }, nullptr);
+}
+#endif
+
+#if defined(ESP8266) || defined(ESP32) || defined(LIBRETINY)
+void onStationModeGotIP() {
     if (!sntp_enabled()) {
         return;
     }
@@ -843,6 +941,7 @@ void onStationModeGotIP(WiFiEventStationModeGotIP) {
         settings::server(server);
     }
 }
+#endif
 
 void setup() {
     // Randomize both times to avoid simultaneous requests from multiple devices
@@ -852,16 +951,40 @@ void setup() {
         internal::start_delay.count(), internal::update_interval.count());
 
     // will be called every time after ntp syncs AND loop() finishes
+#if defined(ESP8266)
     settimeofday_cb(onSystemTimeSynced);
+#endif
+#if defined(ESP32)
+    sntp_set_time_sync_notification_cb(tick::sntp_sync_notification);
+#endif
+#if defined(LIBRETINY)
+    ::espurnaRegisterLoop(tick::watch_sync);
+#endif
 
     // make sure our logic does know about the actual server
     // in case dhcp sends out ntp settings
-    static auto track_active_server = WiFi.onStationModeGotIP(onStationModeGotIP);
+#if defined(ESP8266)
+    static auto track_active_server = WiFi.onStationModeGotIP(
+        [](WiFiEventStationModeGotIP) {
+            onStationModeGotIP();
+        });
+#elif defined(ESP32) || defined(LIBRETINY)
+    // StationConnected is published from the loop once the IP is assigned
+    wifiRegister([](espurna::wifi::Event event) {
+        if (event == espurna::wifi::Event::StationConnected) {
+            onStationModeGotIP();
+            restartOnGotIP();
+        }
+    });
+#endif
 
     // generic configuration, always handled
     ::espurnaRegisterReload(configure);
     settings::convertLegacyOffsets();
     configure();
+
+    DEBUG_MSG_P(PSTR("[NTP] Current server: %s\n"), activeServer().c_str());
+    DEBUG_MSG_P(PSTR("[NTP] Current TZ: %s\n"), settings::tz().c_str());
 
     // optional modules, depends on the build flags
 #if TERMINAL_SUPPORT
@@ -961,3 +1084,4 @@ void ntpSetup() {
 }
 
 #endif // NTP_SUPPORT
+

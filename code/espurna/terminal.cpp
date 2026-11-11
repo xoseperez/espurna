@@ -27,7 +27,7 @@ Copyright (C) 2020-2022 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include "telnet.h"
 #include "terminal.h"
 #include "utils.h"
-#include "wifi.h"
+#include "wifi_orch.h"
 
 #include "libs/PrintString.h"
 #include "libs/Delimiter.h"
@@ -35,7 +35,17 @@ Copyright (C) 2020-2022 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include <algorithm>
 #include <utility>
 
+#if defined(ESP8266)
 #include <Schedule.h>
+#endif
+#if defined(ARDUINO_ARCH_ESP32)
+#include <esp_ota_ops.h>
+#include <esp_partition.h>
+#endif
+#if defined(LIBRETINY)
+#include <lwip/stats.h>
+#include "arch/beken/layout_beken.h"
+#endif
 #include <Stream.h>
 
 // FS 'range', declared at compile time via .ld script PROVIDE declarations
@@ -173,6 +183,18 @@ void heap(CommandContext&& ctx) {
     const auto stats = systemHeapStats();
     ctx.output.printf_P(PSTR("initial: %lu available: %lu contiguous: %lu\n"),
             systemInitialFreeHeap(), stats.available, stats.usable);
+#if defined(LIBRETINY) && LWIP_STATS && MEM_STATS
+    // lwip has its own heap there, queued tcp data and received frames live in it
+    ctx.output.printf_P(PSTR("lwip: size: %u used: %u max: %u errors: %u\n"),
+            lwip_stats.mem.avail, lwip_stats.mem.used, lwip_stats.mem.max, lwip_stats.mem.err);
+#endif
+#if defined(LIBRETINY)
+    const auto tcm = systemTcmStats();
+    if (tcm.size) {
+        ctx.output.printf_P(PSTR("tcm: used: %u free: %u size: %u\n"),
+            tcm.used, tcm.size - tcm.used, tcm.size);
+    }
+#endif
 
     terminalOK(ctx);
 }
@@ -194,8 +216,31 @@ void info(CommandContext&& ctx) {
 
     ctx.output.printf_P(PSTR("device: %s\n"),
             systemDevice().c_str());
+#if defined(ARDUINO_ARCH_ESP32)
+    ctx.output.printf_P(PSTR("mcu: %s rev%u chipid: %s freq: %hhumhz\n"),
+            ESP->getChipModel(), ESP->getChipRevision(),
+            systemChipId().c_str(), system_get_cpu_freq());
+#elif defined(LIBRETINY)
+    ctx.output.printf_P(PSTR("mcu: %s chipid: %s freq: %hhumhz\n"),
+            lt_cpu_get_model_name(),
+            systemChipId().c_str(), system_get_cpu_freq());
+    {
+        // bootloader / flash layout of the board, ref. arch/beken/layout_beken.cpp
+        const auto& layout = ::espurna::beken::flashLayout();
+        if (layout.installs_rbl) {
+            ctx.output.printf_P(PSTR("flash: %u KiB, %s bootloader, OTA at 0x%06X\n"),
+                static_cast<unsigned>(lt_flash_get_size() / 1024),
+                ::espurna::beken::layoutName(layout.layout), layout.download_offset);
+        } else {
+            ctx.output.printf_P(PSTR("flash: %u KiB, %s bootloader 3.00, no firmware OTA (UART only)\n"),
+                static_cast<unsigned>(lt_flash_get_size() / 1024),
+                ::espurna::beken::layoutName(layout.layout));
+        }
+    }
+#else
     ctx.output.printf_P(PSTR("mcu: esp8266 chipid: %s freq: %hhumhz\n"),
             systemChipId().c_str(), system_get_cpu_freq());
+#endif
 
     const auto sdk = buildSdk();
     ctx.output.printf_P(PSTR("sdk: %s core: %s\n"),
@@ -347,6 +392,30 @@ StringView flash_chip_mode() {
 
 PROGMEM_STRING(Storage, "STORAGE");
 
+#if defined(ARDUINO_ARCH_ESP32)
+// Flash is split into partitions (ref. board_build.partitions), unlike esp8266 fixed layout
+void storage(CommandContext&& ctx) {
+    ctx.output.printf_P(PSTR("speed: %u\n"), ESP.getFlashChipSpeed());
+    ctx.output.printf_P(PSTR("mode: %s\n"), flash_chip_mode().c_str());
+    ctx.output.printf_P(PSTR("size: %u\n"), ESP.getFlashChipSize());
+
+    const auto* running = esp_ota_get_running_partition();
+
+    auto it = esp_partition_find(ESP_PARTITION_TYPE_ANY, ESP_PARTITION_SUBTYPE_ANY, nullptr);
+    for (; it != nullptr; it = esp_partition_next(it)) {
+        const auto* part = esp_partition_get(it);
+        ctx.output.printf_P(PSTR("%-8s [%08X...%08X) (%u bytes)%s\n"),
+            part->label, part->address, part->address + part->size, part->size,
+            (part == running) ? PSTR(" running") : PSTR(""));
+    }
+    esp_partition_iterator_release(it);
+
+    ctx.output.printf_P(PSTR("app: %u bytes, free for OTA: %u bytes\n"),
+        ESP.getSketchSize(), ESP.getFreeSketchSpace());
+
+    terminalOK(ctx);
+}
+#else
 void storage(CommandContext&& ctx) {
     ctx.output.printf_P(PSTR("flash chip ID: 0x%06X\n"), ESP.getFlashChipId());
     ctx.output.printf_P(PSTR("speed: %u\n"), ESP.getFlashChipSpeed());
@@ -385,6 +454,7 @@ void storage(CommandContext&& ctx) {
 
     terminalOK(ctx);
 }
+#endif
 
 PROGMEM_STRING(Adc, "ADC");
 
@@ -500,14 +570,27 @@ void loop() {
     internal::loop();
 }
 
+// a sensor (or another driver) took the port, ref. uartClaim()
+const char* release(size_t index) {
+    if ((index != build::serialPort()) || !internal::stream) {
+        return nullptr;
+    }
+
+    internal::loop = empty_loop;
+    internal::stream = nullptr;
+
+    return PSTR("terminal");
+}
+
 void setup() {
     auto port = uartPort(build::serialPort());
-    if (!port || (!port->rx || !port->tx)) {
+    if (!port || (!port->rx || !port->tx) || uartClaimed(build::serialPort())) {
         return;
     }
 
     internal::stream = port->stream;
     internal::loop = processing_loop;
+    uartOnClaim(release);
 }
 
 } // namespace serial
@@ -801,3 +884,5 @@ void terminalSetup() {
 }
 
 #endif // TERMINAL_SUPPORT
+
+

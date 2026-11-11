@@ -296,3 +296,4 @@ class BH1750Sensor : public I2CSensor<> {
 };
 
 #endif // SENSOR_SUPPORT && BH1750_SUPPORT
+

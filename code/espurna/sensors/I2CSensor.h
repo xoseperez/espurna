@@ -179,3 +179,4 @@ private:
 };
 
 #endif // SENSOR_SUPPORT && I2C_SUPPORT
+

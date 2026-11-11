@@ -26,6 +26,7 @@ Copyright (C) 2019-2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include "mqtt.h"
 #include "relay.h"
 #include "fan.h"
+#include "lightfox.h"
 #include "tuya.h"
 #include "rpc.h"
 #include "rtcmem.h"
@@ -367,6 +368,19 @@ constexpr unsigned char pin(size_t index) {
         (index == 5) ? RELAY6_PIN :
         (index == 6) ? RELAY7_PIN :
         (index == 7) ? RELAY8_PIN : GPIO_NONE
+    );
+}
+
+constexpr int relayBtnGpio(size_t index) {
+    return (
+        (index == 0) ? RELAY1_BTN_GPIO :
+        (index == 1) ? RELAY2_BTN_GPIO :
+        (index == 2) ? RELAY3_BTN_GPIO :
+        (index == 3) ? RELAY4_BTN_GPIO :
+        (index == 4) ? RELAY5_BTN_GPIO :
+        (index == 5) ? RELAY6_BTN_GPIO :
+        (index == 6) ? RELAY7_BTN_GPIO :
+        (index == 7) ? RELAY8_BTN_GPIO : GPIO_NONE
     );
 }
 
@@ -726,7 +740,13 @@ void cancel(size_t id) {
 }
 
 void cancel(const BulkTimer& timer) {
-    internal::timers.remove(timer);
+    // `timer` is usually an element of the list itself. remove() would keep comparing
+    // the rest of the list against it after it was already destroyed, match by address instead
+    const auto* ptr = std::addressof(timer);
+    internal::timers.remove_if(
+        [ptr](const BulkTimer& other) {
+            return std::addressof(other) == ptr;
+        });
 }
 
 bool is_pulse(const BulkTimer& timer) {
@@ -779,7 +799,11 @@ void BulkTimer::start() {
     _timer.once(
         _duration,
         [pair, flags]() {
-            _relayStatusPair(pair, flags);
+            // relay status notification may cancel (and destroy) this timer,
+            // never refer to the captured values while the relay status is being changed
+            const auto local_pair = pair;
+            const auto local_flags = flags;
+            _relayStatusPair(local_pair, local_flags);
         });
 }
 
@@ -1003,6 +1027,13 @@ static constexpr std::array<Enumeration<RelaySync>, 5> RelaySyncOptions PROGMEM 
 } // namespace relay
 } // namespace espurna
 
+namespace {
+
+// Provider of a relay that is already set up, empty when there is no such relay
+espurna::StringView _relayProviderId(size_t id);
+
+} // namespace
+
 namespace espurna {
 namespace settings {
 namespace internal {
@@ -1114,6 +1145,7 @@ PROGMEM_STRING(ResetGpio, "relayResetGpio");
 PROGMEM_STRING(Boot, "relayBoot");
 PROGMEM_STRING(DelayOn, "relayDelayOn");
 PROGMEM_STRING(DelayOff, "relayDelayOff");
+PROGMEM_STRING(RelayBtnGpio, "relayBtnGpio");
 
 #if MQTT_SUPPORT
 PROGMEM_STRING(TopicPub, "relayTopicPub");
@@ -1146,7 +1178,7 @@ size_t dummyCount() {
 
 [[gnu::unused]]
 String name(size_t index) {
-    return getSetting({keys::Name, index});
+    return getSetting(espurna::settings::Key{keys::Name, index});
 }
 
 RelayProvider provider(size_t index) {
@@ -1167,6 +1199,10 @@ unsigned char pin(size_t index) {
 
 unsigned char resetPin(size_t index) {
     return getSetting({keys::ResetGpio, index}, build::resetPin(index));
+}
+
+int relayBtnGpio(size_t index) {
+    return getSetting({keys::RelayBtnGpio, index}, build::relayBtnGpio(index));
 }
 
 RelayBoot bootMode(size_t index) {
@@ -1275,11 +1311,22 @@ EXACT_VALUE(syncId, settings::syncId)
 EXACT_VALUE(delayOn, settings::delayOn)
 EXACT_VALUE(delayOff, settings::delayOff)
 
-ID_VALUE(provider, settings::provider)
+// Relays added through relayDummy have no relayProv key, the default for their index is gpio.
+// Report the provider that actually runs, so the WebUI does not show them as GPIO relays
+String provider(size_t id) {
+    const auto running = _relayProviderId(id);
+    if (running.length()) {
+        return running.toString();
+    }
+
+    return espurna::settings::internal::serialize(settings::provider(id));
+}
+
 ID_VALUE(type, settings::type)
 ID_VALUE(pinType, settings::pinType)
 ID_VALUE(pin, settings::pin)
 ID_VALUE(resetPin, settings::resetPin)
+ID_VALUE(relayBtnGpio, settings::relayBtnGpio)
 ID_VALUE(bootMode, settings::bootMode)
 ID_VALUE(delayOn, settings::delayOn)
 ID_VALUE(delayOff, settings::delayOff)
@@ -1324,6 +1371,7 @@ static constexpr espurna::settings::query::IndexedSetting IndexedSettings[] PROG
     {keys::GpioType, internal::pinType},
     {keys::Gpio, internal::pin},
     {keys::ResetGpio, internal::resetPin},
+    {keys::RelayBtnGpio, internal::relayBtnGpio},
     {keys::Boot, internal::bootMode},
     {keys::DelayOn, internal::delayOn},
     {keys::DelayOff, internal::delayOff},
@@ -1531,6 +1579,14 @@ Relays _relays;
 
 size_t _relayCount() {
     return _relays.size();
+}
+
+espurna::StringView _relayProviderId(size_t id) {
+    if (id < _relays.size()) {
+        return _relays[id].provider->id();
+    }
+
+    return espurna::StringView();
 }
 
 RelayMaskHelper _relayMaskCurrent(size_t relays) {
@@ -1786,6 +1842,12 @@ public:
     bool setup() override {
         static bool once = ([]() {
             const auto port = uartPort(RELAY_PROVIDER_DUAL_PORT - 1);
+#if UART_DRIVERS_CLAIM_PORT
+            // generic images: serial log and terminal let go of the port
+            if (port && !uartClaim(RELAY_PROVIDER_DUAL_PORT - 1, F("Sonoff Dual"))) {
+                return false;
+            }
+#endif
             if (port) {
                 DualProvider::_port = port->stream;
                 espurnaRegisterLoop(loop);
@@ -1915,6 +1977,12 @@ public:
     bool setup() override {
         static bool once = ([]() {
             const auto port = uartPort(RELAY_PROVIDER_STM_PORT - 1);
+#if UART_DRIVERS_CLAIM_PORT
+            // generic images: serial log and terminal let go of the port
+            if (port && !uartClaim(RELAY_PROVIDER_STM_PORT - 1, F("STM relay"))) {
+                return false;
+            }
+#endif
             if (port) {
                 StmProvider::_port = port->stream;
                 espurnaRegisterLoop(loop);
@@ -2764,6 +2832,10 @@ size_t relayCount() {
     return _relayCount();
 }
 
+int relayBtnGpio(size_t index) {
+    return espurna::relay::settings::relayBtnGpio(index);
+}
+
 PayloadStatus relayParsePayload(espurna::StringView payload) {
 #if MQTT_SUPPORT || API_SUPPORT
     return rpcParsePayload(
@@ -2795,7 +2867,7 @@ void _relaySettingsMigrate(int version) {
         // groups use a new set of keys
 #if MQTT_SUPPORT
         for (size_t index = 0; index < RelaysMax; ++index) {
-            auto group = getSetting({"mqttGroup", index});
+            auto group = getSetting(espurna::settings::Key{"mqttGroup", index});
             if (!group.length()) {
                 break;
             }
@@ -3435,10 +3507,21 @@ void _relayMqttHandleCustomTopic(espurna::StringView topic, espurna::StringView 
     }
 }
 
+// Delayed action is not one of the relay timers, it is never shared with any relay
+// and is cancelled when MQTT connects again before it fires
+espurna::timer::SystemTimer _relay_mqtt_disconnect_timer;
+
+// relayMqttDisc#=none (or unset) means nothing should happen on disconnection
+bool _relayMqttDisconnectAction(size_t id) {
+    using namespace espurna::relay::settings;
+    return _relays_ready[id]
+        && (mqttDisconnectionStatus(id) != PayloadStatus::Unknown);
+}
+
 void _relayMqttHandleDisconnectImmediate() {
     using namespace espurna::relay::settings;
     for (size_t id = 0; id < _relays.size(); ++id) {
-        if (_relays_ready[id]) {
+        if (_relayMqttDisconnectAction(id)) {
             _relayHandleStatus(id, mqttDisconnectionStatus(id));
         }
     }
@@ -3446,24 +3529,37 @@ void _relayMqttHandleDisconnectImmediate() {
 
 void _relayMqttHandleDisconnect() {
     using namespace espurna::relay::settings;
-    const auto duration = mqttDisconnectionDelay();
 
+    bool action = false;
+    for (size_t id = 0; id < _relays.size(); ++id) {
+        if (_relayMqttDisconnectAction(id)) {
+            action = true;
+            break;
+        }
+    }
+
+    if (!action) {
+        return;
+    }
+
+    const auto duration = mqttDisconnectionDelay();
     if (duration == decltype(duration)::zero()) {
         _relayMqttHandleDisconnectImmediate();
         return;
     }
 
-    RelayMaskPair pair;
-    pair.off = _relays_ready;
-
-    if (pair.off.any()) {
-        espurna::relay::timer::schedule_and_start(
-            pair, duration,
-            RelayCommonStatusFlags | RelayFlagTimerDelay);
-    }
+    _relay_mqtt_disconnect_timer.schedule_once(
+        std::chrono::duration_cast<espurna::timer::SystemTimer::Duration>(duration),
+        []() {
+            // (esp8266) timer may have already fired and queued this, right before MQTT connected again
+            if (!mqttConnected()) {
+                _relayMqttHandleDisconnectImmediate();
+            }
+        });
 }
 
 void _relayMqttHandleConnect() {
+    _relay_mqtt_disconnect_timer.stop();
     _relayMqttSubscribeBaseTopics();
     _relayMqttSubscribeCustomTopics();
 }
@@ -4006,6 +4102,23 @@ std::unique_ptr<GpioProvider> _relayGpioProvider(size_t index, RelayType type) {
         return nullptr;
     }
 
+    // Not configured, e.g. relaySetup() probing the next index. Same as gpioRegister() failing below,
+    // and nothing to complain about
+    if (cfg.main == GPIO_NONE) {
+        return nullptr;
+    }
+
+    if (!gpioValidForOutput(*base, cfg.main)) {
+        DEBUG_MSG_P(PSTR("[RELAY] #%u: GPIO%u is not valid for output (flash-reserved or input-only)\n"),
+            (unsigned)index, (unsigned)cfg.main);
+        return nullptr;
+    }
+    if (cfg.reset != GPIO_NONE && !gpioValidForOutput(*base, cfg.reset)) {
+        DEBUG_MSG_P(PSTR("[RELAY] #%u: reset GPIO%u is not valid for output\n"),
+            (unsigned)index, (unsigned)cfg.reset);
+        return nullptr;
+    }
+
     auto main = gpioRegister(*base, cfg.main);
     if (!main) {
         return nullptr;
@@ -4068,7 +4181,7 @@ RelayProviderResult _relaySetupProvider(size_t index) {
         break;
 
     case RelayProvider::Lightfox:
-#ifdef FOXEL_LIGHTFOX_DUAL
+#if LIGHTFOX_SUPPORT
         ptr = lightfoxMakeRelayProvider(index);
 #endif
         break;
@@ -4209,3 +4322,4 @@ RelayAddResult relayAdd(RelayProviderBasePtr&& provider) {
 }
 
 #endif // RELAY_SUPPORT == 1
+

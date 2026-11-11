@@ -183,6 +183,8 @@ target_link_options(espurna PUBLIC
 )
 target_include_directories(espurna PUBLIC
     ${ESPURNA_PATH}/code/
+    # arch/ headers include their siblings the way the firmware build sees them
+    ${ESPURNA_PATH}/code/espurna/
     ${CMAKE_SOURCE_DIR}/cache/arduinojson-${arduinojson_version}-src/src
 )
 target_compile_options(espurna PUBLIC
@@ -228,6 +230,7 @@ endfunction()
 
 build_tests(
     basic
+    datetime
     embedis
     filters
     led

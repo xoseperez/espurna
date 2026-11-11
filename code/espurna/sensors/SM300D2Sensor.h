@@ -166,3 +166,4 @@ class SM300D2Sensor : public BaseSensor {
 };
 
 #endif // SENSOR_SUPPORT && SM300D2_SUPPORT
+

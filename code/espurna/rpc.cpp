@@ -111,3 +111,4 @@ PayloadStatus rpcParsePayload(espurna::StringView payload, RpcPayloadCheck check
 PayloadStatus rpcParsePayload(espurna::StringView payload) {
     return espurna::rpc::parse(payload, nullptr);
 }
+

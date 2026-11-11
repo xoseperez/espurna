@@ -72,7 +72,11 @@ class NTCSensor : public AnalogSensor {
 
         // Descriptive name of the sensor
         String description() const override {
+#if defined(ARDUINO_ARCH_ESP32)
+            return String(F("NTC @ ")) + address(0);
+#else
             return F("NTC @ TOUT");
+#endif
         }
 
         // Type for slot # index
@@ -84,10 +88,10 @@ class NTCSensor : public AnalogSensor {
             return MAGNITUDE_NONE;
         }
 
-        // Always in kelvins, adjust to C or F later
+        // In Celsius, so that is the default unit of the magnitude (K or F can be chosen in the settings)
         espurna::sensor::Unit units(unsigned char index) const override {
             if (index == 0) {
-                return espurna::sensor::Unit::Kelvin;
+                return espurna::sensor::Unit::Celcius;
             }
 
             return espurna::sensor::Unit::None;
@@ -117,7 +121,7 @@ class NTCSensor : public AnalogSensor {
                         : ((_resistance_up * voltage) / (_input_voltage - voltage));
 
             // 1/T = 1/T0 + 1/B * ln(R/R0)
-            _temperature = 1.0 / ((1.0 / _T0) + (fs_log(resistance / _R0) / _beta));
+            _temperature = 1.0 / ((1.0 / _T0) + (fs_log(resistance / _R0) / _beta)) - 273.15;
         }
 
         // Current value for slot # index
@@ -139,3 +143,4 @@ class NTCSensor : public AnalogSensor {
         double _temperature { 0 };
 
 };
+

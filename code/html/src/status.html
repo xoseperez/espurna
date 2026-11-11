@@ -63,11 +63,24 @@
         <label>Free heap</label>
         <span data-key="heap" data-post=" bytes"></span>
 
+        <label>Usable heap</label>
+        <span data-key="heapUsable" data-post=" bytes"></span>
+
+        <label>Heap fragmentation</label>
+        <span data-key="heapFrag" data-post="%"></span>
+
         <label>Load average</label>
         <span data-key="loadaverage" data-post="%"></span>
 
-        <label>VCC</label>
-        <span data-key="vcc" data-post="mV">? </span>
+        <div class="pure-control-group module module-vcc">
+            <label>VCC</label>
+            <span data-key="vcc" data-post="mV">? </span>
+        </div>
+
+        <div class="pure-control-group module module-tcm">
+            <label>TCM (static data)</label>
+            <span data-key="tcmUsed" data-post=" of "></span><span data-key="tcmSize" data-post=" bytes"></span>
+        </div>
 
         <div class="pure-control-group module module-mqtt">
             <label>MQTT Status</label>

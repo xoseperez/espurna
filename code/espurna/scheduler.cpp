@@ -20,7 +20,7 @@ Copyright (C) 2019-2024 by Maxim Prokhorov <prokhorov dot max at outlook dot com
 #include "ntp.h"
 #include "ntp_timelib.h"
 #include "scheduler.h"
-#include "types.h"
+#include "types_orch.h"
 #include "ws.h"
 
 #if TERMINAL_SUPPORT == 0
@@ -1148,6 +1148,7 @@ void entrypoint(CommandContext&& ctx) {
 
     if (ctx.argv.size() != 2) {
         settingsDump(ctx, settings::Settings);
+        terminalOK(ctx);
         return;
     }
 
@@ -1855,7 +1856,7 @@ void run(const datetime::Context& ctx, const Results& results) {
         const auto action = settings::action(result.index);
         DEBUG_MSG_P(PSTR("[SCH] Restoring #%zu => %s (%sm)\n"),
             result.index, action.c_str(),
-            String(result.offset.count(), 10).c_str());
+            String(static_cast<long>(result.offset.count()), 10).c_str());
         last_action(ctx, result.index);
         parse_action(action);
     }
@@ -2327,3 +2328,4 @@ void schSetup() {
 }
 
 #endif // SCHEDULER_SUPPORT
+

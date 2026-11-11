@@ -92,7 +92,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "light.h"
 #endif
 
-#ifdef FOXEL_LIGHTFOX_DUAL
+#if LIGHTFOX_SUPPORT
 #include "lightfox.h"
 #endif
 
@@ -101,7 +101,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #endif
 
 #if MDNS_SERVER_SUPPORT
-#include "mdns.h"
+#include "espurna_mdns.h"
 #endif
 
 #if MQTT_SUPPORT
@@ -184,3 +184,4 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #if PWM_SUPPORT
 #include "pwm.h"
 #endif
+

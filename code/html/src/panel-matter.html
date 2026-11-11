@@ -1,0 +1,105 @@
+<form id="form-matter" class="pure-form">
+    <div class="panel" id="panel-matter">
+
+        <div class="header">
+            <h1>MATTER</h1>
+            <h2>A Matter On/Off plug for every relay, with the device certificates the board came with</h2>
+        </div>
+
+        <div class="page">
+
+            <fieldset>
+                <legend>Status</legend>
+
+                <div class="pure-control-group matter-code" style="display: none">
+                    <label>Matter code</label>
+                    <strong class="matter-code-state"></strong>
+                    <span class="pure-form-message">
+                        On 2 MiB Tuya boards the firmware keeps its Matter code apart: it comes with a second upload of
+                        the same file, which has not happened yet, so Matter cannot start. <em>Install the Matter code</em>
+                        takes the newest release of this image from GitHub (a newer release updates the firmware too, the
+                        board restarts once or twice). Or upload the same <code>espurna-beken-matter.bin</code> once more
+                        in ADMIN, <em>Upgrade</em>.
+                    </span>
+                </div>
+
+                <div class="pure-control-group matter-code" style="display: none">
+                    <label></label>
+                    <button type="button" class="pure-button button-matter-code">Install the Matter code</button>
+                    <span id="matter-code-status"></span>
+                </div>
+
+                <ol id="matter-code-steps" class="firmware-steps"></ol>
+
+                <div class="pure-control-group">
+                    <label>Running</label>
+                    <span data-key="matterStarted"></span>
+                </div>
+
+                <div class="pure-control-group">
+                    <label>Vendor / product</label>
+                    <span data-key="matterProduct"></span>
+                </div>
+
+                <div class="pure-control-group">
+                    <label>Start at boot</label>
+                    <input class="checkbox-toggle" type="checkbox" name="matterAuto">
+                    <span class="pure-form-message">Off: Matter only starts with the button below (or <code>matter.start</code> in the terminal), a crash then does not repeat on every boot.</span>
+                </div>
+
+                <div class="pure-control-group">
+                    <label></label>
+                    <button type="button" class="pure-button button-matter-start">Start Matter now</button>
+                </div>
+            </fieldset>
+
+            <fieldset class="matter-commissioning">
+                <legend>Controllers</legend>
+
+                <div class="pure-control-group">
+                    <span class="pure-form-message">
+                        Apps and hubs this device was added to. Deleting the device in an app does not always reach the
+                        device (the hub's phone app does not tell it): the old entry stays here, and adding the device to the
+                        same app again fails until it is removed.
+                    </span>
+                </div>
+
+                <div class="matter-controllers"></div>
+            </fieldset>
+
+            <fieldset class="matter-commissioning">
+                <legend>Pairing</legend>
+
+                <div class="pure-control-group">
+                    <span class="pure-form-message">
+                        Add the device in a Matter controller on the same network (pairing over IP, this firmware has no
+                        Bluetooth). Adding it again to an app that had it before? Remove the app above first.
+                        The code contains the device setup PIN: show it only to people who may control the device.
+                    </span>
+                </div>
+
+                <div class="pure-control-group">
+                    <label></label>
+                    <button type="button" class="pure-button button-matter-window">Open pairing window</button>
+                    <span class="pure-form-message">The window closes 15 minutes after the start and after a controller added the device. Open it again to pair once more or to add a second controller.</span>
+                </div>
+
+                <div class="pure-control-group">
+                    <label>Manual code</label>
+                    <span class="matter-manual" data-key="matterManual"></span>
+                </div>
+
+                <div class="pure-control-group">
+                    <label>QR code</label>
+                    <canvas class="matter-qr"></canvas>
+                </div>
+
+                <div class="pure-control-group">
+                    <label>QR payload</label>
+                    <span class="matter-payload" data-key="matterQr"></span>
+                </div>
+            </fieldset>
+
+        </div>
+    </div>
+</form>

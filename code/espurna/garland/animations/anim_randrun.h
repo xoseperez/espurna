@@ -42,3 +42,4 @@ class AnimRandRun : public Anim {
 };
 
 #endif  // GARLAND_SUPPORT
+

@@ -718,7 +718,9 @@ void DelimiterBuffer::append(Stream& stream, size_t length) {
 
 #if defined(ARDUINO_ESP8266_RELEASE_2_7_2) \
 || defined(ARDUINO_ESP8266_RELEASE_2_7_3) \
-|| defined(ARDUINO_ESP8266_RELEASE_2_7_4)
+|| defined(ARDUINO_ESP8266_RELEASE_2_7_4) \
+|| defined(ESP32) \
+|| defined(LIBRETINY)
 #else
     const auto peek = stream.hasPeekBufferAPI();
 #endif
@@ -728,7 +730,9 @@ void DelimiterBuffer::append(Stream& stream, size_t length) {
 
 #if defined(ARDUINO_ESP8266_RELEASE_2_7_2) \
 || defined(ARDUINO_ESP8266_RELEASE_2_7_3) \
-|| defined(ARDUINO_ESP8266_RELEASE_2_7_4)
+|| defined(ARDUINO_ESP8266_RELEASE_2_7_4) \
+|| defined(ESP32) \
+|| defined(LIBRETINY)
         stream.readBytes(output, chunk);
 #else
         if (peek) {
@@ -889,3 +893,4 @@ bool SplitView::Iterator::operator==(const SplitView::Iterator::End&) const {
 }
 
 } // namespace espurna
+

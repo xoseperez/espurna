@@ -1,0 +1,100 @@
+{
+  "version": 1,
+  "language": "en",
+  "mqtt": { "on": "1", "off": "0", "set": "/set" },
+  "screensaver": {
+    "timeout": 60,
+    "brightness": 100,
+    "dim": 10,
+    "weather": { "lat": 52.52, "lon": 13.40, "refresh": 900 },
+    "shortcuts": [
+      { "icon": "outdoor-lamp", "type": "scene", "group": "outdoor", "action": "toggle" },
+      { "icon": "lightbulb-group-off", "type": "scene", "group": "house", "action": "off" },
+      { "icon": "cog", "open": "settings" }
+    ],
+    "info": [
+      { "icon": "thermometer", "text": "Outside", "topic": "zigbee2mqtt/Outdoor thermometer", "path": ["temperature"],
+        "format": "%.1f°", "extra": { "path": ["humidity"], "format": "%.0f%%" } }
+    ]
+  },
+  "ohpanel": { "background": "aurora", "layout": "center", "theme": "dark" },
+  "pages": [
+    {
+      "title": "Outside",
+      "layout": "2x2",
+      "items": [
+        { "name": "Front yard", "icon": "home-outline", "page": {
+          "layout": "3x2",
+          "items": [
+            { "name": "Facade",  "icon": "wall-sconce",  "topic": "ESPURNA-FACADE/relay/0" },
+            { "name": "Porch",   "icon": "outdoor-lamp", "topic": "ESPURNA-PORCH/relay/0" },
+            { "name": "Lantern", "icon": "coach-lamp",   "topic": "ESPURNA-LANTERN/relay/0" },
+            { "name": "Pump",    "icon": "water-pump",   "topic": "ESPURNA-PUMP/relay/0" },
+            { "name": "Lawn",    "icon": "sprinkler",    "topic": "ESPURNA-LAWN/relay/0" }
+          ]
+        } },
+        { "name": "Back yard", "icon": "tree", "page": {
+          "layout": "3x2",
+          "items": [
+            { "name": "Garland",  "icon": "string-lights", "topic": "ESPURNA-TERRACE/relay/0" },
+            { "name": "Wall",     "icon": "wall-sconce",   "topic": "ESPURNA-TERRACE/relay/1" },
+            { "name": "Fountain", "icon": "fountain",      "topic": "ESPURNA-FOUNTAIN/relay/0" },
+            { "name": "Sockets",  "icon": "power-socket-eu", "page": {
+              "layout": "2x2",
+              "items": [
+                { "name": "Socket 1", "icon": "power-socket-eu", "topic": "ESPURNA-SOCKETS/relay/0" },
+                { "name": "Socket 2", "icon": "power-socket-eu", "topic": "ESPURNA-SOCKETS/relay/1" }
+              ]
+            } }
+          ]
+        } },
+        { "name": "Outer gate", "icon": "gate",      "topic": "ESPURNA-GATE1/relay/0", "type": "button" },
+        { "name": "Inner gate", "icon": "gate-open", "topic": "ESPURNA-GATE2/relay/0", "type": "button" }
+      ]
+    },
+    {
+      "title": "House",
+      "layout": "2x2",
+      "items": [
+        { "name": "Ground floor", "icon": "home-floor-1", "page": {
+          "items": [
+            { "name": "Kitchen",     "icon": "ceiling-light", "topic": "ESPURNA-KITCHEN/relay/0" },
+            { "name": "Living room", "icon": "ceiling-light", "topic": "ESPURNA-LIVINGROOM/relay/0" },
+            { "name": "Hall",        "icon": "ceiling-light", "topic": "ESPURNA-HALL/relay/0" },
+            { "name": "Stairs",      "icon": "stairs",        "topic": "ESPURNA-STAIRS/relay/0" }
+          ]
+        } },
+        { "name": "First floor", "icon": "home-floor-2", "page": {
+          "items": [
+            { "name": "Bedroom",   "icon": "ceiling-light", "topic": "ESPURNA-BEDROOM/relay/0" },
+            { "name": "Kids room", "icon": "ceiling-light", "topic": "ESPURNA-KIDS/relay/0" },
+            { "name": "Desk lamp", "icon": "lamp", "topic": "zigbee2mqtt/DeskLamp", "path": ["state"], "on": "ON", "off": "OFF",
+              "command": "zigbee2mqtt/DeskLamp/set", "payload": "{\"state\":\"%s\"}" }
+          ]
+        } },
+        { "name": "Heating", "icon": "radiator", "page": {
+          "layout": "3x3",
+          "items": [
+            { "name": "Living room", "icon": "radiator", "type": "thermostat", "topic": "istabai/out", "room": "Living room",
+              "command": "istabai/in/Living room", "step": 0.5 },
+            { "name": "Bedroom", "icon": "radiator", "type": "thermostat", "topic": "zigbee2mqtt/Bedroom TRV",
+              "current": ["local_temperature"], "setpoint": ["occupied_heating_setpoint"], "active": ["running_state"],
+              "min": 5, "max": 30, "step": 0.5,
+              "command": "zigbee2mqtt/Bedroom TRV/set", "payload": "{\"occupied_heating_setpoint\":%s}" }
+          ]
+        } },
+        { "name": "All off", "icon": "lightbulb-group-off", "type": "scene", "group": "house", "action": "off" }
+      ]
+    }
+  ],
+  "groups": {
+    "house": [ "ESPURNA-KITCHEN/relay/0", "ESPURNA-LIVINGROOM/relay/0", "ESPURNA-HALL/relay/0", "ESPURNA-STAIRS/relay/0",
+               "ESPURNA-BEDROOM/relay/0", "ESPURNA-KIDS/relay/0" ],
+    "outdoor": [ "ESPURNA-FACADE/relay/0", "ESPURNA-PORCH/relay/0", "ESPURNA-LANTERN/relay/0", "ESPURNA-TERRACE/relay/0" ],
+    "gates": [ "ESPURNA-GATE1/relay/0", "ESPURNA-GATE2/relay/0" ]
+  },
+  "buttons": [
+    { "group": "house", "action": "off" },
+    { "group": "gates", "action": "on" }
+  ]
+}

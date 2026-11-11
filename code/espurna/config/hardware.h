@@ -47,6 +47,421 @@
 // ESPurna Core
 // -----------------------------------------------------------------------------
 
+#elif defined(ESP32_GENERIC)
+
+    // Any ESP32 board. No relays, buttons or LEDs are pre-assigned, so the image is
+    // safe to flash on unknown hardware; GPIOs are configured at runtime
+    // (WebUI, terminal or Tasmota template import)
+
+    // Info
+    #define MANUFACTURER            "GENERIC"
+    #define DEVICE                  "ESP32"
+
+    #ifndef MDNS_SERVER_SUPPORT
+    #define MDNS_SERVER_SUPPORT     0
+    #endif
+
+    #ifndef ALEXA_SUPPORT
+    #define ALEXA_SUPPORT           0
+    #endif
+
+    #ifndef FAUXMO_SUPPORT
+    #define FAUXMO_SUPPORT          0
+    #endif
+
+    #ifndef MY92XX_SUPPORT
+    #define MY92XX_SUPPORT          0
+    #endif
+
+    #ifndef HLW8012_SUPPORT
+    #define HLW8012_SUPPORT         0
+    #endif
+
+    #ifndef RCSWITCH_SUPPORT
+    #define RCSWITCH_SUPPORT        0
+    #endif
+
+    #ifndef NEWPING_SUPPORT
+    #define NEWPING_SUPPORT         0
+    #endif
+
+    #ifndef RFM69_SUPPORT
+    #define RFM69_SUPPORT           0
+    #endif
+
+    #ifndef NOFUSS_SUPPORT
+    #define NOFUSS_SUPPORT          0
+    #endif
+
+    #ifndef LLMNR_SUPPORT
+    #define LLMNR_SUPPORT           0
+    #endif
+
+    #ifndef NETBIOS_SUPPORT
+    #define NETBIOS_SUPPORT         0
+    #endif
+
+    #ifndef SSDP_SUPPORT
+    #define SSDP_SUPPORT            0
+    #endif
+
+#elif defined(BEKEN_GENERIC)
+
+    // Any BK72xx (Tuya CB2S / CB3S / WB2S ...) board, built through LibreTiny. No relays,
+    // buttons or LEDs are pre-assigned, GPIOs are configured at runtime
+
+    // Info
+    #define MANUFACTURER            "GENERIC"
+    #define DEVICE                  "BEKEN"
+
+#elif defined(ESP8266_GENERIC)
+
+    // Any ESP8266 board. Same as ESP32_GENERIC, nothing is pre-assigned and pins come from
+    // the settings (device template search, Tasmota import, WebUI or terminal). Drivers are
+    // chosen by the build (esp8266-1m, -sensor, -all ... in platformio.ini)
+
+    // Info
+    #define MANUFACTURER            "GENERIC"
+    #define DEVICE                  "ESP8266"
+
+#elif defined(TUYA_CB3S_RELAY_RF)
+
+    // Tuya TYWRA-RF 1-channel relay board with a 433 MHz receiver, CB3S (BK7231N) module.
+    // AC/DC 7-32V on the terminal block or 5V micro-USB (power only).
+    // Pins are from the stock Tuya config (user_param_key)
+
+    // Info
+    #define MANUFACTURER            "TUYA"
+    #define DEVICE                  "CB3S_RELAY_RF"
+
+    // Buttons
+    #define BUTTON1_PIN             14
+    #define BUTTON1_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+    #define BUTTON1_RELAY           1
+
+    // 'total' (all on / off) button of the stock firmware
+    #define BUTTON2_PIN             6
+    #define BUTTON2_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+    #define BUTTON2_RELAY           1
+
+    // Relays
+    #define RELAY1_PIN              24
+    #define RELAY1_TYPE             RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN                8
+    #define LED1_PIN_INVERSE        1
+    #define LED1_MODE               LED_MODE_WIFI
+
+    // 433 MHz receiver data is on P26 (stock 'remote_io'), decoded by rc-switch
+    #define RFB_SUPPORT             1
+    #define RFB_PROVIDER            RFB_PROVIDER_RCSWITCH
+    #define RFB_RX_PIN              26
+
+#elif defined(ESP12F_RELAY_X2)
+
+    // Info
+    #define MANUFACTURER            "LC_TECH"
+    #define DEVICE                  "ESP12F_RELAY_X2"
+
+    // Relays
+    #define RELAY1_PIN              4
+    #define RELAY1_TYPE             RELAY_TYPE_NORMAL
+    #define RELAY2_PIN              5
+    #define RELAY2_TYPE             RELAY_TYPE_NORMAL
+
+#elif defined(HW_622)
+
+    // Info
+    #define MANUFACTURER            "GENERIC"
+    #define DEVICE                  "HW_622"
+
+    // Buttons (optocoupled input IN)
+    #define BUTTON1_PIN             5
+    #define BUTTON1_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY           1
+
+    // Relays
+    #define RELAY1_PIN              4
+    #define RELAY1_TYPE             RELAY_TYPE_NORMAL
+
+    // LEDs (ESP-12F module LED)
+    #define LED1_PIN                2
+    #define LED1_PIN_INVERSE        1
+
+#elif defined(ESP12F_RELAY_X4)
+
+    // Info
+    #define MANUFACTURER            "LC_TECH"
+    #define DEVICE                  "ESP12F_RELAY_X4"
+
+    // Buttons
+    #define BUTTON1_PIN             0
+    #define BUTTON1_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON1_RELAY           1
+
+    // Relays (RY1..RY4 jumpers set to IO16, IO14, IO12, IO13)
+    #define RELAY1_PIN              16
+    #define RELAY1_TYPE             RELAY_TYPE_NORMAL
+    #define RELAY2_PIN              14
+    #define RELAY2_TYPE             RELAY_TYPE_NORMAL
+    #define RELAY3_PIN              12
+    #define RELAY3_TYPE             RELAY_TYPE_NORMAL
+    #define RELAY4_PIN              13
+    #define RELAY4_TYPE             RELAY_TYPE_NORMAL
+
+    // LEDs (ESP-12F module LED and the board LED)
+    #define LED1_PIN                2
+    #define LED1_PIN_INVERSE        1
+    #define LED2_PIN                5
+
+#elif defined(ESP32_RELAY_X2)
+
+    // Info
+    #define MANUFACTURER            "LC_TECH"
+    #define DEVICE                  "ESP32_RELAY_X2"
+
+    // Buttons
+    #define BUTTON1_PIN             0
+    #define BUTTON1_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+    #define BUTTON1_RELAY           1
+    // Relays
+    #define RELAY1_PIN              16
+    #define RELAY1_TYPE             RELAY_TYPE_NORMAL
+    #define RELAY2_PIN              17
+    #define RELAY2_TYPE             RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN                23
+    #define LED1_PIN_INVERSE        1
+
+    #ifndef MDNS_SERVER_SUPPORT
+    #define MDNS_SERVER_SUPPORT     0
+    #endif
+
+    #ifndef ALEXA_SUPPORT
+    #define ALEXA_SUPPORT           0
+    #endif
+
+    #ifndef FAUXMO_SUPPORT
+    #define FAUXMO_SUPPORT          0
+    #endif
+
+    #ifndef MY92XX_SUPPORT
+    #define MY92XX_SUPPORT          0
+    #endif
+
+    #ifndef HLW8012_SUPPORT
+    #define HLW8012_SUPPORT         0
+    #endif
+
+    #ifndef RCSWITCH_SUPPORT
+    #define RCSWITCH_SUPPORT        0
+    #endif
+
+    #ifndef NEWPING_SUPPORT
+    #define NEWPING_SUPPORT         0
+    #endif
+
+    #ifndef RFM69_SUPPORT
+    #define RFM69_SUPPORT           0
+    #endif
+
+    #ifndef NOFUSS_SUPPORT
+    #define NOFUSS_SUPPORT          0
+    #endif
+
+    #ifndef LLMNR_SUPPORT
+    #define LLMNR_SUPPORT           0
+    #endif
+
+    #ifndef NETBIOS_SUPPORT
+    #define NETBIOS_SUPPORT         0
+    #endif
+
+    #ifndef SSDP_SUPPORT
+    #define SSDP_SUPPORT            0
+    #endif
+
+#elif defined(ITEAD_SONOFF_MINIR4)
+
+    // Info (MINIR4 "Extreme", ESP32-D0WD-V3, 4MB)
+    #define MANUFACTURER            "ITEAD"
+    #define DEVICE                  "SONOFF_MINIR4"
+
+    // Buttons
+    #define BUTTON1_PIN             0
+    #define BUTTON1_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+    #define BUTTON1_RELAY           1
+
+    // S1/S2 wall switch input
+    #define BUTTON2_PIN             27
+    #define BUTTON2_CONFIG          BUTTON_SWITCH | BUTTON_SET_PULLUP | BUTTON_DEFAULT_BOOT
+    #define BUTTON2_RELAY           1
+    #define BUTTON2_PRESS           BUTTON_ACTION_TOGGLE
+    #define BUTTON2_RELEASE         BUTTON_ACTION_TOGGLE
+
+    // Relays
+    #define RELAY1_PIN              26
+    #define RELAY1_TYPE             RELAY_TYPE_NORMAL
+
+    // LEDs
+    #define LED1_PIN                19
+    #define LED1_PIN_INVERSE        1
+
+    #ifndef MDNS_SERVER_SUPPORT
+    #define MDNS_SERVER_SUPPORT     0
+    #endif
+
+    #ifndef ALEXA_SUPPORT
+    #define ALEXA_SUPPORT           0
+    #endif
+
+    #ifndef FAUXMO_SUPPORT
+    #define FAUXMO_SUPPORT          0
+    #endif
+
+    #ifndef MY92XX_SUPPORT
+    #define MY92XX_SUPPORT          0
+    #endif
+
+    #ifndef HLW8012_SUPPORT
+    #define HLW8012_SUPPORT         0
+    #endif
+
+    #ifndef RCSWITCH_SUPPORT
+    #define RCSWITCH_SUPPORT        0
+    #endif
+
+    #ifndef NEWPING_SUPPORT
+    #define NEWPING_SUPPORT         0
+    #endif
+
+    #ifndef RFM69_SUPPORT
+    #define RFM69_SUPPORT           0
+    #endif
+
+    #ifndef NOFUSS_SUPPORT
+    #define NOFUSS_SUPPORT          0
+    #endif
+
+    #ifndef LLMNR_SUPPORT
+    #define LLMNR_SUPPORT           0
+    #endif
+
+    #ifndef NETBIOS_SUPPORT
+    #define NETBIOS_SUPPORT         0
+    #endif
+
+    #ifndef SSDP_SUPPORT
+    #define SSDP_SUPPORT            0
+    #endif
+
+#elif defined(SONOFF_NSPANEL)
+
+    // Sonoff NSPanel gen1 (EU), ESP32-D0WD-V3 4MB, safeboot flash layout (esp32_4mb_safeboot.csv, Tasmota's offsets)
+    // Display (Lovelace UI TFT) and buzzer are handled by the nspanel module, the NTC is an ESPurna sensor
+
+    // Info
+    #define MANUFACTURER            "SONOFF"
+    #define DEVICE                  "NSPANEL"
+
+    // istabai/out and zigbee2mqtt payloads used by the screen are larger than the default 1 KB
+    #define MQTT_BUFFER_MAX_SIZE    2048
+
+    // Telnet from the home network (the password is still asked): the panel sits in a wall, after crashes it boots in
+    // the unstable mode (WiFi + telnet only, no web), and `reboot` over telnet is then the only way out without power
+    #define TELNET_STA              1
+
+    // Buttons (active LOW). Left one toggles relay 1, right one runs the nspanel.json button action
+    #define BUTTON1_PIN             14
+    #define BUTTON1_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+    #define BUTTON1_RELAY           1
+    #define BUTTON1_DBLCLICK        BUTTON_ACTION_NONE
+    #define BUTTON1_TRIPLECLICK     BUTTON_ACTION_NONE
+    #define BUTTON1_LNGCLICK        BUTTON_ACTION_NONE
+    #define BUTTON1_LNGLNGCLICK     BUTTON_ACTION_NONE
+    #define BUTTON2_PIN             27
+    #define BUTTON2_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH | BUTTON_SET_PULLUP
+    #define BUTTON2_CLICK           BUTTON_ACTION_CUSTOM
+
+    // Relays
+    #define RELAY1_PIN              22
+    #define RELAY1_TYPE             RELAY_TYPE_NORMAL
+    #define RELAY2_PIN              19
+    #define RELAY2_TYPE             RELAY_TYPE_NORMAL
+
+    #define NSPANEL_SUPPORT         1
+
+    // Room temperature: NTC to GND with an 11.2k pull-up to 3.3V on GPIO38 (Tasmota template ADCParam1 2,11200,10000,3950)
+    #ifndef NTC_SUPPORT
+    #define NTC_SUPPORT             1
+    #endif
+    #define NTC_PIN                 38
+    #define NTC_R_UP                11200
+    #define NTC_R_DOWN              0
+    #define NTC_R0                  10000
+    #define NTC_BETA                3950
+    #define NTC_SAMPLES             8
+
+    // No second OTA app slot on the safeboot layout, the image is updated through safeboot
+    // (ESPurna web /upgrade is answered with an error by arch/esp32/safeboot_esp32.cpp)
+    #ifndef OTA_ARDUINOOTA_SUPPORT
+    #define OTA_ARDUINOOTA_SUPPORT  0
+    #endif
+
+    #ifndef OTA_CLIENT
+    #define OTA_CLIENT              OTA_CLIENT_NONE
+    #endif
+
+    #ifndef MDNS_SERVER_SUPPORT
+    #define MDNS_SERVER_SUPPORT     0
+    #endif
+
+    #ifndef ALEXA_SUPPORT
+    #define ALEXA_SUPPORT           0
+    #endif
+
+    #ifndef FAUXMO_SUPPORT
+    #define FAUXMO_SUPPORT          0
+    #endif
+
+    #ifndef MY92XX_SUPPORT
+    #define MY92XX_SUPPORT          0
+    #endif
+
+    #ifndef HLW8012_SUPPORT
+    #define HLW8012_SUPPORT         0
+    #endif
+
+    #ifndef RCSWITCH_SUPPORT
+    #define RCSWITCH_SUPPORT        0
+    #endif
+
+    #ifndef NEWPING_SUPPORT
+    #define NEWPING_SUPPORT         0
+    #endif
+
+    #ifndef RFM69_SUPPORT
+    #define RFM69_SUPPORT           0
+    #endif
+
+    #ifndef NOFUSS_SUPPORT
+    #define NOFUSS_SUPPORT          0
+    #endif
+
+    #ifndef LLMNR_SUPPORT
+    #define LLMNR_SUPPORT           0
+    #endif
+
+    #ifndef NETBIOS_SUPPORT
+    #define NETBIOS_SUPPORT         0
+    #endif
+
+    #ifndef SSDP_SUPPORT
+    #define SSDP_SUPPORT            0
+    #endif
+
 #elif defined(ESPURNA_MINIMAL_ARDUINO_OTA)
 
     // This is a special device targeted to generate a light-weight binary image
@@ -118,6 +533,20 @@
     #define OTA_ARDUINOOTA_SUPPORT  0
     #define OTA_WEB_SUPPORT         1
 
+    // Downloads the full image itself (https, SHA-256): the second step of the 1 MB update. It replaces the
+    // http-only `OTA <url>` terminal command; no captive portal in the AP mode (the page is at 192.168.4.1).
+    // Every KB counts here: this image (.bin.gz) has to fit next to the biggest full image, and the full image
+    // (.bin.gz, through /upgrade) next to this one
+    #ifndef OTA_FETCH_SUPPORT
+    #define OTA_FETCH_SUPPORT       1
+    #endif
+    #ifndef OTA_CLIENT
+    #define OTA_CLIENT              OTA_CLIENT_NONE
+    #endif
+    #ifndef WIFI_AP_CAPTIVE_SUPPORT
+    #define WIFI_AP_CAPTIVE_SUPPORT 0
+    #endif
+
     // Keep the generic uploader
     #define DEBUG_TELNET_SUPPORT    1
     #define TELNET_AUTHENTICATION   0
@@ -152,6 +581,55 @@
     // Light
     #define LED1_PIN            2
     #define LED1_PIN_INVERSE    1
+
+// -----------------------------------------------------------------------------
+// Moes MS-104B 2-Gang Switch Module
+// -----------------------------------------------------------------------------
+
+#elif defined(MOES_MS_104B)
+
+    #if !defined(ARDUINO_ARCH_ESP8266)
+    #error "MOES_MS_104B is an ESP8266 board"
+    #endif
+
+    // Info
+    #define MANUFACTURER            "MOES"
+    #define DEVICE                  "MS_104B"
+
+    // Period filter off (any frequency, 5 ms noise hold-off), same as the original
+    // MS-104B builds. Enable with btnAcFreq 50 once btnAcDbg period stats are checked
+    #define BUTTON_AC_FREQ          0
+
+    // Switch 1 (GPIO 13) controls Relay 1 (GPIO 14)
+    #define BUTTON1_PIN             13
+    #define BUTTON1_CONFIG          BUTTON_FREQUENCY
+    #define BUTTON1_RELAY           1
+    #define BUTTON1_PRESS           BUTTON_ACTION_TOGGLE
+    #define BUTTON1_RELEASE         BUTTON_ACTION_TOGGLE
+    #define BUTTON1_DEBOUNCE_DELAY  100
+
+    // Switch 2 (GPIO 12) controls Relay 2 (GPIO 15)
+    #define BUTTON2_PIN             12
+    #define BUTTON2_CONFIG          BUTTON_FREQUENCY
+    #define BUTTON2_RELAY           2
+    #define BUTTON2_PRESS           BUTTON_ACTION_TOGGLE
+    #define BUTTON2_RELEASE         BUTTON_ACTION_TOGGLE
+    #define BUTTON2_DEBOUNCE_DELAY  100
+
+    // Onboard Button (GPIO 2)
+    #define BUTTON3_PIN             2
+    #define BUTTON3_CONFIG          BUTTON_PUSHBUTTON | BUTTON_DEFAULT_HIGH
+    #define BUTTON3_RELAY           1
+
+    // Relay 1
+    #define RELAY1_PIN              14
+    #define RELAY1_TYPE             RELAY_TYPE_NORMAL
+
+    // Relay 2
+    #define RELAY2_PIN              15
+    #define RELAY2_TYPE             RELAY_TYPE_NORMAL
+
+    #define RELAY_SUPPORT           1
 
 #elif defined(WEMOS_D1_MINI)
 
@@ -1877,32 +2355,6 @@
     #define UART1_RX_PIN                3
 
     #define ALEXA_SUPPORT               0
-
-// -----------------------------------------------------------------------------
-// ESP-01 generic esp8266 board with 512 kB flash
-// -----------------------------------------------------------------------------
-
-#elif defined(GENERIC_ESP01_512KB)
-
-    // Info
-    #define MANUFACTURER        "GENERIC"
-    #define DEVICE              "ESP01_512KB"
-
-    // Relays
-    #define RELAY1_PIN          2
-    #ifndef RELAY1_TYPE
-    #define RELAY1_TYPE         RELAY_TYPE_NORMAL
-    #endif
-
-    // No need for OTA
-    #define OTA_WEB_SUPPORT          0
-    #define OTA_ARDUINOOTA_SUPPORT   0
-    #define OTA_CLIENT               OTA_CLIENT_NONE
-
-    // Some options result in a pretty large image
-    #define ALEXA_SUPPORT            0
-    #define MDNS_SERVER_SUPPORT      0
-    #define WEB_SUPPORT              0
 
 // -----------------------------------------------------------------------------
 // ESPLive
@@ -5405,5 +5857,50 @@
 #else
 
     #error "UNSUPPORTED HARDWARE!!"
+
+#endif
+
+// -----------------------------------------------------------------------------
+// BK72xx through LibreTiny, any board
+// -----------------------------------------------------------------------------
+
+#if defined(LIBRETINY)
+
+    // UART1 (P11 TX, P10 RX), same pads as for flashing
+    #ifndef UART1_TX_PIN
+    #define UART1_TX_PIN            11
+    #endif
+
+    #ifndef UART1_RX_PIN
+    #define UART1_RX_PIN            10
+    #endif
+
+    #ifndef ALEXA_SUPPORT
+    #define ALEXA_SUPPORT           0
+    #endif
+
+    #ifndef OTA_ARDUINOOTA_SUPPORT
+    #define OTA_ARDUINOOTA_SUPPORT  0
+    #endif
+
+    #ifndef OTA_CLIENT
+    #define OTA_CLIENT              OTA_CLIENT_NONE
+    #endif
+
+    #ifndef NOFUSS_SUPPORT
+    #define NOFUSS_SUPPORT          0
+    #endif
+
+    #ifndef LLMNR_SUPPORT
+    #define LLMNR_SUPPORT           0
+    #endif
+
+    #ifndef NETBIOS_SUPPORT
+    #define NETBIOS_SUPPORT         0
+    #endif
+
+    #ifndef SSDP_SUPPORT
+    #define SSDP_SUPPORT            0
+    #endif
 
 #endif

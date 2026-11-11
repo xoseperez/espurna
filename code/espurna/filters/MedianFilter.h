@@ -145,3 +145,4 @@ private:
     std::vector<Value> _values {};
     size_t _size { 0 };
 };
+

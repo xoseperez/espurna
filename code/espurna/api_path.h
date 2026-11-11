@@ -11,7 +11,7 @@ Copyright (C) 2021 by Maxim Prokhorov <prokhorov dot max at outlook dot com>
 #include <Arduino.h>
 #include <vector>
 
-#include "types.h"
+#include "types_orch.h"
 
 // -----------------------------------------------------------------------------
 
@@ -127,3 +127,4 @@ private:
     Parts _parts;
     bool _ok { false };
 };
+

@@ -39,23 +39,27 @@ time_t delta_utc_impl(tm& out, Seconds seconds, Days days) {
 String tz_offset_string(Seconds offset) {
     String out;
 
+    out += (offset >= offset.zero()) ? '+' : '-';
+    if (offset < offset.zero()) {
+        offset = -offset;
+    }
+
     auto hours = std::chrono::duration_cast<Hours>(offset);
     offset -= hours;
 
-    out = (offset >= offset.zero()) ? '+' : '-';
-    if (hours < Hours{9}) {
+    if (hours < Hours{10}) {
         out += '0';
     }
 
-    out += String(hours.count(), 10);
+    out += String(static_cast<long>(hours.count()), 10);
     out += ':';
 
     auto minutes = std::chrono::duration_cast<Minutes>(offset);
-    if (minutes < Minutes{9}) {
+    if (minutes < Minutes{10}) {
         out += '0';
     }
 
-    out += String(minutes.count(), 10);
+    out += String(static_cast<long>(minutes.count()), 10);
 
     return out;
 }
@@ -294,3 +298,4 @@ String format_utc_tz(const Context& ctx) {
 
 } // namespace datetime
 } // namespace espurna
+

@@ -1,7 +1,8 @@
 # ESPurna Firmware
 
-ESPurna ("spark" in Catalan) is a custom firmware for ESP8285/ESP8266 based smart switches, lights and sensors.
-It uses the Arduino Core for ESP8266 framework and a number of 3rd party libraries.
+ESPurna ("spark" in Catalan) is a custom firmware for ESP32 and ESP8285/ESP8266 based smart switches, lights and sensors.
+It uses the Arduino Core for ESP32 / ESP8266 frameworks and a number of 3rd party libraries.
+This fork adds the [ESP32 and Beken BK72xx ports](#this-fork) and [a page per architecture](#architectures) with the boards run on it; the badges right below refer to the original upstream project.
 
 [![latest snapshot build](https://img.shields.io/github/v/release/xoseperez/espurna?include_prereleases&label=latest%20snapshot%20build)](https://github.com/xoseperez/espurna/releases?expanded=true)
 [![branch](https://img.shields.io/badge/branch-dev-orange.svg)](https://github.com/xoseperez/espurna/tree/dev/)
@@ -15,11 +16,79 @@ It uses the Arduino Core for ESP8266 framework and a number of 3rd party librari
 
 ---
 
-## Collaborators
+## This fork
+
+[![esp32 release](https://img.shields.io/github/v/release/igorufox/espurna?label=esp32%20build)](https://github.com/igorufox/espurna/releases/latest)
+[![esp32 ci](https://github.com/igorufox/espurna/actions/workflows/esp32.yml/badge.svg?branch=esp32-port)](https://github.com/igorufox/espurna/actions/workflows/esp32.yml)
+[![branch](https://img.shields.io/badge/branch-esp32--port-orange.svg)](https://github.com/igorufox/espurna/tree/esp32-port/)
+
+This fork is maintained by **@igorufox**. ESPurna itself is the work of Xose Pérez (**@xoseperez**), Max Prokhorov (**@mcspr**) and the upstream contributors, credited below.
+
+It lives in the [`esp32-port`](https://github.com/igorufox/espurna/tree/esp32-port) branch: three architectures from the same source, a few generic images per chip instead of per-board builds (the board is picked after flashing, see [Picking the board](#picking-the-board)), and updates from the GitHub releases in the WebUI.
+
+- **ESP8266 / ESP8285** (Arduino core 3.1.2, NONOS SDK 3.0.5): four generic images instead of the 216 per-board builds, a two-step update through a mini image on 1 MB boards, lwIP and module memory tuned so that the WebUI and uploads fit in the heap, AC mains wall-switch inputs; builds in [`code/platformio.ini`](code/platformio.ini), [esp8266/README.md](esp8266/README.md);
+- **ESP32** (Arduino-ESP32 core 3 / ESP-IDF 5 via [pioarduino](https://github.com/pioarduino/platform-espressif32), PlatformIO Core 6.2 or newer; Matter On/Off plugs; safeboot flash layout with Tasmota's offsets, [`code/esp32_4mb_safeboot.csv`](code/esp32_4mb_safeboot.csv), and an own safeboot image, [`code/safeboot-app`](code/safeboot-app)), code under [`code/espurna/arch/esp32`](code/espurna/arch/esp32), [esp32/README.md](esp32/README.md);
+- **Beken BK7231N** (Tuya CB2S / CB3S / CBU and compatible modules, Tuya or Quectel bootloader) through [LibreTiny](https://docs.libretiny.eu/), Matter On/Off plugs, code under [`code/espurna/arch/beken`](code/espurna/arch/beken), builds in [`code/platformio_beken.ini`](code/platformio_beken.ini), [beken/README.md](beken/README.md).
+
+How updates work on each chip, the releases and CI: [docs/updates.md](docs/updates.md).
+
+### Architectures
+
+One source, three architectures; every one has a page with its images, the boards run on it, their pages and its
+nuances. Boards run on the generic image of their chip; pins come from the device template (*ADMIN → Device Template*)
+or the settings, not from the build.
+
+| Architecture | Images | Boards run on it | Page |
+|--------------|--------|------------------|------|
+| **ESP8266 / ESP8285** | `esp8266-1m`, `-1m-light`, `-1m-sensor`, `-4m` (+ the mini) | Sonoff Basic, Sonoff Mini R1/R2, Moes MS-104B, HW-622, LC-Tech ESP-12F relay x2 and x4 | [esp8266/README.md](esp8266/README.md) |
+| **ESP32** | `esp32-matter`, `esp32-matter-nspanel` (+ the safeboot) | LC-Tech ESP32 relay x2, Sonoff MINIR4, Sonoff NSPanel | [esp32/README.md](esp32/README.md) |
+| **Beken BK7231N** | `beken-matter` (+ two UART images) | Tuya TYWRA-RF (CB3S), Tuya 4-gang (CBU), Sparkleiot Mini (XH-CB2S), in-wall relay 86-TDQ (CB2S), MOES MS-104B Matter (CBU) | [beken/README.md](beken/README.md) |
+
+How updates work on each chip, the releases and CI: [docs/updates.md](docs/updates.md).
+
+### Download
+
+Every push to `esp32-port` is built by [GitHub Actions](https://github.com/igorufox/espurna/actions/workflows/esp32.yml) and published as one [release](https://github.com/igorufox/espurna/releases/latest) for all chips, tag `esp32-YYMMDD-<sha7>`; the newest 5 are kept. The same files with their SHA-256 are listed in [`firmware.json`](https://igorufox.github.io/espurna/firmware.json) on GitHub Pages, which the WebUI reads. The latest image is always at `https://github.com/igorufox/espurna/releases/latest/download/espurna-<image>...`, e.g. [espurna-esp32-matter.bin](https://github.com/igorufox/espurna/releases/latest/download/espurna-esp32-matter.bin). Which image and how to flash it the first time: the page of the architecture.
+
+### Updating
+
+WebUI, *ADMIN*, OTA: *Upgrade* with a file as before, or *From GitHub*, *Show releases*: the kept releases with the files of the image the board runs, *Install*. The WebUI lists the steps ahead and goes through them by itself; the board restarts during the install.
+
+- **ESP32**: through the safeboot, which downloads the image's `.bin` itself and writes its ESPurna part; two-slot boards are migrated on the way.
+- **Beken**: the browser uploads `espurna-beken-matter.bin`, the board writes the part for its bootloader; on 2 MiB Tuya boards in up to three uploads of the same file, because the Matter code lives in the update partition ([how](docs/updates.md#2-mib-tuya-boards-where-matter-lives)).
+- **ESP8266**: one upload on the 4 MB layout; on 1 MB boards the mini first, which downloads the compressed full image from GitHub Pages.
+
+Details, limits and what happens when an install stops half-way: [docs/updates.md](docs/updates.md).
+
+### Picking the board
+
+WebUI, *ADMIN*, *Device Template*: type the name (e.g. `sonoff mini`, `shelly 1pm`, `ms-104b`) and *Apply*. The list is downloaded by the browser at that moment from [templates.blakadder.com](https://templates.blakadder.com) (Tasmota templates, ESP8266 / ESP32), [OpenBeken](https://openbekeniot.github.io/webapp/devicesList.html) (Beken) and [igorufox/espurna-devices](https://github.com/igorufox/espurna-devices) (*ESPurna devices*, results marked `[github]`); nothing is stored here. AC mains wall switches are marked afterwards on the RELAYS panel, per button. Your own board: [add a template](https://templates.blakadder.com/new.html) to the Tasmota list, the `devices.json` of [openbekeniot/webapp](https://github.com/openbekeniot/webapp) for Beken, or an entry of espurna-devices.
+
+**ESPurna devices.** [`devices.json`](https://github.com/igorufox/espurna-devices) holds every ESP8266 board of [`hardware.h`](code/espurna/config/hardware.h) (generated by [`code/scripts/boards_to_devices.py`](code/scripts/boards_to_devices.py), most of them not verified on hardware since the move to generic images) and the no-name boards that are in no other list, such as the [CBU 4-gang module](beken/cbu-4gang.md) and the [Sparkleiot Mini](beken/sparkleiot-mini.md). Another list: the `webTplUrl` setting, *Own device list* in the same panel. A board set up by hand is turned into an entry with *Export this device as a template*: only relay / button / LED / UART / RF pins, button actions and the board names are taken, never Wi-Fi, MQTT, passwords or topics, and only those keys are ever applied from the list.
+
+### Build from source
+
+```
+cd code
+pio run -e esp8266-1m                                # ESP8266, see esp8266/README.md
+pio run -d safeboot-app                              # ESP32: the safeboot first, then
+pio run -c platformio_esp32.ini -e esp32-generic
+py -3 -m platformio run -c platformio_beken.ini -e beken-bk7231n   # Beken
+```
+
+Details per architecture on its page.
+
+---
+
+# Original ESPurna README
+
+Everything below is the upstream [xoseperez/espurna](https://github.com/xoseperez/espurna) README and describes ESP8266 builds.
+
+## Collaborators (upstream)
 
 Since November 2018, Max Prokhorov (**@mcspr**) is also actively working as a collaborator of the project. 
 
-## Contributors
+## Contributors (upstream)
 
 **Without your help this project would not be possible**. I (**@xoseperez**) simply can't spend all the time I wish on ESPurna but luckily I receive a lot of contributions, bug fixes, enhancement suggestions,... from people all around the world. I would like to thank each and every one of you. The [contributors](https://github.com/xoseperez/espurna/graphs/contributors) page shows the ones that have done a PR in the past, but I also get contributions in the issues, by email or via the [gitter ESPurna channel](https://gitter.im/tinkerman-cat/espurna), those I also want to thank.
 

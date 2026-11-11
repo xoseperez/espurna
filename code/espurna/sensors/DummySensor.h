@@ -170,3 +170,4 @@ constexpr BaseSensor::Magnitude Sensor::Magnitudes[];
 } // namespace espurna
 
 #endif
+

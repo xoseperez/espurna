@@ -14,7 +14,7 @@ import {
 
 /** @param {string} to */
 function relativeToRoot(to) {
-    return path.relative(ROOT, to);
+    return path.relative(ROOT, to).replaceAll('\\', '/');
 }
 
 const BUILD_SCRIPTS = RAW_BUILD_SCRIPTS.map(relativeToRoot);

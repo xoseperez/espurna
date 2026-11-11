@@ -125,3 +125,4 @@ private:
 };
 
 #endif // SENSOR_SUPPORT && EMON_ADC121_SUPPORT
+

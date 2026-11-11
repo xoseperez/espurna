@@ -59,6 +59,7 @@
 #define BUTTON_DEFAULT_BOOT         ButtonMask::DefaultBoot
 #define BUTTON_SET_PULLUP           ButtonMask::SetPullup
 #define BUTTON_SET_PULLDOWN         ButtonMask::SetPulldown
+#define BUTTON_FREQUENCY            ButtonMask::Frequency
 
 // configure where do we get the button events
 #define BUTTON_PROVIDER_NONE        ButtonProvider::None
@@ -227,6 +228,7 @@
 #define LIGHT_PROVIDER_MY92XX       1       // works with MY9291 and MY9231
 #define LIGHT_PROVIDER_DIMMER       2
 #define LIGHT_PROVIDER_CUSTOM       3
+#define LIGHT_PROVIDER_ANY          4       // dimmer, my92xx and custom built in, `ltProvider` picks one at boot
 
 // -----------------------------------------------------------------------------
 // IR
@@ -261,6 +263,7 @@
 #define PWM_PROVIDER_NONE           0
 #define PWM_PROVIDER_GENERIC        1
 #define PWM_PROVIDER_ARDUINO        2
+#define PWM_PROVIDER_ESP32          3
 
 //------------------------------------------------------------------------------
 // ENVIRONMENTAL
@@ -441,3 +444,4 @@
 
 #define WIFI_DISABLED               BootMode::Disabled
 #define WIFI_ENABLED                BootMode::Enabled
+

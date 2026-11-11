@@ -30,8 +30,10 @@ export const DEFAULT_MODULES = {
     'led': true,
     'light': false,
     'lightfox': false,
+    'matter': false,
     'mqtt': true,
     'nofuss': true,
+    'nspanel': false,
     'ntp': true,
     'ota': true,
     'relay': true,
@@ -40,9 +42,12 @@ export const DEFAULT_MODULES = {
     'rpn': true,
     'sch': true,
     'sns': false,
+    // status rows the firmware shows at runtime, only where it has the data (BK7231N TCM, ADC_VCC)
+    'tcm': true,
     'telnet': true,
     'thermostat': false,
     'tspk': true,
+    'vcc': true,
     [MODULE_DEV]: false,
 };
 
@@ -104,6 +109,20 @@ export function makeModules(name) {
 
     case 'small':
         return DEFAULT_MODULES;
+
+    // Matter relay boards (Beken, ESP32 core 3): the small image + MATTER, without the panels of the modules their
+    // firmware leaves out to fit (HA, Domoticz, Thingspeak, scheduler, telnet, NoFUSS, InfluxDB)
+    case 'matter':
+        return Object.assign({}, DEFAULT_MODULES, {
+            'dcz': false,
+            'ha': false,
+            'idb': false,
+            'matter': true,
+            'nofuss': false,
+            'sch': false,
+            'telnet': false,
+            'tspk': false,
+        });
     }
 
     if (NAMED_BUILD[name] === undefined) {
@@ -160,6 +179,7 @@ export const MODULE_PRESETS = new Set([
     'garland',
     'light',
     'lightfox',
+    'matter',
     'rfbridge',
     'rfm69',
     'sensor',

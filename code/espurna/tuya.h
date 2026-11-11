@@ -22,3 +22,4 @@ void setup();
 std::unique_ptr<RelayProviderBase> makeRelayProvider(size_t);
 
 } // namespace tuya
+

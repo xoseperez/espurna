@@ -714,3 +714,4 @@ PZEM004TSensor* PZEM004TSensor::_current_instance { nullptr };
 PZEM004TSensor* PZEM004TSensor::_head_instance { nullptr };
 
 PZEM004TSensor::Ports PZEM004TSensor::_ports{};
+

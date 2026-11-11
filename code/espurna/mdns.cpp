@@ -14,12 +14,17 @@ Copyright (C) 2017-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #if MDNS_SERVER_SUPPORT
 
-#include "mdns.h"
+#include "espurna_mdns.h"
 #include "telnet.h"
 #include "utils.h"
 #include "web.h"
 
+// LibreTiny has the lwIP responder (services are announced) without queries
+#if defined(LIBRETINY)
+#include <mDNS.h>
+#else
 #include <ESP8266mDNS.h>
+#endif
 
 // -----------------------------------------------------------------------------
 
@@ -65,8 +70,21 @@ void addServices() {
 #endif
 }
 
+#if defined(LIBRETINY)
+bool running { false };
+#endif
+
 void start() {
     const auto hostname = systemHostname();
+#if defined(LIBRETINY)
+    // lwIP itself follows the interface going up and down, nothing to update from the loop
+    if (MDNS.begin(hostname.c_str())) {
+        DEBUG_MSG_P(PSTR("[MDNS] Started with hostname %s\n"), hostname.c_str());
+        addServices();
+        running = true;
+        return;
+    }
+#else
     if (MDNS.begin(hostname)) {
         DEBUG_MSG_P(PSTR("[MDNS] Started with hostname %s\n"), hostname.c_str());
         addServices();
@@ -75,6 +93,7 @@ void start() {
         });
         return;
     }
+#endif
 
     DEBUG_MSG_P(PSTR("[MDNS] ERROR\n"));
 }
@@ -91,6 +110,15 @@ void start() {
 // (and notice that RTOS SDK alternative would need to use mdns_query_* ESP-IDF API)
 // TODO: both implementations also have separate queries for A and AAAA records :/
 
+#if defined(LIBRETINY)
+bool mdnsServiceQuery(const String&, const String&, MdnsServerQueryCallback) {
+    return false;
+}
+
+bool mdnsRunning() {
+    return mdns::running;
+}
+#else
 bool mdnsServiceQuery(const String& service, const String& protocol, MdnsServerQueryCallback callback) {
     bool result { false };
 
@@ -110,6 +138,7 @@ bool mdnsServiceQuery(const String& service, const String& protocol, MdnsServerQ
 bool mdnsRunning() {
     return MDNS.isRunning();
 }
+#endif
 
 void mdnsServerSetup() {
 // 2.7.x require MDNS.begin() when interface is UP
@@ -132,3 +161,4 @@ void mdnsServerSetup() {
 }
 
 #endif // MDNS_SERVER_SUPPORT
+

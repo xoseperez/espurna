@@ -1,0 +1,421 @@
+name: Firmware Build
+
+on:
+  push:
+    branches: [esp32-port]
+    tags: ['esp32-*']
+  pull_request:
+    branches: [esp32-port]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: esp32-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-26.04
+    strategy:
+      fail-fast: false
+      matrix:
+        # generic images, the board is picked in the WebUI (device template search / Tasmota import).
+        # `name` is the release file name, espurna-<name>-*
+        include:
+        - { arch: esp32, config: platformio_esp32.ini, env: esp32-generic, name: esp32-matter }
+        - { arch: esp32, config: platformio_esp32.ini, env: esp32-nspanel, name: esp32-matter-nspanel }
+        - { arch: beken, config: platformio_beken.ini, env: beken-bk7231n, name: beken-matter }
+        - { arch: esp8266, config: platformio.ini, env: esp8266-1m, name: esp8266-1m }
+        - { arch: esp8266, config: platformio.ini, env: esp8266-1m-light, name: esp8266-1m-light }
+        - { arch: esp8266, config: platformio.ini, env: esp8266-1m-sensor, name: esp8266-1m-sensor }
+        - { arch: esp8266, config: platformio.ini, env: esp8266-4m, name: esp8266-4m }
+        # first step of the 2-step OTA on 1 MB boards
+        # own small project code/mini-app (https download of the picked image, settings read from ESPurna's EEPROM)
+        - { arch: esp8266-mini, config: mini-app/platformio.ini, env: esp8266-1m-mini, name: esp8266-1m-mini }
+    steps:
+    - uses: actions/checkout@v7
+    - uses: actions/setup-python@v7
+      with:
+        # not '3.x': 3.15 broke the build (pioarduino takes 3.10..3.14, LibreTiny could not make its venv)
+        python-version: '3.13'
+    - name: Cache pip
+      uses: actions/cache@v6
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-platformio
+    - name: Cache PlatformIO
+      uses: actions/cache@v6
+      with:
+        path: ~/.platformio
+        # py313: the caches of the 3.15 runs hold a broken LibreTiny venv
+        key: ${{ runner.os }}-pio-py313-${{ matrix.env }}-${{ hashFiles(format('code/{0}', matrix.config)) }}
+        restore-keys: |
+          ${{ runner.os }}-pio-py313-${{ matrix.env }}-
+    - name: Install PlatformIO
+      run: |
+        # ESP32: pioarduino needs PlatformIO Core >= 6.2
+        pip install -U 'platformio>=6.2'
+    - name: Build
+      working-directory: code
+      env:
+        # LDF deep+ evaluates preprocessor expressions with python eval, and '\e' (ESC)
+        # in some framework header spams SyntaxWarning on python >= 3.12
+        PYTHONWARNINGS: ignore::SyntaxWarning
+        # Beken: scripts/beken_matter_lib.py asks the GitHub API for the latest Matter library release, authenticated
+        GITHUB_TOKEN: ${{ github.token }}
+      run: |
+        # pio libs sometimes use raw hash instead of version, avoid useless warnings
+        git config --global advice.detachedHead false
+        # ESP32: the safeboot image first, esp32_merge.py puts it into the factory partition of the merged image
+        if [ "${{ matrix.arch }}" = esp32 ]; then
+          pio run -d safeboot-app
+        fi
+        if [ "${{ matrix.arch }}" = esp8266-mini ]; then
+          pio run -d mini-app
+        else
+          pio run -c ${{ matrix.config }} -e ${{ matrix.env }}
+        fi
+    - name: Collect binaries
+      run: |
+        env=${{ matrix.env }}
+        name=espurna-${{ matrix.name }}
+        mkdir -p dist
+        case "${{ matrix.arch }}" in
+        esp32)
+          build=code/.pio/build/${env}
+          # one file: the merged image (bootloader, partitions, boot_app0, safeboot, ESPurna). Serial flash at 0x0,
+          # and every update: the safeboot writes only the ESPurna part of it into app0. The safeboot alone, which the
+          # WebUI installs when it differs, is cut out of it for GitHub Pages (pages job below)
+          cp ${build}/espurna-${env}.bin dist/${name}.bin
+          ;;
+        beken)
+          build=code/.pio/build_beken/${env}
+          # first flash over UART1 with ltchiptool, one file per bootloader (scripts/beken_link_tail.py)
+          cp ${build}/espurna-beken-initial-tuya.uf2 ${build}/espurna-beken-initial-quectel.uf2 dist/
+          # OTA from the WebUI, any bootloader: the board takes its part (and the Matter code) out of it
+          cp ${build}/espurna-beken-matter.bin dist/
+          # LibreTiny links raw_firmware.elf
+          cp ${build}/raw_firmware.elf ${build}/firmware.elf
+          ;;
+        esp8266-mini)
+          build=code/mini-app/.pio/build/${env}
+          # the .bin.gz for OTA on 1 MB boards is made for GitHub Pages (pages job), not a release file
+          cp ${build}/firmware.bin dist/${name}.bin
+          ;;
+        esp8266)
+          build=code/.pio/build/${env}
+          # serial flash at 0x0, and OTA from the WebUI. The compressed copy for OTA on 1 MB boards is made for
+          # GitHub Pages (pages job), not a release file
+          cp ${build}/firmware.bin dist/${name}.bin
+          ;;
+        esac
+        cp ${build}/firmware.elf dist/${name}.elf
+        ls -l dist
+    - uses: actions/upload-artifact@v7
+      with:
+        name: espurna-${{ matrix.env }}-${{ github.sha }}
+        path: dist/
+
+  # every push to esp32-port (or esp32-* tag, or manual run) becomes a single release
+  # with the images of all boards, same as upstream snapshot builds
+  release:
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-26.04
+    steps:
+    - uses: actions/download-artifact@v8
+      with:
+        pattern: espurna-*-${{ github.sha }}
+        merge-multiple: true
+        path: dist/
+    - name: Release variables
+      id: release
+      run: |
+        if [[ "${GITHUB_REF}" == refs/tags/esp32-* ]]; then
+          tag="${GITHUB_REF_NAME}"
+        else
+          tag="esp32-$(date +'%y%m%d')-${GITHUB_SHA::7}"
+        fi
+        echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+        ls -l dist
+    - uses: softprops/action-gh-release@v3
+      with:
+        tag_name: ${{ steps.release.outputs.tag }}
+        target_commitish: ${{ github.sha }}
+        name: Firmware build (${{ steps.release.outputs.tag }})
+        body: |
+          Automatic build of ${{ github.ref_name }} @ ${{ github.sha }}
+
+          One image per chip, the board is picked after flashing: WebUI, ADMIN, *Device Template* (Tasmota templates, OpenBeken devices and the boards of this firmware) or *Tasmota Profile Import*.
+
+          ESP32, Arduino-ESP32 core 3 (ESP-IDF 5), Matter On/Off plugs, safeboot flash layout (ESPurna at 0xE0000, 2880 KB). One file per image: serial flash at 0x0, and the same file for updates (WebUI: ADMIN, the release list, or the `/safeboot` page; the safeboot writes only the ESPurna part of it):
+          - `espurna-esp32-matter.bin` - any ESP32 with 4 MB flash
+          - `espurna-esp32-matter-nspanel.bin` - Sonoff NSPanel EU (gen1) with the Lovelace UI TFT, see `nspanel/README.md`
+
+          Beken BK7231N, Matter On/Off plug and 433 MHz receiver, one image for both bootloaders (see `beken/README.md`):
+          - `espurna-beken-matter.bin` - OTA from the WebUI; on the Tuya bootloader it goes up twice, the second upload ("OK, again") writes the Matter code
+          - `espurna-beken-initial-tuya.uf2` - first flash over UART1 with `ltchiptool`, Tuya bootloader (CB2S, CB3S, CBU ...)
+          - `espurna-beken-initial-quectel.uf2` - first flash over UART1, Quectel bootloader without flash encryption (XH-CB2S / BK7231M, `beken/sparkleiot-mini.md`)
+
+          ESP8266, core 3.1.2 + SDK 3.0.5 (`*.bin` - serial flash at 0x0 or OTA; the WebUI update of 1 MB boards takes its compressed copy from the release list by itself):
+          - `espurna-esp8266-1m` - 1 MB boards: relays, buttons, AC mains switches, LEDs, dummy relays, RF receiver / Sonoff RF Bridge, relay MCUs (Sonoff Dual, STM, LightFox, iFan, KingArt)
+          - `espurna-esp8266-1m-light` - 1 MB, + PWM light, IR
+          - `espurna-esp8266-1m-sensor` - 1 MB, + power meters (HLW8012, CSE7766, PZEM ...), sensors (DHT, Dallas, BMx280, analog ...), analog buttons
+          - `espurna-esp8266-4m` - boards installed with the 4 MB layout (its settings sit at the end of 4 MB)
+          - `espurna-esp8266-1m-mini` - first step of the two-step update on 1 MB boards, then the `.bin.gz`
+        make_latest: true
+        files: |
+          dist/*.bin
+          dist/*.bin.gz
+          dist/*.uf2
+    # keep only the newest automatic builds (esp32-YYMMDD-sha); releases of hand-made esp32-* tags stay
+    - name: Prune old automatic releases
+      env:
+        GH_TOKEN: ${{ github.token }}
+        KEEP: 5
+      run: |
+        gh release list --repo "${GITHUB_REPOSITORY}" --limit 200 --json tagName,createdAt \
+            --jq 'sort_by(.createdAt) | reverse | .[].tagName' \
+          | grep -E '^esp32-[0-9]{6}-[0-9a-f]{7}$' \
+          | tail -n +$((KEEP + 1)) \
+          | while read -r tag; do
+              echo "deleting ${tag}"
+              gh release delete "${tag}" --repo "${GITHUB_REPOSITORY}" --cleanup-tag --yes
+            done
+
+  # GitHub Pages copy of the kept releases + firmware.json, for the WebUI (ADMIN, OTA, *Install from GitHub*):
+  # release files themselves come from release-assets.githubusercontent.com without CORS (the browser cannot
+  # download them) and need ECDHE (the Beken mbedTLS has none); Pages serves them with Access-Control-Allow-Origin: *.
+  # Settings -> Pages -> Source: GitHub Actions. Nothing is committed to the repository
+  pages:
+    needs: release
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+    - name: Download the kept releases
+      env:
+        GH_TOKEN: ${{ github.token }}
+        KEEP: 5
+      run: |
+        mkdir -p site
+        gh release list --repo "${GITHUB_REPOSITORY}" --limit 100 --exclude-drafts --json tagName,createdAt \
+            --jq 'sort_by(.createdAt) | reverse | .[].tagName' \
+          | grep -E '^esp32-' \
+          | head -n "${KEEP}" > site/tags.txt
+        while read -r tag; do
+          gh release download "${tag}" --repo "${GITHUB_REPOSITORY}" --dir "site/${tag}"
+          gh release view "${tag}" --repo "${GITHUB_REPOSITORY}" --json tagName,publishedAt,targetCommitish,url \
+            > "site/${tag}/release.json"
+        done < site/tags.txt
+    # A release has one file per image; the board-side copies the WebUI needs are made here, for Pages only:
+    # - ESP8266 .bin.gz: OTA on 1 MB boards (eboot unpacks it), the mini one with zopfli (pigz -11, ~4 KB smaller than
+    #   gzip -9: it has to fit behind the biggest 1 MB image)
+    # - ESP32 -safeboot.bin: the factory partition of the image's merged .bin (each ESP32 build has its own safeboot
+    #   build), installed by the WebUI when the board's one differs
+    - name: Pages copies (.bin.gz, safeboot)
+      run: |
+        sudo apt-get install -y -qq pigz > /dev/null
+        for bin in site/*/espurna-esp8266-*.bin; do
+          [ -e "${bin}" ] || continue
+          [ -e "${bin}.gz" ] && continue
+          case "${bin}" in
+          *-mini.bin) pigz -11 -n -c "${bin}" > "${bin}.gz" ;;
+          *) gzip -9 -n -c "${bin}" > "${bin}.gz" ;;
+          esac
+        done
+        python3 - <<'PY'
+        import glob, os, struct
+
+        # partition table at 0x8000 of the merged image: entries of 32 bytes (magic 0x50AA, type, subtype, offset, size)
+        def partition(data, wanted):
+            for at in range(0x8000, 0x8000 + 0xC00, 32):
+                if data[at:at + 2] != b"\xaa\x50":
+                    return None
+                ptype, subtype, offset, _ = struct.unpack_from("<BBII", data, at + 2)
+                if ptype == 0 and subtype == wanted:
+                    return offset
+            return None
+
+        # ESP image length: header, segments, checksum on a 16-byte boundary, SHA-256 when appended
+        def image_length(data, start):
+            pos = 24
+            for _ in range(data[start + 1]):
+                _, length = struct.unpack_from("<II", data, start + pos)
+                pos += 8 + length
+            pos += 15 - (pos % 16)
+            pos += 1
+            if data[start + 23] == 1:
+                pos += 32
+            return pos
+
+        for path in glob.glob("site/*/espurna-esp32-*.bin"):
+            name = os.path.basename(path)
+            if name.endswith(("-ota.bin", "-full.bin", "-safeboot.bin", "-app.bin")):
+                continue
+            with open(path, "rb") as f:
+                data = f.read()
+            if data[:1] != b"\xff":
+                continue
+            # the safeboot (factory partition)
+            offset = partition(data, 0x00)
+            if offset is not None and data[offset] == 0xE9:
+                out = path[:-len(".bin")] + "-safeboot.bin"
+                with open(out, "wb") as f:
+                    f.write(data[offset:offset + image_length(data, offset)])
+                print(out, os.path.getsize(out))
+            # ESPurna alone (ota_0, the rest of the file): for Tasmota's safeboot, which takes application images only
+            # (installing ESPurna over Tasmota, nspanel/reference.md)
+            offset = partition(data, 0x10)
+            if offset is not None and data[offset:offset + 1] == b"\xe9":
+                out = path[:-len(".bin")] + "-app.bin"
+                with open(out, "wb") as f:
+                    f.write(data[offset:])
+                print(out, os.path.getsize(out))
+        PY
+        ls -lR site
+    - name: Write firmware.json
+      run: |
+        python3 - <<'PY'
+        import datetime, hashlib, html, json, os, re
+
+        SITE = "site"
+
+        # espurna-<image>.bin / -safeboot.bin / .bin.gz / .uf2 / -initial-<loader>.uf2 (and -ota.bin / -full.bin of the
+        # older releases), <image> = the dist name of the build matrix and the ESPURNA_IMAGE of the firmware (WebUI
+        # picks the files of the running image)
+        SUFFIXES = (
+            ("-ota.bin", "ota"),          # ESP32 application of the older releases, through safeboot
+            ("-full.bin", "serial"),      # ESP32 merged image of the older releases, flash at 0x0
+            ("-safeboot.bin", "safeboot"),  # ESP32 safeboot cut out of the image's merged .bin (Pages only)
+            ("-app.bin", "app"),          # ESP32 ESPurna alone, for Tasmota's safeboot (Pages only)
+            ("-matter-tail.bin", "ota"),  # Beken Matter code of the older releases, uploaded after the image
+            (".bin.gz", "ota"),           # ESP8266 compressed OTA (Pages only since one file per image)
+            (".bin", "ota"),              # ESP32 merged image (safeboot takes its ESPurna part), ESP8266 (also serial
+                                          # at 0x0), Beken OTA image
+            (".uf2", "ota"),              # Beken, older releases
+        )
+
+        # (image, kind); image "<chip>-*" - every image of that chip in the release
+        def classify(name):
+            if not name.startswith("espurna-"):
+                return []
+            rest = name[len("espurna-"):]
+            if rest == "esp32-safeboot.bin":
+                return [("esp32-*", "safeboot")]
+            for suffix, kind in SUFFIXES:
+                if rest.endswith(suffix):
+                    image = rest[:-len(suffix)]
+                    # first flash over UART only (Beken, per bootloader), any image of the chip
+                    initial = re.fullmatch(r"(.+)-initial-[0-9a-z]+", image)
+                    if initial:
+                        return [(initial.group(1) + "-*", "serial")]
+                    return [(image, kind)]
+            return []
+
+        def sha256(path):
+            digest = hashlib.sha256()
+            with open(path, "rb") as f:
+                for chunk in iter(lambda: f.read(1 << 16), b""):
+                    digest.update(chunk)
+            return digest.hexdigest()
+
+        KIND_ORDER = {"ota": 0, "serial": 1, "safeboot": 2, "app": 3}
+
+        releases = []
+        with open(os.path.join(SITE, "tags.txt")) as f:
+            tags = [line.strip() for line in f if line.strip()]
+
+        for tag in tags:
+            folder = os.path.join(SITE, tag)
+            with open(os.path.join(folder, "release.json")) as f:
+                info = json.load(f)
+            os.remove(os.path.join(folder, "release.json"))
+
+            images = {}
+            shared = []
+            for name in sorted(os.listdir(folder)):
+                path = os.path.join(folder, name)
+                for image, kind in classify(name):
+                    entry = {
+                        "name": name,
+                        "kind": kind,
+                        "size": os.path.getsize(path),
+                        "sha256": sha256(path),
+                        "url": f"{tag}/{name}",
+                    }
+                    if image.endswith("-*"):
+                        shared.append((image[:-1], entry))
+                    else:
+                        images.setdefault(image, []).append(entry)
+
+            for prefix, entry in shared:
+                for image, files in images.items():
+                    if image.startswith(prefix) or (image + "-") == prefix:
+                        files.append(dict(entry))
+
+            for files in images.values():
+                files.sort(key=lambda x: (KIND_ORDER.get(x["kind"], 9), x["size"]))
+
+            commit = info.get("targetCommitish", "")
+            if not re.fullmatch(r"[0-9a-f]{40}", commit):
+                commit = tag.rsplit("-", 1)[-1]
+
+            releases.append({
+                "tag": tag,
+                "date": info.get("publishedAt", ""),
+                "commit": commit,
+                "release": info.get("url", ""),
+                "images": dict(sorted(images.items())),
+            })
+
+        manifest = {
+            "version": 1,
+            "repository": os.environ["GITHUB_REPOSITORY"],
+            "generated": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "releases": releases,
+        }
+
+        with open(os.path.join(SITE, "firmware.json"), "w") as f:
+            json.dump(manifest, f, indent=1)
+
+        rows = []
+        for release in releases:
+            rows.append(f"<h2>{html.escape(release['tag'])}</h2><ul>")
+            for image, files in release["images"].items():
+                links = ", ".join(
+                    f"<a href=\"{html.escape(x['url'])}\">{html.escape(x['name'])}</a> ({x['kind']}, {x['size']} bytes)"
+                    for x in files)
+                rows.append(f"<li><b>{html.escape(image)}</b>: {links}</li>")
+            rows.append("</ul>")
+
+        with open(os.path.join(SITE, "index.html"), "w") as f:
+            f.write("<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>ESPurna firmware</title></head><body>"
+                    "<h1>ESPurna firmware</h1><p>Copies of the newest releases for the WebUI, ADMIN, OTA, "
+                    "<i>Install from GitHub</i>: <a href=\"firmware.json\">firmware.json</a></p>"
+                    + "".join(rows) + "</body></html>\n")
+
+        os.remove(os.path.join(SITE, "tags.txt"))
+        print(json.dumps(manifest, indent=1))
+        PY
+    # one artifact per attempt: a re-run of this job otherwise finds the github-pages artifact of the failed
+    # attempt as well and deploy-pages stops ("Multiple artifacts named github-pages")
+    - uses: actions/upload-pages-artifact@v5
+      with:
+        path: site/
+        name: github-pages-${{ github.run_attempt }}
+    - id: deploy
+      uses: actions/deploy-pages@v5
+      with:
+        artifact_name: github-pages-${{ github.run_attempt }}

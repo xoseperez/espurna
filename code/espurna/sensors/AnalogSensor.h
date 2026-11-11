@@ -18,7 +18,11 @@
 
 class AnalogSensor : public BaseAnalogSensor {
     public:
+#if defined(ARDUINO_ARCH_ESP32)
+        static constexpr int RawBits { 12 };
+#else
         static constexpr int RawBits { 10 };
+#endif
 
         static constexpr double RawMin { 0.0 };
         static constexpr double RawMax { (1 << RawBits) - 1 };
@@ -87,18 +91,30 @@ class AnalogSensor : public BaseAnalogSensor {
 
         // Initialization method, must be idempotent
         void begin() override {
+#if defined(ARDUINO_ARCH_ESP32)
+            // full 0..3.3V range; voltage comes from the calibrated analogReadMilliVolts()
+            analogSetPinAttenuation(_pin, ADC_11db);
+#endif
             _ready = true;
             _last = TimeSource::now() + _delay;
         }
 
         // Descriptive name of the sensor
         String description() const override {
+#if defined(ARDUINO_ARCH_ESP32)
+            return String(F("ANALOG @ ")) + address(0);
+#else
             return F("ANALOG @ TOUT");
+#endif
         }
 
         // Address of the sensor (it could be the GPIO or I2C address)
         String address(unsigned char) const override {
+#if defined(ARDUINO_ARCH_ESP32)
+            return String(F("GPIO")) + String(_pin, 10);
+#else
             return F("A0");
+#endif
         }
 
         // Type for slot # index
@@ -124,8 +140,13 @@ class AnalogSensor : public BaseAnalogSensor {
         }
 
     protected:
+        // Voltage at the pin. ESP8266 ADC range is 0..1V, ESP32 one is not linear and is read in calibrated mV
         double _sampledVoltageValue() const {
+#if defined(ARDUINO_ARCH_ESP32)
+            return _millivolts / 1000.0;
+#else
             return _value / RawMax;
+#endif
         }
 
         double _sampledValue() const {
@@ -149,12 +170,19 @@ class AnalogSensor : public BaseAnalogSensor {
             ++_sample;
             _last = now;
             _sum += ::analogRead(pin);
+#if defined(ARDUINO_ARCH_ESP32)
+            _sum_millivolts += ::analogReadMilliVolts(pin);
+#endif
 
             if (_sample >= _samples) {
                 const double sum = _sum;
                 const double samples = _samples;
                 _sampledValue(sum / samples);
                 _sum = 0;
+#if defined(ARDUINO_ARCH_ESP32)
+                _millivolts = _sum_millivolts / samples;
+                _sum_millivolts = 0;
+#endif
                 _sample = 0;
             }
         }
@@ -182,6 +210,11 @@ class AnalogSensor : public BaseAnalogSensor {
 
         double _value { 0.0 };
 
+#if defined(ARDUINO_ARCH_ESP32)
+        uint32_t _sum_millivolts { 0 };
+        double _millivolts { 0.0 };
+#endif
+
         double _factor { 1.0 };
         double _offset { 0.0 };
 
@@ -200,3 +233,4 @@ constexpr size_t AnalogSensor::SamplesMax;
 constexpr AnalogSensor::Microseconds AnalogSensor::DelayMin;
 constexpr AnalogSensor::Microseconds AnalogSensor::DelayMax;
 #endif
+

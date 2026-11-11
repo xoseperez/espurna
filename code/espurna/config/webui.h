@@ -13,6 +13,7 @@
 #define WEBUI_IMAGE_GARLAND    31
 #define WEBUI_IMAGE_THERMOSTAT 32
 #define WEBUI_IMAGE_CURTAIN    64
+#define WEBUI_IMAGE_MATTER     128
 #define WEBUI_IMAGE_FULL       15
 
 #if LIGHT_PROVIDER != LIGHT_PROVIDER_NONE
@@ -85,7 +86,28 @@
     #endif
 #endif
 
+#if NSPANEL_SUPPORT
+    #ifdef WEBUI_IMAGE
+        #undef WEBUI_IMAGE
+    #endif
+    #define WEBUI_IMAGE        WEBUI_IMAGE_FULL
+#endif
+
+// the MATTER panel is in the "matter" image (the small one + MATTER) and in the full one
+#if MATTER_SUPPORT
+    #if defined(WEBUI_IMAGE) && (WEBUI_IMAGE != WEBUI_IMAGE_SMALL)
+        #undef WEBUI_IMAGE
+        #define WEBUI_IMAGE    WEBUI_IMAGE_FULL
+    #else
+        #ifdef WEBUI_IMAGE
+            #undef WEBUI_IMAGE
+        #endif
+        #define WEBUI_IMAGE    WEBUI_IMAGE_MATTER
+    #endif
+#endif
+
 #ifndef WEBUI_IMAGE
     #define WEBUI_IMAGE        WEBUI_IMAGE_SMALL
 #endif
+
 

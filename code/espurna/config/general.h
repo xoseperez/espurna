@@ -127,6 +127,51 @@
 #define TELNET_SUPPORT          1               // Enable telnet support by default (3.34Kb)
 #endif
 
+//------------------------------------------------------------------------------
+// MATTER
+// On/Off plug endpoints for the relays (matter.cpp). Beken (libMatterApp of matter-bk7231n) and ESP32 on
+// Arduino-ESP32 core 3.x only, set by their *-matter environments
+//------------------------------------------------------------------------------
+
+#ifndef MATTER_SUPPORT
+#define MATTER_SUPPORT          0
+#endif
+
+//------------------------------------------------------------------------------
+// SAFEBOOT
+// ESP32 with the asymmetric flash layout (esp32_4mb_safeboot.csv): `safeboot` command, crash-loop guard, web /upgrade
+// guard (arch/esp32/safeboot_esp32.cpp), on by default for ESP32 (harmless on other layouts: no factory partition, no
+// guard), web /safeboot (migration, update from the release list). On for every ESP32 image, the NSPanel as well
+// (harmless on other layouts: no factory partition, no guard)
+//------------------------------------------------------------------------------
+
+#ifndef SAFEBOOT_SUPPORT
+#if defined(ESP32)
+#define SAFEBOOT_SUPPORT        1
+#else
+#define SAFEBOOT_SUPPORT        0
+#endif
+#endif
+
+#if SAFEBOOT_SUPPORT && !defined(ESP32)
+#error "SAFEBOOT_SUPPORT is for ESP32 only"
+#endif
+
+// Unstable boots in a row (crashes, watchdogs, restarts ESPurna did not ask for) that switch to the ESPurna safeboot.
+// The NSPanel sits in a wall: it goes at the 3rd one, the same boot that would start the unstable mode
+// (SYSTEM_CHECK_MAX), so the image can be replaced over Wi-Fi instead
+#ifndef SAFEBOOT_CRASH_LOOP_MAX
+#if NSPANEL_SUPPORT
+#define SAFEBOOT_CRASH_LOOP_MAX 3
+#else
+#define SAFEBOOT_CRASH_LOOP_MAX 5
+#endif
+#endif
+
+#if MATTER_SUPPORT && !defined(LIBRETINY) && !defined(ESP32)
+#error "MATTER_SUPPORT needs Beken (LibreTiny) or ESP32 (Arduino-ESP32 core 3.x)"
+#endif
+
 #ifndef TELNET_STA
 #define TELNET_STA              0               // By default, disallow connections via STA interface
 #endif
@@ -207,6 +252,11 @@
                                                 // the system is flagged as unstable
 #endif
 
+#ifndef SYSTEM_CHECK_EXIT
+#define SYSTEM_CHECK_EXIT       10              // Minutes in the unstable mode without a crash before rebooting
+                                                // into the normal mode, 0 stays until a manual reboot
+#endif
+
 //------------------------------------------------------------------------------
 // EEPROM
 //------------------------------------------------------------------------------
@@ -232,8 +282,13 @@
 #define GARLAND_SUPPORT             0
 #endif
 
+// default of the `garlandGPIO` setting; generic images have none, the module stays idle until it is set
 #ifndef GARLAND_DATA_PIN
+#if defined(ESP8266_GENERIC)
+#define GARLAND_DATA_PIN            GPIO_NONE
+#else
 #define GARLAND_DATA_PIN            4           // WS2812 data pin (default: D2 / GPIO4)
+#endif
 #endif
 
 #ifndef GARLAND_LEDS
@@ -368,7 +423,18 @@
 #define RELAY_SUPPORT                   1
 #endif
 
-// ESP01-relays with STM co-MCU driving the relays
+// Generic images (board from the settings): UART drivers (Tuya, Sonoff Dual, STM relay, Lightfox, KingArt
+// curtain...) are compiled in, but stay idle until configured. The one that starts takes its port from
+// the serial log / terminal at runtime (uartClaim()), instead of these being compiled out
+#ifndef UART_DRIVERS_CLAIM_PORT
+#if defined(ESP8266_GENERIC) || defined(ESP32_GENERIC) || defined(BEKEN_GENERIC)
+#define UART_DRIVERS_CLAIM_PORT         1
+#else
+#define UART_DRIVERS_CLAIM_PORT         0
+#endif
+#endif
+
+// ESP01-relays with STM co-MCU driving the relays (relayProv<N> stm)
 #ifndef RELAY_PROVIDER_STM_SUPPORT
 #define RELAY_PROVIDER_STM_SUPPORT      0
 #endif
@@ -377,13 +443,26 @@
 #define RELAY_PROVIDER_STM_PORT         1
 #endif
 
-// Sonoff Dual, using serial protocol
+// Sonoff Dual, using serial protocol (relayProv<N> dual)
 #ifndef RELAY_PROVIDER_DUAL_SUPPORT
 #define RELAY_PROVIDER_DUAL_SUPPORT     0
 #endif
 
 #ifndef RELAY_PROVIDER_DUAL_PORT
 #define RELAY_PROVIDER_DUAL_PORT        1
+#endif
+
+// Foxel Lightfox Dual, relays and buttons through the serial protocol (relayProv<N> / btnProv<N> lightfox)
+#ifndef LIGHTFOX_SUPPORT
+#ifdef FOXEL_LIGHTFOX_DUAL
+#define LIGHTFOX_SUPPORT                1
+#else
+#define LIGHTFOX_SUPPORT                0
+#endif
+#endif
+
+#ifndef LIGHTFOX_PORT
+#define LIGHTFOX_PORT                   1
 #endif
 
 // Default boot mode: 0 means OFF, 1 ON and 2 whatever was before
@@ -587,6 +666,11 @@
                                                            // how long to wait (in ms) until stopping the AP
 #endif
 
+#ifndef WIFI_KICKED_TIME
+#define WIFI_KICKED_TIME            10                     // Minutes the AP that kicked us (usteer 'AP busy' or unspecified reason)
+                                                           // is tried last when the scan finds another one, 0 disables
+#endif
+
 #ifndef WIFI_AP_SSID
 #define WIFI_AP_SSID                ""                     // (optional) Specify softAp SSID.
                                                            // By default or when empty, hostname (or device identifier) is used instead.
@@ -627,6 +711,11 @@
 
 #ifndef WIFI_SCAN_RSSI_CHECK_INTERVAL
 #define WIFI_SCAN_RSSI_CHECK_INTERVAL   60000              // Time (ms) between RSSI checks
+#endif
+
+#ifndef WIFI_ROAM_RSSI_DELTA
+#define WIFI_ROAM_RSSI_DELTA            4                  // Only switch to another AP when it is at least this much (dB)
+                                                           // stronger than the current one, to avoid bouncing between similar APs
 #endif
 
 // ref: https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/kconfig.html#config-lwip-esp-gratuitous-arp
@@ -761,7 +850,13 @@
 // -----------------------------------------------------------------------------
 
 #ifndef MDNS_SERVER_SUPPORT
+#if defined(LIBRETINY) && MATTER_SUPPORT
+// Beken: the LibreTiny responder is a second one next to the Matter stack's own (both on 5353) and lives in the small
+// lwIP heap the Matter traffic needs. On the ESP32 both share the IDF mdns component, so it stays there
+#define MDNS_SERVER_SUPPORT         0
+#else
 #define MDNS_SERVER_SUPPORT         1           // Publish services using mDNS by default (1.48Kb)
+#endif
 #endif
 
 #ifndef LLMNR_SUPPORT
@@ -857,6 +952,12 @@
 
 #ifndef OTA_WEB_SUPPORT
 #define OTA_WEB_SUPPORT             WEB_SUPPORT             // Support `/upgrade` endpoint and WebUI OTA handler
+#endif
+
+#ifndef OTA_FETCH_SUPPORT
+#define OTA_FETCH_SUPPORT           0           // ESP8266: the image downloads its update itself at boot (/ota/fetch, https
+                                                // with SHA-256, ota_fetch.cpp). Needs ~27 KB of heap for TLS, which no full
+                                                // image has: off everywhere, the 1 MB updater is code/mini-app
 #endif
 
 #define OTA_GITHUB_FP               "CA:06:F5:6B:25:8B:7A:0D:4F:2B:05:47:09:39:47:86:51:15:19:84"
@@ -1059,6 +1160,12 @@
                                                     // 2 minutes by default. Can be zero. Small values 1..5 *may* not be handled properly.
 #endif
 
+#ifndef MQTT_CONNECT_TIMEOUT
+#define MQTT_CONNECT_TIMEOUT        60              // Give up a connection attempt that did not finish in this many seconds and start a new one.
+                                                    // Async client never reports some failed connects (e.g. DNS error), which would leave it 'connecting' forever.
+                                                    // 0 disables
+#endif
+
 #ifndef MQTT_CLEAN_SESSION
 #define MQTT_CLEAN_SESSION          0               // MQTT Clean Session flag.
                                                     // When disabled, server is expected to persist subscriptions and not-yet-delivered messages w/ QoS > 0 for the specified Client Id.
@@ -1166,6 +1273,36 @@
 
 #ifndef LIGHT_PROVIDER
 #define LIGHT_PROVIDER          LIGHT_PROVIDER_NONE
+#endif
+
+// LIGHT_PROVIDER_ANY (generic images) builds every provider, `ltProvider` setting picks one at boot:
+// `dimmer` (default, ltDimmerGPIO<N>), `my92xx` (ltMy92xx* keys) or `custom` (a module such as Tuya
+// registers the channels). Nothing is touched until the respective pins / port are configured
+#define LIGHT_PROVIDER_DIMMER_SUPPORT \
+    ((LIGHT_PROVIDER == LIGHT_PROVIDER_DIMMER) || (LIGHT_PROVIDER == LIGHT_PROVIDER_ANY))
+#define LIGHT_PROVIDER_MY92XX_SUPPORT \
+    ((LIGHT_PROVIDER == LIGHT_PROVIDER_MY92XX) || (LIGHT_PROVIDER == LIGHT_PROVIDER_ANY))
+#define LIGHT_PROVIDER_CUSTOM_SUPPORT \
+    ((LIGHT_PROVIDER == LIGHT_PROVIDER_CUSTOM) || (LIGHT_PROVIDER == LIGHT_PROVIDER_ANY))
+
+#ifndef MY92XX_MODEL
+#define MY92XX_MODEL            MY92XX_MODEL_MY9291
+#endif
+
+#ifndef MY92XX_CHIPS
+#define MY92XX_CHIPS            1
+#endif
+
+#ifndef MY92XX_DI_PIN
+#define MY92XX_DI_PIN           GPIO_NONE
+#endif
+
+#ifndef MY92XX_DCKI_PIN
+#define MY92XX_DCKI_PIN         GPIO_NONE
+#endif
+
+#ifndef MY92XX_COMMAND
+#define MY92XX_COMMAND          MY92XX_COMMAND_DEFAULT
 #endif
 
 #ifndef LIGHT_REPORT_DELAY
@@ -1539,9 +1676,26 @@
 // https://tinkerman.cat/adding-rf-to-a-non-rf-itead-sonoff/
 // Also possible to use with SONOFF RF BRIDGE, thanks to @wildwiz
 // https://github.com/xoseperez/espurna/wiki/Hardware-Itead-Sonoff-RF-Bridge---Direct-Hack
+// - RFB_PROVIDER_ANY
+// Both of them, the `rfbProv` setting picks one at boot: `rcswitch` (default, rfbRX / rfbTX pins)
+// or `efm8bb1` (UART RFB_PORT, serial debug and terminal then stay off that port).
+// Default of the generic ESP8266 images, where the board comes from the settings
+#ifndef RFB_PROVIDER_ANY
+#define RFB_PROVIDER_ANY            2
+#endif
+
 #ifndef RFB_PROVIDER
+#if defined(ESP8266_GENERIC)
+#define RFB_PROVIDER                RFB_PROVIDER_ANY
+#else
 #define RFB_PROVIDER                RFB_PROVIDER_RCSWITCH
 #endif
+#endif
+
+#define RFB_PROVIDER_RCSWITCH_SUPPORT \
+    ((RFB_PROVIDER == RFB_PROVIDER_RCSWITCH) || (RFB_PROVIDER == RFB_PROVIDER_ANY))
+#define RFB_PROVIDER_EFM8BB1_SUPPORT \
+    ((RFB_PROVIDER == RFB_PROVIDER_EFM8BB1) || (RFB_PROVIDER == RFB_PROVIDER_ANY))
 
 #ifndef RFB_PORT
 #define RFB_PORT                    1               // If EFM is enabled, use this UART port
@@ -1673,12 +1827,13 @@
 #endif
 
 #ifndef IR_RX_PRESET
-#define IR_RX_PRESET                0               // (number) IR-code-as-button preset to use
+#define IR_RX_PRESET                0               // (number) IR-code-as-button preset to use, default of the
+                                                    // `irRxPreset` setting (every preset is built in)
                                                     // 0 - disabled
                                                     // 1,2,5 - generic remote shipped with the RGB controller
                                                     // 3 - Samsung AA59-00608A for a generic 8CH module
                                                     // 4 - Remote for a generic 1CH module
-                                                    // (~1Kb, see ir.cpp for more info about the presets)
+                                                    // (see ir.cpp for more info about the presets)
 #endif
 
 #ifndef IR_RX_UNKNOWN
@@ -1741,8 +1896,13 @@
 #define RFM69_ENCRYPTKEY            "fibonacci0123456"
 #endif
 
+// default of the `rfm69CsGPIO` setting; generic images have none, the module stays idle until it is set
 #ifndef RFM69_CS_PIN
+#if defined(ESP8266_GENERIC)
+#define RFM69_CS_PIN                GPIO_NONE
+#else
 #define RFM69_CS_PIN                SS
+#endif
 #endif
 
 #ifndef RFM69_IRQ_PIN
@@ -1758,6 +1918,14 @@
 #endif
 
 //--------------------------------------------------------------------------------
+// Sonoff NSPanel display backend (ESP32 only, enabled by the SONOFF_NSPANEL board)
+//--------------------------------------------------------------------------------
+
+#ifndef NSPANEL_SUPPORT
+#define NSPANEL_SUPPORT             0
+#endif
+
+//--------------------------------------------------------------------------------
 // TUYA switch & dimmer support
 //--------------------------------------------------------------------------------
 
@@ -1765,8 +1933,13 @@
 #define TUYA_SUPPORT                0
 #endif
 
+// UART number, default of the `tuyaPort` setting. 0 = off (generic images, set tuyaPort to start the module)
 #ifndef TUYA_PORT
+#if UART_DRIVERS_CLAIM_PORT
+#define TUYA_PORT                   0
+#else
 #define TUYA_PORT                   1
+#endif
 #endif
 
 #ifndef TUYA_FILTER_ENABLED
@@ -1810,7 +1983,11 @@
 #endif
 
 #ifndef PWM_PROVIDER
+#if defined(ESP32)
+#define PWM_PROVIDER                PWM_PROVIDER_ESP32
+#else
 #define PWM_PROVIDER                PWM_PROVIDER_GENERIC // Currently, two software PWM providers are supported
+#endif
                                                          // - PWM_PROVIDER_GENERIC (default)
                                                          // - PWM_PROVIDER_ARDUINO
 #endif
@@ -1838,8 +2015,13 @@
 #define KINGART_CURTAIN_SUPPORT      0
 #endif
 
+// UART number, default of the `curtainPort` setting. 0 = off (generic images, set curtainPort to start the module)
 #ifndef KINGART_CURTAIN_PORT
+#if UART_DRIVERS_CLAIM_PORT
+#define KINGART_CURTAIN_PORT         0
+#else
 #define KINGART_CURTAIN_PORT         1
+#endif
 #endif
 
 #ifndef KINGART_CURTAIN_BUFFER_SIZE
@@ -1870,3 +2052,4 @@
 #ifndef CURTAIN_SUPPORT
 #define CURTAIN_SUPPORT KINGART_CURTAIN_SUPPORT
 #endif
+

@@ -80,6 +80,127 @@
                     <button type="button" class="pure-button button-upgrade">Upgrade</button>
                     <input name="upgrade" type="file" data-action="none">
                 </div>
+
+                <div class="pure-control-group">
+                    <label>Release list</label>
+                    <input name="webFwUrl" class="pure-input-2-3" type="text" placeholder="https://igorufox.github.io/espurna/firmware.json" spellcheck="false" autocomplete="off">
+                    <span class="pure-form-message">
+                        URL of the <code>firmware.json</code> made by the CI (GitHub Pages of the repository). Empty to use the default one.
+                    </span>
+                </div>
+
+                <div class="pure-control-group">
+                    <label>From GitHub</label>
+                    <button type="button" class="pure-button button-firmware-list">Show releases</button>
+                    <span class="pure-form-message">
+                        Image of this board: <strong id="firmware-image">?</strong>.
+                        The newest builds of <a href="https://github.com/igorufox/espurna/releases">igorufox/espurna</a>,
+                        files of this image only. <em>Install</em> downloads the file into this browser and uploads it to the board,
+                        same as <em>Upgrade</em>, and lists the steps ahead. ESP32 installs through safeboot, which may ask
+                        for the login: admin and the admin password.
+                    </span>
+                    <span class="pure-form-message">
+                        <strong>Why a Beken install can take several restarts.</strong> These boards are filled to the last
+                        byte. A 2 MiB Tuya board (CB2S, CB3S, CBU ...) has 1124 KiB for the firmware and 664 KiB for an
+                        update, while ESPurna with Matter is about 1.4 MiB. So the Matter code does not live in the firmware
+                        space but in the update space: an update overwrites it, the board restarts into the new firmware without
+                        Matter, and the same file goes up a second time to put its Matter code back. And while Matter runs,
+                        its code sits right where the update has to go, so the board first restarts without Matter. The
+                        install does all of it by itself, up to seven steps and three restarts. 4 MiB Quectel boards take the
+                        file in one go. Keep the board powered until the last step. When an install stops half-way, the board
+                        keeps running its firmware (at worst without Matter, which its MATTER page then says) and
+                        <em>Install</em> can simply be started again.
+                    </span>
+                </div>
+
+                <div class="pure-control-group">
+                    <label>&nbsp;</label>
+                    <span id="firmware-status"></span>
+                </div>
+
+                <ol id="firmware-steps" class="firmware-steps"></ol>
+
+                <ul id="firmware-releases"></ul>
+            </fieldset>
+
+            <fieldset>
+                <legend>Device Template</legend>
+
+                <div class="pure-control-group">
+                    <label>Find device</label>
+                    <input id="template-search" class="pure-input-1-2" type="search" data-action="none" placeholder="sonoff mini, shelly 1pm, ms-104b..." spellcheck="false" autocomplete="off">
+                    <button type="button" id="button-template-search" class="pure-button button-template-search">Search</button>
+                    <span class="pure-form-message">
+                        Searches in: <strong id="template-sources">...</strong>.
+                        Every word has to be found in the name or the model.
+                        The lists are downloaded by this browser at the time of the search, nothing is sent there.
+                        <em>Apply</em> writes relay, button and LED pins, manufacturer and device name, then asks to reboot.
+                        AC mains wall switches are set afterwards in <strong>RELAYS</strong>, per button.
+                    </span>
+                </div>
+
+                <div class="pure-control-group">
+                    <label>&nbsp;</label>
+                    <span id="template-status"></span>
+                </div>
+
+                <ul id="template-results"></ul>
+
+                <div class="pure-control-group">
+                    <label>Own device list</label>
+                    <input name="webTplUrl" class="pure-input-2-3" type="text" placeholder="https://raw.githubusercontent.com/igorufox/espurna-devices/main/devices.json" spellcheck="false" autocomplete="off">
+                    <span class="pure-form-message">
+                        URL of the <em>ESPurna devices</em> list, a <code>devices.json</code> with boards that are in no other list.
+                        Empty to use the default one. Only relay, button, LED, UART and RF pins, button actions and the board names are taken from it.
+                    </span>
+                </div>
+
+                <details>
+                    <summary>Paste a Tasmota template</summary>
+
+                    <div class="pure-control-group">
+                        <label>Template JSON</label>
+                        <textarea id="tasmota-template" class="pure-input-2-3"
+                            rows="4"
+                            placeholder='{"NAME":"MyDevice","GPIO":[0,0,0,0,0,0,0,0,0,0,0,0,224,225,0,0,0,0,0,544,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"FLAG":0,"BASE":1}'></textarea>
+                        <span class="pure-form-message">
+                            A template that is not in the list, e.g. from the Tasmota WebUI (<em>Configure Other</em>). ESP8266 and ESP32 templates only.
+                        </span>
+                    </div>
+
+                    <div class="pure-control-group">
+                        <label>&nbsp;</label>
+                        <span id="tasmota-preview"></span>
+                    </div>
+
+                    <div class="pure-controls">
+                        <button type="button" id="button-tasmota-import" class="pure-button button-tasmota-import">Import Tasmota Template</button>
+                    </div>
+                </details>
+
+                <details>
+                    <summary>Export this device as a template</summary>
+
+                    <div class="pure-control-group">
+                        <label>Template JSON</label>
+                        <textarea id="template-export" class="pure-input-2-3" rows="12" readonly spellcheck="false"></textarea>
+                        <span class="pure-form-message">
+                            An entry for the <code>devices.json</code> of the own device list, made of the saved settings of this device:
+                            relay, button, LED, UART and RF pins, button actions, manufacturer and device name.
+                            Network, MQTT, passwords, topics and everything else are left out.
+                        </span>
+                    </div>
+
+                    <div class="pure-control-group">
+                        <label>&nbsp;</label>
+                        <span id="template-export-status"></span>
+                    </div>
+
+                    <div class="pure-controls">
+                        <button type="button" id="button-template-export" class="pure-button button-template-export">Export as template</button>
+                        <button type="button" id="button-template-copy" class="pure-button button-template-copy">Copy</button>
+                    </div>
+                </details>
             </fieldset>
 
         </div>

@@ -221,6 +221,7 @@ span.visible {
 .button-settings-factory,
 .button-settings-password,
 .button-setup-password.button-setup-lenient,
+.button-firmware-install,
 .button-upgrade {
     background: rgb(192, 0, 0); /* redish */
 }
@@ -229,13 +230,20 @@ span.visible {
 .button-apikey,
 .button-cmd,
 .button-emon-expected-calculate,
+.button-firmware-list,
 .button-garland-set-default,
 .button-ha-enabled,
 .button-lightfox-learn,
+.button-matter-start,
+.button-matter-window,
 .button-rfb-learn,
 .button-settings-backup,
 .button-settings-restore,
 .button-setup-password,
+.button-tasmota-import,
+.button-template-apply,
+.button-template-export,
+.button-template-search,
 .button-upgrade-browse {
     background: rgb(0, 192, 0); /* green */
 }
@@ -263,6 +271,8 @@ span.visible {
 }
 
 .button-upgrade-browse,
+.button-template-copy,
+.button-template-search,
 .button-clear-filters,
 .button-clear-messages,
 .button-clear-counts,
@@ -513,4 +523,82 @@ input::placeholder {
 #error-notification {
     width: 100%;
     box-shadow: 0 1px 2px 1px rgb(192 0 0 / 25%)
+}
+
+#tasmota-template {
+    font-family: monospace;
+    font-size: 0.85em;
+    resize: vertical;
+}
+
+#tasmota-preview {
+    font-family: monospace;
+    font-size: 0.9em;
+}
+
+#template-results {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1em 0;
+}
+
+.template-result {
+    margin: 0.3em 0;
+    font-size: 0.9em;
+}
+
+.template-result .pure-button {
+    padding: 0.2em 0.8em;
+}
+
+#firmware-releases {
+    margin: 0 0 1em 0;
+    font-size: 0.9em;
+}
+
+#firmware-releases > li {
+    margin: 0.5em 0;
+}
+
+#firmware-releases .pure-button {
+    padding: 0.2em 0.8em;
+    margin: 0.2em 0;
+}
+
+#firmware-status.firmware-error {
+    color: #b00;
+}
+
+#firmware-status.firmware-ok {
+    color: #070;
+}
+
+#matter-code-status.firmware-error {
+    color: #b00;
+}
+
+#matter-code-status.firmware-ok {
+    color: #070;
+}
+
+/* install steps: done, in progress, still to come */
+.firmware-steps {
+    margin: 0 0 1em 0;
+    font-size: 0.9em;
+}
+
+.firmware-steps .step-done {
+    color: #070;
+}
+
+.firmware-steps .step-done::after {
+    content: " \2713";
+}
+
+.firmware-steps .step-current {
+    font-weight: bold;
+}
+
+.firmware-steps .step-pending {
+    color: #999;
 }

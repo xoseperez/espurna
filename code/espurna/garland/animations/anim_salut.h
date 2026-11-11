@@ -94,3 +94,4 @@ class AnimSalut : public Anim {
 };
 
 #endif  // GARLAND_SUPPORT
+

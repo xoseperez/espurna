@@ -12,7 +12,7 @@ Copyright (C) 2016-2019 by Xose Pérez <xose dot perez at gmail dot com>
 
 #include <cstddef>
 
-#include "types.h"
+#include "types_orch.h"
 #include "terminal_parsing.h"
 #include "terminal_commands.h"
 
@@ -34,3 +34,4 @@ void terminalRegisterCommand(espurna::terminal::Commands);
 
 void terminalWebApiSetup();
 void terminalSetup();
+

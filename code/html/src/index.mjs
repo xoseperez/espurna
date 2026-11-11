@@ -10,6 +10,8 @@ import {
     MODULE_LED,
     MODULE_LIGHT,
     MODULE_LIGHTFOX,
+    MODULE_MATTER,
+    MODULE_NSPANEL,
     MODULE_OTA,
     MODULE_RELAY,
     MODULE_RFB,
@@ -62,8 +64,12 @@ import { init as initHa } from './ha.mjs';
 import { init as initLed } from './led.mjs';
 import { init as initLight } from './light.mjs';
 import { init as initLightfox } from './lightfox.mjs';
+import { init as initMatter } from './matter.mjs';
+import { init as initNspanel } from './nspanel.mjs';
 import { init as initNtp } from './ntp.mjs';
 import { init as initOta } from './ota.mjs';
+import { firmwareInstallRunning } from './fwinstall.mjs';
+import { init as initButton } from './button.mjs';
 import { init as initRelay } from './relay.mjs';
 import { init as initRfbridge } from './rfbridge.mjs';
 import { init as initRfm69 } from './rfm69.mjs';
@@ -74,6 +80,9 @@ import { init as initThermostat } from './thermostat.mjs';
 import { init as initThingspeak } from './thingspeak.mjs';
 
 import { init as initDev } from './dev.mjs';
+import { init as initTasmota } from './tasmota.mjs';
+import { init as initTemplates } from './templates.mjs';
+import { init as initUart } from './uart.mjs';
 
 /** @type {number | null} */
 let KeepTime = null;
@@ -327,6 +336,11 @@ function listeners() {
  * @param {CloseEvent} event
  */
 function onConnectionClose(event) {
+    // firmware install from GitHub waits for the reboots itself and reloads the page when done
+    if (firmwareInstallRunning()) {
+        return;
+    }
+
     askAndCall([askReload(event)], () => {
         pageReloadIn(1000);
     });
@@ -390,6 +404,8 @@ async function init() {
     initWiFi();
     initGpio();
     initNtp();
+    initTasmota();
+    initTemplates();
 
     if (MODULE_OTA) {
         initOta();
@@ -417,6 +433,8 @@ async function init() {
 
     if (MODULE_RELAY) {
         initRelay();
+        initButton();
+        initUart();
     }
 
     if (MODULE_RFM69) {
@@ -461,6 +479,14 @@ async function init() {
 
     if (MODULE_CURTAIN) {
         initCurtain();
+    }
+
+    if (MODULE_NSPANEL) {
+        initNspanel();
+    }
+
+    if (MODULE_MATTER) {
+        initMatter();
     }
 
     if (MODULE_DEV) {

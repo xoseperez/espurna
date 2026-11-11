@@ -63,3 +63,4 @@ private:
 };
 
 #endif // SENSOR_SUPPORT && EMON_ANALOG_SUPPORT
+

@@ -426,7 +426,7 @@ function toOutput(options) {
             // make sure to include both type and data
             const output = [
                 '#pragma once',
-                '#include <sys/pgmspace.h>',
+                '#include "pgmspace_orch.h"',
                 '#include <cstdint>',
                 `alignas(4) static constexpr char webui_last_modified[] PROGMEM = "${formatLastModified(source)}";`,
                 `alignas(4) static constexpr char webui_content_encoding[] PROGMEM = "${formatContentEncoding(options.compress)}";`,
@@ -758,6 +758,18 @@ function makeInlineSource(options, stats) {
                         }),
                     ],
                 });
+
+                // every module the bundle read counts for Last-Modified, not only the entrypoint:
+                // a change in an imported module alone must not be answered with 304 by the device
+                for (const id of result.watchFiles) {
+                    if (path.isAbsolute(id)) {
+                        try {
+                            stats[id] = await fs.promises.stat(id);
+                        } catch {
+                            // virtual and generated ids have no file
+                        }
+                    }
+                }
 
                 const bundle = await result.generate({
                     sourcemap: 'inline',
@@ -1117,9 +1129,9 @@ export async function eslint() {
                 log(formatted);
             }
 
-            const fatal = results.some((x) => x.errorCount > 0);
-            if (fatal) {
-                throw new Error(`eslint: ${path} failed`);
+            const failing = results.filter((x) => x.errorCount > 0).map((x) => x.filePath);
+            if (failing.length) {
+                throw new Error(`eslint failed: ${failing.join(', ')}`);
             }
         },
     );

@@ -1,0 +1,96 @@
+<form id="form-nspanel" class="pure-form">
+    <div class="panel" id="panel-nspanel">
+
+        <div class="header">
+            <h1>NSPANEL</h1>
+            <h2>Display configuration, stored on the device as <code>/nspanel.json</code></h2>
+        </div>
+
+        <div class="page">
+
+            <fieldset>
+                <legend>Display</legend>
+
+                <div class="pure-control-group">
+                    <span class="pure-form-message">
+                        Active driver: <span class="nspanel-status">?</span>
+                    </span>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Screen</legend>
+
+                <div class="pure-control-group">
+                    <span class="pure-form-message">
+                        What the display shows right now, drawn from the commands the panel sends it. Click and swipe
+                        it like the display: the panel itself follows, there is one screen. The design's pictures and
+                        fonts come from the OHpanel repository (internet access needed).
+                    </span>
+                </div>
+
+                <div class="nspanel-screen-frame"><canvas class="nspanel-screen" width="480" height="320"></canvas></div>
+                <div class="nspanel-screen-note"></div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Configuration</legend>
+
+                <div class="pure-control-group">
+                    <span class="pure-form-message">
+                        <em>Validate</em> only checks the JSON syntax locally.
+                        <em>Save</em> uploads the text, the device validates it, writes the file and reloads the display.
+                    </span>
+                </div>
+
+                <div class="pure-control-group nspanel-buttons">
+                    <button type="button" class="pure-button button-nspanel-load">Load</button>
+                    <button type="button" class="pure-button button-nspanel-validate">Validate</button>
+                    <button type="button" class="pure-button button-nspanel-save">Save</button>
+                </div>
+
+                <div class="pure-control-group">
+                    <textarea id="nspanel-config" class="pure-input-1 nspanel-editor" spellcheck="false" autocomplete="off" aria-label="nspanel.json"></textarea>
+                </div>
+
+                <div class="pure-control-group">
+                    <pre class="nspanel-result"></pre>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Preview and editor</legend>
+
+                <div class="pure-control-group">
+                    <span class="pure-form-message">
+                        Drag tiles, rows and page titles to change the order, drag chips from the palette to add
+                        items and pages, drop on <em>Trash</em> to remove. Double click a tile or a page title to rename
+                        it; the selector next to a title sets the page layout. A click on a tile or a page title
+                        opens its settings beside the preview: what the tile does (switch, button, relay, scene, text,
+                        thermostat, a page) and its topic, group or target. Changes go into the text above;
+                        <em>Save</em> sends them to the device.
+                    </span>
+                </div>
+
+                <div class="pure-control-group">
+                    <span class="pure-form-message">
+                        Pages as the OHpanel display splits them, updated while editing. A grid page's
+                        <code>"layout"</code> (<code>"4x2"</code> default, <code>"3x3"</code>, <code>"3x2"</code>,
+                        <code>"2x2"</code>, <code>"1x2"</code>; <code>"columns": 3</code> = <code>"3x2"</code>) holds
+                        8, 9, 6, 4 or 2 tiles per screen on the custom TFT (design d3731fbb); the stock TFT uses the
+                        layout's columns of its 4x2 slots (6, 6, 4, 2). <code>"per_screen"</code> limits it,
+                        <code>"type": "list"</code> pages are 7 rows per sheet. The preview follows the design the panel reports.
+                    </span>
+                </div>
+
+                <div class="nspanel-palette"></div>
+                <div class="nspanel-workspace">
+                    <div class="nspanel-preview-area"></div>
+                    <div class="nspanel-form"></div>
+                </div>
+            </fieldset>
+
+        </div>
+
+    </div>
+</form>
